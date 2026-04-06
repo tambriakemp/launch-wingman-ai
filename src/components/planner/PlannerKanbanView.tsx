@@ -121,20 +121,18 @@ export const PlannerKanbanView = ({
               <div
                 key={col.id}
                 className={cn(
-                  "flex flex-col items-center rounded-xl border border-border cursor-pointer hover:bg-accent/40 transition-colors shrink-0 py-4 px-1.5 min-h-[200px]",
+                  "flex flex-col items-center rounded-xl border border-border cursor-pointer hover:bg-accent/40 transition-colors shrink-0 py-3 px-1.5 h-fit",
                   col.collapsedBg
                 )}
                 onClick={() => toggleCollapse(col.id)}
                 title={`Expand ${col.label}`}
               >
-                {colTasks.length > 0 && (
-                  <span className={cn(
-                    "flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white mb-3",
-                    col.dotColor
-                  )}>
-                    {colTasks.length}
-                  </span>
-                )}
+                <span className={cn(
+                  "flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white mb-2",
+                  col.dotColor
+                )}>
+                  {colTasks.length}
+                </span>
                 <span
                   className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                   style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
