@@ -479,9 +479,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={onGenerateAllImages}>
                     <ImageIcon className="h-3.5 w-3.5 mr-2" /> Generate All Images
+                    <span className="ml-auto text-[9px] text-muted-foreground">1–3 min each</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onGenerateAllVideos}>
                     <Video className="h-3.5 w-3.5 mr-2" /> Generate All Videos
+                    <span className="ml-auto text-[9px] text-muted-foreground">3–5 min each</span>
                   </DropdownMenuItem>
                   {videoCount >= 2 && !anyGeneratingVideo && (
                     <>
