@@ -63,7 +63,7 @@ const bridgeSteps = [
   { title: "Design your AI twin with the A/B Prompt Technique", desc: "Create a photorealistic, consistent avatar using Gemini, DALL-E, or Midjourney — no design skills needed." },
   { title: "Give her a face, a wardrobe, and a world", desc: "Master outfits, environments, and look consistency across dozens of images — building a full content library." },
   { title: "Build a persona with a Brand Bible", desc: "Name, story arc, content pillars, and voice — so your twin feels like a real, relatable person online." },
-  { title: "Animate with OpenArt & create vlogs with Launchely AI Studio", desc: "Turn still images into moving content — talking heads, lifestyle clips, and full AI vlogs ready for Reels." },
+  { title: "Animate with OpenArt & create vlogs with Launchely AI Avatar Studio", desc: "Turn still images into moving content — talking heads, lifestyle clips, and full AI vlogs ready for Reels." },
   { title: "Script a 30-day content arc", desc: "Use AI to write hooks, stories, and scripts that build connection — without burnout or blank-page syndrome." },
   { title: "Batch 30 days of content in one afternoon", desc: "The exact 4-hour workflow to produce a full month of Reels, schedule it, and walk away." },
   { title: "Monetize through your twin", desc: "Digital products, affiliate income, brand deals — 5 income channels mapped to a 90-day roadmap." },
