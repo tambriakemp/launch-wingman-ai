@@ -212,7 +212,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} disabled={!media.imageUrl}>
                       Generate Video
                     </Button>
-                    {!media.imageUrl && <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p>}
+                    {!media.imageUrl ? <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p> : <p className="text-[9px] text-muted-foreground mt-2">May take 3–5 minutes</p>}
                   </>
                 )}
               </div>
