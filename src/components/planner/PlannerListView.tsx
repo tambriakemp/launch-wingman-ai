@@ -105,7 +105,10 @@ function getStatusBadge(columnId: string) {
 const STATUSES = [
   { id: "todo", label: "To Do" },
   { id: "in-progress", label: "Doing" },
+  { id: "in-review", label: "In Review" },
   { id: "done", label: "Done" },
+  { id: "blocked", label: "Blocked" },
+  { id: "abandoned", label: "Abandoned" },
 ];
 
 export const PlannerListView = ({
