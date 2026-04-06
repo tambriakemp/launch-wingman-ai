@@ -225,7 +225,14 @@ export const PlannerTaskDialog = ({
       setPriority("normal");
       setCategory("");
       setStartDate(defaultDueAt || undefined);
-      setEndDate(undefined);
+      // If defaultDueAt has a specific time (from timeslot click), auto-set end to +1 hour
+      if (defaultDueAt && (defaultDueAt.getHours() !== 0 || defaultDueAt.getMinutes() !== 0)) {
+        const autoEnd = new Date(defaultDueAt);
+        autoEnd.setHours(autoEnd.getHours() + 1);
+        setEndDate(autoEnd);
+      } else {
+        setEndDate(undefined);
+      }
       setRecurrenceFreq("none");
       setRecurrenceInterval(1);
       setRecurrenceDays([]);
