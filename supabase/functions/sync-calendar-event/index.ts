@@ -99,9 +99,24 @@ async function getAccessToken(supabase: any, connection: any): Promise<string | 
   return decrypted;
 }
 
-function isAllDayTime(isoStr: string): boolean {
-  const d = new Date(isoStr);
-  return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0;
+function isSemanticAllDay(task: any): boolean {
+  // Due-only (no start/end) → always all-day
+  if (task.due_at && !task.start_at && !task.end_at) return true;
+  // Same start+end timestamp → treat as all-day
+  if (task.start_at && task.end_at && task.start_at === task.end_at) return true;
+  // Both timestamps at same hour+minute → all-day (covers midnight in any TZ)
+  if (task.start_at && task.end_at) {
+    const s = new Date(task.start_at);
+    const e = new Date(task.end_at);
+    if (s.getUTCHours() === e.getUTCHours() && s.getUTCMinutes() === e.getUTCMinutes() &&
+        s.getUTCHours() === 0 && s.getUTCMinutes() === 0) return true;
+  }
+  return false;
+}
+
+function getDateOnly(isoStr: string): string {
+  // Extract the YYYY-MM-DD portion from the ISO string
+  return isoStr.substring(0, 10);
 }
 
 function buildEventBody(task: any) {
@@ -110,32 +125,26 @@ function buildEventBody(task: any) {
 
   // Determine start/end
   let start: string, end: string;
-  let allDay = false;
+  const allDay = isSemanticAllDay(task);
 
   if (task.start_at && task.end_at) {
     start = task.start_at;
     end = task.end_at;
-    // If both times are midnight, treat as all-day event
-    if (isAllDayTime(task.start_at) && isAllDayTime(task.end_at)) {
-      allDay = true;
-    }
   } else if (task.start_at) {
     start = task.start_at;
     end = task.start_at;
-    // Single date with midnight = all-day
-    if (isAllDayTime(task.start_at)) {
-      allDay = true;
-    }
   } else if (task.due_at) {
     start = task.due_at;
     end = task.due_at;
-    // due_at without specific time = all-day
-    if (isAllDayTime(task.due_at)) {
-      allDay = true;
-    }
   } else {
     // No date info — skip syncing
     return null;
+  }
+
+  // For all-day events, use the date portion only
+  if (allDay) {
+    start = getDateOnly(start);
+    end = getDateOnly(end);
   }
 
   return { title, description, start, end, allDay, location: task.location || "" };

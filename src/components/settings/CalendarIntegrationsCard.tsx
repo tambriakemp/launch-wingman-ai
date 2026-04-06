@@ -317,13 +317,13 @@ export const CalendarIntegrationsCard = () => {
                 className="w-full"
               >
                 {bulkSyncing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Syncing existing tasks…</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Re-syncing calendar tasks…</>
                 ) : (
-                  <><RefreshCw className="w-4 h-4 mr-2" />Sync all existing tasks</>
+                  <><RefreshCw className="w-4 h-4 mr-2" />Re-sync all calendar tasks</>
                 )}
               </Button>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                Push all current planner tasks to your connected calendars
+                Push and update all planner tasks in your connected calendars
               </p>
             </div>
           )}
