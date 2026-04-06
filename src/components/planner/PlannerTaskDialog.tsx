@@ -268,6 +268,8 @@ export const PlannerTaskDialog = ({
     try {
       const startIso = startDate ? startDate.toISOString() : null;
       const endIso = endDate ? endDate.toISOString() : (startIso || null);
+      // due_at should reflect the earliest meaningful date (start or due/end)
+      const dueIso = startIso || endIso;
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
@@ -275,7 +277,7 @@ export const PlannerTaskDialog = ({
         column_id: columnId,
         priority,
         category: category || null,
-        due_at: startIso,
+        due_at: dueIso,
         start_at: startIso,
         end_at: endIso,
         location: null,
