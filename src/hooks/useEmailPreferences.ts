@@ -64,6 +64,7 @@ export function useEmailPreferences() {
     product_emails_enabled: true,
     check_in_emails_enabled: true,
     relaunch_emails_enabled: true,
+    goal_reminder_emails_enabled: true,
   };
 
   return {
