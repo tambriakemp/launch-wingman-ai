@@ -725,6 +725,9 @@ const GoalDetail = () => {
                             <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
                           )}
                         </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {format(parseISO(target.created_at), "MMM d, yyyy 'at' h:mm a")}
+                        </p>
                       </div>
                     </button>
 
