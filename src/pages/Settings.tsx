@@ -1021,6 +1021,9 @@ const Settings = () => {
 
             {/* Integrations Tab */}
             <TabsContent value="integrations" className="mt-0 space-y-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                <CalendarIntegrationsCard />
+              </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 <Card variant="elevated">
                   <CardHeader>
