@@ -268,6 +268,8 @@ export const PlannerTaskDialog = ({
     try {
       const startIso = startDate ? startDate.toISOString() : null;
       const endIso = endDate ? endDate.toISOString() : (startIso || null);
+      // due_at should reflect the earliest meaningful date (start or due/end)
+      const dueIso = startIso || endIso;
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
@@ -275,7 +277,7 @@ export const PlannerTaskDialog = ({
         column_id: columnId,
         priority,
         category: category || null,
-        due_at: startIso,
+        due_at: dueIso,
         start_at: startIso,
         end_at: endIso,
         location: null,
@@ -494,13 +496,15 @@ export const PlannerTaskDialog = ({
                 <PropertyRow icon={CalendarIcon} label="Dates">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
-                      <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full", !startDate && !endDate && "text-muted-foreground")}>
-                        {startDate && endDate
-                          ? `${format(startDate, "MMM d")} → ${format(endDate, "MMM d")}`
-                          : startDate
-                            ? format(startDate, "MMM d, yyyy")
-                            : "Set dates"}
-                      </button>
+                       <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full", !startDate && !endDate && "text-muted-foreground")}>
+                         {startDate && endDate
+                           ? `${format(startDate, "MMM d")} → ${format(endDate, "MMM d")}`
+                           : startDate
+                             ? format(startDate, "MMM d, yyyy")
+                             : endDate
+                               ? `Due ${format(endDate, "MMM d, yyyy")}`
+                               : "Set dates"}
+                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start" side="bottom">
                       <DatePickerPanel

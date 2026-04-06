@@ -85,8 +85,10 @@ function getTaskPosition(task: PlannerTask) {
   const start = parseISO(task.start_at);
   const end = parseISO(task.end_at);
   const startH = getHours(start) + getMinutes(start) / 60;
-  const clampedStart = Math.max(startH, START_HOUR);
   const endH = getHours(end) + getMinutes(end) / 60;
+  // Same start/end at midnight = all-day task, don't position on time grid
+  if (startH === endH) return null;
+  const clampedStart = Math.max(startH, START_HOUR);
   const clampedEnd = Math.min(endH, END_HOUR);
   if (clampedEnd <= clampedStart) return null;
   const top = (clampedStart - START_HOUR) * HOUR_HEIGHT;
@@ -221,11 +223,26 @@ export const PlannerCalendarView = ({
   }, [expandedTasks]);
 
   const allDayTasks = useMemo(() => {
-    return expandedTasks.filter(t => t.due_at && !t.start_at && !t.end_at);
+    return expandedTasks.filter(t => {
+      // No start/end but has due_at → all-day
+      if (t.due_at && !t.start_at && !t.end_at) return true;
+      // Has start+end at same time (midnight tasks) → treat as all-day
+      if (t.start_at && t.end_at) {
+        const s = parseISO(t.start_at);
+        const e = parseISO(t.end_at);
+        const sH = getHours(s) + getMinutes(s) / 60;
+        const eH = getHours(e) + getMinutes(e) / 60;
+        if (sH === eH) return true;
+      }
+      return false;
+    });
   }, [expandedTasks]);
 
   const getAllDayTasksForDay = (day: Date) =>
-    allDayTasks.filter((t) => t.due_at && isSameDay(parseISO(t.due_at), day));
+    allDayTasks.filter((t) => {
+      const dateStr = t.due_at || t.start_at;
+      return dateStr && isSameDay(parseISO(dateStr), day);
+    });
 
   // Month
   const monthStart = startOfMonth(currentDate);
@@ -268,7 +285,12 @@ export const PlannerCalendarView = ({
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
           <div className="space-y-1">
             {allTasks
-              .filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date()))
+              .filter(t => {
+                if (t.column_id === "done" || !t.due_at) return false;
+                const dueDate = parseISO(t.due_at);
+                // Include tasks due today or in the future
+                return isSameDay(dueDate, new Date()) || isAfter(dueDate, new Date());
+              })
               .sort((a, b) => parseISO(a.due_at!).getTime() - parseISO(b.due_at!).getTime())
               .slice(0, 8)
               .map(task => {
