@@ -32,7 +32,7 @@ serve(async (req) => {
       });
     }
 
-    // Get all planner tasks WITH dates that haven't been synced yet
+    // Get all planner tasks WITH dates (not done)
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
       .select("id, start_at, end_at, due_at")
@@ -46,30 +46,31 @@ serve(async (req) => {
       });
     }
 
-    // Get existing sync mappings to skip already-synced tasks
+    // Get existing sync mappings to determine create vs update
     const { data: existingMappings } = await supabase
       .from("calendar_sync_mappings")
       .select("task_id")
       .eq("user_id", user.id);
 
     const syncedTaskIds = new Set((existingMappings || []).map((m: any) => m.task_id));
-    // Only sync tasks that have at least one date AND aren't already synced
-    const unsyncedTasks = tasks
-      .filter((t: any) => t.start_at || t.end_at || t.due_at)
-      .filter((t: any) => !syncedTaskIds.has(t.id));
 
-    if (unsyncedTasks.length === 0) {
-      return new Response(JSON.stringify({ success: true, synced: 0, message: "All tasks already synced" }), {
+    // Only sync tasks that have at least one date
+    const datedTasks = tasks.filter((t: any) => t.start_at || t.end_at || t.due_at);
+
+    if (datedTasks.length === 0) {
+      return new Response(JSON.stringify({ success: true, synced: 0, updated: 0, message: "No dated tasks to sync" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Call sync-calendar-event for each unsynced task
-    let synced = 0;
+    // Call sync-calendar-event for each dated task — update if already mapped, create if new
+    let created = 0;
+    let updated = 0;
     let failed = 0;
 
-    for (const task of unsyncedTasks) {
+    for (const task of datedTasks) {
       try {
+        const action = syncedTaskIds.has(task.id) ? "update" : "create";
         const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-calendar-event`, {
           method: "POST",
           headers: {
@@ -77,14 +78,19 @@ serve(async (req) => {
             "Content-Type": "application/json",
             apikey: Deno.env.get("SUPABASE_ANON_KEY") || "",
           },
-          body: JSON.stringify({ task_id: task.id, action: "create" }),
+          body: JSON.stringify({ task_id: task.id, action }),
         });
 
         if (res.ok) {
           const result = await res.json();
-          if (result.success) synced++;
-          else failed++;
+          if (result.success) {
+            if (action === "update") updated++;
+            else created++;
+          } else {
+            failed++;
+          }
         } else {
+          await res.text(); // consume body
           failed++;
         }
       } catch {
@@ -92,12 +98,20 @@ serve(async (req) => {
       }
     }
 
+    const total = created + updated;
+    const parts: string[] = [];
+    if (created > 0) parts.push(`${created} new`);
+    if (updated > 0) parts.push(`${updated} updated`);
+    if (failed > 0) parts.push(`${failed} failed`);
+
     return new Response(JSON.stringify({ 
       success: true, 
-      synced, 
+      synced: total,
+      created,
+      updated,
       failed, 
-      total: unsyncedTasks.length,
-      message: `Synced ${synced} task(s) to your calendar${failed > 0 ? `, ${failed} failed` : ""}` 
+      total: datedTasks.length,
+      message: total > 0 ? `Synced ${parts.join(", ")} task(s)` : "All tasks up to date" + (failed > 0 ? ` (${failed} failed)` : ""),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
