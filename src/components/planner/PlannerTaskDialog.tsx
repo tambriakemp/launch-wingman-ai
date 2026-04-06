@@ -272,10 +272,31 @@ export const PlannerTaskDialog = ({
     };
 
     try {
-      const startIso = startDate ? startDate.toISOString() : null;
-      const endIso = endDate ? endDate.toISOString() : (startIso || null);
-      // due_at should reflect the earliest meaningful date (start or due/end)
-      const dueIso = startIso || endIso;
+      const hasStart = !!startDate;
+      const hasDue = !!endDate;
+      
+      let startIso: string | null = null;
+      let endIso: string | null = null;
+      let dueIso: string | null = null;
+
+      if (hasStart && hasDue) {
+        // Timed/scheduled task: both start_at and end_at set
+        startIso = startDate!.toISOString();
+        endIso = endDate!.toISOString();
+        dueIso = startIso;
+      } else if (hasStart && !hasDue) {
+        // Start-only: treat as all-day scheduled, end_at = start_at
+        startIso = startDate!.toISOString();
+        endIso = startIso;
+        dueIso = startIso;
+      } else if (!hasStart && hasDue) {
+        // Due-only: no schedule, just a due date
+        startIso = null;
+        endIso = null;
+        dueIso = endDate!.toISOString();
+      }
+      // else: no dates at all — all null
+
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
