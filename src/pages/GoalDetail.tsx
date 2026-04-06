@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Textarea } from "@/components/ui/textarea";
 import { AddTargetPanel } from "@/components/goals/AddTargetPanel";
+import { UpdateTargetPanel } from "@/components/goals/UpdateTargetPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,9 +93,7 @@ const GoalDetail = () => {
   const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
   const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
-  const [updateValue, setUpdateValue] = useState("");
-  const [updateNote, setUpdateNote] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatePanelTarget, setUpdatePanelTarget] = useState<GoalTarget | null>(null);
 
   const [showAddTarget, setShowAddTarget] = useState(false);
 
@@ -253,38 +252,25 @@ const GoalDetail = () => {
     fetchGoal();
   };
 
-  const handleLogUpdate = async (target: GoalTarget) => {
+  const handleUpdateTargetSave = async (targetId: string, newCurrentValue: number, newStartValue: number, newTargetValue: number, note: string) => {
     if (!user) return;
-    setIsUpdating(true);
-    let newValue: number;
-    if (target.target_type === "true_false") {
-      newValue = target.current_value >= 1 ? 0 : 1;
-    } else {
-      newValue = Number(updateValue);
-      if (isNaN(newValue)) {
-        toast.error("Please enter a valid number");
-        setIsUpdating(false);
-        return;
-      }
-    }
+    const target = targets.find(t => t.id === targetId);
+    if (!target) return;
     const previousValue = Number(target.current_value);
     await supabase.from("goal_target_updates" as any).insert({
-      target_id: target.id,
+      target_id: targetId,
       user_id: user.id,
       previous_value: previousValue,
-      new_value: newValue,
-      note: updateNote.trim() || null,
+      new_value: newCurrentValue,
+      note: note || null,
     });
-    const isDone = newValue >= Number(target.target_value);
+    const isDone = newCurrentValue >= newTargetValue;
     await supabase
       .from("goal_targets" as any)
-      .update({ current_value: newValue, is_done: isDone })
-      .eq("id", target.id);
+      .update({ current_value: newCurrentValue, start_value: newStartValue, target_value: newTargetValue, is_done: isDone })
+      .eq("id", targetId);
     toast.success("Progress updated");
-    setUpdateValue("");
-    setUpdateNote("");
-    setExpandedTargets(new Set());
-    setIsUpdating(false);
+    setUpdatePanelTarget(null);
     fetchTargets();
     fetchUpdates();
   };
@@ -557,6 +543,13 @@ const GoalDetail = () => {
               }}
             />
 
+            <UpdateTargetPanel
+              open={!!updatePanelTarget}
+              onOpenChange={(open) => { if (!open) setUpdatePanelTarget(null); }}
+              target={updatePanelTarget}
+              onSave={handleUpdateTargetSave}
+            />
+
             {targets.length === 0 && !showAddTarget && (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No targets yet. Add a measurable target above.
@@ -596,7 +589,7 @@ const GoalDetail = () => {
                   {/* Header row */}
                   <div className="flex items-center gap-3 p-4">
                     <button
-                      onClick={() => toggleExpanded(target.id)}
+                      onClick={() => isTaskTarget ? toggleExpanded(target.id) : setUpdatePanelTarget(target)}
                       className="flex-1 flex items-center gap-3 text-left hover:bg-muted/30 transition-colors rounded-lg -m-1 p-1"
                     >
                       {target.is_done ? (
@@ -663,7 +656,7 @@ const GoalDetail = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {!isTaskTarget && (
-                          <DropdownMenuItem onClick={() => toggleExpanded(target.id)}>
+                          <DropdownMenuItem onClick={() => setUpdatePanelTarget(target)}>
                             <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
                           </DropdownMenuItem>
                         )}
@@ -767,51 +760,6 @@ const GoalDetail = () => {
                     </div>
                   )}
 
-                  {/* Expanded update form for NON-task targets */}
-                  {isExpanded && !isTaskTarget && (
-                    <div className="border-t border-border p-4 space-y-3 bg-muted/10">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Log Progress
-                      </p>
-                      {target.target_type === "true_false" ? (
-                        <Button
-                          size="sm"
-                          variant={target.is_done ? "outline" : "default"}
-                          onClick={() => handleLogUpdate(target)}
-                          disabled={isUpdating}
-                          className="gap-2"
-                        >
-                          {target.is_done ? "Mark Incomplete" : "Mark Complete"}
-                        </Button>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            value={updateValue}
-                            onChange={(e) => setUpdateValue(e.target.value)}
-                            placeholder={`New value (current: ${Number(target.current_value).toLocaleString()})`}
-                            className="h-9 text-sm flex-1"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleLogUpdate(target)}
-                            disabled={isUpdating || !updateValue}
-                            className="h-9"
-                          >
-                            Update
-                          </Button>
-                        </div>
-                      )}
-                      <Textarea
-                        value={updateNote}
-                        onChange={(e) => setUpdateNote(e.target.value)}
-                        placeholder="Add a note (optional)..."
-                        rows={2}
-                        className="resize-none text-sm"
-                        maxLength={500}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
