@@ -32,10 +32,10 @@ serve(async (req) => {
       });
     }
 
-    // Get all planner tasks with dates that haven't been synced yet
+    // Get all planner tasks WITH dates that haven't been synced yet
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
-      .select("id")
+      .select("id, start_at, end_at, due_at")
       .eq("user_id", user.id)
       .eq("task_scope", "planner")
       .neq("column_id", "done");
@@ -53,7 +53,10 @@ serve(async (req) => {
       .eq("user_id", user.id);
 
     const syncedTaskIds = new Set((existingMappings || []).map((m: any) => m.task_id));
-    const unsyncedTasks = tasks.filter((t: any) => !syncedTaskIds.has(t.id));
+    // Only sync tasks that have at least one date AND aren't already synced
+    const unsyncedTasks = tasks
+      .filter((t: any) => t.start_at || t.end_at || t.due_at)
+      .filter((t: any) => !syncedTaskIds.has(t.id));
 
     if (unsyncedTasks.length === 0) {
       return new Response(JSON.stringify({ success: true, synced: 0, message: "All tasks already synced" }), {

@@ -188,7 +188,7 @@ export const PlannerTaskDialog = ({
 
       const editCat = editTask.category;
       const catExists = spaceCats.some(c => c.id === editCat);
-      setCategory(catExists && editCat ? editCat : spaceCats[0]?.id || "");
+      setCategory(catExists && editCat ? editCat : "");
 
       if (editTask.start_at) {
         setStartDate(new Date(editTask.start_at));
@@ -223,7 +223,7 @@ export const PlannerTaskDialog = ({
       setDescription("");
       setColumnId("todo");
       setPriority("normal");
-      setCategory(spaceCats[0]?.id || "");
+      setCategory("");
       setStartDate(defaultDueAt || undefined);
       setEndDate(undefined);
       setRecurrenceFreq("none");
