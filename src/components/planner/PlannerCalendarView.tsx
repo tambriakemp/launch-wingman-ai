@@ -301,16 +301,16 @@ export const PlannerCalendarView = ({
                 return isSameDay(dueDate, new Date()) || isAfter(dueDate, new Date());
               })
               .sort((a, b) => parseISO(a.due_at!).getTime() - parseISO(b.due_at!).getTime())
-              .slice(0, 8)
+              .slice(0, 5)
               .map(task => {
-                const cat = categories.find(c => c.id === task.category);
+                const space = spaces.find(s => s.id === (task as any).space_id);
                 return (
                   <button
                     key={task.id}
                     className="flex items-start gap-2 w-full px-2 py-2 rounded-lg hover:bg-accent/50 transition-colors text-left group"
                     onClick={() => onEditTask(task)}
                   >
-                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: cat?.color || '#71717a' }} />
+                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: space?.color || '#71717a' }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{task.title}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">

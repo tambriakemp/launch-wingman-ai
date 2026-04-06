@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
+import { PlannerKanbanView } from "@/components/planner/PlannerKanbanView";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -18,7 +19,7 @@ import { useCalendarSync } from "@/hooks/useCalendarSync";
 const Planner = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
-  const [view, setView] = useState<"list" | "calendar">("calendar");
+  const [view, setView] = useState<"list" | "calendar" | "kanban">("calendar");
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -293,7 +294,7 @@ const Planner = () => {
                   <h1 className="text-2xl font-semibold text-foreground">Calendar</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">Plan your schedule, track tasks, and stay on top of your week.</p>
                 </div>
-                {view === "list" && (
+                {(view === "list" || view === "kanban") && (
                   <Button size="sm" className="gap-1.5" onClick={handleAddTask}>
                     <Plus className="w-4 h-4" /> Task
                   </Button>
@@ -301,10 +302,11 @@ const Planner = () => {
               </div>
             </div>
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
+          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
             <TabsList>
               <TabsTrigger value="list">Tasks</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="kanban">Board</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -354,6 +356,17 @@ const Planner = () => {
                 selectedSpaceId={selectedSpaceId}
                 allCategories={categories}
                 onUpdateSpace={updateSpace}
+              />
+            )}
+            {view === "kanban" && (
+              <PlannerKanbanView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
               />
             )}
           </div>
