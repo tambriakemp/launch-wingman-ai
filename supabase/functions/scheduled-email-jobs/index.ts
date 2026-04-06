@@ -38,6 +38,7 @@ const handler = async (req: Request): Promise<Response> => {
     relaunchInvitations: 0,
     pausedReminders: 0,
     proUpgradeEmails: 0,
+    goalProgressReminders: 0,
     errors: [] as string[],
   };
 
