@@ -40,9 +40,22 @@ serve(async (req) => {
         }
       }
 
+      const todayDate = new Date().toISOString().split('T')[0];
+
       const brainstormPrompt = isBrainstormCarousel
-        ? `Generate 5 creative carousel ideas for Instagram. Each idea is a "Setting + Message" combination — a specific visual environment paired with a bold content theme. Format: one idea per line, "Setting — Message". No numbers, no bullets, no labels. Example format: "Inside a luxury car with orange leather seats — Your standards are the problem, not your talent". Make them bold, specific, and visually interesting. Never repeat ideas from previous requests — always generate fresh, unique combinations.${characterContext}`
-        : `Generate a specific, engaging, and creative vlog topic idea for the category: "${config.vlogCategory}". Format: A specific scenario or activity. Length: Under 15 words. Output: JUST the topic text. No labels, no quotes. Never repeat the same idea twice — be fresh and unique.${characterContext}`;
+        ? `Today's date is ${todayDate}. Generate 8 to 12 fresh, creative Instagram carousel ideas. Each idea combines a specific, realistic visual setting with a bold message or story theme.
+
+Consider the current season, upcoming holidays, trending lifestyle topics, relatable day-to-day moments, and cultural moments happening right now. Mix different angles: aspirational, educational, humorous, vulnerable, motivational, behind-the-scenes, and authentic.
+
+Format: one idea per line, "Setting — Message". No numbers, no bullets, no labels.
+Example: "Inside a luxury car with orange leather seats — Your standards are the problem, not your talent"
+
+Every call MUST produce completely unique, never-before-seen ideas. Surprise the user. Be specific and visually interesting.${characterContext}`
+        : `Today's date is ${todayDate}. Generate a specific, engaging, and creative vlog topic idea for the category: "${config.vlogCategory}".
+
+Consider the current season, upcoming holidays, trending topics, and relatable day-to-day moments. Make it feel timely and fresh.
+
+Format: A specific scenario or activity. Length: Under 15 words. Output: JUST the topic text. No labels, no quotes. Every call must produce a completely unique idea.${characterContext}`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
