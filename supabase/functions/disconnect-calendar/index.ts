@@ -152,22 +152,24 @@ serve(async (req) => {
 
         for (const mapping of mappings) {
           try {
-            let url: string;
             if (connection.provider === "google") {
-              url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${mapping.external_event_id}`;
+              const taskRes = await fetch(
+                `https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${mapping.external_event_id}`,
+                { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
+              );
+              if (!taskRes.ok && taskRes.status !== 404) {
+                const calUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${mapping.external_event_id}`;
+                const calRes = await fetch(calUrl, { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } });
+                if (calRes.ok || calRes.status === 404 || calRes.status === 410) deleted++;
+                else failed++;
+              } else {
+                deleted++;
+              }
             } else {
-              url = `https://graph.microsoft.com/v1.0/me/events/${mapping.external_event_id}`;
-            }
-
-            const res = await fetch(url, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${accessToken}` },
-            });
-
-            if (res.ok || res.status === 404 || res.status === 410) {
-              deleted++;
-            } else {
-              failed++;
+              const url = `https://graph.microsoft.com/v1.0/me/events/${mapping.external_event_id}`;
+              const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } });
+              if (res.ok || res.status === 404 || res.status === 410) deleted++;
+              else failed++;
             }
           } catch {
             failed++;
