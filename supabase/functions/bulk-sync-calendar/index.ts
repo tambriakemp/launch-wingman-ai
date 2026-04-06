@@ -32,10 +32,10 @@ serve(async (req) => {
       });
     }
 
-    // Get all planner tasks with dates that haven't been synced yet
+    // Get all planner tasks WITH dates that haven't been synced yet
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
-      .select("id")
+      .select("id, start_at, end_at, due_at")
       .eq("user_id", user.id)
       .eq("task_scope", "planner")
       .neq("column_id", "done");

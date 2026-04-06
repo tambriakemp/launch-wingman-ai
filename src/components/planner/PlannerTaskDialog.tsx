@@ -223,7 +223,7 @@ export const PlannerTaskDialog = ({
       setDescription("");
       setColumnId("todo");
       setPriority("normal");
-      setCategory(spaceCats[0]?.id || "");
+      setCategory("");
       setStartDate(defaultDueAt || undefined);
       setEndDate(undefined);
       setRecurrenceFreq("none");
