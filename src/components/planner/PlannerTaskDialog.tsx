@@ -522,20 +522,43 @@ export const PlannerTaskDialog = ({
                 </PropertyRow>
 
                 {(() => {
-                  const selectedCat = spaceCats.find(c => c.id === category);
                   return (
                     <PropertyRow icon={Tag} label="Category">
                       <CategoryCombobox
                         categories={spaceCats}
                         value={category}
                         onChange={setCategory}
-                        selectedSpaceId={selectedSpaceId}
+                        selectedSpaceId={taskSpaceId || selectedSpaceId}
                         onCreateCategory={onCreateCategory}
                       />
                     </PropertyRow>
                   );
                 })()}
               </div>
+
+              {/* Row 3: Space selector — only when in All Spaces view and creating */}
+              {!selectedSpaceId && spaces.length > 0 && (
+                <div className="grid grid-cols-2 divide-x divide-border">
+                  <PropertyRow icon={FolderOpen} label="Space">
+                    <Select value={taskSpaceId} onValueChange={setTaskSpaceId}>
+                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                        <SelectValue placeholder="Select space" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaces.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                              {s.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PropertyRow>
+                  <div />
+                </div>
+              )}
             </div>
 
             {/* Description — longer */}
