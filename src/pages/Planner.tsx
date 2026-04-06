@@ -25,6 +25,7 @@ const Planner = () => {
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const { syncTask } = useCalendarSync();
 
   const {
     spaces,
