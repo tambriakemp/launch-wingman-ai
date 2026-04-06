@@ -302,10 +302,11 @@ const Planner = () => {
               </div>
             </div>
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
+          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
             <TabsList>
               <TabsTrigger value="list">Tasks</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="kanban">Board</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
