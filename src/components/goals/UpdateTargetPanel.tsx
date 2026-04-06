@@ -32,7 +32,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
   const [currentValue, setCurrentValue] = useState(0);
   const [startValue, setStartValue] = useState(0);
   const [targetValue, setTargetValue] = useState(0);
-  const [adjustAmount, setAdjustAmount] = useState("1");
+  const [adjustAmount, setAdjustAmount] = useState("");
   const [mode, setMode] = useState<"increase" | "decrease">("increase");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +41,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
       setCurrentValue(Number(target.current_value));
       setStartValue(Number(target.start_value));
       setTargetValue(Number(target.target_value));
-      setAdjustAmount("1");
+      setAdjustAmount("");
       setMode("increase");
     }
   }, [target, open]);
