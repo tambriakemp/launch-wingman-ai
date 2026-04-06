@@ -159,6 +159,7 @@ function buildEventBody(task: any) {
 }
 
 async function syncToGoogle(accessToken: string, task: any, action: string, existingEventId: string | null) {
+  console.log(`[Google Tasks] syncToGoogle called — action=${action}, existingEventId=${existingEventId}, taskId=${task?.id}, tokenPrefix=${accessToken?.substring(0, 12)}...`);
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
@@ -168,18 +169,26 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
 
   if (action === "delete" && existingEventId) {
     const res = await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
+    console.log(`[Google Tasks] DELETE status=${res.status}`);
     if (!res.ok && res.status !== 404) {
+      const errBody = await res.text();
+      console.error(`[Google Tasks] DELETE failed: ${errBody}`);
       const calRes = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events/${existingEventId}`,
         { method: "DELETE", headers }
       );
+      console.log(`[Google Tasks] Calendar fallback DELETE status=${calRes.status}`);
+      await calRes.text();
       return { success: calRes.ok || calRes.status === 404 || calRes.status === 410, eventId: null };
     }
     return { success: res.ok || res.status === 404, eventId: null };
   }
 
   const ev = buildEventBody(task);
-  if (!ev) return { success: false, eventId: null };
+  if (!ev) {
+    console.error(`[Google Tasks] buildEventBody returned null for task ${task?.id}`);
+    return { success: false, eventId: null };
+  }
 
   const dateStr = ev.start.substring(0, 10);
   const dueDateTime = `${dateStr}T00:00:00.000Z`;
@@ -189,6 +198,7 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
     due: dueDateTime,
     status: task.column_id === "done" || task.status === "completed" ? "completed" : "needsAction",
   };
+  console.log(`[Google Tasks] Request body:`, JSON.stringify(body));
 
   if (action === "update" && existingEventId) {
     const res = await fetch(`${baseUrl}/${existingEventId}`, {
@@ -196,18 +206,23 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
       headers,
       body: JSON.stringify(body),
     });
+    console.log(`[Google Tasks] PATCH status=${res.status}`);
     if (res.status === 404 || res.status === 400) {
-      console.log(`[Google Tasks] Stale mapping — creating fresh task`);
+      const errBody = await res.text();
+      console.log(`[Google Tasks] Stale mapping (${res.status}): ${errBody} — creating fresh task`);
       const createRes = await fetch(baseUrl, { method: "POST", headers, body: JSON.stringify(body) });
       const createData = await createRes.json();
+      console.log(`[Google Tasks] Fallback CREATE status=${createRes.status}`, JSON.stringify(createData));
       return { success: createRes.ok, eventId: createData.id || null };
     }
     const data = await res.json();
+    if (!res.ok) console.error(`[Google Tasks] PATCH error:`, JSON.stringify(data));
     return { success: res.ok, eventId: data.id || existingEventId };
   }
 
   const res = await fetch(baseUrl, { method: "POST", headers, body: JSON.stringify(body) });
   const data = await res.json();
+  console.log(`[Google Tasks] POST status=${res.status}`, res.ok ? `id=${data.id}` : JSON.stringify(data));
   return { success: res.ok, eventId: data.id || null };
 }
 
