@@ -145,9 +145,15 @@ export const PlannerListView = ({
       {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
-      <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
+      <div className={cn(
+        "gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
+        !selectedSpaceId
+          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]"
+      )}>
         <span className="pl-8">Name</span>
         <span>Due Date</span>
+        {!selectedSpaceId && <span>Space</span>}
         <span>Category</span>
         <span>Status</span>
         <span>
