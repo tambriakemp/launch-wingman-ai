@@ -620,18 +620,21 @@ const GoalDetail = () => {
                       </div>
                     </button>
 
-                    {/* Progress label */}
-                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    {/* Progress label with unit */}
+                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap flex items-center gap-1.5">
                       {target.target_type === "true_false" ? (
                         target.is_done ? "1/1" : "0/1"
                       ) : isTaskTarget ? (
-                        `${displayCurrent}/${displayTotal}`
+                        <>tasks {displayCurrent}/{displayTotal}</>
                       ) : (
                         <>
-                          {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
-                          {Number(target.current_value).toLocaleString()}
-                          /{target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
-                          {Number(target.target_value).toLocaleString()}
+                          {target.target_type === "number" && target.unit && (
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{target.unit}</span>
+                          )}
+                          {target.target_type === "currency" && target.unit && (
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{target.unit}</span>
+                          )}
+                          {Number(target.current_value).toLocaleString()}/{Number(target.target_value).toLocaleString()}
                         </>
                       )}
                     </span>
