@@ -239,7 +239,10 @@ export const PlannerCalendarView = ({
   }, [expandedTasks]);
 
   const getAllDayTasksForDay = (day: Date) =>
-    allDayTasks.filter((t) => t.due_at && isSameDay(parseISO(t.due_at), day));
+    allDayTasks.filter((t) => {
+      const dateStr = t.due_at || t.start_at;
+      return dateStr && isSameDay(parseISO(dateStr), day);
+    });
 
   // Month
   const monthStart = startOfMonth(currentDate);
