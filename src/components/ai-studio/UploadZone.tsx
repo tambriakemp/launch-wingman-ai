@@ -49,10 +49,19 @@ const UploadZone: React.FC<UploadZoneProps> = ({
     if (file) handleFile(file);
   };
 
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
   };
@@ -75,6 +84,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
           preview ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 bg-muted/20'
         }`}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDrop={handleDrop}
         onClick={() => !preview && !uploading && fileInputRef.current?.click()}
       >
