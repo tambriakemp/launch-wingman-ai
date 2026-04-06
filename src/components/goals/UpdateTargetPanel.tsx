@@ -48,6 +48,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
 
   if (!target) return null;
 
+  const isBooleanTarget = target.target_type === "boolean";
   const isCurrency = target.target_type === "currency";
   const symbol = isCurrency ? getCurrencySymbol(target.unit) : "";
   const unitLabel = !isCurrency && target.unit ? target.unit.toUpperCase() : "";
@@ -58,13 +59,16 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
     if (!target) return;
     setIsSaving(true);
     try {
-      // Apply the adjustment amount based on mode before saving
-      let finalValue = currentValue;
-      const amt = Number(adjustAmount);
-      if (amt && amt > 0) {
-        finalValue = mode === "increase" ? currentValue + amt : currentValue - amt;
+      if (isBooleanTarget) {
+        await onSave(target.id, currentValue, startValue, targetValue, "");
+      } else {
+        let finalValue = currentValue;
+        const amt = Number(adjustAmount);
+        if (amt && amt > 0) {
+          finalValue = mode === "increase" ? currentValue + amt : currentValue - amt;
+        }
+        await onSave(target.id, finalValue, startValue, targetValue, "");
       }
-      await onSave(target.id, finalValue, startValue, targetValue, "");
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -86,99 +90,133 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
         </div>
 
         <div className="px-8 pb-8 pt-2 space-y-8 flex-1 overflow-y-auto">
-          {/* Target name + % */}
+          {/* Target name */}
           <div className="text-center space-y-1">
             <div className="mx-auto w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
               <Target className="w-5 h-5 text-primary" />
             </div>
             <h3 className="text-lg font-semibold text-foreground">{target.name}</h3>
-            <p className="text-sm text-muted-foreground">{progress}%</p>
+            {!isBooleanTarget && <p className="text-sm text-muted-foreground">{progress}%</p>}
           </div>
 
-          {/* Progress bar */}
-          <div className="w-full h-3 bg-border rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-            />
-          </div>
+          {isBooleanTarget ? (
+            <>
+              {/* In progress / Finished toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-border">
+                <button
+                  type="button"
+                  onClick={() => setCurrentValue(0)}
+                  className={cn(
+                    "flex-1 py-3 text-sm font-semibold transition-all",
+                    currentValue === 0
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  In progress
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentValue(1)}
+                  className={cn(
+                    "flex-1 py-3 text-sm font-semibold transition-all",
+                    currentValue === 1
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  Finished
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Progress bar */}
+              <div className="w-full h-3 bg-border rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+                />
+              </div>
 
-          {/* Start / Current / Target row */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="space-y-1 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Start</p>
-              <input
-                type="number"
-                value={startValue}
-                onChange={(e) => setStartValue(Number(e.target.value) || 0)}
-                className="w-20 text-center text-sm font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none transition-colors py-1"
-              />
-            </div>
-            <div className="space-y-1 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Current</p>
-              <div className="inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-4 py-1.5">
+              {/* Start / Current / Target row */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-1 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Start</p>
+                  <input
+                    type="number"
+                    value={startValue}
+                    onChange={(e) => setStartValue(Number(e.target.value) || 0)}
+                    className="w-20 text-center text-sm font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none transition-colors py-1"
+                  />
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Current</p>
+                  <div className="inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-4 py-1.5">
+                    <input
+                      type="number"
+                      value={currentValue}
+                      onChange={(e) => setCurrentValue(Number(e.target.value) || 0)}
+                      className="w-16 text-center text-sm font-bold text-primary bg-transparent border-0 focus:outline-none"
+                    />
+                    {(unitLabel || isCurrency) && (
+                      <span className="text-[10px] font-semibold text-primary/70 uppercase tracking-wider">
+                        {isCurrency ? target.unit : unitLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Target</p>
+                  <input
+                    type="number"
+                    value={targetValue}
+                    onChange={(e) => setTargetValue(Number(e.target.value) || 1)}
+                    className="w-20 text-center text-sm font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none transition-colors py-1"
+                  />
+                </div>
+              </div>
+
+              {/* Decrease / Increase toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-border">
+                <button
+                  type="button"
+                  onClick={() => setMode("decrease")}
+                  className={cn(
+                    "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                    mode === "decrease"
+                      ? "bg-destructive/15 text-destructive border-r border-destructive/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-r border-border"
+                  )}
+                >
+                  Decrease
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("increase")}
+                  className={cn(
+                    "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
+                    mode === "increase"
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  Increase
+                </button>
+              </div>
+
+              {/* # amount — inline */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground font-medium">#</span>
                 <input
                   type="number"
-                  value={currentValue}
-                  onChange={(e) => setCurrentValue(Number(e.target.value) || 0)}
-                  className="w-16 text-center text-sm font-bold text-primary bg-transparent border-0 focus:outline-none"
+                  value={adjustAmount}
+                  onChange={(e) => setAdjustAmount(e.target.value)}
+                  className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
                 />
-                {(unitLabel || isCurrency) && (
-                  <span className="text-[10px] font-semibold text-primary/70 uppercase tracking-wider">
-                    {isCurrency ? target.unit : unitLabel}
-                  </span>
-                )}
               </div>
-            </div>
-            <div className="space-y-1 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Target</p>
-              <input
-                type="number"
-                value={targetValue}
-                onChange={(e) => setTargetValue(Number(e.target.value) || 1)}
-                className="w-20 text-center text-sm font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none transition-colors py-1"
-              />
-            </div>
-          </div>
-
-          {/* Decrease / Increase toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-border">
-            <button
-              type="button"
-              onClick={() => setMode("decrease")}
-              className={cn(
-                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
-                mode === "decrease"
-                  ? "bg-destructive/15 text-destructive border-r border-destructive/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-r border-border"
-              )}
-            >
-              Decrease
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("increase")}
-              className={cn(
-                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
-                mode === "increase"
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              Increase
-            </button>
-          </div>
-
-          {/* # amount — inline */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground font-medium">#</span>
-            <input
-              type="number"
-              value={adjustAmount}
-              onChange={(e) => setAdjustAmount(e.target.value)}
-              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
+            </>
+          )}
 
           {/* Save */}
           <Button
