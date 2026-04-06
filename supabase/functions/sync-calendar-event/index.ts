@@ -221,15 +221,37 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
   if (ev.allDay) {
     const dateStr = ev.start.substring(0, 10);
     body.start = { date: dateStr };
-    const endDate = new Date(dateStr);
-    endDate.setDate(endDate.getDate() + 1);
+    const endDate = new Date(dateStr + "T00:00:00Z");
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
     body.end = { date: endDate.toISOString().substring(0, 10) };
   } else {
-    body.start = { dateTime: ev.start };
-    body.end = { dateTime: ev.end };
+    body.start = { dateTime: ev.start, timeZone: "UTC" };
+    body.end = { dateTime: ev.end, timeZone: "UTC" };
   }
 
+  // For updates: check if existing event is timed but should now be all-day (or vice versa)
+  // Google doesn't reliably convert between timed and all-day via PATCH, so delete + recreate
   if (action === "update" && existingEventId) {
+    const checkRes = await fetch(`${baseUrl}/${existingEventId}`, { headers });
+    if (checkRes.ok) {
+      const existing = await checkRes.json();
+      const existingIsAllDay = !!(existing.start?.date && !existing.start?.dateTime);
+      if (existingIsAllDay !== ev.allDay) {
+        // Type mismatch — delete and recreate
+        await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
+        const createRes = await fetch(baseUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+        const created = await createRes.json();
+        return { success: createRes.ok, eventId: created.id || null };
+      }
+    } else {
+      await checkRes.text(); // consume body
+    }
+
+    // Same type — safe to patch
     const res = await fetch(`${baseUrl}/${existingEventId}`, {
       method: "PATCH",
       headers,
