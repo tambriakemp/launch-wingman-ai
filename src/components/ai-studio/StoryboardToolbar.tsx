@@ -217,7 +217,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               <div className="space-y-4">
                 {setReferenceImage && (
                   <>
-                    <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} />
+                    <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
                     <div>
                       <Label label="Upload Reference" />
                       <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Selfie / Avatar" subtext="Used to maintain facial consistency." />
