@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { GoalFolderCard, NewFolderCard } from "@/components/goals/GoalFolderCard";
 import { GoalGridCard } from "@/components/goals/GoalGridCard";
@@ -296,6 +297,17 @@ const Goals = () => {
     fetchTargets();
   };
 
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
+
+  const confirmDelete = (title: string, action: () => void) => {
+    setDeleteConfirmTitle(title);
+    setPendingDeleteAction(() => action);
+    setDeleteConfirmOpen(true);
+  };
+
 
   const unfiledGoals = useMemo(() => {
     return goals.filter((g) => {
@@ -392,7 +404,7 @@ const Goals = () => {
                         setFolderName(f.name);
                         setFolderDialogOpen(true);
                       }}
-                      onDelete={() => handleDeleteFolder(f.id)}
+                      onDelete={() => confirmDelete("Delete this folder?", () => handleDeleteFolder(f.id))}
                       onCreateGoal={() => {
                         setCreateInFolderId(f.id);
                         setEditingGoal(null);
@@ -424,7 +436,7 @@ const Goals = () => {
                   onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
                   onMoveToFolder={handleMoveGoalToFolder}
                   onArchive={handleArchiveGoal}
-                  onDelete={handleDeleteGoal}
+                  onDelete={(goalId) => confirmDelete("Delete this goal?", () => handleDeleteGoal(goalId))}
                 />
               ))}
             </div>
@@ -493,6 +505,12 @@ const Goals = () => {
         existingTargets={
           editingGoal ? targets.filter((t) => t.goal_id === editingGoal.id) : []
         }
+      />
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={() => { pendingDeleteAction?.(); }}
+        title={deleteConfirmTitle}
       />
     </ProjectLayout>
   );

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { GoalGridCard } from "@/components/goals/GoalGridCard";
 import { GoalDialog } from "@/components/goals/GoalDialog";
@@ -56,6 +57,15 @@ const GoalFolderDetail = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
+
+  const confirmDelete = (title: string, action: () => void) => {
+    setDeleteConfirmTitle(title);
+    setPendingDeleteAction(() => action);
+    setDeleteConfirmOpen(true);
+  };
 
   const fetchFolder = useCallback(async () => {
     if (!user || !folderId) return;
@@ -330,7 +340,7 @@ const GoalFolderDetail = () => {
                   <DropdownMenuItem onClick={() => { setRenameValue(folder.name); setIsRenaming(true); }}>
                     <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDeleteFolder} className="text-destructive">
+                  <DropdownMenuItem onClick={() => confirmDelete("Delete this folder?", handleDeleteFolder)} className="text-destructive">
                     <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -392,7 +402,7 @@ const GoalFolderDetail = () => {
                   onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
                   onMoveToFolder={handleMoveGoalToFolder}
                   onArchive={handleArchiveGoal}
-                  onDelete={handleDeleteGoal}
+                  onDelete={(goalId) => confirmDelete("Delete this goal?", () => handleDeleteGoal(goalId))}
                 />
               ))}
             </div>
@@ -411,6 +421,12 @@ const GoalFolderDetail = () => {
         existingTargets={
           editingGoal ? targets.filter((t) => t.goal_id === editingGoal.id) : []
         }
+      />
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={() => { pendingDeleteAction?.(); }}
+        title={deleteConfirmTitle}
       />
     </ProjectLayout>
   );
