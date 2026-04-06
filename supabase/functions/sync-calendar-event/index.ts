@@ -99,18 +99,26 @@ async function getAccessToken(supabase: any, connection: any): Promise<string | 
   return decrypted;
 }
 
+function isAllDayTime(isoStr: string): boolean {
+  if (!isoStr) return false;
+  // Date-only format "YYYY-MM-DD" — always all-day
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return true;
+  // Datetime ending in T00:00:00 (with or without Z/ms) — treat as all-day
+  if (/T00:00:00/.test(isoStr)) return true;
+  return false;
+}
+
 function isSemanticAllDay(task: any): boolean {
   // Due-only (no start/end) → always all-day
   if (task.due_at && !task.start_at && !task.end_at) return true;
   // Same start+end timestamp → treat as all-day
   if (task.start_at && task.end_at && task.start_at === task.end_at) return true;
-  // Both timestamps at same hour+minute → all-day (covers midnight in any TZ)
+  // Check individual timestamps for midnight / date-only
   if (task.start_at && task.end_at) {
-    const s = new Date(task.start_at);
-    const e = new Date(task.end_at);
-    if (s.getUTCHours() === e.getUTCHours() && s.getUTCMinutes() === e.getUTCMinutes() &&
-        s.getUTCHours() === 0 && s.getUTCMinutes() === 0) return true;
+    if (isAllDayTime(task.start_at) && isAllDayTime(task.end_at)) return true;
   }
+  if (task.start_at && !task.end_at && isAllDayTime(task.start_at)) return true;
+  if (task.due_at && isAllDayTime(task.due_at)) return true;
   return false;
 }
 
