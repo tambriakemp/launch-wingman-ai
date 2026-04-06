@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
+import { useStatusVisibility } from "@/hooks/useStatusVisibility";
+import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 
 const Planner = () => {
   const { user } = useAuth();
@@ -27,6 +29,7 @@ const Planner = () => {
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const { syncTask } = useCalendarSync();
+  const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
   const {
     spaces,
@@ -65,9 +68,14 @@ const Planner = () => {
 
   // Filter tasks by selected space
   const filteredTasks = useMemo(() => {
-    if (!selectedSpaceId) return tasks;
-    return tasks.filter(t => (t as any).space_id === selectedSpaceId);
-  }, [tasks, selectedSpaceId]);
+    let result = tasks;
+    if (selectedSpaceId) {
+      result = result.filter(t => (t as any).space_id === selectedSpaceId);
+    }
+    // Apply status visibility filter
+    result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
+    return result;
+  }, [tasks, selectedSpaceId, isVisible]);
 
   // Get categories for the current context
   const activeCategories = useMemo(() => {
@@ -308,13 +316,16 @@ const Planner = () => {
               </div>
             </div>
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
-            <TabsList>
-              <TabsTrigger value="list">Tasks</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
-              <TabsTrigger value="kanban">Board</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
+              <TabsList>
+                <TabsTrigger value="list">Tasks</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                <TabsTrigger value="kanban">Board</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+          </div>
         </div>
         <div className="flex-1 overflow-hidden flex">
           <SpacesSidebar

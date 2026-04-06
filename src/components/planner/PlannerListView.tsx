@@ -47,24 +47,30 @@ interface PlannerListViewProps {
   onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
 }
 
-type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
+type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
 
 const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string }[] = [
   { key: "overdue", label: "OVERDUE", defaultOpen: true, color: "bg-destructive" },
   { key: "today", label: "TODAY", defaultOpen: true, color: "bg-blue-500" },
   { key: "this_week", label: "THIS WEEK", defaultOpen: true, color: "bg-amber-500" },
   { key: "anytime", label: "ANYTIME", defaultOpen: true, color: "bg-muted-foreground" },
+  { key: "in_review", label: "IN REVIEW", defaultOpen: true, color: "bg-purple-500" },
   { key: "completed", label: "DONE", defaultOpen: false, color: "bg-emerald-500" },
+  { key: "blocked", label: "BLOCKED", defaultOpen: false, color: "bg-red-500" },
+  { key: "abandoned", label: "ABANDONED", defaultOpen: false, color: "bg-zinc-400" },
 ];
 
 function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const groups: Record<GroupKey, PlannerTask[]> = { overdue: [], today: [], this_week: [], anytime: [], completed: [] };
+  const groups: Record<GroupKey, PlannerTask[]> = { overdue: [], today: [], this_week: [], anytime: [], completed: [], in_review: [], blocked: [], abandoned: [] };
 
   for (const task of tasks) {
     if (task.column_id === "done") { groups.completed.push(task); continue; }
+    if (task.column_id === "in-review") { groups.in_review.push(task); continue; }
+    if (task.column_id === "blocked") { groups.blocked.push(task); continue; }
+    if (task.column_id === "abandoned") { groups.abandoned.push(task); continue; }
     const due = task.due_at ? parseISO(task.due_at) : null;
     if (due) {
       if (isToday(due)) groups.today.push(task);
@@ -85,6 +91,12 @@ function getStatusBadge(columnId: string) {
     case "in_progress":
     case "in-progress":
       return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400">In Progress</span>;
+    case "in-review":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400">In Review</span>;
+    case "blocked":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400">Blocked</span>;
+    case "abandoned":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-zinc-400/15 text-zinc-500 dark:text-zinc-400">Abandoned</span>;
     default:
       return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground">To Do</span>;
   }
@@ -93,7 +105,10 @@ function getStatusBadge(columnId: string) {
 const STATUSES = [
   { id: "todo", label: "To Do" },
   { id: "in-progress", label: "Doing" },
+  { id: "in-review", label: "In Review" },
   { id: "done", label: "Done" },
+  { id: "blocked", label: "Blocked" },
+  { id: "abandoned", label: "Abandoned" },
 ];
 
 export const PlannerListView = ({

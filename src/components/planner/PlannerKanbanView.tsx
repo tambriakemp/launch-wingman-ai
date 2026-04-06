@@ -1,7 +1,7 @@
-import { useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { CheckCircle2, Circle, Plus, GripVertical } from "lucide-react";
+import { CheckCircle2, Circle, Plus, GripVertical, ChevronsRight, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { PlannerTask } from "./PlannerTaskDialog";
@@ -19,9 +19,12 @@ interface PlannerKanbanViewProps {
 }
 
 const COLUMNS = [
-  { id: "todo", label: "To Do", dotColor: "bg-muted-foreground" },
-  { id: "in-progress", label: "In Progress", dotColor: "bg-blue-500" },
-  { id: "done", label: "Done", dotColor: "bg-emerald-500" },
+  { id: "todo", label: "To Do", dotColor: "bg-muted-foreground", collapsedBg: "bg-muted/60" },
+  { id: "in-progress", label: "In Progress", dotColor: "bg-blue-500", collapsedBg: "bg-blue-500/10" },
+  { id: "in-review", label: "In Review", dotColor: "bg-purple-500", collapsedBg: "bg-purple-500/10" },
+  { id: "done", label: "Done", dotColor: "bg-emerald-500", collapsedBg: "bg-emerald-500/10" },
+  { id: "blocked", label: "Blocked", dotColor: "bg-red-500", collapsedBg: "bg-red-500/10", defaultCollapsed: true },
+  { id: "abandoned", label: "Abandoned", dotColor: "bg-zinc-400", collapsedBg: "bg-zinc-400/10", defaultCollapsed: true },
 ];
 
 function getPriorityOrder(p: string | null | undefined): number {
@@ -57,8 +60,17 @@ export const PlannerKanbanView = ({
   categories = [],
   spaces = [],
 }: PlannerKanbanViewProps) => {
+  const [collapsedColumns, setCollapsedColumns] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    COLUMNS.forEach(col => {
+      if (col.defaultCollapsed) initial[col.id] = true;
+    });
+    return initial;
+  });
+
   const columnTasks = useMemo(() => {
-    const map: Record<string, PlannerTask[]> = { todo: [], "in-progress": [], done: [] };
+    const map: Record<string, PlannerTask[]> = {};
+    COLUMNS.forEach(col => { map[col.id] = []; });
     for (const task of tasks) {
       const col = task.column_id === "in_progress" ? "in-progress" : (task.column_id || "todo");
       if (map[col]) map[col].push(task);
@@ -85,6 +97,10 @@ export const PlannerKanbanView = ({
     onMoveTask?.(draggableId, destination.droppableId);
   }, [onMoveTask]);
 
+  const toggleCollapse = (colId: string) => {
+    setCollapsedColumns(prev => ({ ...prev, [colId]: !prev[colId] }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -98,6 +114,37 @@ export const PlannerKanbanView = ({
       <div className="flex gap-4 p-4 h-full overflow-x-auto">
         {COLUMNS.map((col) => {
           const colTasks = columnTasks[col.id] || [];
+          const isCollapsed = collapsedColumns[col.id];
+
+          if (isCollapsed) {
+            return (
+              <div
+                key={col.id}
+                className={cn(
+                  "flex flex-col items-center rounded-xl border border-border cursor-pointer hover:bg-accent/40 transition-colors shrink-0 py-4 px-1.5 min-h-[200px]",
+                  col.collapsedBg
+                )}
+                onClick={() => toggleCollapse(col.id)}
+                title={`Expand ${col.label}`}
+              >
+                {colTasks.length > 0 && (
+                  <span className={cn(
+                    "flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white mb-3",
+                    col.dotColor
+                  )}>
+                    {colTasks.length}
+                  </span>
+                )}
+                <span
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+                >
+                  {col.label}
+                </span>
+              </div>
+            );
+          }
+
           return (
             <div key={col.id} className="flex flex-col w-[320px] min-w-[280px] shrink-0">
               {/* Column header */}
@@ -107,6 +154,13 @@ export const PlannerKanbanView = ({
                   {col.label}
                 </span>
                 <span className="text-xs text-muted-foreground/60 ml-1">{colTasks.length}</span>
+                <button
+                  className="ml-auto opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
+                  onClick={() => toggleCollapse(col.id)}
+                  title={`Collapse ${col.label}`}
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
               </div>
 
               {/* Droppable column */}
@@ -124,6 +178,7 @@ export const PlannerKanbanView = ({
                       const space = spaces.find(s => s.id === (task as any).space_id);
                       const cat = categories.find(c => c.id === task.category);
                       const isDone = col.id === "done";
+                      const isAbandoned = col.id === "abandoned";
                       const spaceColor = space?.color || "#71717a";
 
                       return (
@@ -134,7 +189,7 @@ export const PlannerKanbanView = ({
                               {...dragProvided.draggableProps}
                               className={cn(
                                 "w-full text-left rounded-xl border border-border bg-card p-3 hover:shadow-md transition-all group cursor-pointer",
-                                isDone && "opacity-60",
+                                (isDone || isAbandoned) && "opacity-60",
                                 dragSnapshot.isDragging && "shadow-lg ring-2 ring-primary/30 rotate-1"
                               )}
                               onClick={() => onEditTask(task)}
@@ -157,7 +212,7 @@ export const PlannerKanbanView = ({
                                   <div className="flex items-start justify-between gap-2">
                                     <p className={cn(
                                       "text-sm font-medium text-foreground leading-snug",
-                                      isDone && "line-through text-muted-foreground"
+                                      (isDone || isAbandoned) && "line-through text-muted-foreground"
                                     )}>
                                       {task.title}
                                     </p>

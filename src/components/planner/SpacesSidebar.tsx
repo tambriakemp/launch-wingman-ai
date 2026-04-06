@@ -67,7 +67,7 @@ export const SpacesSidebar = ({
 
   const getTaskCount = (spaceId: string | null) => {
     const filtered = spaceId ? tasks.filter(t => (t as any).space_id === spaceId) : tasks;
-    return filtered.filter(t => t.column_id !== "done").length;
+    return filtered.filter(t => t.column_id !== "done" && t.column_id !== "abandoned").length;
   };
 
   const handleAdd = async () => {
