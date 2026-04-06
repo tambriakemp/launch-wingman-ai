@@ -1012,6 +1012,7 @@ const AIStudio = () => {
             setEnvironmentImage={setEnvironmentImage}
             setEnvironmentImages={setEnvironmentImages}
             setEnvironmentLabel={setEnvironmentLabel}
+            onCharacterSelect={setSelectedCharacter}
             productImage={productImage}
             setProductImage={setProductImage}
             isProcessing={isProcessing}
