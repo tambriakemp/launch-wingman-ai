@@ -35,6 +35,8 @@ interface StoryboardToolbarProps {
   setProductImage?: (img: string | null) => void;
   showSafetyTerms?: boolean;
   onCharacterSelect?: (character: any) => void;
+  brainstormIdeas?: string[];
+  onSelectIdea?: (idea: string) => void;
   setShowSafetyTerms?: (v: boolean) => void;
   isProcessing?: boolean;
   onProjects?: () => void;
