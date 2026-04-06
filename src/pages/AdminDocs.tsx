@@ -1069,6 +1069,164 @@ const AdminComponent = () => {
                       </AccordionContent>
                     </AccordionItem>
 
+                    <AccordionItem value="microsoft-calendar">
+                      <AccordionTrigger className="text-left">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                          Microsoft Calendar Integration
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4">
+                        <h4 className="font-semibold mb-4">Overview</h4>
+                        <p className="text-muted-foreground mb-4">
+                          Users can connect their Microsoft (Outlook/Office 365) calendar to sync tasks as calendar events. 
+                          The integration uses OAuth 2.0 with Microsoft Identity Platform.
+                        </p>
+
+                        <h4 className="font-semibold mb-4">Azure App Registration</h4>
+                        <div className="space-y-2 mb-4">
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-muted-foreground">App (Client) ID:</span>
+                            <span className="ml-2">eb5d9925-0965-46d3-b3ca-95820ef589e7</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-muted-foreground">Supported Accounts:</span>
+                            <span className="ml-2 text-xs">Any org directory + personal Microsoft accounts</span>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground mb-2">
+                          <strong>Azure Portal:</strong>{" "}
+                          <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/eb5d9925-0965-46d3-b3ca-95820ef589e7" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                            Open App Registration ↗
+                          </a>
+                        </p>
+
+                        <h4 className="font-semibold mb-4 mt-6">Redirect URI</h4>
+                        <CodeBlock title="Authorized Redirect URI">{`https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/microsoft-calendar-auth-callback`}</CodeBlock>
+
+                        <Callout type="warning">
+                          <strong>Platform type:</strong> This must be registered as a <strong>Web</strong> redirect URI in Azure Portal → Authentication, not SPA or mobile.
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">Required API Permissions</h4>
+                        <div className="space-y-2 mb-6">
+                          {["Calendars.ReadWrite", "offline_access", "openid", "profile", "email"].map((scope) => (
+                            <div key={scope} className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                              <span className="text-primary">{scope}</span>
+                              <span className="text-xs text-muted-foreground ml-2">— Delegated</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <h4 className="font-semibold mb-4">Edge Functions</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">microsoft-calendar-auth-start</code>
+                            <p className="text-xs text-muted-foreground mt-1">Generates the OAuth URL and redirects the user to Microsoft login</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">microsoft-calendar-auth-callback</code>
+                            <p className="text-xs text-muted-foreground mt-1">Exchanges auth code for tokens, encrypts and stores them</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">sync-calendar-event</code>
+                            <p className="text-xs text-muted-foreground mt-1">Syncs individual task create/update/delete to Microsoft Calendar</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">bulk-sync-calendar</code>
+                            <p className="text-xs text-muted-foreground mt-1">Bulk-syncs all existing tasks to the connected calendar</p>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4">Database Tables</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">calendar_connections</code>
+                            <p className="text-xs text-muted-foreground mt-1">Stores encrypted OAuth tokens, provider, account email per user. Unique on (user_id, provider).</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">calendar_sync_mappings</code>
+                            <p className="text-xs text-muted-foreground mt-1">Maps task IDs to external calendar event IDs for update/delete tracking.</p>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4">Secrets (Edge Functions)</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-primary">MICROSOFT_CLIENT_ID</span>
+                            <span className="text-xs text-muted-foreground ml-2">— Azure App Client ID</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-primary">MICROSOFT_CLIENT_SECRET</span>
+                            <span className="text-xs text-muted-foreground ml-2">— Azure App Client Secret (Value, not Secret ID)</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-primary">APP_URL</span>
+                            <span className="text-xs text-muted-foreground ml-2">— Redirect target after auth (e.g. https://launchely.com)</span>
+                          </div>
+                        </div>
+
+                        <Callout type="warning">
+                          <strong>Secret rotation:</strong> When rotating the client secret in Azure Portal → Certificates & secrets, copy the <strong>Value</strong> (not the Secret ID) and update it in Lovable Cloud secrets.
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">OAuth Flow</h4>
+                        <CodeBlock title="Authentication Flow">{`1. User clicks "Connect Microsoft Calendar" in Settings
+2. Frontend calls microsoft-calendar-auth-start edge function
+3. Function returns Microsoft OAuth URL with state (user_id)
+4. User signs in at Microsoft and grants permissions
+5. Microsoft redirects to microsoft-calendar-auth-callback
+6. Callback exchanges code for access + refresh tokens
+7. Tokens are encrypted via encrypt_token() and stored in calendar_connections
+8. User is redirected to /settings?mscal_connected=true`}</CodeBlock>
+
+                        <h4 className="font-semibold mb-4 mt-6">Publisher Verification</h4>
+                        <p className="text-muted-foreground mb-4">
+                          To remove the "unverified" warning on the consent screen, the publisher domain 
+                          is set to <code>launchely.com</code> with a domain verification file at:
+                        </p>
+                        <CodeBlock title="Domain Verification File">{`public/.well-known/microsoft-identity-association.json
+
+{
+  "associatedApplications": [
+    {
+      "applicationId": "eb5d9925-0965-46d3-b3ca-95820ef589e7"
+    }
+  ]
+}`}</CodeBlock>
+
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Full verification requires joining the{" "}
+                          <a href="https://partner.microsoft.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                            Microsoft Cloud Partner Program ↗
+                          </a>{" "}
+                          with an Entra ID work account (free Azure AD tenant is sufficient).
+                        </p>
+
+                        <Callout type="info">
+                          <strong>Without verification:</strong> Users still see "Accept" on the consent screen but with an "unverified" label. 
+                          Work/school accounts may be blocked only if their org admin restricts unverified apps.
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">Useful Links</h4>
+                        <div className="space-y-2">
+                          <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/eb5d9925-0965-46d3-b3ca-95820ef589e7" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Azure App Registration ↗
+                          </a>
+                          <a href="https://developer.microsoft.com/en-us/graph/graph-explorer" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Microsoft Graph Explorer ↗
+                          </a>
+                          <a href="https://learn.microsoft.com/en-us/graph/api/resources/event" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Graph API — Calendar Events Reference ↗
+                          </a>
+                          <a href="https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Publisher Verification Docs ↗
+                          </a>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
                     <AccordionItem value="secrets">
                       <AccordionTrigger className="text-left">
                         <div className="flex items-center gap-2">
