@@ -285,7 +285,12 @@ export const PlannerCalendarView = ({
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
           <div className="space-y-1">
             {allTasks
-              .filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date()))
+              .filter(t => {
+                if (t.column_id === "done" || !t.due_at) return false;
+                const dueDate = parseISO(t.due_at);
+                // Include tasks due today or in the future
+                return isSameDay(dueDate, new Date()) || isAfter(dueDate, new Date());
+              })
               .sort((a, b) => parseISO(a.due_at!).getTime() - parseISO(b.due_at!).getTime())
               .slice(0, 8)
               .map(task => {
