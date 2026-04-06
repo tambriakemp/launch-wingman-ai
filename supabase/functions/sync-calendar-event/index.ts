@@ -122,9 +122,39 @@ function buildEventBody(task: any) {
   return { title, description, start, end, allDay, location: task.location || "" };
 }
 
+async function getOrCreateLaunchelyCalendar(accessToken: string): Promise<string> {
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+
+  // Check if "Launchely" calendar already exists
+  const listRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
+  if (listRes.ok) {
+    const listData = await listRes.json();
+    const existing = (listData.items || []).find((c: any) => c.summary === "Launchely");
+    if (existing) return existing.id;
+  }
+
+  // Create the calendar
+  const createRes = await fetch("https://www.googleapis.com/calendar/v3/calendars", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ summary: "Launchely", description: "Tasks synced from Launchely", timeZone: "UTC" }),
+  });
+
+  if (createRes.ok) {
+    const created = await createRes.json();
+    return created.id;
+  }
+
+  // Fallback to primary
+  return "primary";
+}
+
 async function syncToGoogle(accessToken: string, task: any, action: string, existingEventId: string | null) {
-  const calendarId = "primary";
-  const baseUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`;
+  const calendarId = await getOrCreateLaunchelyCalendar(accessToken);
+  const baseUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
@@ -136,6 +166,8 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
   }
 
   const ev = buildEventBody(task);
+  if (!ev) return { success: false, eventId: null };
+
   const body: any = {
     summary: ev.title,
     description: ev.description,
@@ -145,7 +177,6 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
   if (ev.allDay) {
     const dateStr = ev.start.substring(0, 10);
     body.start = { date: dateStr };
-    // Google requires end date to be exclusive for all-day events
     const endDate = new Date(dateStr);
     endDate.setDate(endDate.getDate() + 1);
     body.end = { date: endDate.toISOString().substring(0, 10) };
@@ -164,7 +195,6 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
     return { success: res.ok, eventId: data.id || existingEventId };
   }
 
-  // Create
   const res = await fetch(baseUrl, {
     method: "POST",
     headers,
