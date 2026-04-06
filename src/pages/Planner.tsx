@@ -123,6 +123,17 @@ const Planner = () => {
     }
 
     toast.success("Task created");
+    // Fetch tasks first to get the new task ID, then sync
+    const { data: latestTasks } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("task_scope", "planner")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (latestTasks?.[0]?.id) {
+      syncTask(latestTasks[0].id, "create");
+    }
     fetchTasks();
   };
 
