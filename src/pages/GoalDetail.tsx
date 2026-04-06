@@ -233,14 +233,24 @@ const GoalDetail = () => {
     setTaskProgressMap(progressMap);
   }, [user, targets]);
 
+  const fetchAllFolders = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("goal_folders" as any)
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("position", { ascending: true });
+    setAllFolders((data as unknown as AllFolder[]) || []);
+  }, [user]);
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      await Promise.all([fetchGoal(), fetchTargets(), fetchUpdates()]);
+      await Promise.all([fetchGoal(), fetchTargets(), fetchUpdates(), fetchAllFolders()]);
       setIsLoading(false);
     };
     load();
-  }, [fetchGoal, fetchTargets, fetchUpdates]);
+  }, [fetchGoal, fetchTargets, fetchUpdates, fetchAllFolders]);
 
   useEffect(() => {
     if (targets.length > 0) {
