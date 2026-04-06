@@ -50,6 +50,7 @@ const AIStudio = () => {
   };
   const [showHelp, setShowHelp] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
+  const [brainstormIdeas, setBrainstormIdeas] = useState<string[]>([]);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState<number | null>(null);
   const [previewLightbox, setPreviewLightbox] = useState<string | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
