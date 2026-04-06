@@ -543,6 +543,13 @@ const GoalDetail = () => {
               }}
             />
 
+            <UpdateTargetPanel
+              open={!!updatePanelTarget}
+              onOpenChange={(open) => { if (!open) setUpdatePanelTarget(null); }}
+              target={updatePanelTarget}
+              onSave={handleUpdateTargetSave}
+            />
+
             {targets.length === 0 && !showAddTarget && (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No targets yet. Add a measurable target above.
