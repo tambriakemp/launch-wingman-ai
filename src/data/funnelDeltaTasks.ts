@@ -1313,7 +1313,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
     blocking: true,
-    dependencies: ['planning_offer_snapshot'],
+    dependencies: ['planning_perceived_likelihood'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
