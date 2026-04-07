@@ -172,7 +172,7 @@ function buildContextString(context: Record<string, any>): string {
   const relevantTasks = context.completedTasks?.filter((t: any) => {
     if (!t.input_data || Object.keys(t.input_data).length === 0) return false;
     // Focus on planning and messaging phase tasks
-    return t.task_id?.startsWith("planning_") || t.task_id?.startsWith("messaging_");
+    return t.task_id?.startsWith("planning_") || t.task_id?.startsWith("messaging_") || t.task_id?.startsWith("content_");
   }) || [];
   
   if (relevantTasks.length > 0) {

@@ -124,4 +124,10 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   postlaunch_membership_onboard_personally:
     "Your first members are your most important members. How they experience the first week determines whether they stay past month one. Automated emails are fine — but a personal message from you is different. It creates belonging. That feeling of being genuinely welcomed is what turns a trial member into a long-term one.",
+
+  content_choose_model:
+    "Most creators post randomly and wonder why nothing builds. A content model fixes that. It gives your posts a structure — not a rigid script, but a shape that makes each piece of content part of something larger. Think about where you are right now. Are you warming up an audience for a launch? Building trust from scratch? Or just showing up consistently without a hard deadline? Your answer points directly to the right model.",
+
+  content_define_themes:
+    "Content pillars are the handful of topics you'll return to again and again — the ideas that naturally show up in how you talk about your work. They're not categories you force yourself into. They're themes you already have opinions on, stories from, or lessons learned. When you know your pillars, you'll never stare at a blank page. And the more specific you are here, the more every piece of generated content will sound like you — not like a template.",
 };
