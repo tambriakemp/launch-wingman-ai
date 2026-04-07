@@ -142,7 +142,7 @@ No numbers. No extra text. Just 6 lines.`;
       let systemPrompt: string;
 
       if (config.creationMode === 'carousel') {
-        const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 6;
+        const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 5;
         const getStyleDescription = () => {
           const baseOutfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
           let outfit = config.outfitAdditionalInfo ? `${baseOutfit} (${config.outfitAdditionalInfo})` : baseOutfit;
@@ -208,10 +208,8 @@ Also provide character analysis: face_structure, hair, skin_tone, makeup_accesso
           return `MANDATORY STYLE REQUIREMENTS:\n- Outfit: ${outfit}\n- Hairstyle: ${hair}\n- Makeup: ${makeup}\n- Skin: ${skin}\n- Nails: ${nails}`;
         };
 
-        const sceneCount = config.sceneCount;
-        const sceneInstruction = sceneCount
-          ? `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`
-          : `Generate 13 to 15 steps.`;
+        const sceneCount = config.sceneCount || 5;
+        const sceneInstruction = `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`;
 
         let narrativeContext = "";
         if (config.creationMode === 'vlog' && config.vlogCategory === 'Get Ready With Me') {
