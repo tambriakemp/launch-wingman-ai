@@ -159,7 +159,7 @@ export const INITIAL_CONFIG: AppConfig = {
   customNailStyle: "",
   cameraMovement: "Handheld / Vlog Style (Natural Shake)",
   ultraRealistic: false,
-  sceneCount: null
+  sceneCount: 5
 };
 
 export const DEFAULT_MEDIA: GeneratedMedia = {
