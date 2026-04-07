@@ -172,7 +172,7 @@ function buildContextString(context: Record<string, any>): string {
   const relevantTasks = context.completedTasks?.filter((t: any) => {
     if (!t.input_data || Object.keys(t.input_data).length === 0) return false;
     // Focus on planning and messaging phase tasks
-    return t.task_id?.startsWith("planning_") || t.task_id?.startsWith("messaging_");
+    return t.task_id?.startsWith("planning_") || t.task_id?.startsWith("messaging_") || t.task_id?.startsWith("content_");
   }) || [];
   
   if (relevantTasks.length > 0) {
@@ -271,10 +271,53 @@ function buildContextString(context: Record<string, any>): string {
         }
       }
       
+      if (taskId === 'content_choose_model') {
+        if (data.selected) {
+          const modelLabels: Record<string, string> = {
+            pre_launch: 'Pre-Launch + Launch (4-week warmup into open cart)',
+            story_arc: '30-Day Story Arc (Origin → How → Build → Momentum)',
+            evergreen: 'Evergreen Authority (ongoing trust-building content)',
+            episode_series: 'Episode Series (recurring numbered format)',
+          };
+          insights.push(`CONTENT MODEL: ${modelLabels[data.selected] || data.selected}`);
+        }
+      }
+
+      if (taskId === 'content_define_themes') {
+        const pillars = [
+          data.pillar_1,
+          data.pillar_2,
+          data.pillar_3,
+          data.pillar_4,
+          data.pillar_5,
+        ].filter(Boolean);
+        if (pillars.length > 0) {
+          insights.push(`CONTENT PILLARS (topics to build content around):\n${pillars.map((p: string, i: number) => `  ${i + 1}. ${p}`).join('\n')}`);
+        }
+        if (data.content_voice) {
+          const voiceLabels: Record<string, string> = {
+            educational_helpful: 'Educational & helpful — leads with value, teaches clearly',
+            storytelling_personal: 'Storytelling & personal — shares journey and experiences',
+            bold_direct: 'Bold & direct — straight talk, no fluff',
+            soft_conversational: 'Soft & conversational — writes like talking to a friend',
+            motivational_inspiring: 'Motivational & inspiring — lifts people up, challenges them',
+            professional_authoritative: 'Professional & authoritative — speaks as a field expert',
+          };
+          insights.push(`CONTENT VOICE: ${voiceLabels[data.content_voice] || data.content_voice}`);
+        }
+        if (data.content_formats) {
+          insights.push(`PREFERRED CONTENT FORMATS: ${data.content_formats}`);
+        }
+        if (data.origin_hook) {
+          insights.push(`CREATOR ORIGIN / STORY HOOK: ${data.origin_hook}`);
+        }
+      }
+
       // Generic fallback for any other fields
       if (!['planning_define_audience', 'planning_define_problem', 'planning_define_dream_outcome', 
            'planning_time_effort_perception', 'planning_perceived_likelihood', 'messaging_core_message',
-           'messaging_transformation_statement', 'messaging_talking_points', 'messaging_common_objections'].includes(taskId)) {
+           'messaging_transformation_statement', 'messaging_talking_points', 'messaging_common_objections',
+           'content_choose_model', 'content_define_themes'].includes(taskId)) {
         if (data.unique_approach) insights.push(`UNIQUE APPROACH: ${data.unique_approach}`);
         if (data.key_message) insights.push(`KEY MESSAGE: ${data.key_message}`);
       }
