@@ -365,55 +365,6 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     route: '/projects/:id/tasks/planning_offer_stack',
   },
   {
-    taskId: 'planning_set_price',
-    title: 'Set your price',
-    phase: 'planning',
-    funnelTypes: ['all'],
-    order: 7.5,
-    priority: 1,
-    estimatedMinutesMin: 10,
-    estimatedMinutesMax: 20,
-    blocking: true,
-    dependencies: ['planning_offer_stack'],
-    canSkip: false,
-    skipReasonRequired: false,
-    completionCriteria: [
-      'You have a price in mind for your core offer',
-      'The number feels realistic — not perfect',
-    ],
-    whyItMatters: 'Pricing is one of the most paralysing decisions for new creators. This step helps you choose a starting price with clarity — not pressure. You can always adjust it later.',
-    instructions: [
-      'Think about the value your offer delivers, not what feels safe',
-      'Consider what your audience can reasonably invest',
-      'Choose a number you can confidently say out loud',
-    ],
-    inputType: 'form',
-    inputSchema: {
-      type: 'form',
-      fields: [
-        { 
-          name: 'core_offer_price', 
-          label: 'What will you charge for your core offer?', 
-          type: 'text', 
-          required: true, 
-          placeholder: 'e.g., $47, $197, $997...',
-          helperText: 'This is your starting price — not a forever decision.'
-        },
-        { 
-          name: 'pricing_reasoning', 
-          label: 'What\'s your thinking behind this price?', 
-          type: 'textarea', 
-          required: false, 
-          placeholder: 'e.g., It\'s a low barrier to start, it reflects the transformation, similar offers are priced here...',
-          sectionLabel: 'Optional: Helpful context',
-          helperText: 'Writing this out helps you feel confident when someone asks.'
-        },
-      ],
-    },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
-    route: '/projects/:id/tasks/planning_set_price',
-  },
-  {
     taskId: 'planning_phase_review',
     title: 'Review your plan',
     phase: 'planning',
@@ -423,7 +374,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     estimatedMinutesMin: 5,
     estimatedMinutesMax: 10,
     blocking: false,
-    dependencies: ['planning_set_price'],
+    dependencies: ['planning_offer_stack'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
