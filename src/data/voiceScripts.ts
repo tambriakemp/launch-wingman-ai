@@ -67,10 +67,6 @@ export const VOICE_SCRIPTS: Record<string, string> = {
   messaging_sales_copy:
     "Your sales page is where everything comes together — your message, your offer, and your audience. You don't need to be a copywriter to write something meaningful. This section-by-section approach breaks it down into manageable pieces. Focus on one block at a time, and trust that clarity sells better than clever tricks.",
 
-  // Pricing
-  planning_set_price:
-    "Pricing is one of the most paralyzing parts of launching. But here's what most people get wrong — they try to find the perfect price instead of a confident starting price. Your first price is not your forever price. It's just the price you can stand behind today. Think about what your offer is worth to someone who gets the result — and start there.",
-
   // Content-to-offer tasks
   build_link_in_bio:
     "For content-to-offer, your link in bio is the bridge between your content and your offer. If someone loves what you posted and wants to learn more — this is where they go. One clear destination is almost always better than a menu of options. Where do you want people to land when they're ready to say yes?",
