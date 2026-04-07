@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText } from "lucide-react";
+import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText, Download, Table } from "lucide-react";
 
 interface ParsedPrompt {
   title: string;
   text: string;
   coverImageUrl?: string;
+  category?: string;
 }
 
 export const PromptBulkImporter = () => {
@@ -20,14 +21,12 @@ export const PromptBulkImporter = () => {
   const [parsedPrompts, setParsedPrompts] = useState<ParsedPrompt[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [globalTags, setGlobalTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  const [globalCategory, setGlobalCategory] = useState("");
   const [bulkCoverImage, setBulkCoverImage] = useState("");
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [promptType, setPromptType] = useState<"image_prompt" | "video_prompt">("image_prompt");
 
-  // Fetch the AI Prompts > General subcategory ID on first use
   const ensureSubcategoryId = async () => {
     if (subcategoryId) return subcategoryId;
     const { data } = await supabase
@@ -47,7 +46,6 @@ export const PromptBulkImporter = () => {
     if (!rawText.trim()) return;
     setIsParsing(true);
     try {
-      // Split locally by --- separator only
       const splits = rawText
         .split(/---/)
         .map((s) => s.trim())
@@ -58,7 +56,6 @@ export const PromptBulkImporter = () => {
         return;
       }
 
-      // Send to edge function for title generation
       const { data, error } = await supabase.functions.invoke("parse-prompts-bulk", {
         body: { prompts: splits, mode: "paste" },
       });
@@ -78,7 +75,6 @@ export const PromptBulkImporter = () => {
     if (!pdfFile) return;
     setIsParsing(true);
     try {
-      // Upload PDF to storage first to avoid memory limits in edge function
       const fileName = `pdf-imports/${Date.now()}-${pdfFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from("admin-docs")
@@ -98,7 +94,6 @@ export const PromptBulkImporter = () => {
       setParsedPrompts(data.prompts || []);
       toast({ title: `Extracted ${data.prompts?.length || 0} prompts from PDF` });
 
-      // Clean up the temp file
       await supabase.storage.from("admin-docs").remove([fileName]);
     } catch (err: any) {
       console.error(err);
@@ -106,6 +101,125 @@ export const PromptBulkImporter = () => {
     } finally {
       setIsParsing(false);
     }
+  };
+
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result.map(v => v.replace(/^["']|["']$/g, '').trim());
+  };
+
+  const handleCsvFile = useCallback((file: File) => {
+    if (!file.name.endsWith('.csv')) {
+      toast({ title: "Please upload a CSV file", variant: "destructive" });
+      return;
+    }
+    setIsParsing(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) {
+          toast({ title: "CSV must have a header and at least one row", variant: "destructive" });
+          return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+        const promptCol = headers.findIndex(h => h === 'prompt' || h === 'text' || h === 'description');
+        const categoryCol = headers.findIndex(h => h === 'category' || h === 'tag' || h === 'tags');
+        const titleCol = headers.findIndex(h => h === 'title' || h === 'name');
+        const coverCol = headers.findIndex(h => h === 'cover_image_url' || h === 'cover' || h === 'image');
+
+        if (promptCol === -1) {
+          toast({ title: "Missing required column", description: "CSV needs a 'prompt' or 'text' column", variant: "destructive" });
+          return;
+        }
+
+        const rawPrompts: { text: string; category?: string; title?: string; coverImageUrl?: string }[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCsvLine(lines[i]);
+          const promptText = values[promptCol]?.trim();
+          if (!promptText || promptText.length < 5) continue;
+          rawPrompts.push({
+            text: promptText,
+            category: categoryCol >= 0 ? values[categoryCol]?.trim() || undefined : undefined,
+            title: titleCol >= 0 ? values[titleCol]?.trim() || undefined : undefined,
+            coverImageUrl: coverCol >= 0 ? values[coverCol]?.trim() || undefined : undefined,
+          });
+        }
+
+        if (rawPrompts.length === 0) {
+          toast({ title: "No valid prompts found in CSV", variant: "destructive" });
+          return;
+        }
+
+        // Generate titles for prompts that don't have one
+        const needsTitles = rawPrompts.filter(p => !p.title);
+        let titles: string[] = [];
+        if (needsTitles.length > 0) {
+          const { data, error } = await supabase.functions.invoke("parse-prompts-bulk", {
+            body: { prompts: needsTitles.map(p => p.text), mode: "paste" },
+          });
+          if (!error && data?.prompts) {
+            titles = data.prompts.map((p: any) => p.title);
+          }
+        }
+
+        let titleIdx = 0;
+        const parsed: ParsedPrompt[] = rawPrompts.map(p => ({
+          title: p.title || titles[titleIdx++] || "Untitled Prompt",
+          text: p.text,
+          category: p.category,
+          coverImageUrl: p.coverImageUrl,
+        }));
+
+        setParsedPrompts(parsed);
+        toast({ title: `Parsed ${parsed.length} prompts from CSV` });
+      } catch (err: any) {
+        console.error(err);
+        toast({ title: "CSV parse failed", description: err.message, variant: "destructive" });
+      } finally {
+        setIsParsing(false);
+      }
+    };
+    reader.onerror = () => {
+      toast({ title: "Failed to read file", variant: "destructive" });
+      setIsParsing(false);
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const downloadSampleCsv = () => {
+    const sample = `category,prompt,title
+"Portraits","A cinematic portrait of a woman standing in golden hour light, soft bokeh background, film grain, 35mm aesthetic","Golden Hour Portrait"
+"Landscapes","A moody mountain landscape at dawn with fog rolling through pine valleys, dramatic lighting","Misty Mountain Dawn"
+"Abstract","Fluid abstract shapes in deep indigo and coral, metallic accents, 4K digital art","Indigo Coral Abstract"`;
+    const blob = new Blob([sample], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai-prompts-sample.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const updatePrompt = (index: number, field: keyof ParsedPrompt, value: string) => {
@@ -118,25 +232,12 @@ export const PromptBulkImporter = () => {
     setParsedPrompts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const addTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !globalTags.includes(tag)) {
-      setGlobalTags((prev) => [...prev, tag]);
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setGlobalTags((prev) => prev.filter((t) => t !== tag));
-  };
-
   const handleImportAll = async () => {
     if (parsedPrompts.length === 0) return;
     setIsImporting(true);
     try {
       const subId = await ensureSubcategoryId();
 
-      // Fetch existing prompts to check for duplicates
       const { data: existing } = await supabase
         .from("content_vault_resources")
         .select("title, description")
@@ -150,7 +251,6 @@ export const PromptBulkImporter = () => {
         (existing || []).map((r) => (r.title || "").trim().toLowerCase())
       );
 
-      // Filter out duplicates by description or title
       const unique = parsedPrompts.filter((p) => {
         const descKey = p.text.trim().toLowerCase();
         const titleKey = p.title.trim().toLowerCase();
@@ -165,16 +265,21 @@ export const PromptBulkImporter = () => {
         return;
       }
 
-      const resources = unique.map((p, i) => ({
-        title: p.title,
-        description: p.text,
-        resource_type: promptType,
-        resource_url: "#",
-        subcategory_id: subId,
-        tags: globalTags.length > 0 ? globalTags : null,
-        cover_image_url: p.coverImageUrl || bulkCoverImage || null,
-        position: i,
-      }));
+      const resources = unique.map((p, i) => {
+        const tags: string[] = [];
+        if (p.category) tags.push(p.category);
+        if (globalCategory.trim()) tags.push(globalCategory.trim());
+        return {
+          title: p.title,
+          description: p.text,
+          resource_type: promptType,
+          resource_url: "#",
+          subcategory_id: subId,
+          tags: tags.length > 0 ? tags : null,
+          cover_image_url: p.coverImageUrl || bulkCoverImage || null,
+          position: i,
+        };
+      });
 
       const { error } = await supabase.from("content_vault_resources").insert(resources);
       if (error) throw error;
@@ -202,7 +307,7 @@ export const PromptBulkImporter = () => {
           <CardTitle className="text-lg">Bulk AI Prompt Importer</CardTitle>
         </div>
         <CardDescription>
-          Paste prompts or upload a PDF to bulk-import AI prompts into the Content Vault
+          Paste prompts, upload a PDF, or import a CSV to bulk-import AI prompts into the Content Vault
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -224,11 +329,15 @@ export const PromptBulkImporter = () => {
             <TabsList className="w-full">
               <TabsTrigger value="paste" className="flex-1 gap-1.5">
                 <ClipboardPaste className="w-4 h-4" />
-                Paste Prompts
+                Paste
               </TabsTrigger>
               <TabsTrigger value="pdf" className="flex-1 gap-1.5">
                 <FileText className="w-4 h-4" />
-                Upload PDF
+                PDF
+              </TabsTrigger>
+              <TabsTrigger value="csv" className="flex-1 gap-1.5">
+                <Table className="w-4 h-4" />
+                CSV
               </TabsTrigger>
             </TabsList>
 
@@ -266,27 +375,55 @@ export const PromptBulkImporter = () => {
                 Extract Prompts from PDF
               </Button>
             </TabsContent>
+
+            <TabsContent value="csv" className="space-y-3 mt-3">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <Table className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  Upload a CSV with columns for category and prompt
+                </p>
+                <Input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCsvFile(file);
+                  }}
+                  className="max-w-xs mx-auto"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <p><span className="font-medium">Required:</span> prompt (or text)</p>
+                  <p><span className="font-medium">Optional:</span> category, title, cover_image_url</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={downloadSampleCsv}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Sample CSV
+                </Button>
+              </div>
+              {isParsing && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Parsing CSV and generating titles...
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         ) : (
           <div className="space-y-4">
-            {/* Tag input */}
+            {/* Category input */}
             <div>
-              <label className="text-sm font-medium mb-1 block">Tags (applied to all)</label>
-              <div className="flex gap-2 items-center flex-wrap">
-                {globalTags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
-                    {tag}
-                    <X className="w-3 h-3 cursor-pointer" onClick={() => removeTag(tag)} />
-                  </Badge>
-                ))}
-                <Input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                  placeholder="Add tag..."
-                  className="w-32 h-8 text-xs"
-                />
-              </div>
+              <label className="text-sm font-medium mb-1 block">Category (applied to all)</label>
+              <Input
+                value={globalCategory}
+                onChange={(e) => setGlobalCategory(e.target.value)}
+                placeholder="e.g., Portraits, Landscapes..."
+                className="text-xs h-8"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Per-prompt categories from CSV are preserved. This adds an additional category to all prompts.
+              </p>
             </div>
 
             {/* Bulk cover image */}
@@ -318,6 +455,11 @@ export const PromptBulkImporter = () => {
                       <p className="text-xs text-muted-foreground line-clamp-3">
                         {prompt.text}
                       </p>
+                      <div className="flex gap-2">
+                        {prompt.category && (
+                          <Badge variant="secondary" className="text-xs">{prompt.category}</Badge>
+                        )}
+                      </div>
                       <Input
                         value={prompt.coverImageUrl || ""}
                         onChange={(e) => updatePrompt(i, "coverImageUrl", e.target.value)}
