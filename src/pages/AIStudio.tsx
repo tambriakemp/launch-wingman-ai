@@ -418,15 +418,24 @@ const AIStudio = () => {
       setGeneratedMedia(initialMedia);
 
       // Auto-queue Scene 1 image generation so it becomes the character anchor
+      // Unless useReferenceAsStart is on — then use the reference image directly as Scene 1
       if (board.steps.length > 0) {
-        const scene1Task: QueueItem = {
-          id: Math.random().toString(),
-          type: 'generate',
-          index: 0,
-          step: board.steps[0],
-          config: { ...config }
-        };
-        addToQueue([scene1Task]);
+        if (config.useReferenceAsStart && referenceImage) {
+          // Use reference image directly as Scene 1
+          initialMedia[0] = { ...DEFAULT_MEDIA, imageUrl: referenceImage };
+          setGeneratedMedia(initialMedia);
+          setPreviewCharacterImage(referenceImage);
+        } else {
+          setGeneratedMedia(initialMedia);
+          const scene1Task: QueueItem = {
+            id: Math.random().toString(),
+            type: 'generate',
+            index: 0,
+            step: board.steps[0],
+            config: { ...config }
+          };
+          addToQueue([scene1Task]);
+        }
       }
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
