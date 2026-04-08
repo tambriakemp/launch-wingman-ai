@@ -247,7 +247,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
           <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg mb-6">
             <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
               className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
-              VLOG MODE
+              VLOG / CAROUSEL
             </button>
             <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
               className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>

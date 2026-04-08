@@ -24,7 +24,7 @@ serve(async (req) => {
 
     // Topic brainstorming
     if (action === "brainstorm") {
-      const isCarousel = config.creationMode === 'carousel';
+      const isCarousel = !!(config.carouselVibe || config.carouselAesthetic);
 
       // Build character context from all available profile info
       const outfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
@@ -141,7 +141,7 @@ No numbers. No extra text. Just 6 lines.`;
     if (action === "generate") {
       let systemPrompt: string;
 
-      if (config.creationMode === 'carousel') {
+      if (isCarousel) {
         const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 5;
         const getStyleDescription = () => {
           const baseOutfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
