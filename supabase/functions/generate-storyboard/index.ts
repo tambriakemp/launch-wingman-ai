@@ -154,6 +154,23 @@ No numbers. No extra text. Just 6 lines.`;
           return `Outfit: ${outfit} | Hair: ${hair} | Makeup: ${makeup} | Skin: ${skin} | Nails: ${nails}`;
         };
 
+        const useRefAsStart = config.useReferenceAsStart === true;
+
+        const identityLockBlock = useRefAsStart
+          ? `\nIDENTITY LOCK (CRITICAL — Scene 1 is the UNMODIFIED reference photo):
+Analyze the reference photo EXHAUSTIVELY and describe EVERY detail in the Scene 1 image_prompt as the canonical identity lock. This includes:
+- Exact skin tone, undertone, and complexion
+- Face/bone structure (cheekbone prominence, jaw shape, forehead width)
+- Hair style, color, length, parting, texture
+- Eye shape, color, brow shape
+- Makeup: brow fill, eyeshadow color, lash style, contour placement, highlighter placement, lip color/finish
+- Jewelry: every earring, necklace, bracelet, ring — describe each piece specifically
+- Nail shape, length, color/finish
+- Outfit: garment type, color, fabric, fit, neckline, straps/sleeves, structure
+
+ALL subsequent slides MUST copy-paste this ENTIRE identity block verbatim into their image_prompt. No detail may be omitted or paraphrased.`
+          : '';
+
         systemPrompt = `You are an expert Instagram content director specializing in cohesive carousel creation.
 
 CAROUSEL BRIEF:
@@ -161,6 +178,8 @@ CAROUSEL BRIEF:
 - Aesthetic / Mood: ${config.carouselAesthetic}
 - Character Style: ${getStyleDescription()}
 - Number of slides: ${carouselSlideCount}
+${useRefAsStart ? '- Scene 1: IS the unmodified reference photo — do NOT reimagine it' : ''}
+${identityLockBlock}
 
 YOUR TASK:
 Generate a ${carouselSlideCount}-slide carousel shot list. Every slide shares the SAME visual world — same character, same setting, same lighting, same outfit, same accessories. What changes is ONLY the shot angle, framing, and subject composition.
@@ -172,29 +191,36 @@ THE VISUAL ANCHOR (lock these across ALL slides):
 - Same aesthetic mood: ${config.carouselAesthetic}
 - Same color palette derived from the setting and aesthetic
 
-SHOT VARIETY RULES:
-Choose shots from across this spectrum — vary the distance, angle, and subject:
-- Wide shots (full environment + character, establishing the world)
-- 3/4 shots (character mid-thigh to above, confident, composed)
-- Close-up face shots (tight on face, different expressions — intense, soft, candid, direct)
-- Extreme close-ups (single detail: eyes, lips, nails, jewelry, texture)
-- Detail/object shots (items in the scene with no person: keys on seat, sunglasses, bag)
-- Environmental shots (the setting itself — textures, light, background elements)
-- Angle variations (low angle, high angle, profile, over-shoulder, reflection)
-- Composition plays (subject left/right with text space, framed through elements)
+SHOT PALETTE (CRITICAL — vary across this spectrum):
+- Full body hero shot (establishing, confident, environment visible)
+- Waist-up variation (different interaction, subtle expression change)
+- Close-up beauty portrait (tight on face, intense or soft expression)
+- Macro detail shot (hands, nails, jewelry, product, texture — NO person face)
+- Flat lay / environment-only (NO person — props, setting, ambient mood)
+- Candid movement (mid-turn, walking, reaching, laughing — motion blur okay)
+- Alternate angle (low angle, over-shoulder, reflection, profile)
 
 SLIDE STRUCTURE:
 - Slide 1: Hook shot — strong, eye-catching, works as the cover. Full character visible, setting established.
-- Slides 2-${carouselSlideCount - 1}: Build visual interest through varied shots. Mix close-ups, details, angles, and environmental shots freely. Let the setting guide the variety — use whatever the environment offers.
+- Slides 2-${carouselSlideCount - 1}: Build visual interest through varied shots. Mix close-ups, details, angles, and environmental shots freely.
 - Slide ${carouselSlideCount}: CTA-ready — character + text space, direct or composed, clear and clean.
 
-COHESION RULES (CRITICAL):
-- Every image_prompt MUST include the full visual anchor: character description + environment + lighting + aesthetic
-- The setting never changes. The character never leaves the environment.
-- Lighting stays consistent — same sun position, same warmth, same quality
-- Color palette must feel unified across all slides
+IMAGE PROMPT FORMAT (CRITICAL — every image_prompt MUST follow this structure):
+1. Shot type and framing (e.g., "Full body hero shot", "Macro detail shot")
+2. FULL character identity block (skin, face, hair, makeup, jewelry, nails, outfit) — repeated VERBATIM in every prompt
+3. Environment/setting description
+4. Lighting direction and quality
+5. Camera: "shot on iPhone 15 Pro Max [lens], HDR enabled, natural dynamic range, smartphone depth of field, social-media-native exposure"
+6. Realism clause: "natural skin texture, visible pores, subtle imperfections, no smoothing, no plastic skin, realistic fabric folds, authentic shadow depth, natural highlight roll-off, true-to-life colour balance, razor sharp eye detail, crisp iris definition, visible lash separation, no soft-focus, no artificial diffusion, clean hairline edge definition, individual hair strand visibility, natural micro-contrast"
 
-For each slide provide: step_number, step_name, a_roll (what the main subject is doing), b_roll (secondary visual detail to capture), close_up_details (specific detail to focus on), camera_direction (exact shot type and framing), image_prompt (complete AI image generation prompt including all locked elements + variable shot description), video_prompt (how this slide would move as a 3-second video clip), script (the text overlay or caption for this slide, tied to the message theme), is_final_look (always false for carousel).
+FEED COHESION RULES (CRITICAL):
+- Every image_prompt MUST include the full visual anchor: character description + environment + lighting + camera + realism clause
+- The setting never changes. The character never leaves the environment.
+- Lighting stays consistent — same direction, same warmth, same quality
+- Color palette must feel unified across all slides
+- Each slide MUST specify a DIFFERENT shot type from the palette above
+
+For each slide provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction (exact shot type), image_prompt (COMPLETE prompt following the format above), video_prompt, script, is_final_look (always false for carousel).
 
 Also provide character analysis: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
       } else {
@@ -229,6 +255,23 @@ Also provide character analysis: face_structure, hair, skin_tone, makeup_accesso
           ? `USER PROVIDED SCRIPT:\n"""${config.userScript}"""\nBreak this script into 13-15 scenes. Each step's 'script' field contains the corresponding portion.`
           : `AI GENERATED SCRIPT: Write an engaging voiceover script split across 13-15 steps.`;
 
+        const useRefAsStart = config.useReferenceAsStart === true;
+
+        const vlogIdentityLock = useRefAsStart
+          ? `\nIDENTITY LOCK (CRITICAL — Scene 1 is the UNMODIFIED reference photo):
+Analyze the reference photo EXHAUSTIVELY and describe EVERY detail in the Scene 1 image_prompt as the canonical identity lock:
+- Exact skin tone, undertone, complexion
+- Face/bone structure (cheekbones, jaw, forehead)
+- Hair style, color, length, parting, texture
+- Eye shape, color, brow shape
+- Makeup: brow fill, eyeshadow color, lash style, contour, highlighter, lip color/finish
+- Jewelry: every earring, necklace, bracelet, ring described specifically
+- Nail shape, length, color/finish
+- Outfit: garment type, color, fabric, fit, neckline, straps/sleeves
+
+ALL subsequent scenes MUST copy-paste this ENTIRE identity block verbatim into their image_prompt.`
+          : '';
+
         systemPrompt = `You are an expert creative director for social media content.
 Create a ${config.creationMode === 'vlog' ? 'Vlog' : 'UGC Marketing'} storyboard.
 
@@ -237,17 +280,40 @@ Configuration:
 - Topic: ${config.creationMode === 'vlog' ? config.vlogTopic : config.ugcPrompt}
 ${getStyleDescription()}
 ${config.productDescription ? `- Product: ${config.productDescription}` : ''}
+${useRefAsStart ? '- Scene 1: IS the unmodified reference photo — do NOT reimagine it' : ''}
 ${narrativeContext}
 ${scriptInstruction}
+${vlogIdentityLock}
 
 VISUAL CONTINUITY RULES (CRITICAL):
 - Each image_prompt MUST reference the previous scene's ending state and create a natural transition to the next scene.
 - Include lighting progression throughout the storyboard (e.g., morning light → afternoon → golden hour → evening, if applicable).
-- Ensure spatial continuity: if the character leaves one room, the next scene should show them entering the connected space. Include transition cues (e.g., "continuing from the hallway into the kitchen").
+- Ensure spatial continuity: if the character leaves one room, the next scene should show them entering the connected space.
 - Maintain consistent time-of-day, weather, and ambient lighting across consecutive scenes unless a deliberate time skip is part of the narrative.
 - Each scene's image_prompt should describe the character's pose or action in a way that naturally follows from the previous scene's action.
 
-${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt, video_prompt, script, is_final_look (boolean).
+SHOT VARIETY FOR FEED COHESION (CRITICAL):
+Vary shots across this spectrum — each scene uses a DIFFERENT framing:
+- Full body hero shot (establishing, confident, environment visible)
+- Waist-up variation (different interaction, subtle expression change)
+- Close-up beauty portrait (tight on face, intense or soft expression)
+- Macro detail shot (hands, nails, jewelry, product, texture)
+- Flat lay / environment-only (no person — props, setting, ambient mood)
+- Candid movement (mid-turn, walking, reaching, laughing — motion blur okay)
+- Alternate angle (low angle, over-shoulder, reflection, profile)
+
+IMAGE PROMPT FORMAT (CRITICAL — every image_prompt MUST follow this structure):
+1. Shot type and framing (e.g., "Full body hero shot", "Close-up beauty portrait")
+2. FULL character identity block (skin, face, hair, makeup, jewelry, nails, outfit) — repeated VERBATIM in every prompt
+3. Scene/environment description with specific action or pose
+4. Lighting direction and quality
+5. Camera: "shot on iPhone 15 Pro Max [lens], HDR enabled, natural dynamic range, smartphone depth of field, social-media-native exposure"
+6. Realism clause: "natural skin texture, visible pores, subtle imperfections, no smoothing, no plastic skin, realistic fabric folds, authentic shadow depth, natural highlight roll-off, true-to-life colour balance, razor sharp eye detail, crisp iris definition, visible lash separation, no soft-focus, no artificial diffusion, clean hairline edge definition, individual hair strand visibility, natural micro-contrast"
+
+Each image_prompt MUST specify the exact shot type and framing.
+Each image_prompt MUST include the FULL character description block repeated verbatim.
+
+${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt, script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
       }
 
