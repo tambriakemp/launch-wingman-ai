@@ -340,7 +340,7 @@ const AIStudio = () => {
   };
 
   const handleGenerateTopicIdeas = async () => {
-    if (config.creationMode !== 'carousel' && !config.vlogCategory) return;
+    if (!config.vlogCategory && config.creationMode !== 'ugc') return;
     setIsGeneratingTopic(true);
     setBrainstormIdeas([]);
     try {
@@ -366,8 +366,8 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
-    if (config.creationMode === 'carousel' && !config.carouselVibe.trim()) {
-      toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
+    if (!config.useReferenceAsStart && !config.vlogTopic.trim() && !config.carouselVibe.trim() && config.creationMode === 'vlog') {
+      toast({ title: "Topic Required", description: "Please describe your topic or scene, or toggle 'Use reference photo as start image'.", variant: "destructive" });
       return;
     }
     // Auto-reset if a storyboard already exists (implicit "new project")
@@ -1003,13 +1003,9 @@ const AIStudio = () => {
             onGenerateTopicIdeas={handleGenerateTopicIdeas}
             brainstormIdeas={brainstormIdeas}
             onSelectIdea={(idea) => {
-              if (config.creationMode === 'carousel') {
-                const parts = idea.split(' — ');
-                if (parts.length >= 2) {
-                  setConfig(prev => ({ ...prev, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
-                } else {
-                  setConfig(prev => ({ ...prev, carouselVibe: idea }));
-                }
+              const parts = idea.split(' — ');
+              if (parts.length >= 2) {
+                setConfig(prev => ({ ...prev, vlogTopic: idea, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
               } else {
                 setConfig(prev => ({ ...prev, vlogTopic: idea }));
               }
@@ -1041,7 +1037,7 @@ const AIStudio = () => {
               let tasks: QueueItem[] = storyboard.steps
                 .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
                 .filter(t => !generatedMedia[t.index]?.imageUrl);
-              if (config.creationMode === 'carousel' && tasks.length > 0) {
+              if ((config.carouselAesthetic || config.carouselVibe) && tasks.length > 0) {
                 tasks.sort((a, b) => a.index - b.index);
               }
               if (tasks.length > 0) addToQueue(tasks);

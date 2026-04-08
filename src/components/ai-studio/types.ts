@@ -24,7 +24,7 @@ export interface VlogStoryboard {
   steps: VlogStep[];
 }
 
-export type CreationMode = 'vlog' | 'ugc' | 'carousel';
+export type CreationMode = 'vlog' | 'ugc';
 export type AspectRatio = '1:1' | '9:16' | '16:9';
 export type AppPhase = 'setup' | 'preview' | 'storyboard';
 
@@ -65,6 +65,7 @@ export interface AppConfig {
   cameraMovement: string;
   ultraRealistic: boolean;
   sceneCount?: number | null;
+  useReferenceAsStart: boolean;
 }
 
 export interface GeneratedMedia {
