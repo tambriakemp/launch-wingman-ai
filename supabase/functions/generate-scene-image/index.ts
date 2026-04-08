@@ -274,7 +274,7 @@ ${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is
 
 EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same.
 
-${config.creationMode === 'carousel' ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
+${!!(config.carouselVibe || config.carouselAesthetic) ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
 "${prompt}"
 Compose the image around this SPECIFIC scene description. The environment, props, lighting, and background elements described above are the PRIMARY FOCUS of this slide. The person should be INTEGRATED into this scene naturally — interacting with the setting, not just standing in front of it.
 
@@ -284,7 +284,7 @@ OUTFIT (LOCKED — do NOT change from anchor): Keep wearing exactly "${currentOu
 
 CRITICAL RULES:
 - The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.
-${config.creationMode === 'carousel' ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
+${!!(config.carouselVibe || config.carouselAesthetic) ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
 ${lockInstructions}
 ${config.exactMatch ? '- STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
 ${config.creationMode === 'ugc' ? '- Feature the product prominently in the scene.' : ''}
