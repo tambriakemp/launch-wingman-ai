@@ -103,6 +103,32 @@ export const PromptBulkImporter = () => {
     }
   };
 
+  const parseCsvLines = (text: string): string[] => {
+    const lines: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === '"') {
+        if (inQuotes && text[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        current += '"';
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && text[i + 1] === '\n') i++;
+        if (current.trim()) lines.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    if (current.trim()) lines.push(current);
+    return lines;
+  };
+
   const parseCsvLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
