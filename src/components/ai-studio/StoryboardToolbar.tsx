@@ -6,7 +6,7 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS, CAROUSEL_AESTHETICS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check, RectangleVertical, RectangleHorizontal, Square } from 'lucide-react';
+import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -120,6 +120,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   const hasEnvironment = !!environmentImage;
   const hasLookCustomized = config.outfitType !== 'Default Outfit' || config.makeup !== 'Soft Glam Baddie' || config.hairstyle !== 'Sleek Straight Wig';
   const hasAnyConfig = hasCharacter || hasEnvironment || hasLookCustomized || !!config.vlogTopic || !!config.carouselVibe;
+  const hasConcept = !!(config.vlogTopic || config.carouselVibe || config.ugcPrompt);
 
   return (
     <div className="flex items-center gap-2 flex-wrap py-3 px-1 mb-3">
@@ -137,30 +138,67 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="w-full sm:max-w-[480px] overflow-y-auto p-0">
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <SheetTitle className="text-base">Creation Settings</SheetTitle>
+            <SheetTitle className="text-base">Create</SheetTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {!hasCharacter ? "Start with your character photo" : hasConcept ? "Ready to generate" : "Now add your concept"}
+            </p>
           </SheetHeader>
 
           <div className="px-6 py-4 space-y-3">
-            {/* Section 1: Creation Mode */}
-            <CollapsibleSection title="🎬 Creation Mode" defaultOpen statusActive={true}>
-              <div className="space-y-3">
-                {/* Orientation */}
+            {/* Step 1 — Character */}
+            <CollapsibleSection title="1 · Character" defaultOpen statusActive={hasCharacter}>
+              <div className="space-y-4">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Upload a photo or choose a saved character</p>
+
+                {setReferenceImage && (
+                  <>
+                    <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
+
+                    <div className="flex items-center gap-2 my-2">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-[10px] text-muted-foreground">or upload new</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Your face stays consistent across all scenes." />
+                  </>
+                )}
+
                 <div>
-                  <Label label="Orientation" />
-                  <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
-                    {([
-                      { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
-                      { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
-                      { value: '1:1' as AspectRatio, label: 'Square', Icon: Square },
-                    ]).map(({ value, label, Icon }) => (
-                      <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
-                        className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded transition-all ${config.aspectRatio === value ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <Label label="Character Vibe / Lifestyle" />
+                  <textarea
+                    placeholder="e.g. Luxury soft life, entrepreneur energy, NY/Miami..."
+                    value={config.characterVibe}
+                    onChange={(e) => setConfig(c => ({ ...c, characterVibe: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                  />
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">Shapes brainstorm ideas and scene writing.</p>
                 </div>
+
+                {/* Safety terms inline */}
+                {!showSafetyTerms && setShowSafetyTerms && (
+                  <div className="flex items-start gap-3 bg-accent/10 border border-accent/30 rounded-lg p-3 mt-2">
+                    <ShieldCheck className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-foreground flex-1 leading-relaxed">I confirm I own the rights to these images, no children are shown, and images are not explicit.</p>
+                    <button onClick={() => {
+                      localStorage.setItem('ai-studio-terms-accepted', 'true');
+                      setShowSafetyTerms(true);
+                    }} className="px-2.5 py-1 text-xs font-bold bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 flex-shrink-0">Agree</button>
+                  </div>
+                )}
+                {showSafetyTerms && referenceImage && (
+                  <div className="flex items-center gap-2 text-[10px] text-green-600 dark:text-green-400 mt-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Character ready</span>
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+
+            {/* Step 2 — Concept */}
+            <CollapsibleSection title="2 · Concept" defaultOpen statusActive={hasConcept}>
+              <div className="space-y-3">
+                {/* Mode toggle */}
                 <div>
                   <Label label="Mode" />
                   <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
@@ -179,6 +217,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </div>
                 </div>
 
+                {/* Vlog Category */}
                 {config.creationMode === 'vlog' && (
                   <div>
                     <Label label="Vlog Category" />
@@ -186,6 +225,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </div>
                 )}
 
+                {/* Carousel Aesthetic */}
                 {config.creationMode === 'carousel' && (
                   <div>
                     <Label label="Aesthetic / Mood" />
@@ -193,184 +233,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </div>
                 )}
 
-                <div>
-                  <Label label="Camera Movement" />
-                  <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
-                </div>
-
-                <div>
-                  <Label label="Number of Scenes" />
-                  <select
-                    value={config.sceneCount ?? 'auto'}
-                    onChange={(e) => setConfig(c => ({ ...c, sceneCount: e.target.value === 'auto' ? null : Number(e.target.value) }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="auto">Auto (let AI decide)</option>
-                    {Array.from({ length: 13 }, (_, i) => i + 3).map(n => (
-                      <option key={n} value={n}>{n} scenes</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Section 2: Character */}
-            <CollapsibleSection title="👤 Character" statusActive={hasCharacter}>
-              <div className="space-y-4">
-                {setReferenceImage && (
-                  <>
-                    <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
-                    <div>
-                      <Label label="Upload Reference" />
-                      <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Selfie / Avatar" subtext="Used to maintain facial consistency." />
-                    </div>
-                  </>
-                )}
-                <div>
-                  <Label label="Character Vibe / Lifestyle" />
-                  <textarea
-                    placeholder="e.g. Luxury soft life, drives a BMW, Erewhon runs, always glam, NY/Miami, entrepreneur energy..."
-                    value={config.characterVibe}
-                    onChange={(e) => setConfig(c => ({ ...c, characterVibe: e.target.value }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
-                  />
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">This is used to personalize brainstorm ideas to your character's specific world.</p>
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Section 4: Environment */}
-            <CollapsibleSection title="📍 Environment" statusActive={hasEnvironment}>
-              <div className="space-y-3">
-                {setEnvironmentImage && (
-                  <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
-                )}
-              </div>
-            </CollapsibleSection>
-
-            {/* Section 5: Look */}
-            <CollapsibleSection title="🎨 Look & Style" statusActive={hasLookCustomized}>
-              <div className="space-y-3">
-                {/* Exact Match */}
-                <div className="flex justify-between items-center pb-2 border-b border-border">
-                  <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
-                  <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
-                </div>
-
-                {/* Ultra-Realistic */}
-                <div className="flex justify-between items-center pb-2 border-b border-border">
-                  <span className="text-xs font-medium text-foreground">Ultra-Realistic Skin & Photo</span>
-                  <Switch checked={config.ultraRealistic} onCheckedChange={(v) => setConfig(c => ({ ...c, ultraRealistic: v }))} />
-                </div>
-
-                {/* Quick Look Presets */}
-                <div>
-                  <Label label="Quick Presets" />
-                  <div className="flex flex-wrap gap-1.5">
-                    {Object.entries(QUICK_LOOK_PRESETS).map(([name, preset]) => (
-                      <button
-                        key={name}
-                        onClick={() => setConfig(c => ({ ...c, ...preset }))}
-                        className="px-2.5 py-1 text-[10px] font-medium rounded-full border border-border bg-muted hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Product Upload (UGC only) */}
-                {config.creationMode === 'ugc' && setProductImage && (
-                  <div>
-                    <Label label="Product Reference" />
-                    <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing || false} title="Product Image" subtext="Required for UGC mode." />
-                  </div>
-                )}
-
-                {/* Collapsible: Outfit */}
-                <CollapsibleSection title="👗 Outfit" defaultOpen>
-                  <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
-                  {config.outfitType === 'Custom Outfit' && (
-                    <input type="text" placeholder="Describe outfit..." value={config.outfitDetails}
-                      onChange={(e) => setConfig(c => ({ ...c, outfitDetails: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                  )}
-                  <input type="text" placeholder="Additional details (optional)" value={config.outfitAdditionalInfo}
-                    onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                </CollapsibleSection>
-
-                {/* GRWM Final Look */}
-                {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
-                  <CollapsibleSection title="✨ Final Look (Reveal Outfit)">
-                    <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
-                    {config.finalLookType === 'Custom Outfit' && (
-                      <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
-                        onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                    )}
-                    <input type="text" placeholder="Additional final look details (optional)" value={config.finalLookAdditionalInfo}
-                      onChange={(e) => setConfig(c => ({ ...c, finalLookAdditionalInfo: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                  </CollapsibleSection>
-                )}
-
-                {/* Collapsible: Hair */}
-                <CollapsibleSection title="💇 Hairstyle">
-                  <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
-                  {config.hairstyle.includes('Custom') && (
-                    <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
-                      onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                  )}
-                </CollapsibleSection>
-
-                {/* Collapsible: Makeup */}
-                <CollapsibleSection title="💄 Makeup">
-                  <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
-                  {config.makeup === 'Custom' && (
-                    <input type="text" placeholder="Custom makeup..." value={config.customMakeup}
-                      onChange={(e) => setConfig(c => ({ ...c, customMakeup: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
-                  )}
-                </CollapsibleSection>
-
-                {/* Collapsible: Skin & Nails */}
-                <CollapsibleSection title="🖐 Skin & Nails">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label label="Skin" />
-                      <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
-                      <div className="mt-1">
-                        <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
-                      </div>
-                    </div>
-                    <div>
-                      <Label label="Nails" />
-                      <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
-                      {config.nailStyle === 'Custom' && (
-                        <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
-                          onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
-                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1 outline-none" />
-                      )}
-                    </div>
-                  </div>
-                </CollapsibleSection>
-
-                {/* Saved Looks */}
-                <div className="pt-2 border-t border-border">
-                  <SavedLooks config={config} setConfig={setConfig} />
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Section 5: Topic / Message (last) */}
-            <CollapsibleSection
-              title={config.creationMode === 'carousel' ? '🎬 Set the Scene' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
-              defaultOpen
-              statusActive={!!(config.vlogTopic || config.carouselVibe || config.ugcPrompt)}
-            >
-              <div className="space-y-3">
+                {/* Topic / Scene / Marketing Goal */}
                 {config.creationMode === 'vlog' && (
                   <>
                     <div>
@@ -464,6 +327,173 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary" />
                   </div>
                 )}
+              </div>
+            </CollapsibleSection>
+
+            {/* Step 3 — Advanced Settings */}
+            <CollapsibleSection title="⚙️ Advanced Settings">
+              <div className="space-y-3">
+                {/* Orientation */}
+                <div>
+                  <Label label="Orientation" />
+                  <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
+                    {([
+                      { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
+                      { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
+                      { value: '1:1' as AspectRatio, label: 'Square', Icon: Square },
+                    ]).map(({ value, label, Icon }) => (
+                      <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
+                        className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded transition-all ${config.aspectRatio === value ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Camera Movement */}
+                <div>
+                  <Label label="Camera Movement" />
+                  <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
+                </div>
+
+                {/* Number of Scenes */}
+                <div>
+                  <Label label="Number of Scenes" />
+                  <select
+                    value={config.sceneCount ?? 'auto'}
+                    onChange={(e) => setConfig(c => ({ ...c, sceneCount: e.target.value === 'auto' ? null : Number(e.target.value) }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="auto">Auto (let AI decide)</option>
+                    {Array.from({ length: 13 }, (_, i) => i + 3).map(n => (
+                      <option key={n} value={n}>{n} scenes</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Environment Reference */}
+                <div>
+                  <Label label="Environment Reference" />
+                  <p className="text-[10px] text-muted-foreground/60 mb-2">Optional: Upload a location photo to anchor the visual setting.</p>
+                  {setEnvironmentImage && (
+                    <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
+                  )}
+                </div>
+
+                {/* Product Upload (UGC only) */}
+                {config.creationMode === 'ugc' && setProductImage && (
+                  <div>
+                    <Label label="Product Reference" />
+                    <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing || false} title="Product Image" subtext="Required for UGC mode." />
+                  </div>
+                )}
+
+                {/* Look & Style */}
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-2 border-t border-border mt-2">Look & Style</p>
+
+                {/* Exact Match */}
+                <div className="flex justify-between items-center pb-2 border-b border-border">
+                  <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
+                  <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
+                </div>
+
+                {/* Ultra-Realistic */}
+                <div className="flex justify-between items-center pb-2 border-b border-border">
+                  <span className="text-xs font-medium text-foreground">Ultra-Realistic Skin & Photo</span>
+                  <Switch checked={config.ultraRealistic} onCheckedChange={(v) => setConfig(c => ({ ...c, ultraRealistic: v }))} />
+                </div>
+
+                {/* Quick Look Presets */}
+                <div>
+                  <Label label="Quick Presets" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(QUICK_LOOK_PRESETS).map(([name, preset]) => (
+                      <button
+                        key={name}
+                        onClick={() => setConfig(c => ({ ...c, ...preset }))}
+                        className="px-2.5 py-1 text-[10px] font-medium rounded-full border border-border bg-muted hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Collapsible: Outfit */}
+                <CollapsibleSection title="👗 Outfit" defaultOpen>
+                  <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
+                  {config.outfitType === 'Custom Outfit' && (
+                    <input type="text" placeholder="Describe outfit..." value={config.outfitDetails}
+                      onChange={(e) => setConfig(c => ({ ...c, outfitDetails: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                  )}
+                  <input type="text" placeholder="Additional details (optional)" value={config.outfitAdditionalInfo}
+                    onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                </CollapsibleSection>
+
+                {/* GRWM Final Look */}
+                {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
+                  <CollapsibleSection title="✨ Final Look (Reveal Outfit)">
+                    <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
+                    {config.finalLookType === 'Custom Outfit' && (
+                      <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
+                        onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                    )}
+                    <input type="text" placeholder="Additional final look details (optional)" value={config.finalLookAdditionalInfo}
+                      onChange={(e) => setConfig(c => ({ ...c, finalLookAdditionalInfo: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                  </CollapsibleSection>
+                )}
+
+                {/* Collapsible: Hair */}
+                <CollapsibleSection title="💇 Hairstyle">
+                  <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
+                  {config.hairstyle.includes('Custom') && (
+                    <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
+                      onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                  )}
+                </CollapsibleSection>
+
+                {/* Collapsible: Makeup */}
+                <CollapsibleSection title="💄 Makeup">
+                  <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
+                  {config.makeup === 'Custom' && (
+                    <input type="text" placeholder="Custom makeup..." value={config.customMakeup}
+                      onChange={(e) => setConfig(c => ({ ...c, customMakeup: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+                  )}
+                </CollapsibleSection>
+
+                {/* Collapsible: Skin & Nails */}
+                <CollapsibleSection title="🖐 Skin & Nails">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label label="Skin" />
+                      <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
+                      <div className="mt-1">
+                        <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label label="Nails" />
+                      <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
+                      {config.nailStyle === 'Custom' && (
+                        <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
+                          onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
+                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1 outline-none" />
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleSection>
+
+                {/* Saved Looks */}
+                <div className="pt-2 border-t border-border">
+                  <SavedLooks config={config} setConfig={setConfig} />
+                </div>
               </div>
             </CollapsibleSection>
           </div>
