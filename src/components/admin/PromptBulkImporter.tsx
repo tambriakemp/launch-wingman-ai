@@ -137,7 +137,8 @@ export const PromptBulkImporter = () => {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        // Parse CSV respecting quoted fields that may contain newlines
+        const lines = parseCsvLines(text);
         if (lines.length < 2) {
           toast({ title: "CSV must have a header and at least one row", variant: "destructive" });
           return;
