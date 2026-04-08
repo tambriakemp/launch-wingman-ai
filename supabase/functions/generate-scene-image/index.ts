@@ -237,6 +237,20 @@ serve(async (req) => {
         }
       }
 
+      // Identity lock for useReferenceAsStart
+      let referenceIdentityLock = "";
+      const useRefAsStart = config.useReferenceAsStart === true;
+      if (useRefAsStart && sceneNumber > 1) {
+        referenceIdentityLock = `\nIDENTITY LOCK FROM REFERENCE (CRITICAL): Scene 1 is the UNMODIFIED reference photo.
+You MUST reproduce EXACTLY: same skin tone, same bone structure, same hair (style, color, part, length),
+same jewelry (every ring, necklace, earring, bracelet), same nail shape and color, same makeup
+(brow shape, shadow color, lip color, lash style, contour placement, highlighter).
+The outfit must be PIXEL-PERFECT identical unless the scene explicitly calls for a change.`;
+      }
+
+      // Baseline realism clause (always applied)
+      const realismClause = `\nSMARTPHONE REALISM: natural skin texture, visible pores, subtle imperfections, no smoothing, no plastic skin, realistic fabric folds, natural highlight roll-off, true-to-life colour balance, razor sharp eye detail, visible lash separation, clean hairline edge definition, individual hair strand visibility, natural micro-contrast.`;
+
       // Continuity chaining instruction when previous scene image is provided
       let continuityInstruction = "";
       if (previousSceneImageUrl) {
