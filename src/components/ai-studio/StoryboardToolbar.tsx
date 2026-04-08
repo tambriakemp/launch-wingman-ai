@@ -162,11 +162,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   <>
                     <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
 
-                    <div className="flex items-center gap-2 my-2">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-[10px] text-muted-foreground">or upload a new photo</span>
-                      <div className="flex-1 h-px bg-border" />
-                    </div>
 
                     <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
                   </>
