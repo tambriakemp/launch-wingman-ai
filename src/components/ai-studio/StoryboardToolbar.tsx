@@ -148,7 +148,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             {/* Step 1 — Character */}
             <CollapsibleSection title="1 · Character" defaultOpen statusActive={hasCharacter}>
               <div className="space-y-4">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Upload a photo or choose a saved character</p>
+                <div className="space-y-1 mb-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Choose your character source</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Option A — Saved Character:</strong> Select a character you've already built. Their photos and profile will be applied automatically.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong className="text-foreground">Option B — Upload New Photo:</strong> Upload a reference photo or selfie. This will be used as the face reference or start image for your vlog, UGC, or carousel.
+                  </p>
+                </div>
 
                 {setReferenceImage && (
                   <>
@@ -156,24 +164,14 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
                     <div className="flex items-center gap-2 my-2">
                       <div className="flex-1 h-px bg-border" />
-                      <span className="text-[10px] text-muted-foreground">or upload new</span>
+                      <span className="text-[10px] text-muted-foreground">or upload a new photo</span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
 
-                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Your face stays consistent across all scenes." />
+                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
                   </>
                 )}
 
-                <div>
-                  <Label label="Character Vibe / Lifestyle" />
-                  <textarea
-                    placeholder="e.g. Luxury soft life, entrepreneur energy, NY/Miami..."
-                    value={config.characterVibe}
-                    onChange={(e) => setConfig(c => ({ ...c, characterVibe: e.target.value }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
-                  />
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">Shapes brainstorm ideas and scene writing.</p>
-                </div>
 
                 {/* Safety terms inline */}
                 {!showSafetyTerms && setShowSafetyTerms && (
