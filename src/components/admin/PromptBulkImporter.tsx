@@ -283,10 +283,10 @@ export const PromptBulkImporter = () => {
       }
 
       const existingDescs = new Set(
-        (existing || []).map((r) => (r.description || "").trim().toLowerCase())
+        allExisting.map((r) => (r.description || "").trim().toLowerCase())
       );
       const existingTitles = new Set(
-        (existing || []).map((r) => (r.title || "").trim().toLowerCase())
+        allExisting.map((r) => (r.title || "").trim().toLowerCase())
       );
 
       const unique = parsedPrompts.filter((p) => {
