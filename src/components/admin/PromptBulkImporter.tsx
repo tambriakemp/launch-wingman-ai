@@ -265,11 +265,22 @@ export const PromptBulkImporter = () => {
     try {
       const subId = await ensureSubcategoryId();
 
-      const { data: existing } = await supabase
-        .from("content_vault_resources")
-        .select("title, description")
-        .eq("subcategory_id", subId)
-        .in("resource_type", ["image_prompt", "video_prompt"]);
+      // Fetch ALL existing resources (paginate to avoid 1000-row limit)
+      let allExisting: { title: string | null; description: string | null }[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("content_vault_resources")
+          .select("title, description")
+          .eq("subcategory_id", subId)
+          .in("resource_type", ["image_prompt", "video_prompt"])
+          .range(from, from + PAGE - 1);
+        if (!batch || batch.length === 0) break;
+        allExisting = allExisting.concat(batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
 
       const existingDescs = new Set(
         (existing || []).map((r) => (r.description || "").trim().toLowerCase())
