@@ -1,31 +1,31 @@
 
 
-## Plan: Fix Navigation Block & Remove "Set Your Price" Task
+## Plan: Update Character Section — Remove Vibe Field, Add Clear Instructions
 
-### Problem 1: Broken Dependency Blocking Navigation
-The "Define your ongoing promise" task (and similar delta tasks for Challenge and Launch funnel types) depends on `planning_offer_snapshot` — **a task that doesn't exist**. This means the dependency can never be satisfied, permanently blocking progression.
+### What Changes
 
-**Affected tasks** (all in `src/data/funnelDeltaTasks.ts`):
-- `planning_ongoing_promise` (membership, order 6.1)
-- `planning_challenge_focus` (challenge, order 6.1)  
-- `planning_launch_window` (launch, order 6.1)
+**File: `src/components/ai-studio/StoryboardToolbar.tsx`**
 
-**Fix**: Change their dependency from `planning_offer_snapshot` to `planning_perceived_likelihood` (the last completed universal task at order 5, which is "Increase belief that this will work").
+1. **Remove** the "Character Vibe / Lifestyle" textarea and its label/helper text (lines 167–176).
 
-### Problem 2: Remove "Set Your Price" Task
-The `planning_set_price` task (order 7.5) is a duplicate since pricing is handled within the offer builder.
+2. **Replace** the current instruction line (line 151) with a clearer two-option layout:
 
-**Changes needed in `src/data/taskTemplates.ts`**:
-- Remove the entire `planning_set_price` task definition
-- Update `planning_phase_review` (order 8) which depends on `planning_set_price` → change its dependency to `planning_offer_stack`
+```
+<div className="space-y-1 mb-3">
+  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Choose your character source</p>
+  <p className="text-xs text-muted-foreground leading-relaxed">
+    <strong className="text-foreground">Option A — Saved Character:</strong> Select a character you've already built. Their photos and profile will be applied automatically.
+  </p>
+  <p className="text-xs text-muted-foreground leading-relaxed">
+    <strong className="text-foreground">Option B — Upload New Photo:</strong> Upload a reference photo or selfie. This will be used as the face reference or start image for your vlog, UGC, or carousel.
+  </p>
+</div>
+```
 
-**Changes needed in `src/data/voiceScripts.ts`**:
-- Remove the `planning_set_price` voice script entry
+3. Update the divider text between SavedCharacter and UploadZone from `"or upload new"` to `"or upload a new photo"`.
 
-### Files to Modify
-- `src/data/funnelDeltaTasks.ts` — fix 3 broken dependencies (`planning_offer_snapshot` → `planning_perceived_likelihood`)
-- `src/data/taskTemplates.ts` — remove `planning_set_price` task, update `planning_phase_review` dependency
-- `src/data/voiceScripts.ts` — remove `planning_set_price` script
+4. Update UploadZone subtext to: `"Use as a face reference or the start image of your content."`.
 
-No database changes needed.
+### Files Modified
+- `src/components/ai-studio/StoryboardToolbar.tsx` — remove vibe textarea, update character section instructions
 
