@@ -1062,23 +1062,7 @@ const AIStudio = () => {
             anyGeneratingVideo={Object.values(generatedMedia).some(m => m.isGeneratingVideo)}
           />
 
-          {/* Safety Terms Banner (shown once, before first generation) */}
-          {!showSafetyTerms && (
-            <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-start gap-3 my-3">
-              <ShieldCheck className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs text-foreground leading-relaxed">
-                  I confirm that I own the rights to these images, no children are shown, and images are not explicit.
-                </p>
-              </div>
-              <button
-                onClick={handleAcceptTerms}
-                className="px-3 py-1.5 text-xs font-bold bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors flex-shrink-0"
-              >
-                I Agree
-              </button>
-            </div>
-          )}
+          {/* Safety terms now handled inside the Create sheet panel */}
 
           {/* Topic/Message inputs moved to Create sheet panel */}
 
@@ -1097,7 +1081,7 @@ const AIStudio = () => {
                     {!referenceImage
                       ? "Upload a character photo in the Create panel to get started."
                       : !showSafetyTerms
-                      ? "Accept the safety terms above to continue."
+                      ? "Open the Create panel and accept the safety terms to continue."
                       : "Open the Create panel, configure your settings, and generate your storyboard."}
                   </p>
                 )}
