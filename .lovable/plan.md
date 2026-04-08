@@ -1,85 +1,75 @@
 
 
-## Plan: Merge Carousel into Vlog/Carousel Mode + Add "Use Reference as Start Photo" Option
+## Plan: Improve Character Consistency & Feed Cohesion Prompts
 
-### Summary
-Merge the Carousel and Vlog modes into a single **"Vlog / Carousel"** mode (2 modes total instead of 3). Add a toggle in Step 2 to let users use their uploaded reference photo as the start image instead of typing a topic.
+### Problem
+1. When "Use reference as start image" is enabled, subsequent scenes lose character details (hair, jewelry, makeup, outfit) because the backend doesn't know Scene 1 is the unmodified reference photo — it generates prompts without anchoring to it.
+2. Storyboard prompts lack the ultra-detailed, iPhone-native, feed-cohesion style the user wants (as shown in the ChatGPT example prompts).
 
-### What Changes
-
----
-
-**1. Types & Constants**
-
-**`src/components/ai-studio/types.ts`**
-- Change `CreationMode` from `'vlog' | 'ugc' | 'carousel'` to `'vlog' | 'ugc'`
-- Add `useReferenceAsStart: boolean` to `AppConfig`
-
-**`src/components/ai-studio/constants.ts`**
-- Add `useReferenceAsStart: false` to `INITIAL_CONFIG`
-- No other changes (carousel aesthetics, shot palette etc. stay — they're used by the backend)
+### Changes
 
 ---
 
-**2. Toolbar UI — `src/components/ai-studio/StoryboardToolbar.tsx`**
+**1. `supabase/functions/generate-storyboard/index.ts` — Enhance storyboard generation prompts**
 
-- **Mode toggle**: Change from 3 buttons to 2: **"VLOG / CAROUSEL"** and **"UGC"**. The vlog button sets `creationMode: 'vlog'`.
-- Remove the separate carousel button entirely.
+- Pass `config.useReferenceAsStart` into the storyboard generation logic.
+- When `useReferenceAsStart` is true, add instructions telling the AI:
+  - Scene 1 IS the reference photo — the AI must analyze it exhaustively and describe every detail (skin tone, bone structure, hair style/color/part, jewelry pieces, nail shape/color, makeup, outfit fabric/color/fit/neckline) as the canonical identity lock.
+  - All subsequent scenes must repeat this full description verbatim in every `image_prompt`.
 
-- **Step 2 — Concept**: Add a toggle at the top:
+- For **both vlog/carousel modes**, upgrade the storyboard system prompt to require ChatGPT-quality image prompts:
+  - Each `image_prompt` must include: full character description (skin, face, hair, makeup, accessories, nails, outfit), environment description, lighting direction, camera lens/settings ("shot on iPhone 15 Pro Max"), and the anti-smoothing/realism clause.
+  - Add a `FEED COHESION` section requiring: same color palette, same lighting session feel, varied shot types (hero, waist-up, close-up beauty, macro detail, flat lay, environment-only, candid movement, alternate angle).
+  - Require each prompt to specify shot type explicitly and include the full identity lock block.
+
+- Add a `SHOT PALETTE` instruction for vlog mode similar to the carousel one — requiring a mix of wide/medium/close-up/detail/environment shots for feed variety.
+
+---
+
+**2. `supabase/functions/generate-scene-image/index.ts` — Strengthen identity lock in image generation**
+
+- When `config.useReferenceAsStart` is true AND `sceneNumber > 1`, add an extra identity lock paragraph:
   ```
-  <label className="flex items-center gap-2 cursor-pointer mb-3">
-    <Switch checked={config.useReferenceAsStart} onCheckedChange={...} />
-    <span className="text-xs font-medium">Use reference photo as start image</span>
-  </label>
+  IDENTITY LOCK FROM REFERENCE (CRITICAL): Scene 1 is the UNMODIFIED reference photo. 
+  You MUST reproduce EXACTLY: same skin tone, same bone structure, same hair (style, color, part, length), 
+  same jewelry (every ring, necklace, earring, bracelet), same nail shape and color, same makeup 
+  (brow shape, shadow color, lip color, lash style, contour placement, highlighter). 
+  The outfit must be PIXEL-PERFECT identical unless the scene explicitly calls for a change.
   ```
-  When enabled: hide the category selector, topic textarea, and brainstorm button. Show a note: "Your uploaded character photo will be used as Scene 1. The AI will build the remaining scenes from it."
-  When disabled: show the existing vlog fields (category, topic, brainstorm, script toggle) merged with carousel fields (aesthetic selector, scene description textarea).
 
-- **Merged vlog+carousel fields** (when `useReferenceAsStart` is off):
-  - Show Vlog Category selector
-  - Show Carousel Aesthetic selector (both visible — category drives narrative, aesthetic drives visual mood)
-  - Show the topic/scene description textarea (use `vlogTopic` as the single field, with a label like "Topic / Scene Description")
-  - Show brainstorm button + ideas
-  - Show "Use own script" toggle (keep as-is)
+- Add the iPhone realism clause to ALL prompts (not just when `ultraRealistic` is toggled), as a lighter version:
+  ```
+  natural skin texture, visible pores, subtle imperfections, no smoothing, no plastic skin, 
+  realistic fabric folds, natural highlight roll-off, true-to-life colour balance, 
+  razor sharp eye detail, visible lash separation, clean hairline edge definition
+  ```
 
 ---
 
-**3. AIStudio.tsx — Frontend Logic**
+**3. `supabase/functions/generate-storyboard/index.ts` — Vlog shot variety instructions**
 
-- Remove all `=== 'carousel'` checks and map them to `'vlog'`:
-  - `onSelectIdea`: merge carousel idea parsing (the `Setting — Message` split) into the vlog flow — when idea contains ` — `, set both `carouselVibe` and `carouselMessage`; otherwise set `vlogTopic`
-  - `handleGenerateTopicIdeas`: remove `isCarousel` guard, always allow brainstorm
-  - `handleGenerateStoryboard`: remove `carousel` validation (use `vlogTopic` as primary, fall back to `carouselVibe`)
-  - Image generation queue sorting for carousel continuity: keep — just change check from `=== 'carousel'` to checking if `carouselAesthetic` is set or similar
-  - When `useReferenceAsStart` is true: skip Scene 1 image generation and instead use the reference image URL directly as `generatedMedia[0].imageUrl`
+Add to the vlog system prompt a `SHOT VARIETY FOR FEED COHESION` block:
+```
+SHOT VARIETY FOR FEED COHESION (CRITICAL):
+Vary shots across this spectrum — each scene uses a DIFFERENT framing:
+- Full body hero shot (establishing, confident, environment visible)
+- Waist-up variation (different interaction, subtle expression change)
+- Close-up beauty portrait (tight on face, intense or soft expression)
+- Macro detail shot (hands, nails, jewelry, product, texture)
+- Flat lay / environment-only (no person — props, setting, ambient mood)
+- Candid movement (mid-turn, walking, reaching, laughing — motion blur okay)
+- Alternate angle (low angle, over-shoulder, reflection, profile)
 
----
-
-**4. Edge Functions — Backend**
-
-**`supabase/functions/generate-storyboard/index.ts`**
-- Merge brainstorm logic: when `carouselVibe` or `carouselAesthetic` is set, use carousel-style brainstorm prompt; otherwise use vlog-style
-- Merge storyboard generation: detect carousel-style content by checking `config.carouselAesthetic` or `config.carouselVibe` instead of `creationMode === 'carousel'`
-- Pass through `useReferenceAsStart` flag — when true, instruct Scene 1 to match the reference photo exactly
-
-**`supabase/functions/generate-scene-image/index.ts`**
-- Replace `config.creationMode === 'carousel'` checks with a helper like `const isCarousel = !!(config.carouselVibe || config.carouselAesthetic)` to preserve the carousel-specific continuity instructions
-
----
-
-**5. StudioSetup.tsx** (legacy setup page)
-- Update mode toggle from 2 buttons to match new naming
-- Map any `'carousel'` references to `'vlog'`
+Each image_prompt MUST specify the exact shot type and framing.
+Each image_prompt MUST include the FULL character description block 
+(skin, face, hair, makeup, jewelry, nails, outfit) repeated verbatim.
+```
 
 ---
 
 ### Files to Modify
-- `src/components/ai-studio/types.ts` — update CreationMode, add useReferenceAsStart
-- `src/components/ai-studio/constants.ts` — add default
-- `src/components/ai-studio/StoryboardToolbar.tsx` — merge mode buttons, add toggle, merge concept fields
-- `src/pages/AIStudio.tsx` — remove carousel-specific branching, handle useReferenceAsStart
-- `src/components/ai-studio/StudioSetup.tsx` — update mode toggle
-- `supabase/functions/generate-storyboard/index.ts` — detect carousel by config fields instead of mode
-- `supabase/functions/generate-scene-image/index.ts` — same detection change
+- `supabase/functions/generate-storyboard/index.ts` — add useReferenceAsStart awareness, upgrade prompt quality, add shot variety instructions
+- `supabase/functions/generate-scene-image/index.ts` — add identity lock clause for reference-as-start, add baseline realism clause
+
+No database changes needed.
 
