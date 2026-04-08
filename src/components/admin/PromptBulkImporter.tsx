@@ -308,8 +308,13 @@ export const PromptBulkImporter = () => {
         };
       });
 
-      const { error } = await supabase.from("content_vault_resources").insert(resources);
-      if (error) throw error;
+      // Insert in batches of 500 to avoid Supabase row limits
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < resources.length; i += BATCH_SIZE) {
+        const batch = resources.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from("content_vault_resources").insert(batch);
+        if (error) throw error;
+      }
 
       const msg = skipped > 0
         ? `Imported ${unique.length} prompts! (${skipped} duplicates skipped)`
