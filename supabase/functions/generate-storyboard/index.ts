@@ -140,6 +140,7 @@ No numbers. No extra text. Just 6 lines.`;
     // Full storyboard generation
     if (action === "generate") {
       let systemPrompt: string;
+      const isCarousel = !!(config.carouselVibe || config.carouselAesthetic);
 
       if (isCarousel) {
         const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 5;
