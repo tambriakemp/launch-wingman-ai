@@ -194,44 +194,45 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 {/* Mode toggle */}
                 <div>
                   <Label label="Mode" />
-                  <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
+                  <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
                     <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
-                      VLOG
+                      VLOG / CAROUSEL
                     </button>
                     <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
                       UGC
                     </button>
-                    <button onClick={() => setConfig(c => ({ ...c, creationMode: 'carousel' }))}
-                      className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'carousel' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
-                      CAROUSEL
-                    </button>
                   </div>
                 </div>
 
-                {/* Vlog Category */}
+                {/* Use reference as start image toggle */}
                 {config.creationMode === 'vlog' && (
-                  <div>
-                    <Label label="Vlog Category" />
-                    <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-2">
+                    <Switch checked={config.useReferenceAsStart} onCheckedChange={(v) => setConfig(c => ({ ...c, useReferenceAsStart: v }))} />
+                    <div>
+                      <span className="text-xs font-medium text-foreground">Use reference photo as start image</span>
+                      {config.useReferenceAsStart && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Your uploaded character photo will be used as Scene 1. The AI will build the remaining scenes from it.</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Carousel Aesthetic */}
-                {config.creationMode === 'carousel' && (
-                  <div>
-                    <Label label="Aesthetic / Mood" />
-                    <SelectField value={config.carouselAesthetic} onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))} options={CAROUSEL_AESTHETICS} />
-                  </div>
-                )}
-
-                {/* Topic / Scene / Marketing Goal */}
-                {config.creationMode === 'vlog' && (
+                {/* Vlog / Carousel fields (when not using reference as start) */}
+                {config.creationMode === 'vlog' && !config.useReferenceAsStart && (
                   <>
                     <div>
+                      <Label label="Vlog Category" />
+                      <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
+                    </div>
+                    <div>
+                      <Label label="Aesthetic / Mood" />
+                      <SelectField value={config.carouselAesthetic} onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))} options={CAROUSEL_AESTHETICS} />
+                    </div>
+                    <div>
                       <div className="flex justify-between items-center mb-1.5">
-                        <Label label="Vlog Topic" />
+                        <Label label="Topic / Scene Description" />
                         {onGenerateTopicIdeas && (
                           <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
                             className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
@@ -240,7 +241,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         )}
                       </div>
                       <textarea
-                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
+                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept or scene — location, vibe, lighting, props..."}
                         value={config.vlogTopic}
                         onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
                         className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
@@ -272,43 +273,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                           className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] mt-2 focus:ring-1 focus:ring-primary" />
                       )}
                     </div>
-                  </>
-                )}
-
-                {config.creationMode === 'carousel' && (
-                  <>
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <Label label="Scene Description" />
-                        {onGenerateTopicIdeas && (
-                          <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                            className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                            {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                          </button>
-                        )}
-                      </div>
-                      <textarea
-                        placeholder="Describe your scene — location, vibe, lighting, props, and the story or message. e.g. 'Cozy coffee shop, warm golden light, latte art — morning routine that changed my productivity'"
-                        value={config.carouselVibe}
-                        onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    {brainstormIdeas && brainstormIdeas.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground">Tap an idea to use it</p>
-                        {brainstormIdeas.map((idea, i) => (
-                          <button
-                            key={i}
-                            onClick={() => { if (onSelectIdea) onSelectIdea(idea); }}
-                            className="w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border text-xs text-foreground transition-colors leading-relaxed"
-                          >
-                            {idea}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
                   </>
                 )}
 
