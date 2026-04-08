@@ -265,17 +265,28 @@ export const PromptBulkImporter = () => {
     try {
       const subId = await ensureSubcategoryId();
 
-      const { data: existing } = await supabase
-        .from("content_vault_resources")
-        .select("title, description")
-        .eq("subcategory_id", subId)
-        .in("resource_type", ["image_prompt", "video_prompt"]);
+      // Fetch ALL existing resources (paginate to avoid 1000-row limit)
+      let allExisting: { title: string | null; description: string | null }[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("content_vault_resources")
+          .select("title, description")
+          .eq("subcategory_id", subId)
+          .in("resource_type", ["image_prompt", "video_prompt"])
+          .range(from, from + PAGE - 1);
+        if (!batch || batch.length === 0) break;
+        allExisting = allExisting.concat(batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
 
       const existingDescs = new Set(
-        (existing || []).map((r) => (r.description || "").trim().toLowerCase())
+        allExisting.map((r) => (r.description || "").trim().toLowerCase())
       );
       const existingTitles = new Set(
-        (existing || []).map((r) => (r.title || "").trim().toLowerCase())
+        allExisting.map((r) => (r.title || "").trim().toLowerCase())
       );
 
       const unique = parsedPrompts.filter((p) => {
@@ -308,8 +319,13 @@ export const PromptBulkImporter = () => {
         };
       });
 
-      const { error } = await supabase.from("content_vault_resources").insert(resources);
-      if (error) throw error;
+      // Insert in batches of 500 to avoid Supabase row limits
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < resources.length; i += BATCH_SIZE) {
+        const batch = resources.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from("content_vault_resources").insert(batch);
+        if (error) throw error;
+      }
 
       const msg = skipped > 0
         ? `Imported ${unique.length} prompts! (${skipped} duplicates skipped)`
