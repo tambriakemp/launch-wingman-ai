@@ -211,7 +211,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-2">
                     <Switch checked={config.useReferenceAsStart} onCheckedChange={(v) => setConfig(c => ({ ...c, useReferenceAsStart: v }))} />
                     <div>
-                      <span className="text-xs font-medium text-foreground">Use reference photo as start image</span>
+                      <span className="text-xs font-medium text-foreground">Use uploaded reference photo as start image</span>
                       {config.useReferenceAsStart && (
                         <p className="text-[10px] text-muted-foreground mt-0.5">Your uploaded character photo will be used as Scene 1. The AI will build the remaining scenes from it.</p>
                       )}
