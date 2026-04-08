@@ -240,7 +240,7 @@ serve(async (req) => {
       // Continuity chaining instruction when previous scene image is provided
       let continuityInstruction = "";
       if (previousSceneImageUrl) {
-        if (config.creationMode === 'carousel') {
+        if (!!(config.carouselVibe || config.carouselAesthetic)) {
           continuityInstruction = `\nCAROUSEL SLIDE CONTINUITY: The previous slide's image has been provided. This is part of a COHESIVE carousel set.
 LOCK THESE DETAILS (must be PIXEL-PERFECT identical to the anchor/previous image):
 - Exact outfit, fabric, color, fit, neckline, sleeves — NO changes whatsoever
@@ -256,7 +256,7 @@ Do NOT add, remove, or modify ANY clothing or accessory detail.`;
 
       // Carousel-specific consistency + scene differentiation block
       let carouselConsistencyInstruction = "";
-      if (config.creationMode === 'carousel') {
+      if (!!(config.carouselVibe || config.carouselAesthetic)) {
         const sceneNum = sceneNumber || 1;
         const total = totalScenes || 4;
         carouselConsistencyInstruction = `\nCAROUSEL SCENE AWARENESS (CRITICAL): This is slide ${sceneNum} of ${total}. Each slide MUST show a VISUALLY DISTINCT composition.
