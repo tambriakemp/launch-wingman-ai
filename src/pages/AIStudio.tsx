@@ -1081,7 +1081,7 @@ const AIStudio = () => {
                     {!referenceImage
                       ? "Upload a character photo in the Create panel to get started."
                       : !showSafetyTerms
-                      ? "Accept the safety terms above to continue."
+                      ? "Open the Create panel and accept the safety terms to continue."
                       : "Open the Create panel, configure your settings, and generate your storyboard."}
                   </p>
                 )}
