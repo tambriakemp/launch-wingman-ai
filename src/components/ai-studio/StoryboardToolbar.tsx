@@ -3,7 +3,7 @@ import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS, CAROUSEL_AESTHETICS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, CAROUSEL_AESTHETICS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
@@ -424,7 +424,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Advanced Settings ── */}
-            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
+            <CollapsibleSection title="Skin / Nails / Makeup / Hairstyle" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
@@ -436,22 +436,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 {setEnvironmentImage && (
                   <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
                 )}
-              </div>
-
-              <div>
-                <p className="text-[9px] font-medium tracking-[0.2em] uppercase text-muted-foreground/40 pb-3 border-b border-border/30">Look & Style</p>
-              </div>
-
-              <div>
-                <MicroLabel>Quick presets</MicroLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(QUICK_LOOK_PRESETS).map(([name, preset]) => (
-                    <button key={name} onClick={() => setConfig(c => ({ ...c, ...preset }))}
-                      className="px-3 py-1.5 text-[10.5px] font-medium rounded-full border border-border/40 text-muted-foreground/70 hover:border-foreground/20 hover:text-foreground hover:bg-muted/30 transition-all duration-150 tracking-wide">
-                      {name}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div>
@@ -483,16 +467,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               )}
 
               <div>
-                <MicroLabel>Hairstyle</MicroLabel>
-                <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
-                {config.hairstyle.includes('Custom') && (
-                  <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
-                    onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
-                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                )}
-              </div>
-
-              <div>
                 <MicroLabel>Makeup</MicroLabel>
                 <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
                 {config.makeup === 'Custom' && (
@@ -503,21 +477,33 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
 
               <div>
-                <MicroLabel>Skin & nails</MicroLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1.5">
-                    <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
-                    <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
-                    {config.nailStyle === 'Custom' && (
-                      <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
-                        onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
-                        className="w-full bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                    )}
-                  </div>
-                </div>
+                <MicroLabel>Hairstyle</MicroLabel>
+                <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
+                {config.hairstyle.includes('Custom') && (
+                  <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
+                    onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
+                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
+                )}
+              </div>
+
+              <div>
+                <MicroLabel>Skin complexion</MicroLabel>
+                <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
+              </div>
+
+              <div>
+                <MicroLabel>Skin undertone</MicroLabel>
+                <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
+              </div>
+
+              <div>
+                <MicroLabel>Nails</MicroLabel>
+                <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
+                {config.nailStyle === 'Custom' && (
+                  <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
+                    onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
+                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
+                )}
               </div>
 
               <div className="pt-1 border-t border-border/30">
