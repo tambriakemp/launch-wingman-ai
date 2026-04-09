@@ -154,11 +154,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 <div>
                   <Label label="Character Source" />
                   <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
-                    <button onClick={() => { setCharacterSource('saved'); setConfig(c => ({ ...c, useReferenceAsStart: false })); }}
+                    <button onClick={() => { setCachedUploadImage(referenceImage || null); setCharacterSource('saved'); setConfig(c => ({ ...c, useReferenceAsStart: false })); }}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'saved' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                       Saved Character
                     </button>
-                    <button onClick={() => { setCharacterSource('upload'); setConfig(c => ({ ...c, useReferenceAsStart: true })); }}
+                    <button onClick={() => { setCharacterSource('upload'); setConfig(c => ({ ...c, useReferenceAsStart: true })); if (cachedUploadImage && setReferenceImage) setReferenceImage(cachedUploadImage); }}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'upload' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                       Upload Photo
                     </button>
