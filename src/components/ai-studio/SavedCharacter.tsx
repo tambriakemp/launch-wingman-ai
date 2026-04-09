@@ -126,11 +126,6 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
         </button>
       )}
 
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-        <div className="flex-1 h-px bg-border" />
-        <span>OR upload a new one below</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
     </div>
   );
 };
