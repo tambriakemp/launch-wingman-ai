@@ -332,7 +332,15 @@ IMAGE PROMPT FORMAT (every image_prompt must follow this exactly):
 
 The script field for each scene should be a short, punchy caption line or hook appropriate for the visual — NOT narration, just the text overlay.
 
-Generate: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (complete, following the format above), video_prompt (3-second motion description), script (text overlay caption), is_final_look (always false).
+VIDEO PROMPT RULES (CRITICAL):
+- video_prompt describes subtle 3-second motion from the SAME camera angle as the image
+- If the character's back or side is to the camera, the video must KEEP that same angle — do NOT rotate the character to face the camera
+- Avoid any instruction that would reveal the character's face if it is not visible in the image (e.g., "turns around", "looks at camera", "faces forward")
+- Instead describe ambient motion: hair movement, fabric swaying, environment activity, subtle body sway, hand gestures
+- For back-facing shots: "gentle hair movement in the breeze, city lights flickering in the background, subtle shoulder movement"
+- For profile shots: "slight head tilt, eyes scanning the scene, ambient light shifting"
+
+Generate: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (complete, following the format above), video_prompt (3-second motion following rules above), script (text overlay caption), is_final_look (always false).
 Also provide analysis: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe (extracted from the reference photo).`;
 
         } else {
@@ -378,7 +386,13 @@ IMAGE PROMPT FORMAT (CRITICAL — every image_prompt MUST follow this structure)
 Each image_prompt MUST specify the exact shot type and framing.
 Each image_prompt MUST include the FULL character description block repeated verbatim.
 
-${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt, script, is_final_look (boolean).
+VIDEO PROMPT RULES (CRITICAL):
+- video_prompt describes subtle 3-second motion from the SAME camera angle as the image
+- If the character's back or side is to the camera, the video must KEEP that same angle — do NOT rotate the character to face the camera
+- Avoid any instruction that would reveal the character's face if it is not visible in the image (e.g., "turns around", "looks at camera", "faces forward")
+- Instead describe ambient motion: hair movement, fabric swaying, environment activity, subtle body sway, hand gestures
+
+${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt (following video prompt rules above), script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
         }
       }
