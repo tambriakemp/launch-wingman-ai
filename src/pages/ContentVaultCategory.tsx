@@ -103,13 +103,22 @@ const ContentVaultCategory = () => {
       // Get subcategory IDs
       const subIds = subs.map(s => s.id);
 
-      // Fetch resource counts per subcategory
-      const { data: resourceCounts, error: rcError } = await supabase
-        .from('content_vault_resources')
-        .select('subcategory_id')
-        .in('subcategory_id', subIds);
-      
-      if (rcError) throw rcError;
+      // Fetch resource counts per subcategory (paginate to handle >1000)
+      let resourceCounts: { subcategory_id: string }[] = [];
+      let rcFrom = 0;
+      const RC_PAGE = 1000;
+      while (true) {
+        const { data: rcBatch, error: rcError } = await supabase
+          .from('content_vault_resources')
+          .select('subcategory_id')
+          .in('subcategory_id', subIds)
+          .range(rcFrom, rcFrom + RC_PAGE - 1);
+        if (rcError) throw rcError;
+        if (!rcBatch || rcBatch.length === 0) break;
+        resourceCounts = resourceCounts.concat(rcBatch);
+        if (rcBatch.length < RC_PAGE) break;
+        rcFrom += RC_PAGE;
+      }
 
       // Count resources per subcategory
       const countMap = new Map<string, number>();
@@ -132,14 +141,25 @@ const ContentVaultCategory = () => {
       const subcategoryIds = subcategories?.map(s => s.id) || [];
       if (subcategoryIds.length === 0) return [];
 
-      const { data, error } = await supabase
-        .from('content_vault_resources')
-        .select('*')
-        .in('subcategory_id', subcategoryIds)
-        .order('position', { ascending: true });
-      
-      if (error) throw error;
-      return data as Resource[];
+      // Fetch all resources in batches to bypass the 1000-row default limit
+      const PAGE_SIZE = 1000;
+      let allData: Resource[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from('content_vault_resources')
+          .select('*')
+          .in('subcategory_id', subcategoryIds)
+          .order('position', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+        
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data as Resource[]);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
     enabled: canAccessVault && !!subcategories && subcategories.length > 0,
   });
