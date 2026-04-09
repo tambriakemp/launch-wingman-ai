@@ -294,10 +294,17 @@ SCENE ARC:
 
 NARRATIVE COHERENCE (CRITICAL):
 - Each scene must flow logically from the previous one — tell a cohesive mini-story with a clear arc
-- If the character holds a prop (drink, phone, bag, food), it must persist naturally or be visibly set down before disappearing
-- Avoid jarring environment jumps — transitions between locations must feel organic (e.g., show walking out before cutting to a new room)
-- The final scene should feel like a natural conclusion to the sequence, not an abrupt change
-- Props and setting elements must make sense for the location (e.g., no cocktail glasses in bed, no gym equipment in a restaurant)
+- Avoid jarring environment jumps — transitions between locations must feel organic
+- The final scene should feel like a natural conclusion to the sequence
+
+PROP & OBJECT LIFECYCLE (CRITICAL):
+- Before writing image prompts, list every handheld prop visible in Scene 1 (drink, phone, bag, food, etc.)
+- For EACH prop, decide in which scene it is naturally set down, finished, or left behind — most props should NOT persist beyond 2-3 scenes
+- A drink should be sipped and set down, a phone pocketed, a bag placed on a surface — show the transition
+- NEVER carry a prop into a scene where it would be contextually absurd (e.g., cocktail glass in bed, gym weights at dinner)
+- Detail shots (extreme close-up, flat-lay) are ideal moments to show a prop being set down or left behind
+- If the character changes location, assume all handheld props from the previous location are left behind unless explicitly carried
+- The image_prompt for each scene must explicitly state what the character is holding — if nothing, write "hands empty" or describe a natural hand position (resting, gesturing, touching hair, etc.)
 
 SHOT VARIETY (use a DIFFERENT shot type each scene):
 - Full body establishing (character + environment)
@@ -317,6 +324,7 @@ IMAGE PROMPT FORMAT (every image_prompt must follow this exactly):
 1. Shot type: [exact shot name]
 2. CHARACTER (verbatim identity block from Step 1): [full description]
 3. ACTION/POSE: [what the person is doing]
+4. HANDS/PROPS: [explicitly state what is in each hand — or "hands free, [natural pose]"]
 4. ENVIRONMENT: [exact setting — ${environmentMode === 'lock' ? 'same as reference photo' : 'describe the specific evolved location'}]
 5. LIGHTING: [direction, quality, color temperature — match reference photo's lighting style]
 6. CAMERA: "shot on iPhone 15 Pro Max, 4K HDR, natural dynamic range, social-media-native framing"
