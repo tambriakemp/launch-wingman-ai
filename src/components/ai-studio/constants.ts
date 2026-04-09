@@ -3,7 +3,11 @@ import { AppConfig, GeneratedMedia } from "./types";
 export const VLOG_CATEGORIES = [
   "Get Ready With Me", "Morning Routine", "Night Routine", "Cooking / In the Kitchen",
   "Cleaning / Reset Routine", "Lifestyle / Day In My Life", "Work-From-Home",
-  "Shopping / Haul", "Self-Care / Spa Day", "Mom Life", "Beauty / Glam", "Travel / Outside", "Custom"
+  "Shopping / Haul", "Self-Care / Spa Day", "Mom Life", "Beauty / Glam", "Travel / Outside",
+  "Luxury / Soft Life", "Clean Girl / Minimal", "Dark Academia", "Y2K / Baddie",
+  "Cozy / Warm Tones", "Professional / Corporate", "Street Style / Urban",
+  "Cottagecore / Feminine", "Moody / Editorial", "Bright / Colorful", "Neutral / Earthy",
+  "Custom"
 ];
 
 export const MAKEUP_STYLES = [
@@ -89,20 +93,6 @@ export const TOPIC_PLACEHOLDERS: Record<string, string> = {
   "Custom": "Describe your specific video concept..."
 };
 
-export const CAROUSEL_AESTHETICS = [
-  "Luxury / Soft Life",
-  "Clean Girl / Minimal",
-  "Dark Academia",
-  "Y2K / Baddie",
-  "Cozy / Warm Tones",
-  "Professional / Corporate",
-  "Street Style / Urban",
-  "Cottagecore / Feminine",
-  "Moody / Editorial",
-  "Bright / Colorful",
-  "Neutral / Earthy",
-  "Custom",
-];
 
 export const CAROUSEL_SHOT_PALETTE = [
   "Wide establishing shot — full body, subject + environment both visible",
@@ -135,7 +125,6 @@ export const INITIAL_CONFIG: AppConfig = {
   ugcPrompt: "",
   carouselVibe: "",
   carouselMessage: "",
-  carouselAesthetic: CAROUSEL_AESTHETICS[0],
   carouselSlideCount: 6,
   useProductAsHair: false,
   exactMatch: true,
