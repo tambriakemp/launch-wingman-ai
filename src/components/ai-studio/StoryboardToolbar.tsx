@@ -439,22 +439,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
 
               <div>
-                <p className="text-[9px] font-medium tracking-[0.2em] uppercase text-muted-foreground/40 pb-3 border-b border-border/30">Look & Style</p>
-              </div>
-
-              <div>
-                <MicroLabel>Quick presets</MicroLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(QUICK_LOOK_PRESETS).map(([name, preset]) => (
-                    <button key={name} onClick={() => setConfig(c => ({ ...c, ...preset }))}
-                      className="px-3 py-1.5 text-[10.5px] font-medium rounded-full border border-border/40 text-muted-foreground/70 hover:border-foreground/20 hover:text-foreground hover:bg-muted/30 transition-all duration-150 tracking-wide">
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 <MicroLabel>Outfit</MicroLabel>
                 <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
                 {config.outfitType === 'Custom Outfit' && (
