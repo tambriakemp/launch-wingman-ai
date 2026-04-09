@@ -723,40 +723,47 @@ ${orientationInstruction}`;
         break;
       }
 
-      // If Gemini exhausted all retries with 503, try Flux fallback
+      // If Gemini Pro exhausted all retries with 503, try flash-image model downgrade first
       if (geminiResult && geminiResult.status >= 500 && allRetries503) {
-        const fallbackFalKey = Deno.env.get("FAL_KEY") || null;
-        const fallbackBaseImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
-        if (fallbackFalKey && fallbackBaseImage) {
-          console.log("[generate-scene-image] Gemini 503 exhausted, attempting Flux fallback...");
-          try {
-            const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
-              method: "POST",
-              headers: { "Authorization": `Key ${fallbackFalKey}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                image_url: fallbackBaseImage,
-                prompt: sanitizePrompt(fullPrompt, "strict"),
-                num_images: 1,
-                output_format: "jpeg",
-                safety_tolerance: "2",
-              }),
-            });
-            if (fluxResponse.ok) {
-              const fluxData = await fluxResponse.json();
-              imageUrl = fluxData?.images?.[0]?.url || null;
-              if (imageUrl) {
-                console.log("[flux-fallback] Image generated successfully after Gemini 503");
-                modelUsed = "flux_kontext";
-                wasFallback = true;
+        console.log("[generate-scene-image] Gemini Pro 503 exhausted, trying flash-image model...");
+        const flashResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY, "google/gemini-3.1-flash-image-preview");
+        if (flashResult.status === 200 && flashResult.imageUrl) {
+          console.log("[generate-scene-image] Flash-image model succeeded as fallback");
+          imageUrl = flashResult.imageUrl;
+          modelUsed = "gemini_flash";
+          wasFallback = true;
+        } else {
+          console.warn("[generate-scene-image] Flash-image also failed:", flashResult.status);
+          // Last resort: try Flux if FAL_KEY available
+          const fallbackFalKey = Deno.env.get("FAL_KEY") || null;
+          const fallbackBaseImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+          if (fallbackFalKey && fallbackBaseImage) {
+            console.log("[generate-scene-image] Trying Flux as last resort...");
+            try {
+              const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
+                method: "POST",
+                headers: { "Authorization": `Key ${fallbackFalKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  image_url: fallbackBaseImage,
+                  prompt: sanitizePrompt(fullPrompt, "strict"),
+                  num_images: 1, output_format: "jpeg", safety_tolerance: "2",
+                }),
+              });
+              if (fluxResponse.ok) {
+                const fluxData = await fluxResponse.json();
+                imageUrl = fluxData?.images?.[0]?.url || null;
+                if (imageUrl) {
+                  console.log("[flux-fallback] Image generated after Gemini 503");
+                  modelUsed = "flux_kontext";
+                  wasFallback = true;
+                }
               }
-            } else {
-              console.error("[flux-fallback] Error:", fluxResponse.status, await fluxResponse.text());
+            } catch (fluxErr) {
+              console.error("[flux-fallback] Exception:", fluxErr);
             }
-          } catch (fluxErr) {
-            console.error("[flux-fallback] Exception:", fluxErr);
           }
+          if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
         }
-        if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
       }
 
       // Extract image from Gemini result if we don't have one yet
