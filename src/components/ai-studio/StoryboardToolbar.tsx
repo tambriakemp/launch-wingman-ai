@@ -445,14 +445,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   <span>4</span><span>8</span><span>12</span>
                 </div>
               </div>
-            </CollapsibleSection>
 
-            {/* ── Advanced Settings ── */}
-            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
               </div>
+            </CollapsibleSection>
+
+            {/* ── Advanced Settings ── */}
+            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
 
               <div>
                 <MicroLabel>Environment reference</MicroLabel>

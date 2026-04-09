@@ -1,7 +1,7 @@
 import { AppConfig, GeneratedMedia } from "./types";
 
 export const VLOG_CATEGORIES = [
-  "Get Ready With Me", "Morning Routine", "Night Routine", "Cooking / In the Kitchen",
+  "Morning Routine", "Get Ready With Me", "Night Routine", "Cooking / In the Kitchen",
   "Cleaning / Reset Routine", "Lifestyle / Day In My Life", "Work-From-Home",
   "Shopping / Haul", "Self-Care / Spa Day", "Mom Life", "Beauty / Glam", "Travel / Outside",
   "Luxury / Soft Life", "Clean Girl / Minimal", "Dark Academia", "Y2K / Baddie",
