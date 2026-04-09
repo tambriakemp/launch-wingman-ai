@@ -141,12 +141,14 @@ const SegBtn: React.FC<{ active: boolean; onClick: () => void; children: React.R
 const EnvCard: React.FC<{ mode: 'lock' | 'evolve'; selected: boolean; onClick: () => void }> = ({ mode, selected, onClick }) => (
   <button
     onClick={onClick}
-    className={`text-left p-3 rounded-xl border text-xs transition-all duration-150 ${
-      selected ? 'border-border bg-muted/40 shadow-sm' : 'border-border/60 hover:border-border bg-background'
+    className={`text-left p-3 rounded-xl border-2 text-xs transition-all duration-150 ${
+      selected
+        ? 'border-primary bg-primary/10 shadow-md ring-1 ring-primary/30'
+        : 'border-border/50 hover:border-border bg-background'
     }`}
   >
     <div className="text-base mb-1.5">{mode === 'lock' ? '🔒' : '🌊'}</div>
-    <div className="font-semibold text-foreground text-[11px] mb-0.5">{mode === 'lock' ? 'Lock' : 'Evolve'}</div>
+    <div className={`font-semibold text-[11px] mb-0.5 ${selected ? 'text-primary' : 'text-foreground'}`}>{mode === 'lock' ? 'Lock' : 'Evolve'}</div>
     <div className="text-[10px] text-muted-foreground leading-snug">
       {mode === 'lock' ? 'Same location throughout. Only angle and framing change.' : 'Character moves through connected environments. Full vlog feel.'}
     </div>
