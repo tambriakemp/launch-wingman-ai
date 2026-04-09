@@ -426,6 +426,7 @@ serve(async (req) => {
     if (isUpscale && baseImageUrl) {
       pushImage(baseImageUrl);
       contentParts.push({ type: "text", text: "Enhance this image to high quality. Maintain exact details, just increase clarity and resolution." });
+      fullPrompt = "Enhance this image to high quality. Maintain exact details, just increase clarity and resolution.";
     } else {
       // Add locked references first (high priority)
       if (lockedRefs && lockedRefs.length > 0) {
@@ -681,7 +682,7 @@ ${orientationInstruction}`;
             },
             body: JSON.stringify({
               image_url: baseFluxImage,
-              prompt: fullPrompt,
+              prompt: fullPrompt || contentParts.find((p: any) => p.type === 'text')?.text || prompt,
               num_images: 1,
               output_format: "jpeg",
               safety_tolerance: "2",
