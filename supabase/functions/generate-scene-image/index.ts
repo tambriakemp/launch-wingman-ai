@@ -79,6 +79,111 @@ function extractImageFromResponse(data: any): string | null {
   return null;
 }
 
+type GeminiImageResponse = {
+  errorText: string | null;
+  finishReason: string | null;
+  imageUrl: string | null;
+  status: number;
+};
+
+async function requestGeminiImage(contentParts: any[], apiKey: string): Promise<GeminiImageResponse> {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [{ role: "user", content: contentParts }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    return {
+      errorText: responseText,
+      finishReason: null,
+      imageUrl: null,
+      status: response.status,
+    };
+  }
+
+  if (!responseText || responseText.trim().length === 0) {
+    throw new Error("Image generation returned an empty response. Please try again.");
+  }
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (_parseErr) {
+    console.error("Failed to parse AI response:", responseText.substring(0, 500));
+    throw new Error("Image generation returned an invalid response. Please try again.");
+  }
+
+  return {
+    errorText: null,
+    finishReason: data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason || null,
+    imageUrl: extractImageFromResponse(data),
+    status: response.status,
+  };
+}
+
+const BASE_SAFETY_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bteddy\b/gi, "sleepwear set"],
+  [/\blingerie\b/gi, "loungewear"],
+  [/\bbodysuit\b/gi, "fitted top"],
+  [/\bcorset\b/gi, "structured top"],
+  [/\bnegligee\b/gi, "silk nightgown"],
+  [/\bbra\b/gi, "crop top"],
+  [/\bthong\b/gi, "shorts"],
+  [/\bbikini\b/gi, "two-piece swimwear"],
+  [/\bsee[- ]?through\b/gi, "sheer-accent"],
+  [/\bsexy\b/gi, "elegant"],
+  [/\blow[- ]?cut\b/gi, "v-neck"],
+  [/\bbustier\b/gi, "structured top"],
+  [/\bsheer\s*mesh\b/gi, "soft fabric"],
+  [/\bsemi-transparent\b/gi, "textured"],
+  [/\brevealing\b/gi, "tailored"],
+  [/\bd[ée]colletage\b/gi, "neckline"],
+  [/\bcleavage\b/gi, "neckline"],
+  [/\bbare\s*skin\b/gi, "skin visible"],
+  [/\bplunging\b/gi, "classic"],
+  [/\bskin[- ]?tight\b/gi, "fitted"],
+  [/\bbackless\b/gi, "open-back"],
+  [/\bscantily\b/gi, "lightly"],
+  [/\bsuggestive\b/gi, "confident"],
+  [/\bprovocative\b/gi, "bold"],
+  [/\bsensual\b/gi, "elegant"],
+  [/\balluring\b/gi, "refined"],
+  [/\bstrapless\b/gi, "tailored"],
+  [/\bsmokey\b/gi, "soft blended"],
+  [/\bsmoky\b/gi, "soft blended"],
+  [/\bnude-pink gloss\b/gi, "soft rose lip color"],
+  [/\bvisible boning details\b/gi, "panel detailing"],
+];
+
+const STRICT_SAFETY_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bmartini glass\b/gi, "stemmed glass"],
+  [/\bmartini\b/gi, "beverage"],
+  [/\bcocktail glass\b/gi, "glass"],
+  [/\bcocktail\b/gi, "beverage"],
+  [/\bchampagne\b/gi, "sparkling beverage"],
+  [/\bwine\b/gi, "beverage"],
+  [/\balcohol(ic)?\b/gi, "beverage"],
+  [/\bolives\b/gi, "garnish"],
+  [/\bdeep v-neck\b/gi, "classic neckline"],
+  [/\bv-neck\b/gi, "classic neckline"],
+  [/\bneckline\b/gi, "collar line"],
+  [/\bform-fitting\b/gi, "tailored"],
+  [/\bstructured top featuring textured panels\b/gi, "elegant evening top with subtle panel detailing"],
+  [/\bstructured top featuring soft fabric panels\b/gi, "elegant evening top with subtle panel detailing"],
+  [/\bspecial occasion\b/gi, "formal event"],
+];
+
+function applySafetyReplacements(text: string, replacements: Array<[RegExp, string]>): string {
+  return replacements.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), text);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -166,35 +271,23 @@ serve(async (req) => {
     // Sanitize outfit descriptions to avoid safety filter triggers
     const sanitizeOutfit = (desc: string): string => {
       if (!desc) return desc;
-      return desc
-        .replace(/\bteddy\b/gi, 'sleepwear set')
-        .replace(/\blingerie\b/gi, 'loungewear')
-        .replace(/\bbodysuit\b/gi, 'fitted top')
-        .replace(/\bcorset\b/gi, 'structured top')
-        .replace(/\bnegligee\b/gi, 'silk nightgown')
-        .replace(/\bbra\b/gi, 'crop top')
-        .replace(/\bthong\b/gi, 'shorts')
-        .replace(/\bbikini\b/gi, 'two-piece swimwear')
-        .replace(/\bsee[- ]?through\b/gi, 'sheer-accent')
-        .replace(/\bsexy\b/gi, 'elegant')
-        .replace(/\blow[- ]?cut\b/gi, 'v-neck')
-        .replace(/\bbustier\b/gi, 'structured strapless top')
-        .replace(/\bsheer\s*mesh\b/gi, 'semi-transparent fabric')
-        .replace(/\brevealing\b/gi, 'form-fitting')
-        .replace(/\bd[ée]colletage\b/gi, 'neckline')
-        .replace(/\bcleavage\b/gi, 'neckline')
-        .replace(/\bbare\s*skin\b/gi, 'skin visible')
-        .replace(/\bplunging\b/gi, 'deep v-neck')
-        .replace(/\bskin[- ]?tight\b/gi, 'fitted')
-        .replace(/\bbackless\b/gi, 'open-back')
-        .replace(/\bscantily\b/gi, 'lightly')
-        .replace(/\bsuggestive\b/gi, 'confident')
-        .replace(/\bprovocative\b/gi, 'bold')
-        .replace(/\bsensual\b/gi, 'elegant');
+      return applySafetyReplacements(desc, BASE_SAFETY_REPLACEMENTS);
     };
 
     // Apply sanitization to the full prompt text before sending to the model
-    const sanitizePrompt = (text: string): string => sanitizeOutfit(text);
+    const sanitizePrompt = (text: string, level: "standard" | "strict" = "standard"): string => {
+      if (!text) return text;
+
+      let sanitized = applySafetyReplacements(text, BASE_SAFETY_REPLACEMENTS);
+      if (level === "strict") {
+        sanitized = applySafetyReplacements(sanitized, STRICT_SAFETY_REPLACEMENTS);
+      }
+
+      return sanitized
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+\./g, ".")
+        .trim();
+    };
 
     const contentParts: any[] = [];
     let fullPrompt: string = "";
@@ -476,46 +569,46 @@ ${orientationInstruction}`;
 
     if (!imageUrl) {
       // ── Gemini (default + fallback) ──────────────────────────────
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-3-pro-image-preview",
-          messages: [{ role: "user", content: contentParts }],
-          modalities: ["image", "text"]
-        }),
-      });
+      const promptPartIndex = contentParts.findIndex((part) => part?.type === "text" && part?.text === sanitizePrompt(fullPrompt));
 
-      if (!response.ok) {
-        const t = await response.text();
-        console.error("Scene image error:", response.status, t);
-        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        throw new Error(`Image generation failed: ${response.status}`);
+      const handleGeminiErrorStatus = (status: number, errorText: string | null) => {
+        if (errorText) console.error("Scene image error:", status, errorText);
+        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return null;
+      };
+
+      let geminiResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY);
+      const immediateErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
+      if (immediateErrorResponse) return immediateErrorResponse;
+      if (geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult.status}`);
+
+      if (geminiResult.finishReason === "IMAGE_SAFETY") {
+        const strictPrompt = sanitizePrompt(fullPrompt, "strict");
+        const standardPrompt = sanitizePrompt(fullPrompt);
+
+        if (strictPrompt !== standardPrompt && promptPartIndex >= 0) {
+          console.warn("[generate-scene-image] Safety filter hit; retrying with stricter sanitization");
+          const retryContentParts = contentParts.map((part, index) => (
+            index === promptPartIndex ? { ...part, text: strictPrompt } : part
+          ));
+
+          geminiResult = await requestGeminiImage(retryContentParts, LOVABLE_API_KEY);
+          const retryErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
+          if (retryErrorResponse) return retryErrorResponse;
+          if (geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult.status}`);
+        }
       }
 
-      const responseText = await response.text();
-      if (!responseText || responseText.trim().length === 0) {
-        throw new Error("Image generation returned an empty response. Please try again.");
-      }
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error("Failed to parse AI response:", responseText.substring(0, 500));
-        throw new Error("Image generation returned an invalid response. Please try again.");
-      }
-
-      const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
-      if (finishReason === "IMAGE_SAFETY") {
+      if (geminiResult.finishReason === "IMAGE_SAFETY") {
         return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
           status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
-      imageUrl = extractImageFromResponse(data);
+      imageUrl = geminiResult.imageUrl;
       if (!imageUrl) {
-        console.error("No image in response:", JSON.stringify(data).substring(0, 500));
+        console.error("No image returned from Gemini after sanitization retry");
         throw new Error("No image generated");
       }
     }
