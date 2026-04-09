@@ -1,35 +1,43 @@
 
 
-## Plan: Fix safety filter blocks on scene regeneration
+## Problem
 
-### Problem
-Scene 2 regeneration fails with a 422 because Google's image model flags the prompt. The current `sanitizeOutfit` function in `generate-scene-image/index.ts` doesn't catch several trigger words present in the prompt: "bustier," "sheer mesh panels," "revealing fit," "décolletage."
+The prompt editing and regeneration are disconnected in the UI. The SceneCard has two independent interactions:
+1. **Edit mode**: textarea with Save/Cancel buttons — updates `editedPrompt` local state, only writes to storyboard on explicit Save click
+2. **Regenerate button**: the refresh icon on the image overlay — reads from the storyboard (which still has the OLD prompt if Save wasn't clicked)
 
-### Root cause
-The sanitizer only covers a small set of words. The prompt — which includes verbatim outfit descriptions extracted from the reference photo — passes through uncleaned.
+The user edits the prompt, removes "martini glass," then clicks Regenerate directly — but since they didn't click Save first, the storyboard still contains the original prompt with the martini glass reference.
 
-### Fix
+## Fix
 
-**File: `supabase/functions/generate-scene-image/index.ts`**
+**File: `src/components/ai-studio/SceneCard.tsx`**
 
-1. Expand `sanitizeOutfit` with additional replacements:
-   - `bustier` → `structured strapless top`
-   - `sheer mesh` → `semi-transparent fabric`
-   - `revealing` → `form-fitting`
-   - `décolletage` / `decolletage` → `neckline`
-   - `cleavage` → `neckline`
-   - `bare skin` → `exposed`
-   - `plunging` → `deep v-neck`
-   - `skin-tight` → `fitted`
-   - `backless` → `open-back`
-   - `exposed` (in suggestive contexts) — left as-is since it's neutral
+Auto-save any pending prompt edits when the user clicks Regenerate. Two changes:
 
-2. Apply `sanitizeOutfit` not just to `currentOutfit` but also to the **full prompt text** before it's sent to the model. Currently the prompt comes from the storyboard and contains the raw outfit block verbatim. The sanitizer only runs on the config-derived outfit string, not on the prompt itself.
+1. Wrap `onGenerateImage` so that if the prompt is being edited (`isEditing === true`) and the edited text differs from the step's current prompt, call `onUpdatePrompt(editedPrompt)` first, then trigger generation.
 
-3. Add a `sanitizePrompt` wrapper that runs the same replacements on the entire `fullPrompt` string right before it's added to `contentParts`.
+2. Same treatment for video prompt: if `isEditingVideo` and the user triggers video generation, auto-save the video prompt first.
 
-### Scope
-- Single file change: `supabase/functions/generate-scene-image/index.ts`
-- Redeploy the edge function
-- No frontend or database changes
+This way the user can edit the prompt and click Regenerate in one natural flow without needing to remember to click Save.
+
+**File: `src/components/ai-studio/StudioStoryboard.tsx`**
+
+No changes needed — the queue processor already reads from `storyboardRef.current`, so once the prompt is saved to the storyboard state, the latest version will be picked up.
+
+### Technical detail
+
+In SceneCard, create a helper:
+```text
+const handleGenerateWithAutoSave = () => {
+  if (isEditing && editedPrompt !== step.image_prompt) {
+    onUpdatePrompt(editedPrompt);
+    setIsEditing(false);
+  }
+  onGenerateImage();
+};
+```
+
+Replace all `onGenerateImage()` calls in SceneCard with `handleGenerateWithAutoSave()` — this covers the Generate button (empty state), Retry button (error state), and Regenerate overlay icon.
+
+Note: there's a React timing concern — `onUpdatePrompt` triggers `setStoryboard`, but the ref update happens in a `useEffect` after render. Since `onGenerateImage` also triggers `setQueue` in the same synchronous call, both state updates are batched in the same render, and the ref-sync useEffect (which appears before the queue-processor useEffect) will run first. So the prompt will be updated in the ref before the queue processes it.
 
