@@ -116,6 +116,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
+  const [cachedUploadImage, setCachedUploadImage] = useState<string | null>(null);
 
   const hasCharacter = !!referenceImage;
   const hasEnvironment = !!environmentImage;
@@ -153,11 +154,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 <div>
                   <Label label="Character Source" />
                   <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
-                    <button onClick={() => { setCharacterSource('saved'); setConfig(c => ({ ...c, useReferenceAsStart: false })); }}
+                    <button onClick={() => { setCachedUploadImage(referenceImage || null); setCharacterSource('saved'); setConfig(c => ({ ...c, useReferenceAsStart: false })); }}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'saved' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                       Saved Character
                     </button>
-                    <button onClick={() => { setCharacterSource('upload'); setConfig(c => ({ ...c, useReferenceAsStart: true })); }}
+                    <button onClick={() => { setCharacterSource('upload'); setConfig(c => ({ ...c, useReferenceAsStart: true })); if (cachedUploadImage && setReferenceImage) setReferenceImage(cachedUploadImage); }}
                       className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'upload' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                       Upload Photo
                     </button>
@@ -174,7 +175,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       <p className="text-xs font-medium text-foreground">Upload the image you'll use as your first frame.</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">Shot 1 will mirror your image exactly — same position, same environment.</p>
                     </div>
-                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
+                    <UploadZone onImageSelected={(img) => { setCachedUploadImage(img); setReferenceImage(img); }} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
                   </div>
                 )}
 
