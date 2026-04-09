@@ -170,6 +170,22 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
         </div>
       </div>
 
+      {/* Video Controls: Character Bind + Multi-Shot */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <CharacterBindPanel
+          bind={characterBind}
+          onChange={onCharacterBindChange}
+          sessionReferenceUrl={sessionReferenceUrl}
+        />
+        <MultiShotEditor
+          enabled={multiShotEnabled}
+          onToggle={onMultiShotToggle}
+          shots={multiShots}
+          onShotsChange={onMultiShotsChange}
+          defaultPrompt={step.video_prompt}
+        />
+      </div>
+
       {/* Scene Card */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
         <SceneCard
