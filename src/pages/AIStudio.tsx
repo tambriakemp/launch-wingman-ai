@@ -167,12 +167,7 @@ const AIStudio = () => {
               const activePreview = latestStepForPreview.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
 
-              let previousScenePrompt: string | undefined;
-              let nextScenePrompt: string | undefined;
-              if (currentStoryboard) {
-                if (task.index > 0) previousScenePrompt = currentStoryboard.steps[task.index - 1]?.image_prompt;
-                if (task.index < currentStoryboard.steps.length - 1) nextScenePrompt = currentStoryboard.steps[task.index + 1]?.image_prompt;
-              }
+              // previousScenePrompt and nextScenePrompt removed — not consumed by edge function
 
               console.log(`[Identity Gate] Scene ${task.index + 1}: activePreview=${activePreview ? 'SET (' + activePreview.substring(0, 50) + '...)' : 'NULL'}`);
 
@@ -201,8 +196,6 @@ const AIStudio = () => {
                     isUpscale: task.type === 'upscale',
                     baseImageUrl: task.baseImageUrl,
                     anchorImageUrl,
-                    previousScenePrompt,
-                    nextScenePrompt,
                     previousSceneImageUrl,
                     environmentLabel: environmentLabel || undefined,
                     sceneNumber: task.index + 1,

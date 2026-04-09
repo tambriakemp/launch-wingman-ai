@@ -534,7 +534,8 @@ Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, na
 ${orientationInstruction}`;
       }
 
-      contentParts.push({ type: "text", text: sanitizePrompt(fullPrompt) });
+      // Apply strict sanitization from the start to prevent safety blocks
+      contentParts.push({ type: "text", text: sanitizePrompt(fullPrompt, "strict") });
     }
 
     let imageUrl: string | null = null;
@@ -580,8 +581,6 @@ ${orientationInstruction}`;
 
     if (!imageUrl) {
       // ── Gemini (default + fallback) ──────────────────────────────
-      const promptPartIndex = contentParts.findIndex((part) => part?.type === "text" && part?.text === sanitizePrompt(fullPrompt));
-
       const handleGeminiErrorStatus = (status: number, errorText: string | null) => {
         if (errorText) console.error("Scene image error:", status, errorText);
         if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -589,42 +588,60 @@ ${orientationInstruction}`;
         return null;
       };
 
-      // Retry logic for transient errors (503, 500)
+      // Retry logic for transient errors (503, 500) — 3 retries with exponential backoff
       let geminiResult: GeminiImageResponse | null = null;
-      const MAX_RETRIES = 2;
+      const MAX_RETRIES = 3;
+      let allRetries503 = true;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         geminiResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY);
         const immediateErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
         if (immediateErrorResponse) return immediateErrorResponse;
 
         if (geminiResult.status >= 500 && attempt < MAX_RETRIES) {
-          const delay = (attempt + 1) * 2000;
+          const delay = Math.min((attempt + 1) * 2000, 8000);
           console.warn(`[generate-scene-image] Gemini returned ${geminiResult.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
           await new Promise(r => setTimeout(r, delay));
           continue;
         }
+        if (geminiResult.status < 500) allRetries503 = false;
         break;
       }
-      if (!geminiResult || geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult?.status || 'unknown'}`);
 
-      if (geminiResult.finishReason === "IMAGE_SAFETY") {
-        const strictPrompt = sanitizePrompt(fullPrompt, "strict");
-        const standardPrompt = sanitizePrompt(fullPrompt);
-
-        if (strictPrompt !== standardPrompt && promptPartIndex >= 0) {
-          console.warn("[generate-scene-image] Safety filter hit; retrying with stricter sanitization");
-          const retryContentParts = contentParts.map((part, index) => (
-            index === promptPartIndex ? { ...part, text: strictPrompt } : part
-          ));
-
-          geminiResult = await requestGeminiImage(retryContentParts, LOVABLE_API_KEY);
-          const retryErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
-          if (retryErrorResponse) return retryErrorResponse;
-          if (geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult.status}`);
+      // If Gemini exhausted all retries with 503, try Flux fallback
+      if (geminiResult && geminiResult.status >= 500 && allRetries503) {
+        const fallbackFalKey = Deno.env.get("FAL_KEY") || null;
+        const fallbackBaseImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+        if (fallbackFalKey && fallbackBaseImage) {
+          console.log("[generate-scene-image] Gemini 503 exhausted, attempting Flux fallback...");
+          try {
+            const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
+              method: "POST",
+              headers: { "Authorization": `Key ${fallbackFalKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                image_url: fallbackBaseImage,
+                prompt: sanitizePrompt(fullPrompt, "strict"),
+                num_images: 1,
+                output_format: "jpeg",
+                safety_tolerance: "2",
+              }),
+            });
+            if (fluxResponse.ok) {
+              const fluxData = await fluxResponse.json();
+              imageUrl = fluxData?.images?.[0]?.url || null;
+              if (imageUrl) console.log("[flux-fallback] Image generated successfully after Gemini 503");
+            } else {
+              console.error("[flux-fallback] Error:", fluxResponse.status, await fluxResponse.text());
+            }
+          } catch (fluxErr) {
+            console.error("[flux-fallback] Exception:", fluxErr);
+          }
         }
+        if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
+      } else if (!geminiResult || geminiResult.status !== 200) {
+        throw new Error(`Image generation failed: ${geminiResult?.status || 'unknown'}`);
       }
 
-      if (geminiResult.finishReason === "IMAGE_SAFETY") {
+      if (geminiResult?.finishReason === "IMAGE_SAFETY") {
         return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
           status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
