@@ -13,6 +13,15 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({ index, media, onClose, on
   const total = Object.keys(media).length;
   const currentMedia = media[index];
 
+  // Auto-close if there's no valid image to show
+  React.useEffect(() => {
+    if (!currentMedia?.imageUrl) {
+      onClose();
+    }
+  }, [currentMedia?.imageUrl, onClose]);
+
+  if (!currentMedia?.imageUrl) return null;
+
   return (
     <div
       className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md"
