@@ -1,52 +1,33 @@
 
-Plan: fix the black-screen behavior on the last scene regeneration from the frontend side first.
 
-What I found
-- The image-generation backend is not the current failure point: the last `generate-scene-image` request returned `200` with a valid `imageUrl`, and the function logs show successful image generation.
-- That means the “black screen” is most likely a UI state issue in the scene viewer, not the image function itself.
-- The most suspicious areas are:
-  1. `SceneCard.tsx` fullscreen/overlay behavior while regenerating
-  2. `ImageLightbox.tsx` showing a full-screen black layer
-  3. `StudioStoryboard.tsx` returning `null` if the current scene/media temporarily goes missing
-- There is also a React ref warning in `SceneCard` that should be cleaned up because it adds noise while debugging.
+## Plan: Debug and fix black-screen on scene 4 regeneration
 
-Implementation plan
-1. Harden the scene image panel
-- Only allow enlarge/lightbox behavior when a valid image actually exists.
-- Disable zoom/open interactions while a scene is regenerating or if the scene has no loaded image yet.
-- Keep the user on the same scene with a clear inline loading/error state instead of letting the UI fall into a black overlay state.
+### Root cause analysis
 
-2. Make the lightbox fail-safe
-- Update `ImageLightbox.tsx` so it never renders as a full black fullscreen layer without a valid image.
-- If the selected scene has no image, show a proper fallback panel or auto-close instead of leaving the screen black.
-- Add guards for out-of-range indexes and missing `generatedMedia[index]`.
+The edge function logs confirm the image generates successfully and uploads to storage. The issue is on the frontend. Looking at the SceneCard rendering logic, there are two likely causes:
 
-3. Make storyboard rendering resilient
-- In `StudioStoryboard.tsx`, replace the current `if (!step || !media) return null;` with a safer fallback UI.
-- Clamp the current scene index not only against `storyboard.steps.length`, but also against available media entries when needed.
-- This prevents the main workspace from disappearing during state transitions on the last scene.
+1. **Broken image URL with no fallback**: When `media.imageUrl` is truthy (set to a URL), the `<img>` tag renders. If that URL fails to load (expired, 404, CORS), the image shows nothing — just the dark `bg-muted` background. There is no `onError` handler to detect this.
 
-4. Improve regeneration state handling in `AIStudio.tsx`
-- Preserve the existing scene card state more safely while a replacement image is being generated.
-- Ensure the last scene does not briefly enter a missing/undefined render state during `setGeneratedMedia` updates.
-- Add a stricter success path so the new image replaces the old one cleanly and clears loading flags in all cases.
+2. **State update not applying**: The `setGeneratedMedia` call after successful generation might be getting overwritten or not triggering a re-render properly, leaving the media in a state where `imageUrl` is undefined but `isGeneratingImage` is also false — resulting in an empty div with no visible content.
 
-5. Clean up the noisy warning in `SceneCard.tsx`
-- Remove the ref-related warning path around `EditableField` so console output is cleaner and future runtime errors are easier to spot.
-- This is not the black-screen root cause, but it is worth fixing in the same pass.
+### Changes
 
-Technical details
-- Files likely to update:
-  - `src/pages/AIStudio.tsx`
-  - `src/components/ai-studio/SceneCard.tsx`
-  - `src/components/ai-studio/StudioStoryboard.tsx`
-  - `src/components/ai-studio/ImageLightbox.tsx`
-- No backend/database changes are planned for this fix because runtime evidence currently shows the image function is succeeding.
-- I will treat this as a render-state and interaction-guard issue, not a generation-timeout issue.
+#### 1. Add image load error handling in SceneCard (`SceneCard.tsx`)
+- Add an `imageBroken` local state, reset when `media.imageUrl` changes.
+- Add `onError` handler to the `<img>` tag that sets `imageBroken = true` and logs the broken URL.
+- When `imageBroken` is true, render the empty state (Generate Image button) instead of the broken `<img>`.
+- Add `onLoad` handler that logs successful load for debugging.
 
-Verification
-- Regenerate scene 4 specifically.
-- Confirm the request still returns `200` and the scene updates in place.
-- Confirm no fullscreen black layer appears.
-- Confirm the last-scene card remains visible during loading, success, and error states.
-- Confirm image zoom still works normally when a valid image is present.
+#### 2. Add console logging in the queue processor (`AIStudio.tsx`)
+- Log the `data.imageUrl` returned from the edge function before calling `setGeneratedMedia`.
+- Log inside the `setGeneratedMedia` updater to confirm the state is being set.
+- Log after the catch block to confirm no silent errors.
+
+#### 3. Defensive state handling (`AIStudio.tsx`)
+- In the `setGeneratedMedia` success updater (line ~215), add a guard: if `data.imageUrl` is falsy, log an error and don't clear the previous image.
+- Ensure the loading state (`isGeneratingImage`) is always cleared in both success and error paths, even if the response is malformed.
+
+### Files to modify
+- `src/components/ai-studio/SceneCard.tsx` — image error handling + fallback
+- `src/pages/AIStudio.tsx` — debug logging + defensive state updates
+
