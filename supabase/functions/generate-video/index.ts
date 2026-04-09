@@ -30,9 +30,9 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    const { imageUrl, videoPrompt, aspectRatio } = await req.json();
-    if (!imageUrl || !videoPrompt) {
-      return new Response(JSON.stringify({ error: "imageUrl and videoPrompt are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { imageUrl, videoPrompt, aspectRatio, multiShot, characterBindUrl } = await req.json();
+    if (!imageUrl || (!videoPrompt && !multiShot)) {
+      return new Response(JSON.stringify({ error: "imageUrl and (videoPrompt or multiShot) are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Service role client for credit management
@@ -115,27 +115,71 @@ serve(async (req) => {
       }
     }
 
-    // 3. Submit to fal.ai MiniMax image-to-video (no polling — return requestId immediately)
-    console.log("[generate-video] Submitting to fal.ai queue...");
+    // 3. Build request payload
+    // Use Pro endpoint when character bind is enabled (supports `elements` for face locking)
+    // Use Standard endpoint for normal/multi-shot without bind
+    const useProEndpoint = !!characterBindUrl;
+    const endpoint = useProEndpoint
+      ? "fal-ai/kling-video/o3/pro/image-to-video"
+      : "fal-ai/kling-video/o3/standard/image-to-video";
 
-    // Add safety instruction to prevent face reveals on back-facing shots
-    const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
-      ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
-      : "";
-    const enhancedPrompt = videoPrompt + backFacingGuard;
+    console.log(`[generate-video] Using ${useProEndpoint ? 'Pro' : 'Standard'} endpoint, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
 
-    const submitResponse = await fetch("https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video", {
+    // Build the fal.ai payload
+    const falPayload: Record<string, unknown> = {
+      image_url: imageUrl,
+      aspect_ratio: aspectRatio || "9:16",
+    };
+
+    if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
+      // Multi-shot mode
+      falPayload.multi_prompt = multiShot.map((shot: { prompt: string; duration: string }) => ({
+        prompt: shot.prompt,
+        duration: shot.duration,
+      }));
+      falPayload.shot_type = "customize";
+      // Total duration is sum of shot durations
+      const totalDuration = multiShot.reduce((sum: number, s: { duration: string }) => sum + parseInt(s.duration || "5", 10), 0);
+      falPayload.duration = String(Math.min(totalDuration, 15)); // Kling max 15s
+      console.log(`[generate-video] Multi-shot: ${multiShot.length} shots, total ${totalDuration}s`);
+    } else {
+      // Single prompt mode
+      const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
+        ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
+        : "";
+      falPayload.prompt = videoPrompt + backFacingGuard;
+      falPayload.duration = "5";
+    }
+
+    // Character bind — use elements for Pro endpoint
+    if (useProEndpoint && characterBindUrl) {
+      // For Pro i2v, use `start_image_url` instead of `image_url`
+      delete falPayload.image_url;
+      falPayload.start_image_url = imageUrl;
+
+      falPayload.elements = [{
+        image_url: characterBindUrl,
+      }];
+
+      // Append @Element1 to prompt(s) for identity binding
+      if (falPayload.prompt) {
+        falPayload.prompt = `${falPayload.prompt} @Element1`;
+      }
+      if (falPayload.multi_prompt && Array.isArray(falPayload.multi_prompt)) {
+        falPayload.multi_prompt = (falPayload.multi_prompt as any[]).map((shot) => ({
+          ...shot,
+          prompt: `${shot.prompt} @Element1`,
+        }));
+      }
+    }
+
+    const submitResponse = await fetch(`https://queue.fal.run/${endpoint}`, {
       method: "POST",
       headers: {
         "Authorization": `Key ${falKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        prompt: enhancedPrompt,
-        duration: "5",
-        aspect_ratio: aspectRatio || "9:16",
-      }),
+      body: JSON.stringify(falPayload),
     });
 
     if (!submitResponse.ok) {
@@ -178,8 +222,8 @@ serve(async (req) => {
     const submitData = await submitResponse.json();
     console.log("[generate-video] fal.ai submit response keys:", Object.keys(submitData));
     const requestId = submitData.request_id;
-    const statusUrl = submitData.status_url || `https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}/status`;
-    const responseUrl = submitData.response_url || `https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}`;
+    const statusUrl = submitData.status_url || `https://queue.fal.run/${endpoint}/requests/${requestId}/status`;
+    const responseUrl = submitData.response_url || `https://queue.fal.run/${endpoint}/requests/${requestId}`;
 
     if (!requestId) {
       throw new Error("No request_id returned from fal.ai");
