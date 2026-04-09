@@ -3,6 +3,7 @@ import { VlogStep, AspectRatio, GeneratedMedia } from './types';
 import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 const EditableField = ({
@@ -191,27 +192,56 @@ const SceneCard: React.FC<SceneCardProps> = ({
             )}
 
             {hasValidImage && !isLoading && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
-                <button onClick={downloadImage} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                  <Download className="h-3 w-3" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                  <RefreshCw className="h-3 w-3" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} title="Upscale" className="pointer-events-auto px-2 py-1 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-full backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
-                  Upscale
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} title="Edit Prompts" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                  <FileText className="h-3 w-3" />
-                </button>
-              </div>
+              <TooltipProvider delayDuration={300}>
+                <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-40 pointer-events-none">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={downloadImage} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Download</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-primary text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Regenerate</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} className="pointer-events-auto px-2 py-1.5 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-lg backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
+                        Upscale
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Upscale to HD</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <FileText className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Edit Prompts</p></TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             )}
 
             {/* Show prompt icon even when no image */}
             {!hasValidImage && !isLoading && !media.error && (
-              <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} title="Edit Prompts" className="absolute bottom-2 right-2 z-40 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                <FileText className="h-3 w-3" />
-              </button>
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="absolute top-2 right-2 z-40 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                      <FileText className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left"><p>Edit Prompts</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
