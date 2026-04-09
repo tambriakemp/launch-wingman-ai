@@ -1176,6 +1176,13 @@ const AIStudio = () => {
                   setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
                 }}
                 selectionCount={getSelectionCount()}
+                characterBind={characterBind}
+                onCharacterBindChange={setCharacterBind}
+                multiShotEnabled={multiShotEnabled}
+                onMultiShotToggle={setMultiShotEnabled}
+                multiShots={multiShots}
+                onMultiShotsChange={setMultiShots}
+                sessionReferenceUrl={referenceImage}
               />
             </>
           ) : null}
