@@ -1,42 +1,53 @@
 
 
-## Plan: Fix blank-screen image generation — switch to Gemini-first pipeline
+## Plan: Hyper-realistic video generation improvements
 
-### Root Cause
+### Problem
+The current video prompts instruct "subtle 3-second motion" which produces slow, lifeless clips. The Kling API call uses only basic parameters — missing `negative_prompt`, `cfg_scale`, and the Pro endpoint that produces higher quality output.
 
-Your platform setting `image_model` is currently set to `flux_kontext`. This means **every** image generation request routes to fal.ai Flux first. When Flux returns small/blank images or errors, the asset validation layer rejects them (the "10372 bytes" errors you saw), and Gemini only runs as a last-resort fallback after Flux fully fails. This is why "all images are blank" on new projects — Flux is the bottleneck.
+### Changes
 
-### Strategy
+**1. Always use Kling O3 Pro endpoint** (`generate-video/index.ts`)
+- Switch from Standard to Pro for ALL generations (not just character-bind). Pro produces significantly sharper, more realistic output.
+- The endpoint changes from `fal-ai/kling-video/o3/standard/image-to-video` to `fal-ai/kling-video/o3/pro/image-to-video`.
 
-Since you chose **Quality first + Gemini for images**, the plan is:
+**2. Add negative_prompt and cfg_scale** (`generate-video/index.ts`)
+- Add `negative_prompt`: `"blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion"` 
+- Add `cfg_scale`: `0.7` (higher adherence to prompt while allowing natural motion)
 
-1. **Switch the platform setting** `image_model` from `flux_kontext` back to `gemini` in the database, so Gemini is the default for all users immediately.
+**3. Upgrade video prompt instructions in storyboard generator** (`generate-storyboard/index.ts`)
+- Replace the current "subtle 3-second motion" instructions with guidance for natural, human-paced movement:
+  - Specify realistic motion speed (not slow-motion unless intentional)
+  - Include skin/environment realism directives in video prompts
+  - Add breathing motion, natural weight shifts, realistic hair physics
+  - Instruct prompts to describe specific micro-movements (blinking, breathing, slight posture shifts) rather than vague "subtle motion"
 
-2. **Simplify the Gemini path in `generate-scene-image`** — when `platformModel === "gemini"`, skip all Flux/fal.ai key resolution logic entirely (lines 306-355). This removes ~50 lines of unnecessary execution on every request.
+Current video prompt rules (lines 335-341, 389-393) will be replaced with:
 
-3. **Relax asset validation for Gemini base64 responses** — Gemini returns large base64 data URIs (typically 200KB+), so the size/entropy checks are irrelevant for base64. Only apply `validateGeneratedAsset` when the image was fetched from a URL (Flux path). For base64, just verify the format magic bytes.
+```
+VIDEO PROMPT RULES (CRITICAL):
+- video_prompt describes NATURAL REAL-TIME motion (not slow motion) from the SAME camera angle
+- Include micro-realism: natural blinking, subtle breathing chest movement, weight shifts, micro-expressions
+- Skin must look alive: describe light catching pores, natural skin sheen, realistic subsurface scattering
+- Environment must feel real: describe ambient movement (leaves, fabric draping, steam, light flicker)
+- Motion pacing: real human speed — not cinematic slow-mo unless explicitly requested
+- Hair physics: natural strand movement, not frozen or floating
+- If back/side facing, KEEP that angle — do NOT rotate character to face camera
+- Example: "She tilts her head naturally while speaking, subtle smile forming, hair catches the light as it shifts, chest rises with a breath, background city traffic moves at normal speed"
+```
 
-4. **Keep Flux as BYOK-only option** — users with a personal fal.ai key can still select Flux via a future per-user setting, but the platform default is Gemini.
-
-5. **Add retry with model downgrade** — if `gemini-3-pro-image-preview` returns 503 after 3 retries, try once with `gemini-3.1-flash-image-preview` (faster, still good quality) before giving up.
-
-### On videos: Kling vs Gemini
-
-- **Kling (via fal.ai)** is purpose-built for image-to-video and produces cinematic, consistent motion. It's the right choice for your video pipeline.
-- **Gemini** does not currently offer a comparable image-to-video API through the Lovable AI Gateway — it's text/image generation only.
-- **Recommendation**: Keep Kling for videos, use Gemini for images. No changes to the video pipeline.
+**4. Increase default duration to 10s** (`generate-video/index.ts`)
+- Change default single-prompt duration from `"5"` to `"10"` — 5 seconds often feels too short and forces unnaturally compressed motion.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-scene-image/index.ts` | Simplify Gemini-first flow, skip Flux resolution when platform=gemini, relax base64 validation, add flash-image fallback |
-| Database | Update `platform_settings` row: `image_model` = `"gemini"` |
+| `supabase/functions/generate-video/index.ts` | Always use Pro endpoint, add negative_prompt + cfg_scale, default 10s duration |
+| `supabase/functions/generate-storyboard/index.ts` | Upgrade video prompt rules for hyper-realistic, natural-paced motion |
 
-### What This Fixes
-
-- All new image generations will use Gemini directly — no more Flux blank frames
-- No more "10372 bytes" validation errors from small Flux outputs
-- Faster generation (no wasted Flux attempt before Gemini fallback)
-- Videos continue using Kling unchanged
+### Impact
+- Pro endpoint costs ~2x Standard per generation (same credit deduction, higher fal.ai cost)
+- Higher quality output: sharper skin, better motion fidelity, less blur/shake
+- Videos will feel more "real person filmed on phone" vs "AI slow-motion"
 
