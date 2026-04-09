@@ -115,6 +115,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
 
   const hasCharacter = !!referenceImage;
   const hasEnvironment = !!environmentImage;
@@ -148,23 +149,27 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             {/* Step 1 — Character */}
             <CollapsibleSection title="1 · Character" defaultOpen statusActive={hasCharacter}>
               <div className="space-y-4">
-                <div className="space-y-1 mb-3">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Choose your character source</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Option A — Saved Character:</strong> Select a character you've already built. Their photos and profile will be applied automatically.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Option B — Upload New Photo:</strong> Upload a reference photo or selfie. This will be used as the face reference or start image for your vlog, UGC, or carousel.
-                  </p>
+                {/* Character source toggle */}
+                <div>
+                  <Label label="Character Source" />
+                  <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
+                    <button onClick={() => setCharacterSource('saved')}
+                      className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'saved' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                      Saved Character
+                    </button>
+                    <button onClick={() => setCharacterSource('upload')}
+                      className={`py-1.5 text-xs font-medium rounded transition-all ${characterSource === 'upload' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                      Upload Photo
+                    </button>
+                  </div>
                 </div>
 
-                {setReferenceImage && (
-                  <>
-                    <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
+                {setReferenceImage && characterSource === 'saved' && (
+                  <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} onCharacterSelect={onCharacterSelect} />
+                )}
 
-
-                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
-                  </>
+                {setReferenceImage && characterSource === 'upload' && (
+                  <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
                 )}
 
 
