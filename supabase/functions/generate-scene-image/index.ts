@@ -305,54 +305,36 @@ serve(async (req) => {
 
     let falKeyForImages: string | null = null;
     let falKeySource: string = "none";
+    // Only resolve Flux/fal.ai keys when the platform explicitly selects flux_kontext
     if (platformModel === "flux_kontext") {
-      // Try to resolve the user ID for BYOK key lookup
       let resolvedUserId: string | null = null;
-
-      // Method 1: JWT from Authorization header
       const authHeaderForModel = req.headers.get("Authorization");
       if (authHeaderForModel) {
         const tokenForModel = authHeaderForModel.replace("Bearer ", "");
         const { data: { user: modelUser } } = await supabaseAdmin.auth.getUser(tokenForModel);
-        if (modelUser?.id) {
-          resolvedUserId = modelUser.id;
-        }
+        if (modelUser?.id) resolvedUserId = modelUser.id;
       }
-
-      // Method 2: userId passed in body (from ai-studio-api proxy with service role token)
       if (!resolvedUserId && bodyUserId) {
         resolvedUserId = bodyUserId;
         console.log(`[generate-scene-image] Using userId from request body for BYOK lookup`);
       }
-
-      // Look up user's BYOK fal.ai key
       if (resolvedUserId) {
         const { data: userKey } = await supabaseAdmin
-          .from("user_api_keys")
-          .select("api_key")
-          .eq("user_id", resolvedUserId)
-          .eq("service", "fal_ai")
-          .maybeSingle();
-        if (userKey?.api_key) {
-          falKeyForImages = userKey.api_key;
-          falKeySource = "user_byok";
-        }
+          .from("user_api_keys").select("api_key")
+          .eq("user_id", resolvedUserId).eq("service", "fal_ai").maybeSingle();
+        if (userKey?.api_key) { falKeyForImages = userKey.api_key; falKeySource = "user_byok"; }
       }
-
-      // Fallback to platform FAL_KEY
       if (!falKeyForImages) {
         falKeyForImages = Deno.env.get("FAL_KEY") || null;
         if (falKeyForImages) falKeySource = "platform";
       }
-
       console.log(`[generate-scene-image] FAL key source: ${falKeySource}, resolved userId: ${resolvedUserId || 'none'}`);
     }
 
-    // Determine if Flux should be used — allow for complex scenes too (no longer forced Gemini)
     const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
     let modelUsed = useFlux ? "flux_kontext" : "gemini";
     let wasFallback = false;
-    console.log(`[generate-scene-image] Model: ${modelUsed}, platform setting: ${platformModel}, fal key source: ${falKeySource}`);
+    console.log(`[generate-scene-image] Model: ${modelUsed}, platform setting: ${platformModel}`);
     // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
