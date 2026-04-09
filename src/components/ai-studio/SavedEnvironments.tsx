@@ -265,18 +265,20 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between">
-          <button onClick={() => setCreatingGroup(true)}
-            className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors">
-            <Plus className="h-4 w-4" /> Add Environment Group
+        <>
+          <div className="flex items-center justify-between">
+            <button onClick={() => setCreatingGroup(true)}
+              className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors">
+              <Plus className="h-4 w-4" /> Add Environment Group
+            </button>
+          </div>
+          <button
+            onClick={() => navigate('/app/ai-studio/environments')}
+            className="text-[10px] text-primary hover:underline text-center w-full mt-1"
+          >
+            Manage in Environment Builder →
           </button>
-        </div>
-        <button
-          onClick={() => navigate('/app/ai-studio/environments')}
-          className="text-[10px] text-primary hover:underline text-center w-full mt-1"
-        >
-          Manage in Environment Builder →
-        </button>
+        </>
       )}
     </div>
   );
