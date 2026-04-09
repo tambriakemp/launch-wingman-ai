@@ -188,7 +188,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 {!isLoading && !media.error && (
                   <>
                     <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }}>
                       Generate Image
                     </Button>
                     <p className="text-[9px] text-muted-foreground mt-2">May take 1–3 minutes</p>
@@ -210,7 +210,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
               <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
                 <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
                 <p className="text-xs font-bold text-destructive-foreground mb-1">Failed</p>
-                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>Retry</Button>
+                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }}>Retry</Button>
               </div>
             )}
 
@@ -219,7 +219,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <button onClick={downloadImage} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                   <Download className="h-3 w-3" />
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); onGenerateImage(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                <button onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                   <RefreshCw className="h-3 w-3" />
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} title="Upscale" className="pointer-events-auto px-2 py-1 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-full backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
@@ -241,7 +241,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 {!isVideoLoading && !media.videoError && (
                   <>
                     <Video className="h-8 w-8 text-muted-foreground mb-2" />
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} disabled={!media.imageUrl}>
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} disabled={!media.imageUrl}>
                       Generate Video
                     </Button>
                     {!media.imageUrl ? <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p> : <p className="text-[9px] text-muted-foreground mt-2">May take 3–5 minutes</p>}
@@ -260,7 +260,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
                 <p className="text-xs font-bold text-destructive-foreground mb-0.5">Video Failed</p>
                 <p className="text-[10px] text-destructive-foreground/90 mb-2 max-w-[90%] line-clamp-2">{media.videoError}</p>
-                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }}>Retry</Button>
+                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }}>Retry</Button>
               </div>
             )}
             {media.videoUrl && !isVideoLoading && (
@@ -268,7 +268,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <button onClick={downloadVideo} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                   <Download className="h-3 w-3" />
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                <button onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                   <RefreshCw className="h-3 w-3" />
                 </button>
               </div>
