@@ -302,18 +302,18 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
               {/* Saved character → optional Path A toggle */}
               {config.creationMode !== 'ugc' && characterSource === 'saved' && (
-                <div className={`rounded-xl border transition-all duration-200 overflow-hidden ${config.useReferenceAsStart ? 'border-border/40' : 'border-border/25 bg-muted/10'}`}>
+                <div className={`rounded-xl border transition-all duration-200 overflow-hidden ${config.useReferenceAsStart ? 'border-border shadow-card' : 'border-border/50'}`}>
                   <div className="flex items-start justify-between gap-3 px-4 py-3.5">
                     <div>
-                      <p className="text-[12px] font-medium text-foreground">Let AI direct from this photo</p>
-                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed font-light">
+                      <p className="text-[12px] font-semibold text-foreground">Let AI direct from this photo</p>
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                         AI reads the image and builds the full storyboard — no concept needed.
                       </p>
                     </div>
                     <Switch checked={config.useReferenceAsStart} onCheckedChange={(v) => setConfig(c => ({ ...c, useReferenceAsStart: v }))} />
                   </div>
                   {config.useReferenceAsStart && (
-                    <div className="px-4 pb-4 border-t border-border/20 pt-4 space-y-3 bg-background">
+                    <div className="px-4 pb-4 border-t border-border pt-4 space-y-3 bg-background">
                       <MicroLabel>Environment</MicroLabel>
                       <div className="grid grid-cols-2 gap-2">
                         <EnvCard mode="lock" selected={config.environmentMode === 'lock'} onClick={() => setConfig(c => ({ ...c, environmentMode: 'lock' }))} />
