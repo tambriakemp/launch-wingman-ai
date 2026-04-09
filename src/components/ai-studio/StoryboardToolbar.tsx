@@ -170,11 +170,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
                 {setReferenceImage && characterSource === 'upload' && (
                   <div className="space-y-2">
-                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
-                    <div className="bg-muted/50 border border-border rounded-lg px-3 py-2.5">
+                    <div className="px-1">
                       <p className="text-xs font-medium text-foreground">Upload the image you'll use as your first frame.</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">Shot 1 will mirror your image exactly — same position, same environment.</p>
                     </div>
+                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
                   </div>
                 )}
 
@@ -272,18 +272,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         ))}
                       </div>
                     )}
-                    <div className="pt-2 border-t border-border">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
-                          className="rounded border-border text-primary focus:ring-primary bg-muted" />
-                        <span className="text-xs font-medium text-foreground">Use own script ✍️</span>
-                      </label>
-                      {config.useOwnScript && (
-                        <textarea placeholder="Paste your script here..."
-                          value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] mt-2 focus:ring-1 focus:ring-primary" />
-                      )}
-                    </div>
                   </>
                 )}
 
