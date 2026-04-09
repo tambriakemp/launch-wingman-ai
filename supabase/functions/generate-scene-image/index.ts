@@ -86,6 +86,102 @@ type GeminiImageResponse = {
   status: number;
 };
 
+type DetectedImageFormat = {
+  extension: "jpg" | "png" | "webp";
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+};
+
+function detectImageFormat(bytes: Uint8Array, hintedMimeType?: string | null): DetectedImageFormat | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return { extension: "jpg", mimeType: "image/jpeg" };
+  }
+
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
+    bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a
+  ) {
+    return { extension: "png", mimeType: "image/png" };
+  }
+
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) {
+    return { extension: "webp", mimeType: "image/webp" };
+  }
+
+  if (hintedMimeType?.includes("jpeg") || hintedMimeType?.includes("jpg")) {
+    return { extension: "jpg", mimeType: "image/jpeg" };
+  }
+  if (hintedMimeType?.includes("png")) {
+    return { extension: "png", mimeType: "image/png" };
+  }
+  if (hintedMimeType?.includes("webp")) {
+    return { extension: "webp", mimeType: "image/webp" };
+  }
+
+  return null;
+}
+
+function estimateByteEntropy(bytes: Uint8Array, sampleTarget = 4096): number {
+  if (bytes.length === 0) return 0;
+
+  const counts = new Array<number>(256).fill(0);
+  const step = Math.max(1, Math.floor(bytes.length / sampleTarget));
+  let samples = 0;
+
+  for (let i = 0; i < bytes.length; i += step) {
+    counts[bytes[i]] += 1;
+    samples += 1;
+  }
+
+  let entropy = 0;
+  for (const count of counts) {
+    if (!count) continue;
+    const p = count / samples;
+    entropy -= p * Math.log2(p);
+  }
+
+  return entropy;
+}
+
+function getMinimumAssetSize(aspectRatio: string): number {
+  if (aspectRatio === "9:16") return 15000;
+  if (aspectRatio === "16:9") return 12000;
+  return 10000;
+}
+
+function validateGeneratedAsset(
+  bytes: Uint8Array,
+  aspectRatio: string,
+  format: DetectedImageFormat,
+): string | null {
+  const minimumSize = getMinimumAssetSize(aspectRatio);
+  if (bytes.length < minimumSize) {
+    return `Generated image appears invalid (${bytes.length} bytes for ${aspectRatio}). Please retry.`;
+  }
+
+  const entropy = estimateByteEntropy(bytes);
+  console.log(`[generate-scene-image] Asset entropy: ${entropy.toFixed(2)}`);
+
+  const isSuspiciouslyFlat = bytes.length < minimumSize * 1.5 && entropy < 4.25;
+  if (isSuspiciouslyFlat) {
+    return `Generated ${format.mimeType} appears blank or corrupted. Please retry.`;
+  }
+
+  if (format.mimeType === "image/jpeg" && bytes.length >= 2) {
+    const last = bytes[bytes.length - 1];
+    const secondLast = bytes[bytes.length - 2];
+    if (!(secondLast === 0xff && last === 0xd9)) {
+      return "Generated JPEG appears truncated. Please retry.";
+    }
+  }
+
+  return null;
+}
+
 async function requestGeminiImage(contentParts: any[], apiKey: string): Promise<GeminiImageResponse> {
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -723,8 +819,10 @@ ${orientationInstruction}`;
     }
 
     let bytes: Uint8Array;
+    let hintedMimeType: string | null = null;
     if (imageUrl.startsWith("data:")) {
-      const base64Data = imageUrl.split(",")[1];
+      const [dataHeader, base64Data] = imageUrl.split(",");
+      hintedMimeType = dataHeader.match(/^data:([^;]+)/)?.[1] || null;
       const binaryString = atob(base64Data);
       bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -736,27 +834,37 @@ ${orientationInstruction}`;
         console.error(`[generate-scene-image] Failed to fetch generated image: ${imgResp.status}`);
         throw new Error("Generated image could not be retrieved");
       }
-      const contentType = imgResp.headers.get("content-type") || "";
-      if (!contentType.startsWith("image/")) {
-        console.error(`[generate-scene-image] Non-image content-type: ${contentType}`);
+      hintedMimeType = imgResp.headers.get("content-type") || "";
+      if (!hintedMimeType.startsWith("image/")) {
+        console.error(`[generate-scene-image] Non-image content-type: ${hintedMimeType}`);
         throw new Error("Generated asset is not a valid image");
       }
       bytes = new Uint8Array(await imgResp.arrayBuffer());
     }
-    
-    // Validate asset size — reject suspiciously small images (likely black/empty)
-    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes`);
-    if (bytes.length < 5000) {
-      console.error(`[generate-scene-image] Asset too small (${bytes.length} bytes), likely invalid`);
-      throw new Error("Generated image appears invalid (too small). Please retry.");
+
+    const detectedFormat = detectImageFormat(bytes, hintedMimeType);
+    if (!detectedFormat) {
+      console.error(`[generate-scene-image] Unsupported/unknown image format. Hint: ${hintedMimeType || 'none'}`);
+      throw new Error("Generated image format is invalid. Please retry.");
     }
 
-    const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes, mime: ${detectedFormat.mimeType}`);
+    const assetValidationError = validateGeneratedAsset(
+      bytes,
+      aspectRatio || config?.aspectRatio || "9:16",
+      detectedFormat,
+    );
+    if (assetValidationError) {
+      console.error(`[generate-scene-image] ${assetValidationError}`);
+      throw new Error(assetValidationError);
+    }
+
+    const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${detectedFormat.extension}`;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { error: uploadError } = await supabase.storage
       .from("ai-studio")
-      .upload(fileName, bytes, { contentType: "image/png", upsert: true });
+      .upload(fileName, bytes, { contentType: detectedFormat.mimeType, upsert: true });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
