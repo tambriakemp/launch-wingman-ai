@@ -1047,7 +1047,7 @@ const AIStudio = () => {
               let tasks: QueueItem[] = storyboard.steps
                 .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
                 .filter(t => !generatedMedia[t.index]?.imageUrl);
-              if ((config.carouselAesthetic || config.carouselVibe) && tasks.length > 0) {
+              if (config.carouselVibe && tasks.length > 0) {
                 tasks.sort((a, b) => a.index - b.index);
               }
               if (tasks.length > 0) addToQueue(tasks);
