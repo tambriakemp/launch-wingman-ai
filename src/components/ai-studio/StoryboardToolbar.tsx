@@ -424,7 +424,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Advanced Settings ── */}
-            <CollapsibleSection title="Skin / Nails / Makeup / Hairstyle" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
+            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
@@ -467,44 +467,50 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               )}
 
               <div>
-                <MicroLabel>Makeup</MicroLabel>
-                <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
-                {config.makeup === 'Custom' && (
-                  <input type="text" placeholder="Custom makeup..." value={config.customMakeup}
-                    onChange={(e) => setConfig(c => ({ ...c, customMakeup: e.target.value }))}
-                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                )}
+                <p className="text-[9px] font-medium tracking-[0.2em] uppercase text-muted-foreground pb-3 border-b border-border">Skin / Nails / Makeup / Hairstyle</p>
               </div>
 
-              <div>
-                <MicroLabel>Hairstyle</MicroLabel>
-                <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
-                {config.hairstyle.includes('Custom') && (
-                  <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
-                    onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
-                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                )}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                <div>
+                  <MicroLabel>Makeup</MicroLabel>
+                  <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
+                </div>
+                <div>
+                  <MicroLabel>Hairstyle</MicroLabel>
+                  <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
+                </div>
+                <div>
+                  <MicroLabel>Skin complexion</MicroLabel>
+                  <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
+                </div>
+                <div>
+                  <MicroLabel>Skin undertone</MicroLabel>
+                  <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
+                </div>
+                <div>
+                  <MicroLabel>Nails</MicroLabel>
+                  <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
+                  {config.nailStyle === 'Custom' && (
+                    <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
+                      onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
+                      className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
+                  )}
+                </div>
               </div>
-
-              <div>
-                <MicroLabel>Skin complexion</MicroLabel>
-                <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
-              </div>
-
-              <div>
-                <MicroLabel>Skin undertone</MicroLabel>
-                <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
-              </div>
-
-              <div>
-                <MicroLabel>Nails</MicroLabel>
-                <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
-                {config.nailStyle === 'Custom' && (
-                  <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
-                    onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
-                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                )}
-              </div>
+              {(config.makeup === 'Custom' || config.hairstyle.includes('Custom')) && (
+                <div className="space-y-2">
+                  {config.makeup === 'Custom' && (
+                    <input type="text" placeholder="Custom makeup..." value={config.customMakeup}
+                      onChange={(e) => setConfig(c => ({ ...c, customMakeup: e.target.value }))}
+                      className="w-full bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
+                  )}
+                  {config.hairstyle.includes('Custom') && (
+                    <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
+                      onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
+                      className="w-full bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
+                  )}
+                </div>
+              )}
 
               <div className="pt-1 border-t border-border/30">
                 <SavedLooks config={config} setConfig={setConfig} />
