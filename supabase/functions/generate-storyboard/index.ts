@@ -24,7 +24,7 @@ serve(async (req) => {
 
     // Topic brainstorming
     if (action === "brainstorm") {
-      const isCarousel = !!(config.carouselVibe || config.carouselAesthetic);
+      const isCarousel = !!config.carouselVibe;
 
       // Build character context from all available profile info
       const outfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
@@ -140,7 +140,7 @@ No numbers. No extra text. Just 6 lines.`;
     // Full storyboard generation
     if (action === "generate") {
       let systemPrompt: string;
-      const isCarousel = !!(config.carouselVibe || config.carouselAesthetic);
+      const isCarousel = !!config.carouselVibe;
 
       if (isCarousel) {
         const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 5;
@@ -175,7 +175,7 @@ ALL subsequent slides MUST copy-paste this ENTIRE identity block verbatim into t
 
 CAROUSEL BRIEF:
 - Scene Description: ${config.carouselVibe}
-- Aesthetic / Mood: ${config.carouselAesthetic}
+- Aesthetic / Mood: ${config.vlogCategory}
 - Character Style: ${getStyleDescription()}
 - Number of slides: ${carouselSlideCount}
 ${useRefAsStart ? '- Scene 1: IS the unmodified reference photo — do NOT reimagine it' : ''}
@@ -188,7 +188,7 @@ THE VISUAL ANCHOR (lock these across ALL slides):
 - Same character with identical appearance (face, hair, skin, outfit, jewelry, nails)
 - Same environment/setting: ${config.carouselVibe}
 - Same time of day and lighting quality (consistent throughout)
-- Same aesthetic mood: ${config.carouselAesthetic}
+- Same aesthetic mood: ${config.vlogCategory}
 - Same color palette derived from the setting and aesthetic
 
 SHOT PALETTE (CRITICAL — vary across this spectrum):
