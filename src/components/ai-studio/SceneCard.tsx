@@ -196,7 +196,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-40 pointer-events-none">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button onClick={downloadImage} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                      <button onClick={downloadImage} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                         <Download className="h-4 w-4" />
                       </button>
                     </TooltipTrigger>
@@ -204,7 +204,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-primary text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                      <button onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                         <RefreshCw className="h-4 w-4" />
                       </button>
                     </TooltipTrigger>
@@ -212,15 +212,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} className="pointer-events-auto px-2 py-1.5 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-lg backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
-                        Upscale
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left"><p>Upscale to HD</p></TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                      <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                         <FileText className="h-4 w-4" />
                       </button>
                     </TooltipTrigger>
@@ -235,7 +227,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="absolute top-2 right-2 z-40 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                    <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} className="absolute top-2 right-2 z-40 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                       <FileText className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
