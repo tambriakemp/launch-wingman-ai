@@ -118,9 +118,24 @@ const SceneCard: React.FC<SceneCardProps> = ({
     if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4');
   };
 
+  const [imageBroken, setImageBroken] = useState(false);
+
+  useEffect(() => { setImageBroken(false); }, [media.imageUrl]);
+
+  const handleImageError = () => {
+    console.error('[SceneCard] Image failed to load:', media.imageUrl);
+    setImageBroken(true);
+  };
+
+  const handleImageLoad = () => {
+    console.log('[SceneCard] Image loaded OK:', media.imageUrl?.slice(0, 80));
+    setImageBroken(false);
+  };
+
   const isLoading = media.isGeneratingImage || media.isUpscaling;
   const isVideoLoading = media.isGeneratingVideo;
   const cssAspectRatio = aspectRatio.replace(':', '/');
+  const hasValidImage = !!media.imageUrl && !imageBroken;
 
   // EditableField moved outside the component to prevent remount on every render
 
@@ -145,13 +160,13 @@ const SceneCard: React.FC<SceneCardProps> = ({
         <div className="flex flex-col gap-2">
           <h4 className="text-xs font-bold text-muted-foreground uppercase">Image Reference</h4>
           <div
-            className={`relative w-full bg-muted group overflow-hidden rounded-lg border border-border ${media.imageUrl && !isLoading ? 'cursor-zoom-in' : ''}`}
+            className={`relative w-full bg-muted group overflow-hidden rounded-lg border border-border ${hasValidImage && !isLoading ? 'cursor-zoom-in' : ''}`}
             style={{ aspectRatio: cssAspectRatio }}
-            onClick={() => { if (media.imageUrl && !isLoading) onEnlarge(); }}
+            onClick={() => { if (hasValidImage && !isLoading) onEnlarge(); }}
           >
 
-            {media.imageUrl ? (
-              <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            {hasValidImage ? (
+              <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                 {!isLoading && !media.error && (
@@ -183,7 +198,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
               </div>
             )}
 
-            {media.imageUrl && !isLoading && (
+            {hasValidImage && !isLoading && (
               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
                 <button onClick={downloadImage} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
                   <Download className="h-3 w-3" />
