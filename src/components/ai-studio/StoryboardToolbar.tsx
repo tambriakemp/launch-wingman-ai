@@ -169,7 +169,13 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 )}
 
                 {setReferenceImage && characterSource === 'upload' && (
-                  <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
+                  <div className="space-y-2">
+                    <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Photo / Avatar" subtext="Use as a face reference or the start image of your content." />
+                    <div className="bg-muted/50 border border-border rounded-lg px-3 py-2.5">
+                      <p className="text-xs font-medium text-foreground">Upload the image you'll use as your first frame.</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Shot 1 will mirror your image exactly — same position, same environment.</p>
+                    </div>
+                  </div>
                 )}
 
 
