@@ -57,8 +57,6 @@ interface SceneCardProps {
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
   onUpdateScript?: (newScript: string) => void;
-  onUpdateAction?: (newAction: string) => void;
-  onUpdateDetail?: (newDetail: string) => void;
 }
 
 const SceneCard: React.FC<SceneCardProps> = ({
@@ -66,7 +64,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
   onGenerateImage, onUpscale, onGenerateVideo,
   onToggleSelect, onEnlarge,
   onUpdatePrompt, onUpdateVideoPrompt,
-  onUpdateScript, onUpdateAction, onUpdateDetail
+  onUpdateScript
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(step.image_prompt);
@@ -74,17 +72,11 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const [editedVideoPrompt, setEditedVideoPrompt] = useState(step.video_prompt);
   const [isEditingScript, setIsEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState(step.script);
-  const [isEditingAction, setIsEditingAction] = useState(false);
-  const [editedAction, setEditedAction] = useState(step.a_roll);
-  const [isEditingDetail, setIsEditingDetail] = useState(false);
-  const [editedDetail, setEditedDetail] = useState(step.close_up_details);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
 
   useEffect(() => { setEditedPrompt(step.image_prompt); }, [step.image_prompt]);
   useEffect(() => { setEditedVideoPrompt(step.video_prompt); }, [step.video_prompt]);
   useEffect(() => { setEditedScript(step.script); }, [step.script]);
-  useEffect(() => { setEditedAction(step.a_roll); }, [step.a_roll]);
-  useEffect(() => { setEditedDetail(step.close_up_details); }, [step.close_up_details]);
 
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
   const handleSaveVideoPrompt = () => { onUpdateVideoPrompt(editedVideoPrompt); setIsEditingVideo(false); };
@@ -303,33 +295,6 @@ const SceneCard: React.FC<SceneCardProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="border-l-2 border-primary pl-3">
-                <EditableField
-                  label="Action"
-                  value={step.a_roll}
-                  editedValue={editedAction}
-                  isFieldEditing={isEditingAction}
-                  onEdit={() => setIsEditingAction(true)}
-                  onSave={() => { onUpdateAction?.(editedAction); setIsEditingAction(false); }}
-                  onCancel={() => { setIsEditingAction(false); setEditedAction(step.a_roll); }}
-                  onChange={setEditedAction}
-                />
-              </div>
-              <div>
-                <EditableField
-                  label="Detail"
-                  value={step.close_up_details}
-                  editedValue={editedDetail}
-                  isFieldEditing={isEditingDetail}
-                  colorClass="text-muted-foreground"
-                  onEdit={() => setIsEditingDetail(true)}
-                  onSave={() => { onUpdateDetail?.(editedDetail); setIsEditingDetail(false); }}
-                  onCancel={() => { setIsEditingDetail(false); setEditedDetail(step.close_up_details); }}
-                  onChange={setEditedDetail}
-                />
-              </div>
-            </div>
 
             {/* Image Prompt */}
             <div className="space-y-2 bg-muted/30 p-3 rounded-lg border border-border">

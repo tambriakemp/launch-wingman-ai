@@ -1158,8 +1158,6 @@ const AIStudio = () => {
                 onUpdatePrompt={handleUpdatePrompt}
                 onUpdateVideoPrompt={handleUpdateVideoPrompt}
                 onUpdateScript={handleUpdateScript}
-                onUpdateAction={handleUpdateAction}
-                onUpdateDetail={handleUpdateDetail}
                 onBatchRegenerate={() => handleBatchAction('regenerate')}
                 onBatchUpscale={() => handleBatchAction('upscale')}
                 onBatchGenerateVideo={() => handleBatchAction('video')}
