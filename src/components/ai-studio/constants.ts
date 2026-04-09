@@ -140,6 +140,7 @@ export const INITIAL_CONFIG: AppConfig = {
   useProductAsHair: false,
   exactMatch: true,
   matchFace: true,
+
   matchSkin: true,
   aspectRatio: '9:16',
   outfitType: "Default Outfit",
@@ -158,8 +159,8 @@ export const INITIAL_CONFIG: AppConfig = {
   nailStyle: "Long Coffin Nails",
   customNailStyle: "",
   cameraMovement: "Handheld / Vlog Style (Natural Shake)",
-  ultraRealistic: false,
-  sceneCount: 5,
+  ultraRealistic: true,
+  sceneCount: null,
   useReferenceAsStart: false
 };
 

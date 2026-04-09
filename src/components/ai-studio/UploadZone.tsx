@@ -134,7 +134,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
               <p className="text-xs text-foreground">
                 <span className="font-semibold text-primary">Click to upload</span> or drag & drop
               </p>
-              <p className="text-[10px] text-muted-foreground">{subtext}</p>
+              <p className="text-xs text-muted-foreground">{subtext}</p>
             </div>
           </div>
         )}

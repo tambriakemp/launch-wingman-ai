@@ -237,7 +237,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     </div>
                     <div>
                       <div className="flex justify-between items-center mb-1.5">
-                        <Label label="Topic / Scene Description" />
+                        <Label label="Topic / Scene Description / Prompt" />
                         {onGenerateTopicIdeas && (
                           <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
                             className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
@@ -246,7 +246,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         )}
                       </div>
                       <textarea
-                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept or scene — location, vibe, lighting, props..."}
+                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept, scene, or paste a detailed prompt — location, vibe, lighting, props, outfit details..."}
                         value={config.vlogTopic}
                         onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
                         className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
@@ -292,8 +292,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
             </CollapsibleSection>
 
-            {/* Step 3 — Advanced Settings */}
-            <CollapsibleSection title="⚙️ Advanced Settings">
+            {/* Step 3 — Settings */}
+            <CollapsibleSection title="3 · Settings">
               <div className="space-y-3">
                 {/* Orientation */}
                 <div>
@@ -313,12 +313,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </div>
                 </div>
 
-                {/* Camera Movement */}
-                <div>
-                  <Label label="Camera Movement" />
-                  <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
-                </div>
-
                 {/* Number of Scenes */}
                 <div>
                   <Label label="Number of Scenes" />
@@ -332,38 +326,18 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       <option key={n} value={n}>{n} scenes</option>
                     ))}
                   </select>
+                  <p className="text-[10px] text-muted-foreground mt-1">Auto analyzes your prompt to determine the ideal number of scenes.</p>
                 </div>
+              </div>
+            </CollapsibleSection>
 
-                {/* Environment Reference */}
+            {/* Step 4 — Advanced Settings */}
+            <CollapsibleSection title="⚙️ Advanced Settings">
+              <div className="space-y-3">
+                {/* Camera Movement */}
                 <div>
-                  <Label label="Environment Reference" />
-                  <p className="text-[10px] text-muted-foreground/60 mb-2">Optional: Upload a location photo to anchor the visual setting.</p>
-                  {setEnvironmentImage && (
-                    <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
-                  )}
-                </div>
-
-                {/* Product Upload (UGC only) */}
-                {config.creationMode === 'ugc' && setProductImage && (
-                  <div>
-                    <Label label="Product Reference" />
-                    <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing || false} title="Product Image" subtext="Required for UGC mode." />
-                  </div>
-                )}
-
-                {/* Look & Style */}
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-2 border-t border-border mt-2">Look & Style</p>
-
-                {/* Exact Match */}
-                <div className="flex justify-between items-center pb-2 border-b border-border">
-                  <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
-                  <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
-                </div>
-
-                {/* Ultra-Realistic */}
-                <div className="flex justify-between items-center pb-2 border-b border-border">
-                  <span className="text-xs font-medium text-foreground">Ultra-Realistic Skin & Photo</span>
-                  <Switch checked={config.ultraRealistic} onCheckedChange={(v) => setConfig(c => ({ ...c, ultraRealistic: v }))} />
+                  <Label label="Camera Movement" />
+                  <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
                 </div>
 
                 {/* Quick Look Presets */}

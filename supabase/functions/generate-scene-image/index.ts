@@ -300,7 +300,7 @@ CRITICAL RULES:
 - The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.
 ${!!(config.carouselVibe || config.carouselAesthetic) ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
 ${lockInstructions}
-${config.exactMatch ? '- STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
+- STRICT MODE: This person must be immediately recognizable as the same individual.
 ${config.creationMode === 'ugc' ? '- Feature the product prominently in the scene.' : ''}
 ${mismatchGuard}
 
@@ -311,7 +311,7 @@ ${continuityInstruction}
 ${carouselConsistencyInstruction}
 ${referenceIdentityLock}
 ${realismClause}
-${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}
+Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.
 ${orientationInstruction}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
@@ -327,7 +327,7 @@ OUTFIT: ${currentOutfit}
 STYLE: Hair: ${hair} | Makeup: ${makeup} | Skin: ${skin} | Nails: ${nails}
 
 ${lockInstructions}
-${config.exactMatch ? 'STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
+STRICT MODE: This person must be immediately recognizable as the same individual.
 ${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
 ${mismatchGuard}
 
@@ -338,7 +338,7 @@ ${continuityInstruction}
 ${carouselConsistencyInstruction}
 ${referenceIdentityLock}
 ${realismClause}
-${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}
+Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.
 ${orientationInstruction}`;
       }
 

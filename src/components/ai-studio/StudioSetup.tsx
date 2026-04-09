@@ -100,23 +100,6 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
             </div>
           )}
 
-          {/* Exact Match Toggle */}
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex justify-between items-center mb-4">
-            <div>
-              <h3 className="text-foreground font-bold text-sm">Exact Face & Skin Tone</h3>
-              <p className="text-muted-foreground text-[10px] mt-0.5">Clone reference face exactly (Strict Mode)</p>
-            </div>
-            <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
-          </div>
-
-          {/* Ultra-Realistic Toggle */}
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-foreground font-bold text-sm">Ultra-Realistic Skin & Photo</h3>
-              <p className="text-muted-foreground text-[10px] mt-0.5">iPhone Pro quality with natural skin texture and pores</p>
-            </div>
-            <Switch checked={config.ultraRealistic} onCheckedChange={(v) => setConfig(c => ({ ...c, ultraRealistic: v }))} />
-          </div>
 
           {/* UGC Context */}
           {config.creationMode === 'ugc' && (
