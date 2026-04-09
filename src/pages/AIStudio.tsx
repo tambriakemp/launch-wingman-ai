@@ -209,8 +209,11 @@ const AIStudio = () => {
                 if (error) throw error;
                 if (data?.error) throw new Error(data.error);
 
-              console.log(`[AIStudio] Scene ${task.index + 1} image response:`, data?.imageUrl ? data.imageUrl.slice(0, 80) + '...' : 'MISSING');
+              console.log(`[AIStudio] Scene ${task.index + 1} image response: model=${data?.model || 'unknown'}, fallback=${data?.fallback || false}`, data?.imageUrl ? data.imageUrl.slice(0, 80) + '...' : 'MISSING');
 
+              if (data?.fallback) {
+                toast({ title: `Scene ${task.index + 1} generated with fallback model`, description: `Used ${data.model || 'gemini'} instead of configured model.`, variant: "default" });
+              }
               if (!data?.imageUrl) {
                 console.error(`[AIStudio] Scene ${task.index + 1}: imageUrl is falsy, keeping previous state`);
                 setGeneratedMedia(prev => ({
