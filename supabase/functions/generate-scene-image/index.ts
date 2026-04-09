@@ -318,22 +318,50 @@ SCENE DIFFERENTIATION: Each slide must have a DIFFERENT camera angle, body posit
 ${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is NOT slide 1. You MUST create a composition that is clearly different from the anchor image while keeping the outfit and appearance identical.`}`;
       }
 
+      // Detect Path A mode — storyboard prompts already contain full identity/outfit/style details
+      const isPathA = config.useReferenceAsStart === true;
+
       // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
       let fullPrompt: string;
       
       if (previewCharacter) {
         // EDIT MODE: The character preview is the base image — instruct the model to modify it
+
+        // Build the scene/outfit/style section based on mode
+        let sceneOutfitStyleBlock: string;
+
+        if (!!config.carouselVibe) {
+          // Carousel mode — outfit locked to anchor
+          sceneOutfitStyleBlock = `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
+"${prompt}"
+Compose the image around this SPECIFIC scene description. The environment, props, lighting, and background elements described above are the PRIMARY FOCUS of this slide. The person should be INTEGRATED into this scene naturally — interacting with the setting, not just standing in front of it.
+
+OUTFIT (LOCKED — do NOT change from anchor): Keep wearing exactly "${currentOutfit}" — same garment, color, fit, fabric as the anchor image.
+STYLE: Hair: ${hair}, Makeup: ${makeup}, Skin tone: ${skin}, Nails: ${nails}`;
+        } else if (isPathA && !isFinalLook) {
+          // Path A (non-final): the storyboard prompt already embeds full identity, outfit, and style.
+          // Trust the embedded description — do NOT override with config dropdown values.
+          sceneOutfitStyleBlock = `SCENE & CHARACTER: ${prompt}
+
+The scene prompt above already contains the COMPLETE character description (outfit, hair, makeup, nails, jewelry) extracted from the reference photo. Follow it EXACTLY. Do NOT substitute any clothing, accessories, or styling details from other sources.`;
+        } else if (isPathA && isFinalLook) {
+          // Path A final look: override ONLY the outfit, keep other style details from the prompt
+          sceneOutfitStyleBlock = `SCENE & CHARACTER: ${prompt}
+
+OUTFIT CHANGE (FINAL LOOK ONLY): Replace the outfit with — ${currentOutfit}
+Keep ALL other appearance details (hair, makeup, nails, jewelry, skin) exactly as described in the scene prompt above.`;
+        } else {
+          // Path B / standard mode — use config values
+          sceneOutfitStyleBlock = `1. SCENE: Place this person in the following setting — ${prompt}
+2. OUTFIT: Change their clothing to — ${currentOutfit}
+3. STYLE: Hair: ${hair}, Makeup: ${makeup}, Skin tone: ${skin}, Nails: ${nails}`;
+        }
+
         fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
 
 EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same.
 
-${!!config.carouselVibe ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
-"${prompt}"
-Compose the image around this SPECIFIC scene description. The environment, props, lighting, and background elements described above are the PRIMARY FOCUS of this slide. The person should be INTEGRATED into this scene naturally — interacting with the setting, not just standing in front of it.
-
-OUTFIT (LOCKED — do NOT change from anchor): Keep wearing exactly "${currentOutfit}" — same garment, color, fit, fabric as the anchor image.` : `1. SCENE: Place this person in the following setting — ${prompt}
-2. OUTFIT: Change their clothing to — ${currentOutfit}`}
-3. STYLE: Hair: ${hair}, Makeup: ${makeup}, Skin tone: ${skin}, Nails: ${nails}
+${sceneOutfitStyleBlock}
 
 CRITICAL RULES:
 - The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.

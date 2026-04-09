@@ -292,6 +292,13 @@ SCENE ARC:
 - Scenes 2-${pathASceneCount - 1}: Progress through the moment${environmentMode === 'evolve' ? ', evolving through connected environments' : ', varying angle and framing within the same space'}
 - Scene ${pathASceneCount}: Closing shot — wide, clean, with visual space for text overlay
 
+NARRATIVE COHERENCE (CRITICAL):
+- Each scene must flow logically from the previous one — tell a cohesive mini-story with a clear arc
+- If the character holds a prop (drink, phone, bag, food), it must persist naturally or be visibly set down before disappearing
+- Avoid jarring environment jumps — transitions between locations must feel organic (e.g., show walking out before cutting to a new room)
+- The final scene should feel like a natural conclusion to the sequence, not an abrupt change
+- Props and setting elements must make sense for the location (e.g., no cocktail glasses in bed, no gym equipment in a restaurant)
+
 SHOT VARIETY (use a DIFFERENT shot type each scene):
 - Full body establishing (character + environment)
 - 3/4 shot walking or in motion
