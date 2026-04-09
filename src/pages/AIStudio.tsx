@@ -201,7 +201,7 @@ const AIStudio = () => {
                     sceneNumber: task.index + 1,
                     totalScenes: currentStoryboard?.steps.length,
                     aspectRatio: task.config.aspectRatio,
-                    userId: user?.id,
+                    userId: (await supabase.auth.getUser()).data.user?.id,
                   },
                 });
 
