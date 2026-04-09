@@ -3,7 +3,7 @@ import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS, CAROUSEL_AESTHETICS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, CAROUSEL_AESTHETICS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
