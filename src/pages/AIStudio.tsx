@@ -265,12 +265,25 @@ const AIStudio = () => {
               if (!task.baseImageUrl) throw new Error("Image required before generating video");
 
               // Step 1: Submit job and get requestId
+              const videoBody: Record<string, unknown> = {
+                imageUrl: task.baseImageUrl,
+                videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
+                aspectRatio: task.config.aspectRatio,
+              };
+
+              // Multi-shot support
+              if (task.multiShot && task.multiShot.length > 0) {
+                videoBody.multiShot = task.multiShot;
+                delete videoBody.videoPrompt; // multi_prompt replaces single prompt
+              }
+
+              // Character bind support
+              if (task.characterBind?.enabled && task.characterBind.referenceUrl) {
+                videoBody.characterBindUrl = task.characterBind.referenceUrl;
+              }
+
               const { data, error } = await supabase.functions.invoke('generate-video', {
-                body: {
-                  imageUrl: task.baseImageUrl,
-                  videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
-                  aspectRatio: task.config.aspectRatio,
-                }
+                body: videoBody,
               });
 
               if (error) throw error;
