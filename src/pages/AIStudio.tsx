@@ -266,7 +266,7 @@ const AIStudio = () => {
               const { data, error } = await supabase.functions.invoke('generate-video', {
                 body: {
                   imageUrl: task.baseImageUrl,
-                  videoPrompt: (currentStoryboard?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
+                  videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
                   aspectRatio: task.config.aspectRatio,
                 }
               });
