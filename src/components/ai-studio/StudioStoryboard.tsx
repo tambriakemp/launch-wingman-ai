@@ -62,10 +62,10 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   }, [currentSceneIndex]);
 
   const step = storyboard.steps[currentSceneIndex];
-  const media = generatedMedia[currentSceneIndex];
+  const media = generatedMedia[currentSceneIndex] ?? { ...({} as GeneratedMedia), isGeneratingImage: false, isUpscaling: false, isGeneratingVideo: false, isSelected: false };
   const totalScenes = storyboard.steps.length;
 
-  if (!step || !media) return null;
+  if (!step) return null;
 
   return (
     <div className="flex flex-col gap-0">

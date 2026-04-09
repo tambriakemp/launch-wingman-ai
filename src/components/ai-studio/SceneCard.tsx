@@ -147,7 +147,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
           <div
             className="relative w-full bg-muted group cursor-zoom-in overflow-hidden rounded-lg border border-border"
             style={{ aspectRatio: cssAspectRatio }}
-            onClick={onEnlarge}
+            onClick={() => { if (media.imageUrl && !isLoading) onEnlarge(); }}
           >
 
             {media.imageUrl ? (
