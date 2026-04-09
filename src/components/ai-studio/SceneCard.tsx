@@ -57,8 +57,6 @@ interface SceneCardProps {
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
   onUpdateScript?: (newScript: string) => void;
-  onUpdateAction?: (newAction: string) => void;
-  onUpdateDetail?: (newDetail: string) => void;
 }
 
 const SceneCard: React.FC<SceneCardProps> = ({
