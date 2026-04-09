@@ -15,7 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import SavedCharacter from './SavedCharacter';
-import SavedEnvironments from './SavedEnvironments';
+
 import SavedLooks from './SavedLooks';
 import UploadZone from './UploadZone';
 
