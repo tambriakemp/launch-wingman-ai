@@ -168,7 +168,57 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   const [openSection, setOpenSection] = useState<string>('1');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
+  const navigate = useNavigate();
   const [cachedUploadImage, setCachedUploadImage] = useState<string | null>(null);
+
+  // Inline environment picker state
+  const [envGroups, setEnvGroups] = useState<{ id: string; name: string; thumb: string }[]>([]);
+  const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: groups } = await supabase
+        .from('ai_studio_environment_groups').select('id, name').eq('user_id', user.id).order('created_at', { ascending: true });
+      if (!groups || groups.length === 0) { setEnvGroups([]); return; }
+      const { data: envs } = await supabase
+        .from('ai_studio_environments').select('id, file_path, group_id').eq('user_id', user.id);
+      const BUCKET = 'ai-studio';
+      setEnvGroups(groups.map((g: any) => {
+        const first = (envs || []).find((e: any) => e.group_id === g.id);
+        const thumb = first ? supabase.storage.from(BUCKET).getPublicUrl(first.file_path).data.publicUrl : '';
+        return { id: g.id, name: g.name, thumb };
+      }));
+    };
+    load();
+  }, []);
+
+  const handleSelectEnv = (groupId: string) => {
+    if (selectedEnvId === groupId) {
+      // Deselect
+      setSelectedEnvId(null);
+      setEnvironmentImage?.(null as any);
+      setEnvironmentImages?.([]);
+      setEnvironmentLabel?.('');
+      return;
+    }
+    setSelectedEnvId(groupId);
+    // Fetch all images for this group and pass them
+    const loadGroup = async () => {
+      const { data: envs } = await supabase
+        .from('ai_studio_environments').select('file_path').eq('group_id', groupId);
+      const BUCKET = 'ai-studio';
+      const urls = (envs || []).map((e: any) => supabase.storage.from(BUCKET).getPublicUrl(e.file_path).data.publicUrl);
+      if (urls.length > 0) {
+        setEnvironmentImage?.(urls[0]);
+        if (urls.length > 1) setEnvironmentImages?.(urls);
+      }
+      const group = envGroups.find(g => g.id === groupId);
+      if (group) setEnvironmentLabel?.(group.name);
+    };
+    loadGroup();
+  };
 
   const hasCharacter = !!referenceImage;
   const hasLookCustomized = config.outfitType !== 'Default Outfit' || config.makeup !== 'Soft Glam Baddie' || config.hairstyle !== 'Sleek Straight Wig';
