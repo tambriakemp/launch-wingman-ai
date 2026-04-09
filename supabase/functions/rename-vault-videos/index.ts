@@ -143,7 +143,13 @@ serve(async (req) => {
       }
 
       if (!resource?.cover_image_url) {
-        throw new Error('Resource has no cover image to analyze');
+        return new Response(JSON.stringify({
+          error: 'Resource has no cover image to analyze',
+          fallback: true,
+          renamed: 0, skipped: 1, failed: 0, previews: [], errors: [{ id: singleResourceId, error: 'No cover image' }],
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const newTitle = await generateTitleFromImage(resource.cover_image_url, lovableApiKey);
