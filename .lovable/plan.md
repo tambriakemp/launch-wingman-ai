@@ -1,72 +1,52 @@
 
+Plan: fix the black-screen behavior on the last scene regeneration from the frontend side first.
 
-## Problem Analysis
+What I found
+- The image-generation backend is not the current failure point: the last `generate-scene-image` request returned `200` with a valid `imageUrl`, and the function logs show successful image generation.
+- That means the “black screen” is most likely a UI state issue in the scene viewer, not the image function itself.
+- The most suspicious areas are:
+  1. `SceneCard.tsx` fullscreen/overlay behavior while regenerating
+  2. `ImageLightbox.tsx` showing a full-screen black layer
+  3. `StudioStoryboard.tsx` returning `null` if the current scene/media temporarily goes missing
+- There is also a React ref warning in `SceneCard` that should be cleaned up because it adds noise while debugging.
 
-Three distinct issues are causing inconsistency across generated scenes:
+Implementation plan
+1. Harden the scene image panel
+- Only allow enlarge/lightbox behavior when a valid image actually exists.
+- Disable zoom/open interactions while a scene is regenerating or if the scene has no loaded image yet.
+- Keep the user on the same scene with a clear inline loading/error state instead of letting the UI fall into a black overlay state.
 
-### Issue 1: Outfit Override Conflict (Root Cause)
-When Path A (`useReferenceAsStart=true`) is active, the **storyboard generator** correctly extracts the outfit from the reference photo and embeds it in each scene's `image_prompt` (e.g., "fitted black bustier top featuring sheer mesh panels"). But then `generate-scene-image` **overrides** this with the config dropdown values. In the request logs, `config.outfitType` is "Pajamas" — so the scene image generator tells the AI "Change their clothing to Pajamas" while the embedded prompt describes a completely different outfit. This creates a tug-of-war where the AI picks different interpretations each time.
+2. Make the lightbox fail-safe
+- Update `ImageLightbox.tsx` so it never renders as a full black fullscreen layer without a valid image.
+- If the selected scene has no image, show a proper fallback panel or auto-close instead of leaving the screen black.
+- Add guards for out-of-range indexes and missing `generatedMedia[index]`.
 
-The same applies to nails, hair, and makeup — the storyboard's embedded descriptions conflict with the config dropdown values.
+3. Make storyboard rendering resilient
+- In `StudioStoryboard.tsx`, replace the current `if (!step || !media) return null;` with a safer fallback UI.
+- Clamp the current scene index not only against `storyboard.steps.length`, but also against available media entries when needed.
+- This prevents the main workspace from disappearing during state transitions on the last scene.
 
-### Issue 2: Nails Changing
-Same root cause. The storyboard embeds "short, almond-shaped, natural nude-pink" from the reference photo, but config says "Long Coffin Nails". Each scene resolves this conflict differently.
+4. Improve regeneration state handling in `AIStudio.tsx`
+- Preserve the existing scene card state more safely while a replacement image is being generated.
+- Ensure the last scene does not briefly enter a missing/undefined render state during `setGeneratedMedia` updates.
+- Add a stricter success path so the new image replaces the old one cleanly and clears loading flags in all cases.
 
-### Issue 3: Narrative Incoherence (Martini in Bed)
-The storyboard generator for Path A lacks explicit instructions about **narrative coherence** — it's told to vary shots but not to ensure the story arc makes logical sense. A rooftop bar scene followed by a bed scene with a martini breaks continuity.
+5. Clean up the noisy warning in `SceneCard.tsx`
+- Remove the ref-related warning path around `EditableField` so console output is cleaner and future runtime errors are easier to spot.
+- This is not the black-screen root cause, but it is worth fixing in the same pass.
 
----
+Technical details
+- Files likely to update:
+  - `src/pages/AIStudio.tsx`
+  - `src/components/ai-studio/SceneCard.tsx`
+  - `src/components/ai-studio/StudioStoryboard.tsx`
+  - `src/components/ai-studio/ImageLightbox.tsx`
+- No backend/database changes are planned for this fix because runtime evidence currently shows the image function is succeeding.
+- I will treat this as a render-state and interaction-guard issue, not a generation-timeout issue.
 
-## Plan
-
-### 1. Fix outfit/style override in `generate-scene-image` for Path A
-
-In `supabase/functions/generate-scene-image/index.ts`, when `config.useReferenceAsStart === true`, skip the config-based outfit/style lines in the prompt. The storyboard's `image_prompt` (passed as `prompt`) already contains the full character description extracted from the reference photo — trust it instead of overriding.
-
-**Changes (~lines 322-354)**:
-- Detect Path A mode: `const isPathA = config.useReferenceAsStart === true;`
-- In the EDIT MODE prompt (when `previewCharacter` exists):
-  - If `isPathA` and NOT `isFinalLook`: remove the `OUTFIT: Change their clothing to` line and the `STYLE: Hair/Makeup/Skin/Nails` line. The scene prompt already contains these details verbatim.
-  - If `isPathA` and `isFinalLook`: only override the outfit (to the final look outfit), keep other style details from the embedded prompt.
-  - If NOT `isPathA`: keep existing behavior (use config values).
-
-### 2. Add narrative coherence instructions to storyboard generator
-
-In `supabase/functions/generate-storyboard/index.ts`, in the Path A system prompt (~lines 290-320):
-- Add a `NARRATIVE COHERENCE` block requiring:
-  - Each scene must logically follow the previous one
-  - Props/objects introduced should persist or be naturally set down
-  - The final scene should feel like a natural conclusion to the story arc
-  - Avoid jarring location jumps (e.g., bar → bed) unless there's a clear transition
-
-### 3. Deploy both edge functions
-
-Deploy `generate-scene-image` and `generate-storyboard` after changes.
-
----
-
-### Technical Details
-
-**`generate-scene-image/index.ts`** — Modified prompt construction:
-```text
-// When Path A is active, the storyboard's image_prompt already contains
-// full identity, outfit, and style details from the reference photo.
-// Do NOT override with config dropdown values.
-if (isPathA && !isFinalLook) {
-  // Use prompt as-is, only add realism/environment/continuity blocks
-} else {
-  // Existing behavior: apply config outfit/style values
-}
-```
-
-**`generate-storyboard/index.ts`** — Added narrative coherence block:
-```text
-NARRATIVE COHERENCE (CRITICAL):
-- Each scene must flow logically from the previous one
-- If the character holds a prop (drink, phone, bag), it should persist 
-  naturally or be set down in a believable way
-- The sequence should tell a cohesive mini-story with a clear arc
-- Avoid jarring environment jumps — transitions must feel organic
-- The final scene should feel like a natural conclusion
-```
-
+Verification
+- Regenerate scene 4 specifically.
+- Confirm the request still returns `200` and the scene updates in place.
+- Confirm no fullscreen black layer appears.
+- Confirm the last-scene card remains visible during loading, success, and error states.
+- Confirm image zoom still works normally when a valid image is present.
