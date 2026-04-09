@@ -340,6 +340,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
                 </div>
 
+                {/* Environment Reference */}
+                <div>
+                  <Label label="Environment Reference" />
+                  <p className="text-[10px] text-muted-foreground/60 mb-2">Optional: Upload a location photo to anchor the visual setting.</p>
+                  {setEnvironmentImage && (
+                    <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
+                  )}
+                </div>
+
                 {/* Quick Look Presets */}
                 <div>
                   <Label label="Quick Presets" />
