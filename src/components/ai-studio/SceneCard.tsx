@@ -91,6 +91,22 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
   const handleSaveVideoPrompt = () => { onUpdateVideoPrompt(editedVideoPrompt); setIsEditingVideo(false); };
 
+  const handleGenerateWithAutoSave = () => {
+    if (isEditing && editedPrompt !== step.image_prompt) {
+      onUpdatePrompt(editedPrompt);
+      setIsEditing(false);
+    }
+    onGenerateImage();
+  };
+
+  const handleGenerateVideoWithAutoSave = () => {
+    if (isEditingVideo && editedVideoPrompt !== step.video_prompt) {
+      onUpdateVideoPrompt(editedVideoPrompt);
+      setIsEditingVideo(false);
+    }
+    onGenerateVideo();
+  };
+
   const downloadMedia = async (url: string, ext: string) => {
     try {
       const response = await fetch(url);
