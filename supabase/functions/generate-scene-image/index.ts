@@ -176,6 +176,7 @@ serve(async (req) => {
     };
 
     const contentParts: any[] = [];
+    let fullPrompt: string = "";
 
     if (isUpscale && baseImageUrl) {
       pushImage(baseImageUrl);
