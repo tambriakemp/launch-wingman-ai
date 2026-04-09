@@ -182,12 +182,12 @@ function validateGeneratedAsset(
   return null;
 }
 
-async function requestGeminiImage(contentParts: any[], apiKey: string): Promise<GeminiImageResponse> {
+async function requestGeminiImage(contentParts: any[], apiKey: string, model = "google/gemini-3-pro-image-preview"): Promise<GeminiImageResponse> {
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-3-pro-image-preview",
+      model,
       messages: [{ role: "user", content: contentParts }],
       modalities: ["image", "text"],
     }),
@@ -196,12 +196,7 @@ async function requestGeminiImage(contentParts: any[], apiKey: string): Promise<
   const responseText = await response.text();
 
   if (!response.ok) {
-    return {
-      errorText: responseText,
-      finishReason: null,
-      imageUrl: null,
-      status: response.status,
-    };
+    return { errorText: responseText, finishReason: null, imageUrl: null, status: response.status };
   }
 
   if (!responseText || responseText.trim().length === 0) {
@@ -305,54 +300,36 @@ serve(async (req) => {
 
     let falKeyForImages: string | null = null;
     let falKeySource: string = "none";
+    // Only resolve Flux/fal.ai keys when the platform explicitly selects flux_kontext
     if (platformModel === "flux_kontext") {
-      // Try to resolve the user ID for BYOK key lookup
       let resolvedUserId: string | null = null;
-
-      // Method 1: JWT from Authorization header
       const authHeaderForModel = req.headers.get("Authorization");
       if (authHeaderForModel) {
         const tokenForModel = authHeaderForModel.replace("Bearer ", "");
         const { data: { user: modelUser } } = await supabaseAdmin.auth.getUser(tokenForModel);
-        if (modelUser?.id) {
-          resolvedUserId = modelUser.id;
-        }
+        if (modelUser?.id) resolvedUserId = modelUser.id;
       }
-
-      // Method 2: userId passed in body (from ai-studio-api proxy with service role token)
       if (!resolvedUserId && bodyUserId) {
         resolvedUserId = bodyUserId;
         console.log(`[generate-scene-image] Using userId from request body for BYOK lookup`);
       }
-
-      // Look up user's BYOK fal.ai key
       if (resolvedUserId) {
         const { data: userKey } = await supabaseAdmin
-          .from("user_api_keys")
-          .select("api_key")
-          .eq("user_id", resolvedUserId)
-          .eq("service", "fal_ai")
-          .maybeSingle();
-        if (userKey?.api_key) {
-          falKeyForImages = userKey.api_key;
-          falKeySource = "user_byok";
-        }
+          .from("user_api_keys").select("api_key")
+          .eq("user_id", resolvedUserId).eq("service", "fal_ai").maybeSingle();
+        if (userKey?.api_key) { falKeyForImages = userKey.api_key; falKeySource = "user_byok"; }
       }
-
-      // Fallback to platform FAL_KEY
       if (!falKeyForImages) {
         falKeyForImages = Deno.env.get("FAL_KEY") || null;
         if (falKeyForImages) falKeySource = "platform";
       }
-
       console.log(`[generate-scene-image] FAL key source: ${falKeySource}, resolved userId: ${resolvedUserId || 'none'}`);
     }
 
-    // Determine if Flux should be used — allow for complex scenes too (no longer forced Gemini)
     const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
     let modelUsed = useFlux ? "flux_kontext" : "gemini";
     let wasFallback = false;
-    console.log(`[generate-scene-image] Model: ${modelUsed}, platform setting: ${platformModel}, fal key source: ${falKeySource}`);
+    console.log(`[generate-scene-image] Model: ${modelUsed}, platform setting: ${platformModel}`);
     // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
@@ -746,40 +723,47 @@ ${orientationInstruction}`;
         break;
       }
 
-      // If Gemini exhausted all retries with 503, try Flux fallback
+      // If Gemini Pro exhausted all retries with 503, try flash-image model downgrade first
       if (geminiResult && geminiResult.status >= 500 && allRetries503) {
-        const fallbackFalKey = Deno.env.get("FAL_KEY") || null;
-        const fallbackBaseImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
-        if (fallbackFalKey && fallbackBaseImage) {
-          console.log("[generate-scene-image] Gemini 503 exhausted, attempting Flux fallback...");
-          try {
-            const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
-              method: "POST",
-              headers: { "Authorization": `Key ${fallbackFalKey}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                image_url: fallbackBaseImage,
-                prompt: sanitizePrompt(fullPrompt, "strict"),
-                num_images: 1,
-                output_format: "jpeg",
-                safety_tolerance: "2",
-              }),
-            });
-            if (fluxResponse.ok) {
-              const fluxData = await fluxResponse.json();
-              imageUrl = fluxData?.images?.[0]?.url || null;
-              if (imageUrl) {
-                console.log("[flux-fallback] Image generated successfully after Gemini 503");
-                modelUsed = "flux_kontext";
-                wasFallback = true;
+        console.log("[generate-scene-image] Gemini Pro 503 exhausted, trying flash-image model...");
+        const flashResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY, "google/gemini-3.1-flash-image-preview");
+        if (flashResult.status === 200 && flashResult.imageUrl) {
+          console.log("[generate-scene-image] Flash-image model succeeded as fallback");
+          imageUrl = flashResult.imageUrl;
+          modelUsed = "gemini_flash";
+          wasFallback = true;
+        } else {
+          console.warn("[generate-scene-image] Flash-image also failed:", flashResult.status);
+          // Last resort: try Flux if FAL_KEY available
+          const fallbackFalKey = Deno.env.get("FAL_KEY") || null;
+          const fallbackBaseImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+          if (fallbackFalKey && fallbackBaseImage) {
+            console.log("[generate-scene-image] Trying Flux as last resort...");
+            try {
+              const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
+                method: "POST",
+                headers: { "Authorization": `Key ${fallbackFalKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  image_url: fallbackBaseImage,
+                  prompt: sanitizePrompt(fullPrompt, "strict"),
+                  num_images: 1, output_format: "jpeg", safety_tolerance: "2",
+                }),
+              });
+              if (fluxResponse.ok) {
+                const fluxData = await fluxResponse.json();
+                imageUrl = fluxData?.images?.[0]?.url || null;
+                if (imageUrl) {
+                  console.log("[flux-fallback] Image generated after Gemini 503");
+                  modelUsed = "flux_kontext";
+                  wasFallback = true;
+                }
               }
-            } else {
-              console.error("[flux-fallback] Error:", fluxResponse.status, await fluxResponse.text());
+            } catch (fluxErr) {
+              console.error("[flux-fallback] Exception:", fluxErr);
             }
-          } catch (fluxErr) {
-            console.error("[flux-fallback] Exception:", fluxErr);
           }
+          if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
         }
-        if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
       }
 
       // Extract image from Gemini result if we don't have one yet
@@ -821,7 +805,9 @@ ${orientationInstruction}`;
 
     let bytes: Uint8Array;
     let hintedMimeType: string | null = null;
+    let isBase64Source = false;
     if (imageUrl.startsWith("data:")) {
+      isBase64Source = true;
       const [dataHeader, base64Data] = imageUrl.split(",");
       hintedMimeType = dataHeader.match(/^data:([^;]+)/)?.[1] || null;
       const binaryString = atob(base64Data);
@@ -849,15 +835,20 @@ ${orientationInstruction}`;
       throw new Error("Generated image format is invalid. Please retry.");
     }
 
-    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes, mime: ${detectedFormat.mimeType}`);
-    const assetValidationError = validateGeneratedAsset(
-      bytes,
-      aspectRatio || config?.aspectRatio || "9:16",
-      detectedFormat,
-    );
-    if (assetValidationError) {
-      console.error(`[generate-scene-image] ${assetValidationError}`);
-      throw new Error(assetValidationError);
+    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes, mime: ${detectedFormat.mimeType}, source: ${isBase64Source ? 'base64' : 'url'}`);
+
+    // Only run size/entropy validation on URL-fetched images (Flux).
+    // Gemini base64 images are already validated by format detection above.
+    if (!isBase64Source) {
+      const assetValidationError = validateGeneratedAsset(
+        bytes,
+        aspectRatio || config?.aspectRatio || "9:16",
+        detectedFormat,
+      );
+      if (assetValidationError) {
+        console.error(`[generate-scene-image] ${assetValidationError}`);
+        throw new Error(assetValidationError);
+      }
     }
 
     const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${detectedFormat.extension}`;
