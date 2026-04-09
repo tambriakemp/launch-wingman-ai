@@ -366,8 +366,9 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
-    if (!config.useReferenceAsStart && !config.vlogTopic.trim() && !config.carouselVibe.trim() && config.creationMode === 'vlog') {
-      toast({ title: "Topic Required", description: "Please describe your topic or scene, or toggle 'Use reference photo as start image'.", variant: "destructive" });
+    const needsConcept = !config.useReferenceAsStart;
+    if (needsConcept && !config.vlogTopic.trim() && !config.carouselVibe.trim() && config.creationMode === 'vlog') {
+      toast({ title: "Topic Required", description: "Describe your topic or scene, or enable 'Let AI direct from this photo'.", variant: "destructive" });
       return;
     }
     // Auto-reset if a storyboard already exists (implicit "new project")
