@@ -200,7 +200,8 @@ const AIStudio = () => {
                     environmentLabel: environmentLabel || undefined,
                     sceneNumber: task.index + 1,
                     totalScenes: currentStoryboard?.steps.length,
-                    aspectRatio: task.config.aspectRatio
+                    aspectRatio: task.config.aspectRatio,
+                    userId: user?.id,
                   },
                 });
 

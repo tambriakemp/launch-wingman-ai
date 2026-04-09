@@ -760,12 +760,13 @@ ${orientationInstruction}`;
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      return new Response(JSON.stringify({ imageUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ imageUrl, model: modelUsed, fallback: wasFallback }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { data: publicUrlData } = supabase.storage.from("ai-studio").getPublicUrl(fileName);
 
-    return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl }), {
+    console.log(`[generate-scene-image] Done. Model: ${modelUsed}, fallback: ${wasFallback}`);
+    return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl, model: modelUsed, fallback: wasFallback }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (e) {
