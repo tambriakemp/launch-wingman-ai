@@ -235,8 +235,10 @@ Also provide character analysis: face_structure, hair, skin_tone, makeup_accesso
           return `MANDATORY STYLE REQUIREMENTS:\n- Outfit: ${outfit}\n- Hairstyle: ${hair}\n- Makeup: ${makeup}\n- Skin: ${skin}\n- Nails: ${nails}`;
         };
 
-        const sceneCount = config.sceneCount || 5;
-        const sceneInstruction = `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`;
+        const sceneCount = config.sceneCount || null;
+        const sceneInstruction = sceneCount
+          ? `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`
+          : `Analyze the topic/prompt carefully and determine the OPTIMAL number of scenes (between 3 and 15). Use FEWER scenes for simple concepts (3-5 for a single look/pose set, 5-7 for a short vlog). Use MORE scenes (8-15) only for complex narratives like GRWM transformations or multi-location vlogs. Do NOT default to the maximum — choose the number that best serves the content.`;
 
         let narrativeContext = "";
         if (config.creationMode === 'vlog' && config.vlogCategory === 'Get Ready With Me') {

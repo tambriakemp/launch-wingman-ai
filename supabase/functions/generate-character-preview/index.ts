@@ -200,13 +200,8 @@ Style details:
 - Aspect ratio: 9:16
 - Style: editorial fashion photography, tasteful, fully clothed`;
 
-    if (config.exactMatch) {
-      prompt += `\nSTRICT MODE: Match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.`;
-    }
-
-    if (config.ultraRealistic) {
-      prompt += `\nUltra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.`;
-    }
+    prompt += `\nSTRICT MODE: Match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.`;
+    prompt += `\nUltra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.`;
 
     const behaviorPrompt = hasEnv ? getSceneBehaviorPrompt(prompt) : "";
     if (behaviorPrompt) {
