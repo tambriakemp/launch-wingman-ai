@@ -118,17 +118,17 @@ serve(async (req) => {
     // 3. Build request payload
     // Use Pro endpoint when character bind is enabled (supports `elements` for face locking)
     // Use Standard endpoint for normal/multi-shot without bind
-    const useProEndpoint = !!characterBindUrl;
-    const endpoint = useProEndpoint
-      ? "fal-ai/kling-video/o3/pro/image-to-video"
-      : "fal-ai/kling-video/o3/standard/image-to-video";
+    // Always use Pro endpoint for maximum realism and sharpness
+    const endpoint = "fal-ai/kling-video/o3/pro/image-to-video";
 
-    console.log(`[generate-video] Using ${useProEndpoint ? 'Pro' : 'Standard'} endpoint, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
+    console.log(`[generate-video] Using Pro endpoint, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
 
     // Build the fal.ai payload
     const falPayload: Record<string, unknown> = {
       image_url: imageUrl,
       aspect_ratio: aspectRatio || "9:16",
+      negative_prompt: "blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion, slow motion, unnatural movement",
+      cfg_scale: 0.7,
     };
 
     if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
@@ -148,11 +148,11 @@ serve(async (req) => {
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
       falPayload.prompt = videoPrompt + backFacingGuard;
-      falPayload.duration = "5";
+      falPayload.duration = "10";
     }
 
-    // Character bind — use elements for Pro endpoint
-    if (useProEndpoint && characterBindUrl) {
+    // Character bind — use elements for identity locking
+    if (characterBindUrl) {
       // For Pro i2v, use `start_image_url` instead of `image_url`
       delete falPayload.image_url;
       falPayload.start_image_url = imageUrl;
