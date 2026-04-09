@@ -145,7 +145,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
         <div className="flex flex-col gap-2">
           <h4 className="text-xs font-bold text-muted-foreground uppercase">Image Reference</h4>
           <div
-            className="relative w-full bg-muted group cursor-zoom-in overflow-hidden rounded-lg border border-border"
+            className={`relative w-full bg-muted group overflow-hidden rounded-lg border border-border ${media.imageUrl && !isLoading ? 'cursor-zoom-in' : ''}`}
             style={{ aspectRatio: cssAspectRatio }}
             onClick={() => { if (media.imageUrl && !isLoading) onEnlarge(); }}
           >
