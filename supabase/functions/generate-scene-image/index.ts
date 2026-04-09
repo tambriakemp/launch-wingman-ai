@@ -86,7 +86,46 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = await req.json();
+    const body = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = body;
+
+    // ── Model resolution ──────────────────────────────────────────
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: modelSetting } = await supabaseAdmin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "image_model")
+      .maybeSingle();
+
+    const platformModel = modelSetting?.value || "gemini";
+
+    let falKeyForImages: string | null = null;
+    if (platformModel === "flux_kontext") {
+      const authHeaderForModel = req.headers.get("Authorization");
+      if (authHeaderForModel) {
+        const tokenForModel = authHeaderForModel.replace("Bearer ", "");
+        const { data: { user: modelUser } } = await supabaseAdmin.auth.getUser(tokenForModel);
+        if (modelUser?.id) {
+          const { data: userKey } = await supabaseAdmin
+            .from("user_api_keys")
+            .select("api_key")
+            .eq("user_id", modelUser.id)
+            .eq("service", "fal_ai")
+            .maybeSingle();
+          if (userKey?.api_key) falKeyForImages = userKey.api_key;
+        }
+      }
+      if (!falKeyForImages) {
+        falKeyForImages = Deno.env.get("FAL_KEY") || null;
+      }
+    }
+
+    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
+    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}`);
+    // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
     const getOrientationInstruction = (ar: string): string => {
