@@ -101,6 +101,7 @@ import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
 import AIStudioDashboard from "./pages/AIStudioDashboard";
 import AIStudioCharacters from "./pages/AIStudioCharacters";
+import AIStudioEnvironments from "./pages/AIStudioEnvironments";
 import OutfitSwap from "./pages/OutfitSwap";
 import Planner from "./pages/Planner";
 import PlannerHub from "./pages/PlannerHub";
@@ -598,6 +599,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AIStudioCharacters />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/ai-studio/environments"
+              element={
+                <ProtectedRoute>
+                  <AIStudioEnvironments />
                 </ProtectedRoute>
               }
             />
