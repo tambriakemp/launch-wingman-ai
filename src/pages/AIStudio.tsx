@@ -220,12 +220,27 @@ const AIStudio = () => {
                   [task.index]: { ...prev[task.index], isGeneratingImage: false, isUpscaling: false, error: 'No image URL returned' }
                 }));
               } else {
-                setGeneratedMedia(prev => {
-                  console.log(`[AIStudio] Updating media state for scene ${task.index + 1}, previous imageUrl:`, prev[task.index]?.imageUrl?.slice(0, 40));
-                  return {
-                    ...prev,
-                    [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
+                // Preload the new image before swapping it in
+                const candidateUrl = data.imageUrl;
+                await new Promise<void>((resolve) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    console.log(`[AIStudio] Scene ${task.index + 1} preload OK, swapping in`);
+                    setGeneratedMedia(prev => ({
+                      ...prev,
+                      [task.index]: { ...prev[task.index], imageUrl: candidateUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
+                    }));
+                    resolve();
                   };
+                  img.onerror = () => {
+                    console.error(`[AIStudio] Scene ${task.index + 1} preload FAILED for:`, candidateUrl.slice(0, 80));
+                    setGeneratedMedia(prev => ({
+                      ...prev,
+                      [task.index]: { ...prev[task.index], isGeneratingImage: false, isUpscaling: false, error: 'Generated image failed to load. Please retry.' }
+                    }));
+                    resolve();
+                  };
+                  img.src = candidateUrl;
                 });
               }
 

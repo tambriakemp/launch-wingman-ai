@@ -123,8 +123,13 @@ serve(async (req) => {
       }
     }
 
-    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
-    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}`);
+    // Determine if Flux should be used — skip for complex regenerations
+    const isComplexRegeneration = (sceneNumber && sceneNumber > 1) || isFinalLook || 
+      (previousSceneImageUrl) || (environmentImages && environmentImages.length > 0) || environmentImage ||
+      (config?.useReferenceAsStart === true && sceneNumber > 1);
+    
+    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages && !isComplexRegeneration;
+    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}${isComplexRegeneration ? " (complex scene, forced gemini)" : ""}`);
     // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
@@ -522,7 +527,23 @@ ${orientationInstruction}`;
       }
     } else {
       const imgResp = await fetch(imageUrl);
+      if (!imgResp.ok) {
+        console.error(`[generate-scene-image] Failed to fetch generated image: ${imgResp.status}`);
+        throw new Error("Generated image could not be retrieved");
+      }
+      const contentType = imgResp.headers.get("content-type") || "";
+      if (!contentType.startsWith("image/")) {
+        console.error(`[generate-scene-image] Non-image content-type: ${contentType}`);
+        throw new Error("Generated asset is not a valid image");
+      }
       bytes = new Uint8Array(await imgResp.arrayBuffer());
+    }
+    
+    // Validate asset size — reject suspiciously small images (likely black/empty)
+    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes`);
+    if (bytes.length < 5000) {
+      console.error(`[generate-scene-image] Asset too small (${bytes.length} bytes), likely invalid`);
+      throw new Error("Generated image appears invalid (too small). Please retry.");
     }
 
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
