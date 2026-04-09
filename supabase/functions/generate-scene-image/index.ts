@@ -86,7 +86,46 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = await req.json();
+    const body = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = body;
+
+    // ── Model resolution ──────────────────────────────────────────
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: modelSetting } = await supabaseAdmin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "image_model")
+      .maybeSingle();
+
+    const platformModel = modelSetting?.value || "gemini";
+
+    let falKeyForImages: string | null = null;
+    if (platformModel === "flux_kontext") {
+      const authHeaderForModel = req.headers.get("Authorization");
+      if (authHeaderForModel) {
+        const tokenForModel = authHeaderForModel.replace("Bearer ", "");
+        const { data: { user: modelUser } } = await supabaseAdmin.auth.getUser(tokenForModel);
+        if (modelUser?.id) {
+          const { data: userKey } = await supabaseAdmin
+            .from("user_api_keys")
+            .select("api_key")
+            .eq("user_id", modelUser.id)
+            .eq("service", "fal_ai")
+            .maybeSingle();
+          if (userKey?.api_key) falKeyForImages = userKey.api_key;
+        }
+      }
+      if (!falKeyForImages) {
+        falKeyForImages = Deno.env.get("FAL_KEY") || null;
+      }
+    }
+
+    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
+    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}`);
+    // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
     const getOrientationInstruction = (ar: string): string => {
@@ -345,47 +384,91 @@ ${orientationInstruction}`;
       contentParts.push({ type: "text", text: fullPrompt });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [{ role: "user", content: contentParts }],
-        modalities: ["image", "text"]
-      }),
-    });
+    let imageUrl: string | null = null;
 
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("Scene image error:", response.status, t);
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`Image generation failed: ${response.status}`);
+    if (useFlux) {
+      // ── Flux Kontext Pro via fal.ai ──────────────────────────────
+      const baseFluxImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+
+      if (!baseFluxImage) {
+        console.log("[flux] No reference image available, falling back to Gemini");
+      } else {
+        try {
+          const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
+            method: "POST",
+            headers: {
+              "Authorization": `Key ${falKeyForImages}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              image_url: baseFluxImage,
+              prompt: fullPrompt,
+              num_images: 1,
+              output_format: "jpeg",
+              safety_tolerance: "2",
+            }),
+          });
+
+          if (!fluxResponse.ok) {
+            const errText = await fluxResponse.text();
+            console.error("[flux] Error:", fluxResponse.status, errText);
+            console.log("[flux] Falling back to Gemini...");
+          } else {
+            const fluxData = await fluxResponse.json();
+            imageUrl = fluxData?.images?.[0]?.url || null;
+            if (imageUrl) console.log("[flux] Image generated successfully");
+          }
+        } catch (fluxErr) {
+          console.error("[flux] Exception:", fluxErr);
+          console.log("[flux] Falling back to Gemini...");
+        }
+      }
     }
 
-    const responseText = await response.text();
-    if (!responseText || responseText.trim().length === 0) {
-      throw new Error("Image generation returned an empty response. Please try again.");
-    }
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error("Failed to parse AI response:", responseText.substring(0, 500));
-      throw new Error("Image generation returned an invalid response. Please try again.");
-    }
-
-    const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
-    if (finishReason === "IMAGE_SAFETY") {
-      return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    let imageUrl = extractImageFromResponse(data);
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(data).substring(0, 500));
-      throw new Error("No image generated");
+      // ── Gemini (default + fallback) ──────────────────────────────
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-pro-image-preview",
+          messages: [{ role: "user", content: contentParts }],
+          modalities: ["image", "text"]
+        }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("Scene image error:", response.status, t);
+        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error("Image generation returned an empty response. Please try again.");
+      }
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Failed to parse AI response:", responseText.substring(0, 500));
+        throw new Error("Image generation returned an invalid response. Please try again.");
+      }
+
+      const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
+      if (finishReason === "IMAGE_SAFETY") {
+        return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
+          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      imageUrl = extractImageFromResponse(data);
+      if (!imageUrl) {
+        console.error("No image in response:", JSON.stringify(data).substring(0, 500));
+        throw new Error("No image generated");
+      }
     }
 
     // Upload to storage

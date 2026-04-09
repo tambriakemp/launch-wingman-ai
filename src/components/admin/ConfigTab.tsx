@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
 import { PinterestEnvironmentToggle } from './PinterestEnvironmentToggle';
 import { SureContactWebhooksCard } from './SureContactWebhooksCard';
+import { ImageModelToggle } from './ImageModelToggle';
 
 interface SureContactConfigItem {
   config_type: string;
@@ -152,6 +153,9 @@ export function ConfigTab() {
 
   return (
     <div className="space-y-6">
+      {/* Image Model Toggle */}
+      <ImageModelToggle />
+
       {/* Environment Toggles */}
       <PinterestEnvironmentToggle />
       <TikTokEnvironmentToggle />
