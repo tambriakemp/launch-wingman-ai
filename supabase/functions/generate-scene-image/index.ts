@@ -430,7 +430,7 @@ Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, na
 ${orientationInstruction}`;
       }
 
-      contentParts.push({ type: "text", text: fullPrompt });
+      contentParts.push({ type: "text", text: sanitizePrompt(fullPrompt) });
     }
 
     let imageUrl: string | null = null;
