@@ -444,6 +444,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 <div className="flex justify-between text-[9px] text-muted-foreground mt-1.5">
                   <span>4</span><span>8</span><span>12</span>
                 </div>
+              </div>
 
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
