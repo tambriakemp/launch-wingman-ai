@@ -325,10 +325,10 @@ IMAGE PROMPT FORMAT (every image_prompt must follow this exactly):
 2. CHARACTER (verbatim identity block from Step 1): [full description]
 3. ACTION/POSE: [what the person is doing]
 4. HANDS/PROPS: [explicitly state what is in each hand — or "hands free, [natural pose]"]
-4. ENVIRONMENT: [exact setting — ${environmentMode === 'lock' ? 'same as reference photo' : 'describe the specific evolved location'}]
-5. LIGHTING: [direction, quality, color temperature — match reference photo's lighting style]
-6. CAMERA: "shot on iPhone 15 Pro Max, 4K HDR, natural dynamic range, social-media-native framing"
-7. REALISM: "natural skin texture, visible pores, subtle imperfections, no smoothing, realistic fabric, authentic shadows, true-to-life color, razor-sharp eye detail, individual hair strand definition"
+5. ENVIRONMENT: [exact setting — ${environmentMode === 'lock' ? 'same as reference photo' : 'describe the specific evolved location'}]
+6. LIGHTING: [direction, quality, color temperature — match reference photo's lighting style]
+7. CAMERA: "shot on iPhone 15 Pro Max, 4K HDR, natural dynamic range, social-media-native framing"
+8. REALISM: "natural skin texture, visible pores, subtle imperfections, no smoothing, realistic fabric, authentic shadows, true-to-life color, razor-sharp eye detail, individual hair strand definition"
 
 The script field for each scene should be a short, punchy caption line or hook appropriate for the visual — NOT narration, just the text overlay.
 
