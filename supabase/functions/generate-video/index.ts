@@ -118,18 +118,18 @@ serve(async (req) => {
     // 3. Submit to fal.ai MiniMax image-to-video (no polling — return requestId immediately)
     console.log("[generate-video] Submitting to fal.ai queue...");
 
+    // Add safety instruction to prevent face reveals on back-facing shots
+    const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
+      ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
+      : "";
+    const enhancedPrompt = videoPrompt + backFacingGuard;
+
     const submitResponse = await fetch("https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video", {
       method: "POST",
       headers: {
         "Authorization": `Key ${falKey}`,
         "Content-Type": "application/json",
       },
-      // Add safety instruction to prevent face reveals on back-facing shots
-      const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
-        ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
-        : "";
-      const enhancedPrompt = videoPrompt + backFacingGuard;
-
       body: JSON.stringify({
         image_url: imageUrl,
         prompt: enhancedPrompt,
