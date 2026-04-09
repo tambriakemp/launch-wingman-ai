@@ -3,7 +3,7 @@ import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, CAROUSEL_AESTHETICS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
@@ -328,12 +328,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               {config.creationMode !== 'ugc' && characterSource === 'saved' && !config.useReferenceAsStart && (
                 <>
                   <div>
-                    <MicroLabel>Vlog category</MicroLabel>
+                    <MicroLabel>Vlog / Carousel category</MicroLabel>
                     <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
-                  </div>
-                  <div>
-                    <MicroLabel>Aesthetic / mood</MicroLabel>
-                    <SelectField value={config.carouselAesthetic} onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))} options={CAROUSEL_AESTHETICS} />
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">

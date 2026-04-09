@@ -293,7 +293,7 @@ The outfit must be PIXEL-PERFECT identical unless the scene explicitly calls for
       // Continuity chaining instruction when previous scene image is provided
       let continuityInstruction = "";
       if (previousSceneImageUrl) {
-        if (!!(config.carouselVibe || config.carouselAesthetic)) {
+        if (!!config.carouselVibe) {
           continuityInstruction = `\nCAROUSEL SLIDE CONTINUITY: The previous slide's image has been provided. This is part of a COHESIVE carousel set.
 LOCK THESE DETAILS (must be PIXEL-PERFECT identical to the anchor/previous image):
 - Exact outfit, fabric, color, fit, neckline, sleeves — NO changes whatsoever
@@ -309,7 +309,7 @@ Do NOT add, remove, or modify ANY clothing or accessory detail.`;
 
       // Carousel-specific consistency + scene differentiation block
       let carouselConsistencyInstruction = "";
-      if (!!(config.carouselVibe || config.carouselAesthetic)) {
+      if (!!config.carouselVibe) {
         const sceneNum = sceneNumber || 1;
         const total = totalScenes || 4;
         carouselConsistencyInstruction = `\nCAROUSEL SCENE AWARENESS (CRITICAL): This is slide ${sceneNum} of ${total}. Each slide MUST show a VISUALLY DISTINCT composition.
@@ -327,7 +327,7 @@ ${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is
 
 EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same.
 
-${!!(config.carouselVibe || config.carouselAesthetic) ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
+${!!config.carouselVibe ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
 "${prompt}"
 Compose the image around this SPECIFIC scene description. The environment, props, lighting, and background elements described above are the PRIMARY FOCUS of this slide. The person should be INTEGRATED into this scene naturally — interacting with the setting, not just standing in front of it.
 
@@ -337,7 +337,7 @@ OUTFIT (LOCKED — do NOT change from anchor): Keep wearing exactly "${currentOu
 
 CRITICAL RULES:
 - The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.
-${!!(config.carouselVibe || config.carouselAesthetic) ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
+${!!config.carouselVibe ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
 ${lockInstructions}
 - STRICT MODE: This person must be immediately recognizable as the same individual.
 ${config.creationMode === 'ugc' ? '- Feature the product prominently in the scene.' : ''}

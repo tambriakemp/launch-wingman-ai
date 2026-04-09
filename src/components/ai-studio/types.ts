@@ -39,7 +39,6 @@ export interface AppConfig {
   ugcPrompt: string;
   carouselVibe: string;
   carouselMessage: string;
-  carouselAesthetic: string;
   carouselSlideCount: number;
   productDescription: string;
   useProductAsHair: boolean;
