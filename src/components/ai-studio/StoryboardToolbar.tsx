@@ -115,6 +115,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
 
   const hasCharacter = !!referenceImage;
   const hasEnvironment = !!environmentImage;
