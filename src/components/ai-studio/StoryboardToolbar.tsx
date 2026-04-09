@@ -379,6 +379,42 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               {/* Concept fields — saved + Path A off */}
               {config.creationMode !== 'ugc' && characterSource === 'saved' && !config.useReferenceAsStart && (
                 <>
+                  {/* Environment picker */}
+                  {envGroups.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <MicroLabel>Environment (optional)</MicroLabel>
+                        <button onClick={() => navigate('/app/ai-studio/environments')} className="text-[9px] text-primary hover:underline">
+                          Manage →
+                        </button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {envGroups.map(g => (
+                          <button
+                            key={g.id}
+                            onClick={() => handleSelectEnv(g.id)}
+                            className={`flex-shrink-0 flex flex-col items-center gap-1 transition-all duration-150 ${
+                              selectedEnvId === g.id ? 'opacity-100' : 'opacity-60 hover:opacity-90'
+                            }`}
+                          >
+                            <div className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
+                              selectedEnvId === g.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                            }`}>
+                              {g.thumb ? (
+                                <img src={g.thumb} alt={g.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <span className="text-[8px] text-muted-foreground">No img</span>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[56px]">{g.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <MicroLabel>Vlog / Carousel category</MicroLabel>
                     <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
