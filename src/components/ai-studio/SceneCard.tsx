@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
+import FalKeyWarning from './FalKeyWarning';
 
 const EditableField = ({
   label, value, editedValue, isFieldEditing, colorClass,
