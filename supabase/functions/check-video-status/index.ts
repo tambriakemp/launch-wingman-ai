@@ -78,18 +78,49 @@ serve(async (req) => {
     if (statusData.status === "COMPLETED") {
       // Fetch the actual result using the response URL from fal.ai
       const resultUrl = responseUrl || statusUrl.replace('/status', '');
-      const resultResponse = await fetch(resultUrl, {
-        headers: { "Authorization": `Key ${falKey}` },
-      });
+      console.log("[check-video-status] Fetching completed result from:", resultUrl);
 
-      if (!resultResponse.ok) {
-        throw new Error("Failed to fetch completed result");
+      let resultResponse: Response;
+      try {
+        resultResponse = await fetch(resultUrl, {
+          headers: { "Authorization": `Key ${falKey}` },
+        });
+      } catch (fetchErr) {
+        console.error("[check-video-status] Network error fetching result:", fetchErr);
+        // Return 200 with in_progress so client retries gracefully instead of 500 loop
+        return new Response(JSON.stringify({ status: "in_progress" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const resultData = await resultResponse.json();
+      const resultText = await resultResponse.text();
+
+      if (!resultResponse.ok) {
+        console.error("[check-video-status] Result fetch failed:", resultResponse.status, resultText);
+        // Return in_progress so client retries instead of crashing
+        return new Response(JSON.stringify({ status: "in_progress" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let resultData: any;
+      try {
+        resultData = JSON.parse(resultText);
+      } catch {
+        console.error("[check-video-status] Failed to parse result JSON:", resultText.slice(0, 500));
+        return new Response(JSON.stringify({ status: "in_progress" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const videoUrl = resultData?.video?.url;
 
-      if (!videoUrl) throw new Error("No video URL in result");
+      if (!videoUrl) {
+        console.error("[check-video-status] No video URL in result. Keys:", Object.keys(resultData || {}));
+        return new Response(JSON.stringify({ status: "failed", error: "No video URL returned by provider" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       return new Response(JSON.stringify({ status: "completed", videoUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
