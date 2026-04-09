@@ -71,7 +71,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
   if (disabled) {
     return (
       <div className="w-full opacity-40 grayscale select-none cursor-not-allowed">
-        <div className="border-2 border-dashed border-muted rounded-lg p-3 text-center bg-muted/20">
+        <div className="border border-border rounded-xl p-3 text-center bg-muted/20">
           <Upload className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
           <p className="text-muted-foreground text-xs">Upload Disabled</p>
         </div>
@@ -82,8 +82,8 @@ const UploadZone: React.FC<UploadZoneProps> = ({
   return (
     <div className="w-full">
       <div
-        className={`relative border-2 border-dashed rounded-lg p-3 text-center transition-all duration-200 cursor-pointer ${
-          preview ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 bg-muted/20'
+        className={`relative border rounded-xl p-3 transition-all duration-200 cursor-pointer ${
+          preview ? 'border-border bg-muted/20' : 'border-border hover:border-muted-foreground/40 bg-muted/20'
         }`}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
@@ -105,15 +105,15 @@ const UploadZone: React.FC<UploadZoneProps> = ({
             <p className="text-xs text-muted-foreground">Uploading...</p>
           </div>
         ) : preview ? (
-          <div className="relative flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <img
               src={preview}
               alt="Uploaded Reference"
-              className="h-14 w-14 rounded-lg shadow object-cover flex-shrink-0"
+              className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-muted"
             />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-medium text-foreground truncate">{title}</p>
-              <p className="text-[10px] text-muted-foreground">Uploaded</p>
+              <p className="text-[10.5px] text-muted-foreground">Uploaded</p>
             </div>
             <button
               onClick={(e) => {
@@ -121,7 +121,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
                 setPreview(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
-              className="absolute -top-1 -right-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground rounded-full p-0.5"
+              className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors"
               disabled={isProcessing}
             >
               <X className="h-3 w-3" />
@@ -129,14 +129,14 @@ const UploadZone: React.FC<UploadZoneProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted rounded-lg flex-shrink-0">
-              <Upload className="h-4 w-4 text-primary" />
+            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+              <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="text-left min-w-0">
               <p className="text-xs text-foreground">
                 <span className="font-semibold text-primary">Click to upload</span> or drag & drop
               </p>
-              <p className="text-xs text-muted-foreground">{subtext}</p>
+              <p className="text-[10.5px] text-muted-foreground">{subtext}</p>
             </div>
           </div>
         )}
