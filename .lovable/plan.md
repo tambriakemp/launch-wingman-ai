@@ -1,75 +1,50 @@
 
 
-## Plan: Improve Character Consistency & Feed Cohesion Prompts
+## Plan: Merge "Vlog Category" and "Aesthetic / Mood" into a single dropdown
 
-### Problem
-1. When "Use reference as start image" is enabled, subsequent scenes lose character details (hair, jewelry, makeup, outfit) because the backend doesn't know Scene 1 is the unmodified reference photo — it generates prompts without anchoring to it.
-2. Storyboard prompts lack the ultra-detailed, iPhone-native, feed-cohesion style the user wants (as shown in the ChatGPT example prompts).
+### What changes
 
-### Changes
+The two dropdowns — **Vlog category** (e.g. "Get Ready With Me", "Morning Routine") and **Aesthetic / mood** (e.g. "Luxury / Soft Life", "Clean Girl / Minimal") — will be merged into one dropdown labeled **Vlog / Carousel Category**. The combined list will include all unique items from both arrays.
 
----
+### Files to change
 
-**1. `supabase/functions/generate-storyboard/index.ts` — Enhance storyboard generation prompts**
+**1. `src/components/ai-studio/constants.ts`**
+- Merge `VLOG_CATEGORIES` and `CAROUSEL_AESTHETICS` into a single array `VLOG_CATEGORIES` (keep the name). Add the aesthetic items that aren't already present. Remove `CAROUSEL_AESTHETICS` export.
+- Update `INITIAL_CONFIG` to remove `carouselAesthetic` default (or keep field but default to first category).
 
-- Pass `config.useReferenceAsStart` into the storyboard generation logic.
-- When `useReferenceAsStart` is true, add instructions telling the AI:
-  - Scene 1 IS the reference photo — the AI must analyze it exhaustively and describe every detail (skin tone, bone structure, hair style/color/part, jewelry pieces, nail shape/color, makeup, outfit fabric/color/fit/neckline) as the canonical identity lock.
-  - All subsequent scenes must repeat this full description verbatim in every `image_prompt`.
+**2. `src/components/ai-studio/types.ts`**
+- Remove `carouselAesthetic` from `AppConfig` (the `vlogCategory` field will serve both purposes).
 
-- For **both vlog/carousel modes**, upgrade the storyboard system prompt to require ChatGPT-quality image prompts:
-  - Each `image_prompt` must include: full character description (skin, face, hair, makeup, accessories, nails, outfit), environment description, lighting direction, camera lens/settings ("shot on iPhone 15 Pro Max"), and the anti-smoothing/realism clause.
-  - Add a `FEED COHESION` section requiring: same color palette, same lighting session feel, varied shot types (hero, waist-up, close-up beauty, macro detail, flat lay, environment-only, candid movement, alternate angle).
-  - Require each prompt to specify shot type explicitly and include the full identity lock block.
+**3. `src/components/ai-studio/StoryboardToolbar.tsx`**
+- Remove the "Aesthetic / mood" dropdown entirely.
+- Rename the remaining dropdown label from "Vlog category" to **"Vlog / Carousel category"**.
+- Remove `CAROUSEL_AESTHETICS` import.
+- Update `hasConcept`/`hasAnyConfig` checks that reference `carouselVibe` (keep those as-is since `carouselVibe` is a separate text field still in use for carousel mode).
 
-- Add a `SHOT PALETTE` instruction for vlog mode similar to the carousel one — requiring a mix of wide/medium/close-up/detail/environment shots for feed variety.
+**4. `supabase/functions/generate-storyboard/index.ts`**
+- Replace references to `config.carouselAesthetic` with `config.vlogCategory`.
+- Update `isCarousel` check: use `config.carouselVibe` only (since `carouselAesthetic` no longer exists).
+- Update the system prompt to use `vlogCategory` where it previously said `carouselAesthetic`.
 
----
+**5. `supabase/functions/generate-scene-image/index.ts`**
+- Same: replace `config.carouselAesthetic` with `config.vlogCategory` in all references.
+- Update `isCarousel` checks to use `config.carouselVibe` only.
 
-**2. `supabase/functions/generate-scene-image/index.ts` — Strengthen identity lock in image generation**
+**6. `src/pages/AIStudio.tsx`**
+- No changes needed (doesn't reference `carouselAesthetic` directly in logic that matters).
 
-- When `config.useReferenceAsStart` is true AND `sceneNumber > 1`, add an extra identity lock paragraph:
-  ```
-  IDENTITY LOCK FROM REFERENCE (CRITICAL): Scene 1 is the UNMODIFIED reference photo. 
-  You MUST reproduce EXACTLY: same skin tone, same bone structure, same hair (style, color, part, length), 
-  same jewelry (every ring, necklace, earring, bracelet), same nail shape and color, same makeup 
-  (brow shape, shadow color, lip color, lash style, contour placement, highlighter). 
-  The outfit must be PIXEL-PERFECT identical unless the scene explicitly calls for a change.
-  ```
+### Combined category list
 
-- Add the iPhone realism clause to ALL prompts (not just when `ultraRealistic` is toggled), as a lighter version:
-  ```
-  natural skin texture, visible pores, subtle imperfections, no smoothing, no plastic skin, 
-  realistic fabric folds, natural highlight roll-off, true-to-life colour balance, 
-  razor sharp eye detail, visible lash separation, clean hairline edge definition
-  ```
-
----
-
-**3. `supabase/functions/generate-storyboard/index.ts` — Vlog shot variety instructions**
-
-Add to the vlog system prompt a `SHOT VARIETY FOR FEED COHESION` block:
+The merged `VLOG_CATEGORIES` array will be:
 ```
-SHOT VARIETY FOR FEED COHESION (CRITICAL):
-Vary shots across this spectrum — each scene uses a DIFFERENT framing:
-- Full body hero shot (establishing, confident, environment visible)
-- Waist-up variation (different interaction, subtle expression change)
-- Close-up beauty portrait (tight on face, intense or soft expression)
-- Macro detail shot (hands, nails, jewelry, product, texture)
-- Flat lay / environment-only (no person — props, setting, ambient mood)
-- Candid movement (mid-turn, walking, reaching, laughing — motion blur okay)
-- Alternate angle (low angle, over-shoulder, reflection, profile)
-
-Each image_prompt MUST specify the exact shot type and framing.
-Each image_prompt MUST include the FULL character description block 
-(skin, face, hair, makeup, jewelry, nails, outfit) repeated verbatim.
+"Get Ready With Me", "Morning Routine", "Night Routine", "Cooking / In the Kitchen",
+"Cleaning / Reset Routine", "Lifestyle / Day In My Life", "Work-From-Home",
+"Shopping / Haul", "Self-Care / Spa Day", "Mom Life", "Beauty / Glam", "Travel / Outside",
+"Luxury / Soft Life", "Clean Girl / Minimal", "Dark Academia", "Y2K / Baddie",
+"Cozy / Warm Tones", "Professional / Corporate", "Street Style / Urban",
+"Cottagecore / Feminine", "Moody / Editorial", "Bright / Colorful", "Neutral / Earthy",
+"Custom"
 ```
 
----
-
-### Files to Modify
-- `supabase/functions/generate-storyboard/index.ts` — add useReferenceAsStart awareness, upgrade prompt quality, add shot variety instructions
-- `supabase/functions/generate-scene-image/index.ts` — add identity lock clause for reference-as-start, add baseline realism clause
-
-No database changes needed.
+"Custom" appears once at the end.
 
