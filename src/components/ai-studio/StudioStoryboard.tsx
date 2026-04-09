@@ -17,8 +17,6 @@ interface StudioStoryboardProps {
   onUpdatePrompt: (index: number, newPrompt: string) => void;
   onUpdateVideoPrompt: (index: number, newPrompt: string) => void;
   onUpdateScript?: (index: number, newScript: string) => void;
-  onUpdateAction?: (index: number, newAction: string) => void;
-  onUpdateDetail?: (index: number, newDetail: string) => void;
   onBatchRegenerate: () => void;
   onBatchUpscale: () => void;
   onBatchGenerateVideo: () => void;
@@ -38,7 +36,7 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   config, storyboard, generatedMedia,
   onToggleSelect, onEnlarge,
   onAddToQueue, onUpdatePrompt, onUpdateVideoPrompt,
-  onUpdateScript, onUpdateAction, onUpdateDetail,
+  onUpdateScript,
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
   onAddBlankScene, selectionCount,
   characterBind, onCharacterBindChange,
@@ -231,8 +229,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           onUpdatePrompt={(newPrompt) => onUpdatePrompt(currentSceneIndex, newPrompt)}
           onUpdateVideoPrompt={(newPrompt) => onUpdateVideoPrompt(currentSceneIndex, newPrompt)}
           onUpdateScript={(newScript) => onUpdateScript?.(currentSceneIndex, newScript)}
-          onUpdateAction={(newAction) => onUpdateAction?.(currentSceneIndex, newAction)}
-          onUpdateDetail={(newDetail) => onUpdateDetail?.(currentSceneIndex, newDetail)}
         />
       </div>
     </div>
