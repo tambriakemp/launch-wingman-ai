@@ -58,7 +58,7 @@ interface StoryboardToolbarProps {
 }
 
 const MicroLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-muted-foreground/60 mb-2">{children}</p>
+  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-muted-foreground mb-2">{children}</p>
 );
 
 const SelectField: React.FC<{ value: string; onChange: (v: string) => void; options: string[]; groups?: Record<string, string[]> }> = ({ value, onChange, options, groups }) => (
@@ -81,8 +81,8 @@ const SelectField: React.FC<{ value: string; onChange: (v: string) => void; opti
 const StepBadge: React.FC<{ number: string; done?: boolean; active?: boolean }> = ({ number, done, active }) => (
   <span className={`inline-flex items-center justify-center w-[22px] h-[22px] rounded-full text-[10px] font-medium flex-shrink-0 transition-all ${
     done ? 'bg-foreground text-background' :
-    active ? 'bg-muted text-muted-foreground border border-border/60' :
-    'bg-transparent text-muted-foreground/40 border border-border/40'
+    active ? 'bg-muted text-foreground/70 border border-border' :
+    'bg-transparent text-muted-foreground border border-border/60'
   }`}>
     {done ? <Check className="h-2.5 w-2.5" /> : number}
   </span>
@@ -96,18 +96,25 @@ const CollapsibleSection: React.FC<{
   isDone?: boolean;
   isActive?: boolean;
   subtle?: boolean;
-}> = ({ title, stepNumber, defaultOpen = false, children, isDone, isActive, subtle }) => {
-  const [open, setOpen] = useState(defaultOpen);
+  open?: boolean;
+  onToggle?: () => void;
+}> = ({ title, stepNumber, defaultOpen = false, children, isDone, isActive, subtle, open: controlledOpen, onToggle }) => {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const handleChange = (val: boolean) => {
+    if (onToggle) { if (val) onToggle(); else if (controlledOpen !== undefined) onToggle(); }
+    else setInternalOpen(val);
+  };
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={isOpen} onOpenChange={handleChange}>
       <CollapsibleTrigger className="flex items-center justify-between w-full py-[18px] hover:opacity-80 transition-opacity">
         <span className="flex items-center gap-3">
           {stepNumber && <StepBadge number={stepNumber} done={isDone} active={isActive} />}
-          <span className={`text-sm tracking-tight ${subtle ? 'font-normal text-muted-foreground' : 'font-medium text-foreground'}`}>
+          <span className={`text-sm tracking-tight ${subtle ? 'font-normal text-muted-foreground' : 'font-semibold text-foreground'}`}>
             {title}
           </span>
         </span>
-        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="pb-6 space-y-4">
@@ -122,7 +129,7 @@ const SegBtn: React.FC<{ active: boolean; onClick: () => void; children: React.R
   <button
     onClick={onClick}
     className={`flex-1 py-2 text-[11.5px] font-medium rounded-md transition-all duration-150 ${
-      active ? 'bg-background text-foreground shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground/70'
+      active ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:text-foreground/70'
     }`}
   >
     {children}
@@ -138,7 +145,7 @@ const EnvCard: React.FC<{ mode: 'lock' | 'evolve'; selected: boolean; onClick: (
   >
     <div className="text-base mb-1.5">{mode === 'lock' ? '🔒' : '🌊'}</div>
     <div className="font-medium text-foreground text-[11px] mb-0.5">{mode === 'lock' ? 'Lock' : 'Evolve'}</div>
-    <div className="text-[10px] text-muted-foreground/60 leading-snug font-light">
+    <div className="text-[10px] text-muted-foreground leading-snug font-light">
       {mode === 'lock' ? 'Same location. Angle and framing vary.' : 'Connected environments. Full vlog feel.'}
     </div>
   </button>
@@ -156,6 +163,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadReel,
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo
 }) => {
+  const [openSection, setOpenSection] = useState<string>('1');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
   const [cachedUploadImage, setCachedUploadImage] = useState<string | null>(null);
@@ -185,7 +193,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
           <SheetHeader className="px-6 pt-7 pb-5">
             <SheetTitle className="text-xl font-light tracking-tight text-foreground">Create</SheetTitle>
-            <p className="text-xs text-muted-foreground/60 mt-1 font-light">
+            <p className="text-xs text-muted-foreground mt-1 font-light">
               {!hasCharacter ? 'Start with your character photo' : hasConcept ? 'Ready to generate' : 'Now add your concept'}
             </p>
             <div className="flex items-center gap-1.5 mt-4">
@@ -196,15 +204,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </div>
           </SheetHeader>
 
-          <div className="h-px bg-border/40 mx-6" />
+          <div className="h-px bg-border mx-6" />
 
-          <div className="px-6 divide-y divide-border/30">
+          <div className="px-6 divide-y divide-border/60">
 
             {/* ── Step 1: Character ── */}
-            <CollapsibleSection title="Character" stepNumber="1" defaultOpen isDone={step1Done} isActive={!step1Done}>
+            <CollapsibleSection title="Character" stepNumber="1" isDone={step1Done} isActive={!step1Done} open={openSection === '1'} onToggle={() => setOpenSection(openSection === '1' ? '' : '1')}>
               <div>
                 <MicroLabel>Character source</MicroLabel>
-                <div className="flex gap-[2px] p-[3px] bg-muted/50 rounded-lg border border-border/30">
+                <div className="flex gap-[2px] p-[3px] bg-muted rounded-lg border border-border/50">
                   <SegBtn active={characterSource === 'saved'} onClick={() => {
                     setCachedUploadImage(referenceImage || null);
                     setCharacterSource('saved');
@@ -224,7 +232,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
               {setReferenceImage && characterSource === 'upload' && (
                 <div className="space-y-2">
-                  <p className="text-[11px] text-muted-foreground/60 font-light leading-relaxed">
+                  <p className="text-[11px] text-muted-foreground font-light leading-relaxed">
                     Upload the image you'll use as your first frame. Shot 1 mirrors it exactly — same position, same environment.
                   </p>
                   <UploadZone
@@ -260,10 +268,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Step 2: Concept ── */}
-            <CollapsibleSection title="Concept" stepNumber="2" defaultOpen isDone={step2Done} isActive={step1Done && !step2Done}>
+            <CollapsibleSection title="Concept" stepNumber="2" isDone={step2Done} isActive={step1Done && !step2Done} open={openSection === '2'} onToggle={() => setOpenSection(openSection === '2' ? '' : '2')}>
               <div>
                 <MicroLabel>Mode</MicroLabel>
-                <div className="flex gap-[2px] p-[3px] bg-muted/50 rounded-lg border border-border/30">
+                <div className="flex gap-[2px] p-[3px] bg-muted rounded-lg border border-border/50">
                   <SegBtn active={config.creationMode === 'vlog'} onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}>
                     Vlog / Carousel
                   </SegBtn>
@@ -277,9 +285,9 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               {config.creationMode !== 'ugc' && characterSource === 'upload' && hasCharacter && (
                 <div className="rounded-xl border border-border/40 overflow-hidden">
                   <div className="px-4 py-3.5 bg-muted/20">
-                    <p className="text-[12.5px] font-medium text-foreground tracking-tight">AI-directed storyboard</p>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1 leading-relaxed font-light">
-                      The AI will analyze your photo — appearance, outfit, setting, lighting, vibe — and direct the entire shoot from what it sees.
+                    <p className="text-[12.5px] font-semibold text-foreground tracking-tight">AI-directed storyboard</p>
+                     <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed font-light">
+                       The AI will analyze your photo — appearance, outfit, setting, lighting, vibe — and direct the entire shoot from what it sees.
                     </p>
                   </div>
                   <div className="px-4 py-4 border-t border-border/30 space-y-3 bg-background">
@@ -298,7 +306,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   <div className="flex items-start justify-between gap-3 px-4 py-3.5">
                     <div>
                       <p className="text-[12px] font-medium text-foreground">Let AI direct from this photo</p>
-                      <p className="text-[11px] text-muted-foreground/60 mt-1 leading-relaxed font-light">
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed font-light">
                         AI reads the image and builds the full storyboard — no concept needed.
                       </p>
                     </div>
@@ -374,10 +382,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Step 3: Settings ── */}
-            <CollapsibleSection title="Settings" stepNumber="3" defaultOpen isActive={step2Done}>
+            <CollapsibleSection title="Settings" stepNumber="3" isActive={step2Done} open={openSection === '3'} onToggle={() => setOpenSection(openSection === '3' ? '' : '3')}>
               <div>
                 <MicroLabel>Orientation</MicroLabel>
-                <div className="flex gap-[2px] p-[3px] bg-muted/50 rounded-lg border border-border/30">
+                <div className="flex gap-[2px] p-[3px] bg-muted rounded-lg border border-border/50">
                   {([
                     { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
                     { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
@@ -386,7 +394,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
                       className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 text-[10.5px] font-medium rounded-md transition-all duration-150 ${
                         config.aspectRatio === value
-                          ? 'bg-background text-foreground shadow-sm border border-border/40'
+                          ? 'bg-foreground text-background shadow-sm'
                           : 'text-muted-foreground hover:text-foreground/70'
                       }`}>
                       <Icon className="h-3 w-3" />
@@ -416,7 +424,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Advanced Settings ── */}
-            <CollapsibleSection title="Advanced settings" subtle>
+            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
