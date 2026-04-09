@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { VlogStep, AspectRatio, GeneratedMedia } from './types';
-import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X } from 'lucide-react';
+import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 const EditableField = ({
@@ -67,19 +67,17 @@ const SceneCard: React.FC<SceneCardProps> = ({
   onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail
 }) => {
-  const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(step.image_prompt);
   const [isEditingVideo, setIsEditingVideo] = useState(false);
   const [editedVideoPrompt, setEditedVideoPrompt] = useState(step.video_prompt);
-
-  // Inline edit states for script, action, detail
   const [isEditingScript, setIsEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState(step.script);
   const [isEditingAction, setIsEditingAction] = useState(false);
   const [editedAction, setEditedAction] = useState(step.a_roll);
   const [isEditingDetail, setIsEditingDetail] = useState(false);
   const [editedDetail, setEditedDetail] = useState(step.close_up_details);
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
 
   useEffect(() => { setEditedPrompt(step.image_prompt); }, [step.image_prompt]);
   useEffect(() => { setEditedVideoPrompt(step.video_prompt); }, [step.video_prompt]);
@@ -87,7 +85,6 @@ const SceneCard: React.FC<SceneCardProps> = ({
   useEffect(() => { setEditedAction(step.a_roll); }, [step.a_roll]);
   useEffect(() => { setEditedDetail(step.close_up_details); }, [step.close_up_details]);
 
-  const copyPrompt = (text: string) => navigator.clipboard.writeText(text);
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
   const handleSaveVideoPrompt = () => { onUpdateVideoPrompt(editedVideoPrompt); setIsEditingVideo(false); };
 
@@ -124,36 +121,18 @@ const SceneCard: React.FC<SceneCardProps> = ({
     }
   };
 
-  const downloadImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (media.imageUrl) downloadMedia(media.imageUrl, 'png');
-  };
-
-  const downloadVideo = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4');
-  };
+  const downloadImage = (e: React.MouseEvent) => { e.stopPropagation(); if (media.imageUrl) downloadMedia(media.imageUrl, 'png'); };
+  const downloadVideo = (e: React.MouseEvent) => { e.stopPropagation(); if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4'); };
 
   const [imageBroken, setImageBroken] = useState(false);
-
   useEffect(() => { setImageBroken(false); }, [media.imageUrl]);
-
-  const handleImageError = () => {
-    console.error('[SceneCard] Image failed to load:', media.imageUrl);
-    setImageBroken(true);
-  };
-
-  const handleImageLoad = () => {
-    console.log('[SceneCard] Image loaded OK:', media.imageUrl?.slice(0, 80));
-    setImageBroken(false);
-  };
+  const handleImageError = () => { setImageBroken(true); };
+  const handleImageLoad = () => { setImageBroken(false); };
 
   const isLoading = media.isGeneratingImage || media.isUpscaling;
   const isVideoLoading = media.isGeneratingVideo;
   const cssAspectRatio = aspectRatio.replace(':', '/');
   const hasValidImage = !!media.imageUrl && !imageBroken;
-
-  // EditableField moved outside the component to prevent remount on every render
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -180,7 +159,6 @@ const SceneCard: React.FC<SceneCardProps> = ({
             style={{ aspectRatio: cssAspectRatio }}
             onClick={() => { if (hasValidImage && !isLoading) onEnlarge(); }}
           >
-
             {hasValidImage ? (
               <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
             ) : (
@@ -188,9 +166,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 {!isLoading && !media.error && (
                   <>
                     <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }}>
-                      Generate Image
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateWithAutoSave(); }}>Generate Image</Button>
                     <p className="text-[9px] text-muted-foreground mt-2">May take 1–3 minutes</p>
                   </>
                 )}
@@ -225,7 +201,17 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} title="Upscale" className="pointer-events-auto px-2 py-1 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-full backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
                   Upscale
                 </button>
+                <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} title="Edit Prompts" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                  <FileText className="h-3 w-3" />
+                </button>
               </div>
+            )}
+
+            {/* Show prompt icon even when no image */}
+            {!hasValidImage && !isLoading && !media.error && (
+              <button onClick={(e) => { e.stopPropagation(); setPromptModalOpen(true); }} title="Edit Prompts" className="absolute bottom-2 right-2 z-40 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                <FileText className="h-3 w-3" />
+              </button>
             )}
           </div>
         </div>
@@ -241,9 +227,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 {!isVideoLoading && !media.videoError && (
                   <>
                     <Video className="h-8 w-8 text-muted-foreground mb-2" />
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} disabled={!media.imageUrl}>
-                      Generate Video
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} disabled={!media.imageUrl}>Generate Video</Button>
                     {!media.imageUrl ? <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p> : <p className="text-[9px] text-muted-foreground mt-2">May take 3–5 minutes</p>}
                   </>
                 )}
@@ -277,108 +261,100 @@ const SceneCard: React.FC<SceneCardProps> = ({
         </div>
       </div>
 
-      {/* Script & Details — All Editable */}
-      <div className="space-y-4">
-        {/* Script / Voiceover */}
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-          <EditableField
-            label="Script / Voiceover"
-            value={step.script}
-            editedValue={editedScript}
-            isFieldEditing={isEditingScript}
-            onEdit={() => setIsEditingScript(true)}
-            onSave={() => { onUpdateScript?.(editedScript); setIsEditingScript(false); }}
-            onCancel={() => { setIsEditingScript(false); setEditedScript(step.script); }}
-            onChange={setEditedScript}
-          />
-        </div>
+      {/* Prompts Modal */}
+      <Dialog open={promptModalOpen} onOpenChange={setPromptModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">Scene {step.step_number} — {step.step_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <EditableField
+                label="Script / Voiceover"
+                value={step.script}
+                editedValue={editedScript}
+                isFieldEditing={isEditingScript}
+                onEdit={() => setIsEditingScript(true)}
+                onSave={() => { onUpdateScript?.(editedScript); setIsEditingScript(false); }}
+                onCancel={() => { setIsEditingScript(false); setEditedScript(step.script); }}
+                onChange={setEditedScript}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Action */}
-          <div className="border-l-2 border-primary pl-3">
-            <EditableField
-              label="Action"
-              value={step.a_roll}
-              editedValue={editedAction}
-              isFieldEditing={isEditingAction}
-              onEdit={() => setIsEditingAction(true)}
-              onSave={() => { onUpdateAction?.(editedAction); setIsEditingAction(false); }}
-              onCancel={() => { setIsEditingAction(false); setEditedAction(step.a_roll); }}
-              onChange={setEditedAction}
-            />
-          </div>
-          {/* Detail */}
-          <div>
-            <EditableField
-              label="Detail"
-              value={step.close_up_details}
-              editedValue={editedDetail}
-              isFieldEditing={isEditingDetail}
-              colorClass="text-muted-foreground"
-              onEdit={() => setIsEditingDetail(true)}
-              onSave={() => { onUpdateDetail?.(editedDetail); setIsEditingDetail(false); }}
-              onCancel={() => { setIsEditingDetail(false); setEditedDetail(step.close_up_details); }}
-              onChange={setEditedDetail}
-            />
-          </div>
-        </div>
-
-        {/* Prompts Dropdown */}
-        <div className="border-t border-border pt-3">
-          <button onClick={() => setIsPromptOpen(!isPromptOpen)} className="w-full flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground transition-colors bg-muted p-2 rounded">
-            <span>View AI Prompts</span>
-            <ChevronDown className={`w-4 h-4 transform transition-transform ${isPromptOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isPromptOpen && (
-            <div className="mt-2 space-y-3 bg-muted/30 p-3 rounded-lg border border-border">
-              {/* Image Prompt */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-primary font-bold uppercase">Image Prompt</span>
-                  <div className="flex gap-2">
-                    {!isEditing && <button onClick={() => setIsEditing(true)} className="text-[10px] text-primary hover:text-foreground uppercase font-bold">Edit</button>}
-                    <button onClick={() => copyPrompt(step.image_prompt)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold">Copy</button>
-                  </div>
-                </div>
-                {isEditing ? (
-                  <div>
-                    <textarea value={editedPrompt} onChange={(e) => setEditedPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditedPrompt(step.image_prompt); }}>Cancel</Button>
-                      <Button size="sm" onClick={handleSavePrompt}>Save</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground font-mono break-words leading-tight bg-muted p-2 rounded border border-border">{step.image_prompt}</p>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="border-l-2 border-primary pl-3">
+                <EditableField
+                  label="Action"
+                  value={step.a_roll}
+                  editedValue={editedAction}
+                  isFieldEditing={isEditingAction}
+                  onEdit={() => setIsEditingAction(true)}
+                  onSave={() => { onUpdateAction?.(editedAction); setIsEditingAction(false); }}
+                  onCancel={() => { setIsEditingAction(false); setEditedAction(step.a_roll); }}
+                  onChange={setEditedAction}
+                />
               </div>
-
-              {/* Video Prompt */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-primary font-bold uppercase">Video Prompt</span>
-                  <div className="flex gap-2">
-                    {!isEditingVideo && <button onClick={() => setIsEditingVideo(true)} className="text-[10px] text-primary hover:text-foreground uppercase font-bold">Edit</button>}
-                    <button onClick={() => copyPrompt(step.video_prompt)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold">Copy</button>
-                  </div>
-                </div>
-                {isEditingVideo ? (
-                  <div>
-                    <textarea value={editedVideoPrompt} onChange={(e) => setEditedVideoPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => { setIsEditingVideo(false); setEditedVideoPrompt(step.video_prompt); }}>Cancel</Button>
-                      <Button size="sm" onClick={handleSaveVideoPrompt}>Save</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground font-mono break-words leading-tight bg-muted p-2 rounded border border-border">{step.video_prompt}</p>
-                )}
+              <div>
+                <EditableField
+                  label="Detail"
+                  value={step.close_up_details}
+                  editedValue={editedDetail}
+                  isFieldEditing={isEditingDetail}
+                  colorClass="text-muted-foreground"
+                  onEdit={() => setIsEditingDetail(true)}
+                  onSave={() => { onUpdateDetail?.(editedDetail); setIsEditingDetail(false); }}
+                  onCancel={() => { setIsEditingDetail(false); setEditedDetail(step.close_up_details); }}
+                  onChange={setEditedDetail}
+                />
               </div>
             </div>
-          )}
-        </div>
-      </div>
+
+            {/* Image Prompt */}
+            <div className="space-y-2 bg-muted/30 p-3 rounded-lg border border-border">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-primary font-bold uppercase">Image Prompt</span>
+                <div className="flex gap-2">
+                  {!isEditing && <button onClick={() => setIsEditing(true)} className="text-[10px] text-primary hover:text-foreground uppercase font-bold">Edit</button>}
+                  <button onClick={() => navigator.clipboard.writeText(step.image_prompt)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1"><Copy className="h-3 w-3" /> Copy</button>
+                </div>
+              </div>
+              {isEditing ? (
+                <div>
+                  <textarea value={editedPrompt} onChange={(e) => setEditedPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditedPrompt(step.image_prompt); }}>Cancel</Button>
+                    <Button size="sm" onClick={handleSavePrompt}>Save</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground font-mono break-words leading-tight bg-muted p-2 rounded border border-border">{step.image_prompt}</p>
+              )}
+            </div>
+
+            {/* Video Prompt */}
+            <div className="space-y-2 bg-muted/30 p-3 rounded-lg border border-border">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-primary font-bold uppercase">Video Prompt</span>
+                <div className="flex gap-2">
+                  {!isEditingVideo && <button onClick={() => setIsEditingVideo(true)} className="text-[10px] text-primary hover:text-foreground uppercase font-bold">Edit</button>}
+                  <button onClick={() => navigator.clipboard.writeText(step.video_prompt)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1"><Copy className="h-3 w-3" /> Copy</button>
+                </div>
+              </div>
+              {isEditingVideo ? (
+                <div>
+                  <textarea value={editedVideoPrompt} onChange={(e) => setEditedVideoPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => { setIsEditingVideo(false); setEditedVideoPrompt(step.video_prompt); }}>Cancel</Button>
+                    <Button size="sm" onClick={handleSaveVideoPrompt}>Save</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground font-mono break-words leading-tight bg-muted p-2 rounded border border-border">{step.video_prompt}</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
