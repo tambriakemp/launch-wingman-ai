@@ -192,7 +192,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = body;
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio, userId: bodyUserId } = body;
 
     // ── Model resolution ──────────────────────────────────────────
     const supabaseAdmin = createClient(
@@ -208,29 +208,55 @@ serve(async (req) => {
     const platformModel = modelSetting?.value || "gemini";
 
     let falKeyForImages: string | null = null;
+    let falKeySource: string = "none";
     if (platformModel === "flux_kontext") {
+      // Try to resolve the user ID for BYOK key lookup
+      let resolvedUserId: string | null = null;
+
+      // Method 1: JWT from Authorization header
       const authHeaderForModel = req.headers.get("Authorization");
       if (authHeaderForModel) {
         const tokenForModel = authHeaderForModel.replace("Bearer ", "");
         const { data: { user: modelUser } } = await supabaseAdmin.auth.getUser(tokenForModel);
         if (modelUser?.id) {
-          const { data: userKey } = await supabaseAdmin
-            .from("user_api_keys")
-            .select("api_key")
-            .eq("user_id", modelUser.id)
-            .eq("service", "fal_ai")
-            .maybeSingle();
-          if (userKey?.api_key) falKeyForImages = userKey.api_key;
+          resolvedUserId = modelUser.id;
         }
       }
+
+      // Method 2: userId passed in body (from ai-studio-api proxy with service role token)
+      if (!resolvedUserId && bodyUserId) {
+        resolvedUserId = bodyUserId;
+        console.log(`[generate-scene-image] Using userId from request body for BYOK lookup`);
+      }
+
+      // Look up user's BYOK fal.ai key
+      if (resolvedUserId) {
+        const { data: userKey } = await supabaseAdmin
+          .from("user_api_keys")
+          .select("api_key")
+          .eq("user_id", resolvedUserId)
+          .eq("service", "fal_ai")
+          .maybeSingle();
+        if (userKey?.api_key) {
+          falKeyForImages = userKey.api_key;
+          falKeySource = "user_byok";
+        }
+      }
+
+      // Fallback to platform FAL_KEY
       if (!falKeyForImages) {
         falKeyForImages = Deno.env.get("FAL_KEY") || null;
+        if (falKeyForImages) falKeySource = "platform";
       }
+
+      console.log(`[generate-scene-image] FAL key source: ${falKeySource}, resolved userId: ${resolvedUserId || 'none'}`);
     }
 
     // Determine if Flux should be used — allow for complex scenes too (no longer forced Gemini)
     const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
-    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}`);
+    let modelUsed = useFlux ? "flux_kontext" : "gemini";
+    let wasFallback = false;
+    console.log(`[generate-scene-image] Model: ${modelUsed}, platform setting: ${platformModel}, fal key source: ${falKeySource}`);
     // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
@@ -543,9 +569,12 @@ ${orientationInstruction}`;
     if (useFlux) {
       // ── Flux Kontext Pro via fal.ai ──────────────────────────────
       const baseFluxImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+      console.log(`[flux] Base image: ${baseFluxImage ? (baseFluxImage.substring(0, 60) + '...') : 'NONE'}, key source: ${falKeySource}`);
 
       if (!baseFluxImage) {
         console.log("[flux] No reference image available, falling back to Gemini");
+        modelUsed = "gemini";
+        wasFallback = true;
       } else {
         try {
           const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
@@ -567,24 +596,37 @@ ${orientationInstruction}`;
             const errText = await fluxResponse.text();
             console.error("[flux] Error:", fluxResponse.status, errText);
             console.log("[flux] Falling back to Gemini...");
+            modelUsed = "gemini";
+            wasFallback = true;
           } else {
             const fluxData = await fluxResponse.json();
             imageUrl = fluxData?.images?.[0]?.url || null;
-            if (imageUrl) console.log("[flux] Image generated successfully");
+            if (imageUrl) {
+              console.log("[flux] Image generated successfully");
+            } else {
+              console.error("[flux] Response OK but no image URL in response:", JSON.stringify(fluxData).substring(0, 200));
+              modelUsed = "gemini";
+              wasFallback = true;
+            }
           }
         } catch (fluxErr) {
           console.error("[flux] Exception:", fluxErr);
           console.log("[flux] Falling back to Gemini...");
+          modelUsed = "gemini";
+          wasFallback = true;
         }
       }
     }
 
     if (!imageUrl) {
       // ── Gemini (default + fallback) ──────────────────────────────
+      if (wasFallback) console.log(`[generate-scene-image] Flux failed/unavailable, using Gemini as fallback`);
+      modelUsed = "gemini";
+
       const handleGeminiErrorStatus = (status: number, errorText: string | null) => {
         if (errorText) console.error("Scene image error:", status, errorText);
-        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded", model: modelUsed, fallback: wasFallback }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "Credits exhausted", model: modelUsed, fallback: wasFallback }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         return null;
       };
 
@@ -628,7 +670,11 @@ ${orientationInstruction}`;
             if (fluxResponse.ok) {
               const fluxData = await fluxResponse.json();
               imageUrl = fluxData?.images?.[0]?.url || null;
-              if (imageUrl) console.log("[flux-fallback] Image generated successfully after Gemini 503");
+              if (imageUrl) {
+                console.log("[flux-fallback] Image generated successfully after Gemini 503");
+                modelUsed = "flux_kontext";
+                wasFallback = true;
+              }
             } else {
               console.error("[flux-fallback] Error:", fluxResponse.status, await fluxResponse.text());
             }
@@ -637,19 +683,26 @@ ${orientationInstruction}`;
           }
         }
         if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
-      } else if (!geminiResult || geminiResult.status !== 200) {
-        throw new Error(`Image generation failed: ${geminiResult?.status || 'unknown'}`);
       }
 
-      if (geminiResult?.finishReason === "IMAGE_SAFETY") {
-        return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
-          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+      // Extract image from Gemini result if we don't have one yet
+      if (!imageUrl && geminiResult) {
+        // Check safety FIRST
+        if (geminiResult.finishReason === "IMAGE_SAFETY") {
+          return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description.", model: modelUsed, fallback: wasFallback }), {
+            status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        if (geminiResult.status !== 200) {
+          throw new Error(`Image generation failed: ${geminiResult.status}`);
+        }
+
+        imageUrl = geminiResult.imageUrl;
       }
 
-      imageUrl = geminiResult.imageUrl;
       if (!imageUrl) {
-        console.error("No image returned from Gemini after sanitization retry");
+        console.error("No image returned after all attempts");
         throw new Error("No image generated");
       }
     }
@@ -659,12 +712,14 @@ ${orientationInstruction}`;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization");
-    let userId = "anonymous";
-    if (authHeader) {
+    let uploadUserId = "anonymous";
+    if (bodyUserId) {
+      uploadUserId = bodyUserId;
+    } else if (authHeader) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) userId = user.id;
+      if (user) uploadUserId = user.id;
     }
 
     let bytes: Uint8Array;
@@ -696,7 +751,7 @@ ${orientationInstruction}`;
       throw new Error("Generated image appears invalid (too small). Please retry.");
     }
 
-    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { error: uploadError } = await supabase.storage
@@ -705,12 +760,13 @@ ${orientationInstruction}`;
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      return new Response(JSON.stringify({ imageUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ imageUrl, model: modelUsed, fallback: wasFallback }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { data: publicUrlData } = supabase.storage.from("ai-studio").getPublicUrl(fileName);
 
-    return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl }), {
+    console.log(`[generate-scene-image] Done. Model: ${modelUsed}, fallback: ${wasFallback}`);
+    return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl, model: modelUsed, fallback: wasFallback }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (e) {

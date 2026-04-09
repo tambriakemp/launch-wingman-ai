@@ -184,8 +184,9 @@ serve(async (req) => {
       return json({ error: "Unknown action" }, 400);
     }
 
-    // Build the payload for the downstream function
+    // Build the payload for the downstream function, injecting userId for BYOK key resolution
     const downstreamBody = buildDownstreamBody(action, body);
+    if (!downstreamBody.userId) downstreamBody.userId = userId;
 
     const targetUrl = `${SUPABASE_URL}/functions/v1/${targetFunction}`;
     console.log(`[ai-studio-api] Proxying ${action} → ${targetFunction}`);
