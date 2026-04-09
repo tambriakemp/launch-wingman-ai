@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from './types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, VideoShot } from './types';
 import SceneCard from './SceneCard';
+import { CharacterBindPanel } from './CharacterBindPanel';
+import { MultiShotEditor } from './MultiShotEditor';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Plus, ImageIcon, Video, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -23,6 +25,13 @@ interface StudioStoryboardProps {
   onBatchDelete: () => void;
   onAddBlankScene: () => void;
   selectionCount: number;
+  characterBind: CharacterBindConfig;
+  onCharacterBindChange: (bind: CharacterBindConfig) => void;
+  multiShotEnabled: boolean;
+  onMultiShotToggle: (enabled: boolean) => void;
+  multiShots: VideoShot[];
+  onMultiShotsChange: (shots: VideoShot[]) => void;
+  sessionReferenceUrl?: string | null;
 }
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
