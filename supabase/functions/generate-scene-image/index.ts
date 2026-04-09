@@ -569,9 +569,12 @@ ${orientationInstruction}`;
     if (useFlux) {
       // ── Flux Kontext Pro via fal.ai ──────────────────────────────
       const baseFluxImage = previewCharacter || referenceImages?.[0] || referenceImage || null;
+      console.log(`[flux] Base image: ${baseFluxImage ? (baseFluxImage.substring(0, 60) + '...') : 'NONE'}, key source: ${falKeySource}`);
 
       if (!baseFluxImage) {
         console.log("[flux] No reference image available, falling back to Gemini");
+        modelUsed = "gemini";
+        wasFallback = true;
       } else {
         try {
           const fluxResponse = await fetch("https://fal.run/fal-ai/flux-pro/kontext", {
@@ -593,24 +596,37 @@ ${orientationInstruction}`;
             const errText = await fluxResponse.text();
             console.error("[flux] Error:", fluxResponse.status, errText);
             console.log("[flux] Falling back to Gemini...");
+            modelUsed = "gemini";
+            wasFallback = true;
           } else {
             const fluxData = await fluxResponse.json();
             imageUrl = fluxData?.images?.[0]?.url || null;
-            if (imageUrl) console.log("[flux] Image generated successfully");
+            if (imageUrl) {
+              console.log("[flux] Image generated successfully");
+            } else {
+              console.error("[flux] Response OK but no image URL in response:", JSON.stringify(fluxData).substring(0, 200));
+              modelUsed = "gemini";
+              wasFallback = true;
+            }
           }
         } catch (fluxErr) {
           console.error("[flux] Exception:", fluxErr);
           console.log("[flux] Falling back to Gemini...");
+          modelUsed = "gemini";
+          wasFallback = true;
         }
       }
     }
 
     if (!imageUrl) {
       // ── Gemini (default + fallback) ──────────────────────────────
+      if (wasFallback) console.log(`[generate-scene-image] Flux failed/unavailable, using Gemini as fallback`);
+      modelUsed = "gemini";
+
       const handleGeminiErrorStatus = (status: number, errorText: string | null) => {
         if (errorText) console.error("Scene image error:", status, errorText);
-        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded", model: modelUsed, fallback: wasFallback }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "Credits exhausted", model: modelUsed, fallback: wasFallback }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         return null;
       };
 
@@ -654,7 +670,11 @@ ${orientationInstruction}`;
             if (fluxResponse.ok) {
               const fluxData = await fluxResponse.json();
               imageUrl = fluxData?.images?.[0]?.url || null;
-              if (imageUrl) console.log("[flux-fallback] Image generated successfully after Gemini 503");
+              if (imageUrl) {
+                console.log("[flux-fallback] Image generated successfully after Gemini 503");
+                modelUsed = "flux_kontext";
+                wasFallback = true;
+              }
             } else {
               console.error("[flux-fallback] Error:", fluxResponse.status, await fluxResponse.text());
             }
@@ -663,19 +683,26 @@ ${orientationInstruction}`;
           }
         }
         if (!imageUrl) throw new Error(`Image generation failed: provider temporarily unavailable (503). Please try again.`);
-      } else if (!geminiResult || geminiResult.status !== 200) {
-        throw new Error(`Image generation failed: ${geminiResult?.status || 'unknown'}`);
       }
 
-      if (geminiResult?.finishReason === "IMAGE_SAFETY") {
-        return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
-          status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+      // Extract image from Gemini result if we don't have one yet
+      if (!imageUrl && geminiResult) {
+        // Check safety FIRST
+        if (geminiResult.finishReason === "IMAGE_SAFETY") {
+          return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description.", model: modelUsed, fallback: wasFallback }), {
+            status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+
+        if (geminiResult.status !== 200) {
+          throw new Error(`Image generation failed: ${geminiResult.status}`);
+        }
+
+        imageUrl = geminiResult.imageUrl;
       }
 
-      imageUrl = geminiResult.imageUrl;
       if (!imageUrl) {
-        console.error("No image returned from Gemini after sanitization retry");
+        console.error("No image returned after all attempts");
         throw new Error("No image generated");
       }
     }
