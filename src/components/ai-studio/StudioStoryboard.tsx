@@ -40,7 +40,10 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   onAddToQueue, onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail,
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
-  onAddBlankScene, selectionCount
+  onAddBlankScene, selectionCount,
+  characterBind, onCharacterBindChange,
+  multiShotEnabled, onMultiShotToggle, multiShots, onMultiShotsChange,
+  sessionReferenceUrl,
 }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const filmstripRef = useRef<HTMLDivElement>(null);
@@ -202,7 +205,9 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
               index: currentSceneIndex,
               step,
               config: { ...config },
-              baseImageUrl: generatedMedia[currentSceneIndex].imageUrl
+              baseImageUrl: generatedMedia[currentSceneIndex].imageUrl,
+              characterBind: characterBind.enabled ? characterBind : undefined,
+              multiShot: multiShotEnabled ? multiShots : undefined,
             }]);
           }}
           onToggleSelect={() => onToggleSelect(currentSceneIndex)}
