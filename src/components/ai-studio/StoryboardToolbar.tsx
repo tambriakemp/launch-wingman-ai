@@ -140,13 +140,13 @@ const EnvCard: React.FC<{ mode: 'lock' | 'evolve'; selected: boolean; onClick: (
   <button
     onClick={onClick}
     className={`text-left p-3 rounded-xl border text-xs transition-all duration-150 ${
-      selected ? 'border-foreground/20 bg-foreground/[0.04]' : 'border-border/30 hover:border-border/60 bg-muted/10'
+      selected ? 'border-border bg-muted/40 shadow-sm' : 'border-border/60 hover:border-border bg-background'
     }`}
   >
     <div className="text-base mb-1.5">{mode === 'lock' ? '🔒' : '🌊'}</div>
-    <div className="font-medium text-foreground text-[11px] mb-0.5">{mode === 'lock' ? 'Lock' : 'Evolve'}</div>
-    <div className="text-[10px] text-muted-foreground leading-snug font-light">
-      {mode === 'lock' ? 'Same location. Angle and framing vary.' : 'Connected environments. Full vlog feel.'}
+    <div className="font-semibold text-foreground text-[11px] mb-0.5">{mode === 'lock' ? 'Lock' : 'Evolve'}</div>
+    <div className="text-[10px] text-muted-foreground leading-snug">
+      {mode === 'lock' ? 'Same location throughout. Only angle and framing change.' : 'Character moves through connected environments. Full vlog feel.'}
     </div>
   </button>
 );
@@ -283,14 +283,14 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
               {/* Upload photo → auto AI-directed, no toggle */}
               {config.creationMode !== 'ugc' && characterSource === 'upload' && hasCharacter && (
-                <div className="rounded-xl border border-border/40 overflow-hidden">
-                  <div className="px-4 py-3.5 bg-muted/20">
-                    <p className="text-[12.5px] font-semibold text-foreground tracking-tight">AI-directed storyboard</p>
-                     <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed font-light">
+                <div className="rounded-xl border border-border shadow-card overflow-hidden">
+                  <div className="px-4 py-3.5">
+                    <p className="text-[13px] font-semibold text-foreground tracking-tight">AI-directed storyboard</p>
+                     <p className="text-[11.5px] text-muted-foreground mt-1.5 leading-relaxed">
                        The AI will analyze your photo — appearance, outfit, setting, lighting, vibe — and direct the entire shoot from what it sees.
                     </p>
                   </div>
-                  <div className="px-4 py-4 border-t border-border/30 space-y-3 bg-background">
+                  <div className="px-4 py-4 border-t border-border space-y-3 bg-background">
                     <MicroLabel>Environment</MicroLabel>
                     <div className="grid grid-cols-2 gap-2">
                       <EnvCard mode="lock" selected={config.environmentMode === 'lock'} onClick={() => setConfig(c => ({ ...c, environmentMode: 'lock' }))} />
