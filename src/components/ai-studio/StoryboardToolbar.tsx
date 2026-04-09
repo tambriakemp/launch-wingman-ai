@@ -15,7 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import SavedCharacter from './SavedCharacter';
-import SavedEnvironments from './SavedEnvironments';
+
 import SavedLooks from './SavedLooks';
 import UploadZone from './UploadZone';
 
@@ -542,14 +542,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
             {/* ── Advanced Settings ── */}
             <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
-
-              <div>
-                <MicroLabel>Environment reference</MicroLabel>
-                <p className="text-[10.5px] text-muted-foreground/50 mb-2 font-light">Optional — upload a location photo to anchor the visual setting.</p>
-                {setEnvironmentImage && (
-                  <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
-                )}
-              </div>
 
               {config.vlogCategory !== 'Get Ready With Me' && (
                 <div>
