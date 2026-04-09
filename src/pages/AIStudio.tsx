@@ -157,12 +157,14 @@ const AIStudio = () => {
                 anchorImageUrl = scene1Image;
               } else {
                 // Scene 1 itself anchors to the character preview
-                const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
+                const latestStepForAnchor = currentStoryboard?.steps[task.index] ?? task.step;
+                const activePreviewForAnchor = latestStepForAnchor.is_final_look && currentPreviewFinalLook
                   ? currentPreviewFinalLook : currentPreviewCharacter;
                 anchorImageUrl = activePreviewForAnchor || undefined;
               }
 
-              const activePreview = task.step.is_final_look && currentPreviewFinalLook
+              const latestStepForPreview = currentStoryboard?.steps[task.index] ?? task.step;
+              const activePreview = latestStepForPreview.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
 
               let previousScenePrompt: string | undefined;
@@ -251,7 +253,7 @@ const AIStudio = () => {
                 setPreviewCharacterImage(data.imageUrl);
               }
               // For GRWM: set final look preview when the last (final look) scene generates
-              if (task.step.is_final_look && data.imageUrl) {
+              if (latestStep.is_final_look && data.imageUrl) {
                 setPreviewFinalLookImage(data.imageUrl);
               }
               } finally {
@@ -264,7 +266,7 @@ const AIStudio = () => {
               const { data, error } = await supabase.functions.invoke('generate-video', {
                 body: {
                   imageUrl: task.baseImageUrl,
-                  videoPrompt: task.step.video_prompt,
+                  videoPrompt: (currentStoryboard?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
                   aspectRatio: task.config.aspectRatio,
                 }
               });
