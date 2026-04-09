@@ -462,30 +462,17 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 )}
               </div>
 
-              <div>
-                <MicroLabel>Outfit</MicroLabel>
-                <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
-                {config.outfitType === 'Custom Outfit' && (
-                  <input type="text" placeholder="Describe outfit..." value={config.outfitDetails}
-                    onChange={(e) => setConfig(c => ({ ...c, outfitDetails: e.target.value }))}
-                    className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-                )}
-                <input type="text" placeholder="Additional details (optional)" value={config.outfitAdditionalInfo}
-                  onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
-                  className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
-              </div>
-
-              {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
+              {config.vlogCategory !== 'Get Ready With Me' && (
                 <div>
-                  <MicroLabel>Final look (reveal outfit)</MicroLabel>
-                  <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
-                  {config.finalLookType === 'Custom Outfit' && (
-                    <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
-                      onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
+                  <MicroLabel>Outfit</MicroLabel>
+                  <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
+                  {config.outfitType === 'Custom Outfit' && (
+                    <input type="text" placeholder="Describe outfit..." value={config.outfitDetails}
+                      onChange={(e) => setConfig(c => ({ ...c, outfitDetails: e.target.value }))}
                       className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
                   )}
-                  <input type="text" placeholder="Additional final look details (optional)" value={config.finalLookAdditionalInfo}
-                    onChange={(e) => setConfig(c => ({ ...c, finalLookAdditionalInfo: e.target.value }))}
+                  <input type="text" placeholder="Additional details (optional)" value={config.outfitAdditionalInfo}
+                    onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
                     className="w-full mt-2 bg-transparent border border-border/50 rounded-lg px-3 py-2.5 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40" />
                 </div>
               )}
