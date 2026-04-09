@@ -217,21 +217,82 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </div>
                 </div>
 
-                {/* Use reference as start image toggle */}
-                {config.creationMode === 'vlog' && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-2">
-                    <Switch checked={config.useReferenceAsStart} onCheckedChange={(v) => setConfig(c => ({ ...c, useReferenceAsStart: v }))} />
-                    <div>
-                      <span className="text-xs font-medium text-foreground">Use uploaded reference photo as start image</span>
+                {/* Path A: AI-directed from photo */}
+                {config.creationMode !== 'ugc' && (
+                  <div className="space-y-3">
+                    <div className={`border rounded-xl p-3 transition-all ${config.useReferenceAsStart ? 'border-primary bg-primary/5' : 'border-border bg-muted/20'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-semibold text-foreground">Let AI direct from this photo</span>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                            AI reads the image and builds the full storyboard — no concept needed.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={config.useReferenceAsStart}
+                          onCheckedChange={(v) => setConfig(c => ({ ...c, useReferenceAsStart: v }))}
+                        />
+                      </div>
                       {config.useReferenceAsStart && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Your uploaded character photo will be used as Scene 1. The AI will build the remaining scenes from it.</p>
+                        <div className="mt-3 space-y-3 pt-3 border-t border-primary/20">
+                          {/* Environment mode */}
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Environment</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={() => setConfig(c => ({ ...c, environmentMode: 'lock' }))}
+                                className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-all ${
+                                  config.environmentMode === 'lock'
+                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                    : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                                }`}
+                              >
+                                <div className="font-medium mb-0.5">🔒 Lock</div>
+                                <div className="text-[10px] opacity-70 leading-tight">Same location throughout. Only angle and framing change.</div>
+                              </button>
+                              <button
+                                onClick={() => setConfig(c => ({ ...c, environmentMode: 'evolve' }))}
+                                className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-all ${
+                                  config.environmentMode === 'evolve'
+                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                    : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+                                }`}
+                              >
+                                <div className="font-medium mb-0.5">🌀 Evolve</div>
+                                <div className="text-[10px] opacity-70 leading-tight">Character moves through connected environments. Full vlog feel.</div>
+                              </button>
+                            </div>
+                          </div>
+                          {/* Scene count */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Scenes</p>
+                              <span className="text-xs font-bold text-primary">{config.pathASceneCount}</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={4}
+                              max={12}
+                              value={config.pathASceneCount}
+                              onChange={(e) => setConfig(c => ({ ...c, pathASceneCount: parseInt(e.target.value) }))}
+                              className="w-full accent-primary"
+                            />
+                            <div className="flex justify-between text-[9px] text-muted-foreground/60 mt-0.5">
+                              <span>4 scenes</span>
+                              <span>12 scenes</span>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                            The AI will analyze your photo — appearance, outfit, setting, lighting, vibe — and direct the entire shoot from what it sees.
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
                 {/* Vlog / Carousel fields (when not using reference as start) */}
-                {config.creationMode === 'vlog' && !config.useReferenceAsStart && (
+                {(config.creationMode === 'vlog' || config.creationMode === 'carousel') && !config.useReferenceAsStart && (
                   <>
                     <div>
                       <Label label="Vlog Category" />

@@ -161,7 +161,9 @@ export const INITIAL_CONFIG: AppConfig = {
   cameraMovement: "Handheld / Vlog Style (Natural Shake)",
   ultraRealistic: true,
   sceneCount: null,
-  useReferenceAsStart: false
+  useReferenceAsStart: false,
+  environmentMode: 'evolve',
+  pathASceneCount: 6,
 };
 
 export const DEFAULT_MEDIA: GeneratedMedia = {

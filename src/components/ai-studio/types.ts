@@ -66,6 +66,8 @@ export interface AppConfig {
   ultraRealistic: boolean;
   sceneCount?: number | null;
   useReferenceAsStart: boolean;
+  environmentMode: 'lock' | 'evolve';
+  pathASceneCount: number;
 }
 
 export interface GeneratedMedia {
