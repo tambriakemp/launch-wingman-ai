@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Trash2, Upload, Loader2, Plus, Image, ChevronDown, ChevronRight, Images, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface SavedEnvironmentsProps {
   onSelect: (urlOrBase64: string) => void;
@@ -30,6 +31,7 @@ interface EnvironmentGroup {
 }
 
 const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple, onSelectLabel, activeGroupId }) => {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<EnvironmentGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
