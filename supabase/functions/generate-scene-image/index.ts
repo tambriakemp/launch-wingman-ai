@@ -712,12 +712,14 @@ ${orientationInstruction}`;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization");
-    let userId = "anonymous";
-    if (authHeader) {
+    let uploadUserId = "anonymous";
+    if (bodyUserId) {
+      uploadUserId = bodyUserId;
+    } else if (authHeader) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) userId = user.id;
+      if (user) uploadUserId = user.id;
     }
 
     let bytes: Uint8Array;
@@ -749,7 +751,7 @@ ${orientationInstruction}`;
       throw new Error("Generated image appears invalid (too small). Please retry.");
     }
 
-    const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { error: uploadError } = await supabase.storage
