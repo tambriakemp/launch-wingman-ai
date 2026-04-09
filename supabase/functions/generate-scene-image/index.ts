@@ -177,8 +177,24 @@ serve(async (req) => {
         .replace(/\bbikini\b/gi, 'two-piece swimwear')
         .replace(/\bsee[- ]?through\b/gi, 'sheer-accent')
         .replace(/\bsexy\b/gi, 'elegant')
-        .replace(/\blow[- ]?cut\b/gi, 'v-neck');
+        .replace(/\blow[- ]?cut\b/gi, 'v-neck')
+        .replace(/\bbustier\b/gi, 'structured strapless top')
+        .replace(/\bsheer\s*mesh\b/gi, 'semi-transparent fabric')
+        .replace(/\brevealing\b/gi, 'form-fitting')
+        .replace(/\bd[ée]colletage\b/gi, 'neckline')
+        .replace(/\bcleavage\b/gi, 'neckline')
+        .replace(/\bbare\s*skin\b/gi, 'skin visible')
+        .replace(/\bplunging\b/gi, 'deep v-neck')
+        .replace(/\bskin[- ]?tight\b/gi, 'fitted')
+        .replace(/\bbackless\b/gi, 'open-back')
+        .replace(/\bscantily\b/gi, 'lightly')
+        .replace(/\bsuggestive\b/gi, 'confident')
+        .replace(/\bprovocative\b/gi, 'bold')
+        .replace(/\bsensual\b/gi, 'elegant');
     };
+
+    // Apply sanitization to the full prompt text before sending to the model
+    const sanitizePrompt = (text: string): string => sanitizeOutfit(text);
 
     const contentParts: any[] = [];
     let fullPrompt: string = "";
