@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
@@ -166,7 +168,57 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   const [openSection, setOpenSection] = useState<string>('1');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
+  const navigate = useNavigate();
   const [cachedUploadImage, setCachedUploadImage] = useState<string | null>(null);
+
+  // Inline environment picker state
+  const [envGroups, setEnvGroups] = useState<{ id: string; name: string; thumb: string }[]>([]);
+  const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: groups } = await supabase
+        .from('ai_studio_environment_groups').select('id, name').eq('user_id', user.id).order('created_at', { ascending: true });
+      if (!groups || groups.length === 0) { setEnvGroups([]); return; }
+      const { data: envs } = await supabase
+        .from('ai_studio_environments').select('id, file_path, group_id').eq('user_id', user.id);
+      const BUCKET = 'ai-studio';
+      setEnvGroups(groups.map((g: any) => {
+        const first = (envs || []).find((e: any) => e.group_id === g.id);
+        const thumb = first ? supabase.storage.from(BUCKET).getPublicUrl(first.file_path).data.publicUrl : '';
+        return { id: g.id, name: g.name, thumb };
+      }));
+    };
+    load();
+  }, []);
+
+  const handleSelectEnv = (groupId: string) => {
+    if (selectedEnvId === groupId) {
+      // Deselect
+      setSelectedEnvId(null);
+      setEnvironmentImage?.(null as any);
+      setEnvironmentImages?.([]);
+      setEnvironmentLabel?.('');
+      return;
+    }
+    setSelectedEnvId(groupId);
+    // Fetch all images for this group and pass them
+    const loadGroup = async () => {
+      const { data: envs } = await supabase
+        .from('ai_studio_environments').select('file_path').eq('group_id', groupId);
+      const BUCKET = 'ai-studio';
+      const urls = (envs || []).map((e: any) => supabase.storage.from(BUCKET).getPublicUrl(e.file_path).data.publicUrl);
+      if (urls.length > 0) {
+        setEnvironmentImage?.(urls[0]);
+        if (urls.length > 1) setEnvironmentImages?.(urls);
+      }
+      const group = envGroups.find(g => g.id === groupId);
+      if (group) setEnvironmentLabel?.(group.name);
+    };
+    loadGroup();
+  };
 
   const hasCharacter = !!referenceImage;
   const hasLookCustomized = config.outfitType !== 'Default Outfit' || config.makeup !== 'Soft Glam Baddie' || config.hairstyle !== 'Sleek Straight Wig';
@@ -327,6 +379,42 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               {/* Concept fields — saved + Path A off */}
               {config.creationMode !== 'ugc' && characterSource === 'saved' && !config.useReferenceAsStart && (
                 <>
+                  {/* Environment picker */}
+                  {envGroups.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <MicroLabel>Environment (optional)</MicroLabel>
+                        <button onClick={() => navigate('/app/ai-studio/environments')} className="text-[9px] text-primary hover:underline">
+                          Manage →
+                        </button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {envGroups.map(g => (
+                          <button
+                            key={g.id}
+                            onClick={() => handleSelectEnv(g.id)}
+                            className={`flex-shrink-0 flex flex-col items-center gap-1 transition-all duration-150 ${
+                              selectedEnvId === g.id ? 'opacity-100' : 'opacity-60 hover:opacity-90'
+                            }`}
+                          >
+                            <div className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
+                              selectedEnvId === g.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                            }`}>
+                              {g.thumb ? (
+                                <img src={g.thumb} alt={g.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <span className="text-[8px] text-muted-foreground">No img</span>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[56px]">{g.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <MicroLabel>Vlog / Carousel category</MicroLabel>
                     <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
