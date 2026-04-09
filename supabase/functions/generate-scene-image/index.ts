@@ -805,7 +805,9 @@ ${orientationInstruction}`;
 
     let bytes: Uint8Array;
     let hintedMimeType: string | null = null;
+    let isBase64Source = false;
     if (imageUrl.startsWith("data:")) {
+      isBase64Source = true;
       const [dataHeader, base64Data] = imageUrl.split(",");
       hintedMimeType = dataHeader.match(/^data:([^;]+)/)?.[1] || null;
       const binaryString = atob(base64Data);
@@ -833,15 +835,20 @@ ${orientationInstruction}`;
       throw new Error("Generated image format is invalid. Please retry.");
     }
 
-    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes, mime: ${detectedFormat.mimeType}`);
-    const assetValidationError = validateGeneratedAsset(
-      bytes,
-      aspectRatio || config?.aspectRatio || "9:16",
-      detectedFormat,
-    );
-    if (assetValidationError) {
-      console.error(`[generate-scene-image] ${assetValidationError}`);
-      throw new Error(assetValidationError);
+    console.log(`[generate-scene-image] Asset size: ${bytes.length} bytes, mime: ${detectedFormat.mimeType}, source: ${isBase64Source ? 'base64' : 'url'}`);
+
+    // Only run size/entropy validation on URL-fetched images (Flux).
+    // Gemini base64 images are already validated by format detection above.
+    if (!isBase64Source) {
+      const assetValidationError = validateGeneratedAsset(
+        bytes,
+        aspectRatio || config?.aspectRatio || "9:16",
+        detectedFormat,
+      );
+      if (assetValidationError) {
+        console.error(`[generate-scene-image] ${assetValidationError}`);
+        throw new Error(assetValidationError);
+      }
     }
 
     const fileName = `${uploadUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${detectedFormat.extension}`;
