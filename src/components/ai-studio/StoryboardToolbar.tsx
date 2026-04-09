@@ -117,7 +117,7 @@ const CollapsibleSection: React.FC<{
         <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pb-6 space-y-4">
+        <div className="pb-6 pt-2 space-y-5">
           {children}
         </div>
       </CollapsibleContent>
@@ -404,10 +404,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 </div>
               </div>
 
-              <div>
+              <div className="pt-2">
                 <div className="flex items-center justify-between mb-3">
                   <MicroLabel>Number of scenes</MicroLabel>
-                  <span className="text-xs font-medium text-foreground bg-muted border border-border/40 rounded-md px-2 py-0.5 min-w-[28px] text-center">
+                  <span className="text-xs font-semibold text-foreground bg-muted border border-border rounded-md px-2 py-0.5 min-w-[28px] text-center">
                     {config.pathASceneCount ?? 6}
                   </span>
                 </div>
@@ -417,7 +417,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   onChange={(e) => setConfig(c => ({ ...c, pathASceneCount: parseInt(e.target.value) }))}
                   className="w-full accent-foreground cursor-pointer"
                 />
-                <div className="flex justify-between text-[9px] text-muted-foreground/40 mt-1.5 font-light">
+                <div className="flex justify-between text-[9px] text-muted-foreground mt-1.5">
                   <span>4</span><span>8</span><span>12</span>
                 </div>
               </div>
