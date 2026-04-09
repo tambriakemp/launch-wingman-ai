@@ -258,23 +258,73 @@ Also provide character analysis: face_structure, hair, skin_tone, makeup_accesso
           : `AI GENERATED SCRIPT: Write an engaging voiceover script split across 13-15 steps.`;
 
         const useRefAsStart = config.useReferenceAsStart === true;
+        const environmentMode = config.environmentMode || 'evolve';
+        const pathASceneCount = config.pathASceneCount || 6;
 
-        const vlogIdentityLock = useRefAsStart
-          ? `\nIDENTITY LOCK (CRITICAL — Scene 1 is the UNMODIFIED reference photo):
-Analyze the reference photo EXHAUSTIVELY and describe EVERY detail in the Scene 1 image_prompt as the canonical identity lock:
-- Exact skin tone, undertone, complexion
-- Face/bone structure (cheekbones, jaw, forehead)
-- Hair style, color, length, parting, texture
-- Eye shape, color, brow shape
-- Makeup: brow fill, eyeshadow color, lash style, contour, highlighter, lip color/finish
-- Jewelry: every earring, necklace, bracelet, ring described specifically
-- Nail shape, length, color/finish
-- Outfit: garment type, color, fabric, fit, neckline, straps/sleeves
+        if (useRefAsStart) {
+          // ── PATH A: AI-directed from start image ──────────────────
+          const lockInstruction = environmentMode === 'lock'
+            ? `ENVIRONMENT: LOCKED. Every scene takes place in the EXACT SAME location visible in the reference photo. Only the camera angle, framing, subject pose, and interaction change. The background, lighting, and setting never change.`
+            : `ENVIRONMENT: EVOLVING. The character moves naturally through connected environments that logically extend from the starting location. Each scene introduces a new but related setting (e.g., stadium concourse → food stand → exterior plaza → parking lot at golden hour). The transition must feel organic — the character is living a real moment, not teleporting.`;
 
-ALL subsequent scenes MUST copy-paste this ENTIRE identity block verbatim into their image_prompt.`
-          : '';
+          systemPrompt = `You are an expert Instagram content director and AI vlog creator.
 
-        systemPrompt = `You are an expert creative director for social media content.
+You have been given a single reference photograph. Your job is to analyze it completely and autonomously direct a full ${pathASceneCount}-scene storyboard. You receive NO other creative direction — the image is your entire brief.
+
+STEP 1 — ANALYZE THE REFERENCE IMAGE:
+Extract and document every detail:
+- Person: exact skin tone and undertone, face structure (jaw, cheekbones, forehead width), eye shape and color, brow shape
+- Hair: style, color, length, texture, parting, volume
+- Makeup: foundation finish, brow definition, eyeshadow, lash style, contour placement, highlighter, lip color and finish
+- Jewelry: describe each piece individually (earring style, necklace type/length, bracelet stack, rings)
+- Nails: shape, length, color, finish
+- Outfit: every garment — type, color, fabric texture, fit, neckline, sleeves, structure, layering
+- Setting: exact location (interior/exterior, type of space), time of day, lighting quality and direction, color temperature, ambient mood
+- Vibe: overall aesthetic, energy level, occasion implied
+
+STEP 2 — DIRECT THE STORYBOARD:
+Generate exactly ${pathASceneCount} scenes. Scene 1 is the reference photo itself — do not reimagine it, describe it as-is.
+
+${lockInstruction}
+
+SCENE ARC:
+- Scene 1: The start frame — describe the reference photo exactly as it appears
+- Scenes 2-${pathASceneCount - 1}: Progress through the moment${environmentMode === 'evolve' ? ', evolving through connected environments' : ', varying angle and framing within the same space'}
+- Scene ${pathASceneCount}: Closing shot — wide, clean, with visual space for text overlay
+
+SHOT VARIETY (use a DIFFERENT shot type each scene):
+- Full body establishing (character + environment)
+- 3/4 shot walking or in motion
+- Close-up face (direct eye contact, or candid expression)
+- Extreme close-up detail (hands, jewelry, nails, food, drink, object)
+- Object/flat-lay (no person — just props, setting, ambient elements)
+- Profile or over-shoulder
+- Low angle (shot from below, powerful framing)
+- High angle (shot from above, intimate)
+- Reflection (mirror, window, surface)
+
+CHARACTER LOCK (CRITICAL):
+Extract the full identity block from the reference photo in Step 1. Then paste this ENTIRE block verbatim into EVERY image_prompt. No scene may omit or paraphrase any element of this block.
+
+IMAGE PROMPT FORMAT (every image_prompt must follow this exactly):
+1. Shot type: [exact shot name]
+2. CHARACTER (verbatim identity block from Step 1): [full description]
+3. ACTION/POSE: [what the person is doing]
+4. ENVIRONMENT: [exact setting — ${environmentMode === 'lock' ? 'same as reference photo' : 'describe the specific evolved location'}]
+5. LIGHTING: [direction, quality, color temperature — match reference photo's lighting style]
+6. CAMERA: "shot on iPhone 15 Pro Max, 4K HDR, natural dynamic range, social-media-native framing"
+7. REALISM: "natural skin texture, visible pores, subtle imperfections, no smoothing, realistic fabric, authentic shadows, true-to-life color, razor-sharp eye detail, individual hair strand definition"
+
+The script field for each scene should be a short, punchy caption line or hook appropriate for the visual — NOT narration, just the text overlay.
+
+Generate: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (complete, following the format above), video_prompt (3-second motion description), script (text overlay caption), is_final_look (always false).
+Also provide analysis: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe (extracted from the reference photo).`;
+
+        } else {
+          // ── PATH B: User-directed (existing vlog/UGC logic) ───────
+          const vlogIdentityLock = '';
+
+          systemPrompt = `You are an expert creative director for social media content.
 Create a ${config.creationMode === 'vlog' ? 'Vlog' : 'UGC Marketing'} storyboard.
 
 Configuration:
@@ -282,10 +332,8 @@ Configuration:
 - Topic: ${config.creationMode === 'vlog' ? config.vlogTopic : config.ugcPrompt}
 ${getStyleDescription()}
 ${config.productDescription ? `- Product: ${config.productDescription}` : ''}
-${useRefAsStart ? '- Scene 1: IS the unmodified reference photo — do NOT reimagine it' : ''}
 ${narrativeContext}
 ${scriptInstruction}
-${vlogIdentityLock}
 
 VISUAL CONTINUITY RULES (CRITICAL):
 - Each image_prompt MUST reference the previous scene's ending state and create a natural transition to the next scene.
@@ -317,6 +365,7 @@ Each image_prompt MUST include the FULL character description block repeated ver
 
 ${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt, script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
+        }
       }
 
       // Build messages with image URLs (no base64 in memory)
