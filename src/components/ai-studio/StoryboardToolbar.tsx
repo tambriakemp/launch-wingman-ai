@@ -424,7 +424,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
 
             {/* ── Advanced Settings ── */}
-            <CollapsibleSection title="Advanced settings" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
+            <CollapsibleSection title="Skin / Nails / Makeup / Hairstyle" subtle open={openSection === 'adv'} onToggle={() => setOpenSection(openSection === 'adv' ? '' : 'adv')}>
               <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
