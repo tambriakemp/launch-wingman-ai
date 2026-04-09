@@ -116,6 +116,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [characterSource, setCharacterSource] = useState<'saved' | 'upload'>('saved');
+  const [cachedUploadImage, setCachedUploadImage] = useState<string | null>(null);
 
   const hasCharacter = !!referenceImage;
   const hasEnvironment = !!environmentImage;
