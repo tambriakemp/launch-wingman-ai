@@ -183,9 +183,11 @@ const AIStudio = () => {
               const timeoutId = setTimeout(() => controller.abort(), 90000);
 
               try {
+                // Always read the latest prompt from storyboard ref (user may have edited it)
+                const latestStep = currentStoryboard?.steps[task.index] ?? task.step;
                 const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                   body: {
-                    prompt: task.step.image_prompt,
+                    prompt: latestStep.image_prompt,
                     referenceImage: activePreview ? undefined : currentReferenceImage,
                     referenceImages: activePreview ? undefined : (currentReferenceImages.length > 0 ? currentReferenceImages : undefined),
                     productImage,
@@ -193,7 +195,7 @@ const AIStudio = () => {
                     environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages.slice(0, 3) : undefined,
                     previewCharacter: activePreview,
                     config: task.config,
-                    isFinalLook: task.step.is_final_look,
+                    isFinalLook: latestStep.is_final_look,
                     isUpscale: task.type === 'upscale',
                     baseImageUrl: task.baseImageUrl,
                     anchorImageUrl,
