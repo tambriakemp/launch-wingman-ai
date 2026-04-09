@@ -176,6 +176,7 @@ serve(async (req) => {
     };
 
     const contentParts: any[] = [];
+    let fullPrompt: string = "";
 
     if (isUpscale && baseImageUrl) {
       pushImage(baseImageUrl);
@@ -322,7 +323,6 @@ ${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is
       const isPathA = config.useReferenceAsStart === true;
 
       // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
-      let fullPrompt: string;
       
       if (previewCharacter) {
         // EDIT MODE: The character preview is the base image — instruct the model to modify it
