@@ -1,43 +1,112 @@
 
+Deep dive findings
 
-## Problem
+- This is now primarily an edge-function / upstream generation reliability problem, not a frontend render bug.
+- The logs show `generate-scene-image` is failing because the image provider returns `503`, and the function then throws `Image generation failed: 503`.
+- The biggest reason this keeps happening is that the code is sending very heavy, redundant requests to Gemini while also forcing Gemini for the exact scenes that are hardest to generate.
 
-The prompt editing and regeneration are disconnected in the UI. The SceneCard has two independent interactions:
-1. **Edit mode**: textarea with Save/Cancel buttons — updates `editedPrompt` local state, only writes to storyboard on explicit Save click
-2. **Regenerate button**: the refresh icon on the image overlay — reads from the storyboard (which still has the OLD prompt if Save wasn't clicked)
+Why it keeps failing
 
-The user edits the prompt, removes "martini glass," then clicks Regenerate directly — but since they didn't click Save first, the storyboard still contains the original prompt with the martini glass reference.
+1. Complex regenerations are forced onto Gemini
+- In `supabase/functions/generate-scene-image/index.ts`, `useFlux` is disabled whenever the request is considered “complex”:
+  - scene > 1
+  - final look
+  - previous scene image exists
+  - environment images exist
+  - reference-as-start on later scenes
+- Your logs confirm this path: `Model: gemini (complex scene, forced gemini)`.
+- Those are also the scenes most likely to need stronger identity consistency and most likely to overload Gemini.
 
-## Fix
+2. The same reference image is being sent multiple times
+- For later scenes, the function can push:
+  - `anchorImageUrl`
+  - `previewCharacter`
+  - `previousSceneImageUrl`
+- In scene 2, those can all point to the same image.
+- That means the provider gets duplicate image inputs plus a huge text prompt, which increases request weight without adding useful signal.
 
-**File: `src/components/ai-studio/SceneCard.tsx`**
+3. The text prompt is extremely large and safety-sensitive
+- The request body includes a very long identity block plus scene instructions, realism rules, continuity rules, outfit description, and sometimes alcohol references like “martini glass”.
+- This creates two failure modes:
+  - `422` safety blocks
+  - `503` transient failures from a heavier request
+- The current sanitization helps, but it is still reactive and incomplete.
 
-Auto-save any pending prompt edits when the user clicks Regenerate. Two changes:
+4. Some continuity data is sent but not actually used
+- `previousScenePrompt` and `nextScenePrompt` are sent from the client, but `generate-scene-image` does not use them.
+- So the payload grows, but the function is not getting real continuity value from those fields.
 
-1. Wrap `onGenerateImage` so that if the prompt is being edited (`isEditing === true`) and the edited text differs from the step's current prompt, call `onUpdatePrompt(editedPrompt)` first, then trigger generation.
+5. Retry logic is too shallow
+- Current logic retries Gemini only twice with 2s/4s backoff.
+- If the provider is briefly unstable, the function still returns a hard failure instead of degrading gracefully.
+- There is also no model failover after repeated Gemini `503`s.
 
-2. Same treatment for video prompt: if `isEditingVideo` and the user triggers video generation, auto-save the video prompt first.
+What I would change
 
-This way the user can edit the prompt and click Regenerate in one natural flow without needing to remember to click Save.
+1. Fix request construction first (`supabase/functions/generate-scene-image/index.ts`)
+- Deduplicate image inputs before building `contentParts`.
+- Keep only:
+  - one canonical identity image
+  - one previous-scene continuity image if it is different
+  - only the minimum environment references needed
+- Stop sending redundant copies of the same photo.
 
-**File: `src/components/ai-studio/StudioStoryboard.tsx`**
+2. Change model routing
+- Remove the blanket “complex scene => force Gemini” rule.
+- Preferred behavior:
+  - use the selected model when available
+  - if Gemini returns repeated `503`s, fall back to Flux when a key exists
+  - or prefer Flux for continuity-heavy scene regenerations since that is where consistency matters most
 
-No changes needed — the queue processor already reads from `storyboardRef.current`, so once the prompt is saved to the storyboard state, the latest version will be picked up.
+3. Shrink and structure the prompt
+- Reduce repeated instructions in `fullPrompt`.
+- Keep the strongest constraints, but remove duplicated realism/identity language.
+- Make continuity instructions tighter and shorter.
+- This lowers both safety risk and provider load.
 
-### Technical detail
+4. Harden safety handling
+- Sanitize the prompt before the first request more aggressively for known trigger terms.
+- Normalize alcohol / suggestive fashion language earlier, not only after a safety hit.
+- Return clear `422` responses consistently instead of letting some provider failures become generic `500`s.
 
-In SceneCard, create a helper:
-```text
-const handleGenerateWithAutoSave = () => {
-  if (isEditing && editedPrompt !== step.image_prompt) {
-    onUpdatePrompt(editedPrompt);
-    setIsEditing(false);
-  }
-  onGenerateImage();
-};
-```
+5. Improve resilience for transient failures
+- Expand retry strategy with better backoff.
+- Add model fallback after repeated `503`s.
+- Longer-term: move image generation to a queued job flow so the edge function can return quickly and a worker can handle retries more safely.
 
-Replace all `onGenerateImage()` calls in SceneCard with `handleGenerateWithAutoSave()` — this covers the Generate button (empty state), Retry button (error state), and Regenerate overlay icon.
+6. Clean up unused payload
+- Since `previousScenePrompt` and `nextScenePrompt` are not used, either:
+  - remove them from the client request, or
+  - actually use them inside the function for continuity guidance.
+- For stability, I would remove them first.
 
-Note: there's a React timing concern — `onUpdatePrompt` triggers `setStoryboard`, but the ref update happens in a `useEffect` after render. Since `onGenerateImage` also triggers `setQueue` in the same synchronous call, both state updates are batched in the same render, and the ref-sync useEffect (which appears before the queue-processor useEffect) will run first. So the prompt will be updated in the ref before the queue processes it.
+Files to update
 
+- `supabase/functions/generate-scene-image/index.ts`
+  - dedupe images
+  - revise model selection
+  - reduce prompt size
+  - improve safety handling
+  - add stronger retry/fallback behavior
+- `src/pages/AIStudio.tsx`
+  - stop sending unused continuity fields unless they are truly consumed
+  - improve surfaced error messaging for 422 vs 503
+
+Technical conclusion
+
+- The failures are not random.
+- They are the result of:
+  - forcing the heavier scenes onto Gemini,
+  - sending oversized/redundant multimodal payloads,
+  - shallow retry logic,
+  - and incomplete safety/error handling.
+- So the real root cause is “provider instability amplified by our request construction and routing logic.”
+
+Verification after the fix
+
+- Regenerate scene 2 and scene 4.
+- Confirm logs no longer show duplicate identity images being attached.
+- Confirm the selected image model is actually used for complex regenerations, or that fallback occurs after Gemini `503`.
+- Confirm safety-filter failures return a clean `422` message.
+- Confirm transient provider failures recover without breaking the scene.
+- Confirm later-scene identity consistency improves because continuity requests are lighter and routed more appropriately.
