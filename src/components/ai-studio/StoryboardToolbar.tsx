@@ -292,7 +292,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 )}
 
                 {/* Vlog / Carousel fields (when not using reference as start) */}
-                {(config.creationMode === 'vlog' || config.creationMode === 'carousel') && !config.useReferenceAsStart && (
+                {config.creationMode === 'vlog' && !config.useReferenceAsStart && (
                   <>
                     <div>
                       <Label label="Vlog Category" />
