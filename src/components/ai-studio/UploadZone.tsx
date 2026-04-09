@@ -10,6 +10,7 @@ interface UploadZoneProps {
   disabled?: boolean;
   title?: string;
   subtext?: string;
+  initialPreview?: string | null;
 }
 
 const UploadZone: React.FC<UploadZoneProps> = ({
@@ -17,10 +18,11 @@ const UploadZone: React.FC<UploadZoneProps> = ({
   isProcessing,
   disabled,
   title = "Reference Avatar",
-  subtext = "JPG, PNG (max 10MB). Upload your avatar/selfie."
+  subtext = "JPG, PNG (max 10MB). Upload your avatar/selfie.",
+  initialPreview = null
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialPreview);
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (file: File) => {
