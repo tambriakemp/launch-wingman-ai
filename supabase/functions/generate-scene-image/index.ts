@@ -192,7 +192,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = body;
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = body;
 
     // ── Model resolution ──────────────────────────────────────────
     const supabaseAdmin = createClient(
@@ -228,13 +228,9 @@ serve(async (req) => {
       }
     }
 
-    // Determine if Flux should be used — skip for complex regenerations
-    const isComplexRegeneration = (sceneNumber && sceneNumber > 1) || isFinalLook || 
-      (previousSceneImageUrl) || (environmentImages && environmentImages.length > 0) || environmentImage ||
-      (config?.useReferenceAsStart === true && sceneNumber > 1);
-    
-    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages && !isComplexRegeneration;
-    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}${isComplexRegeneration ? " (complex scene, forced gemini)" : ""}`);
+    // Determine if Flux should be used — allow for complex scenes too (no longer forced Gemini)
+    const useFlux = platformModel === "flux_kontext" && !!falKeyForImages;
+    console.log(`[generate-scene-image] Model: ${useFlux ? "flux_kontext" : "gemini"}`);
     // ── End model resolution ──────────────────────────────────────
 
     // Build aspect ratio orientation instruction
@@ -292,6 +288,19 @@ serve(async (req) => {
     const contentParts: any[] = [];
     let fullPrompt: string = "";
 
+    // Track pushed image URLs to deduplicate
+    const pushedImageUrls = new Set<string>();
+    const pushImageDeduped = (img: string) => {
+      if (!img) return;
+      const key = isUrl(img) ? img : img.substring(0, 64); // use prefix for base64
+      if (pushedImageUrls.has(key)) {
+        console.log(`[generate-scene-image] Skipping duplicate image: ${key.substring(0, 50)}...`);
+        return;
+      }
+      pushedImageUrls.add(key);
+      pushImage(img);
+    };
+
     if (isUpscale && baseImageUrl) {
       pushImage(baseImageUrl);
       contentParts.push({ type: "text", text: "Enhance this image to high quality. Maintain exact details, just increase clarity and resolution." });
@@ -299,7 +308,7 @@ serve(async (req) => {
       // Add locked references first (high priority)
       if (lockedRefs && lockedRefs.length > 0) {
         for (const ref of lockedRefs) {
-          pushImage(ref.base64);
+          pushImageDeduped(ref.base64);
         }
       }
 
@@ -307,25 +316,25 @@ serve(async (req) => {
       const hasOutfitLock = lockedRefs?.find((r: any) => r.type === 'outfit');
       const hasCharacterLock = lockedRefs?.find((r: any) => r.type === 'character');
       if (anchorImageUrl && !hasCharacterLock) {
-        pushImage(anchorImageUrl);
+        pushImageDeduped(anchorImageUrl);
       }
 
       // STRICT IDENTITY GATE: When previewCharacter exists, it is the CANONICAL identity.
       if (!hasCharacterLock) {
         if (previewCharacter) {
-          pushImage(previewCharacter);
+          pushImageDeduped(previewCharacter);
           console.log(`[Identity Gate] Using canonical preview as identity source (${isUrl(previewCharacter) ? 'URL' : 'base64'})`);
         } else if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
           for (const refImg of referenceImages) {
-            pushImage(refImg);
+            pushImageDeduped(refImg);
           }
         } else if (referenceImage) {
-          pushImage(referenceImage);
+          pushImageDeduped(referenceImage);
         }
       }
 
       if (productImage && config.creationMode === 'ugc') {
-        pushImage(productImage);
+        pushImageDeduped(productImage);
       }
 
       // Add environment images with text separator for clarity
@@ -337,17 +346,19 @@ serve(async (req) => {
         if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
           const cappedEnvImages = environmentImages.slice(0, 3);
           for (const envImg of cappedEnvImages) {
-            pushImage(envImg);
+            pushImageDeduped(envImg);
           }
         } else if (environmentImage) {
-          pushImage(environmentImage);
+          pushImageDeduped(environmentImage);
         }
       }
 
-      // Add previous scene's generated image for visual continuity chaining
+      // Add previous scene's generated image for visual continuity chaining (deduplicated)
       if (previousSceneImageUrl) {
-        pushImage(previousSceneImageUrl);
+        pushImageDeduped(previousSceneImageUrl);
       }
+
+      console.log(`[generate-scene-image] Total unique images attached: ${pushedImageUrls.size}`);
 
       // Build style description
       const hair = config.hairstyle?.includes('Custom') ? config.customHairstyle : config.hairstyle;
