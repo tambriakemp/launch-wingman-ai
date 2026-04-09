@@ -82,6 +82,18 @@ export interface GeneratedMedia {
 
 export type QueueTaskType = 'generate' | 'upscale' | 'generate_video';
 
+export interface VideoShot {
+  prompt: string;
+  duration: string; // "1" to "15"
+}
+
+export interface CharacterBindConfig {
+  enabled: boolean;
+  source: 'session' | 'character';
+  characterId?: string;
+  referenceUrl?: string;
+}
+
 export interface QueueItem {
   id: string;
   type: QueueTaskType;
@@ -89,4 +101,6 @@ export interface QueueItem {
   step: VlogStep;
   config: AppConfig;
   baseImageUrl?: string;
+  characterBind?: CharacterBindConfig;
+  multiShot?: VideoShot[];
 }

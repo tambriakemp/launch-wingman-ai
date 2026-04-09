@@ -290,11 +290,13 @@ function buildDownstreamBody(action: string, body: Record<string, unknown>): Rec
     }
 
     case "generate_video": {
-      // generate-video expects: imageUrl, videoPrompt, aspectRatio
+      // generate-video expects: imageUrl, videoPrompt, aspectRatio, multiShot, characterBindUrl
       return {
         imageUrl: body.imageUrl,
         videoPrompt: body.videoPrompt,
         aspectRatio: body.aspectRatio || "9:16",
+        multiShot: body.multiShot || null,
+        characterBindUrl: body.characterBindUrl || null,
       };
     }
 

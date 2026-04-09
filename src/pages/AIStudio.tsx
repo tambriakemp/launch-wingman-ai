@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, VideoShot } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 // uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
@@ -63,6 +63,11 @@ const AIStudio = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [showProjectsDialog, setShowProjectsDialog] = useState(false);
+
+  // Character Bind & Multi-Shot state
+  const [characterBind, setCharacterBind] = useState<CharacterBindConfig>({ enabled: false, source: 'session' });
+  const [multiShotEnabled, setMultiShotEnabled] = useState(false);
+  const [multiShots, setMultiShots] = useState<VideoShot[]>([{ prompt: '', duration: '7' }, { prompt: '', duration: '8' }]);
 
   // Create Reel state
   const [isMergingVideos, setIsMergingVideos] = useState(false);
@@ -260,12 +265,25 @@ const AIStudio = () => {
               if (!task.baseImageUrl) throw new Error("Image required before generating video");
 
               // Step 1: Submit job and get requestId
+              const videoBody: Record<string, unknown> = {
+                imageUrl: task.baseImageUrl,
+                videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
+                aspectRatio: task.config.aspectRatio,
+              };
+
+              // Multi-shot support
+              if (task.multiShot && task.multiShot.length > 0) {
+                videoBody.multiShot = task.multiShot;
+                delete videoBody.videoPrompt; // multi_prompt replaces single prompt
+              }
+
+              // Character bind support
+              if (task.characterBind?.enabled && task.characterBind.referenceUrl) {
+                videoBody.characterBindUrl = task.characterBind.referenceUrl;
+              }
+
               const { data, error } = await supabase.functions.invoke('generate-video', {
-                body: {
-                  imageUrl: task.baseImageUrl,
-                  videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
-                  aspectRatio: task.config.aspectRatio,
-                }
+                body: videoBody,
               });
 
               if (error) throw error;
@@ -1158,6 +1176,13 @@ const AIStudio = () => {
                   setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
                 }}
                 selectionCount={getSelectionCount()}
+                characterBind={characterBind}
+                onCharacterBindChange={setCharacterBind}
+                multiShotEnabled={multiShotEnabled}
+                onMultiShotToggle={setMultiShotEnabled}
+                multiShots={multiShots}
+                onMultiShotsChange={setMultiShots}
+                sessionReferenceUrl={referenceImage}
               />
             </>
           ) : null}
