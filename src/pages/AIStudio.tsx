@@ -210,12 +210,24 @@ const AIStudio = () => {
 
                 if (error) throw error;
                 if (data?.error) throw new Error(data.error);
-              // No longer chain lastGeneratedUrl — anchoring to preview instead
 
-              setGeneratedMedia(prev => ({
-                ...prev,
-                [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
-              }));
+              console.log(`[AIStudio] Scene ${task.index + 1} image response:`, data?.imageUrl ? data.imageUrl.slice(0, 80) + '...' : 'MISSING');
+
+              if (!data?.imageUrl) {
+                console.error(`[AIStudio] Scene ${task.index + 1}: imageUrl is falsy, keeping previous state`);
+                setGeneratedMedia(prev => ({
+                  ...prev,
+                  [task.index]: { ...prev[task.index], isGeneratingImage: false, isUpscaling: false, error: 'No image URL returned' }
+                }));
+              } else {
+                setGeneratedMedia(prev => {
+                  console.log(`[AIStudio] Updating media state for scene ${task.index + 1}, previous imageUrl:`, prev[task.index]?.imageUrl?.slice(0, 40));
+                  return {
+                    ...prev,
+                    [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
+                  };
+                });
+              }
 
               // Auto-set character preview from Scene 1 so subsequent scenes have an identity anchor
               if (task.index === 0 && data.imageUrl) {
