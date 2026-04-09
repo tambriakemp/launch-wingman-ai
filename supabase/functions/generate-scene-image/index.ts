@@ -148,9 +148,9 @@ function estimateByteEntropy(bytes: Uint8Array, sampleTarget = 4096): number {
 }
 
 function getMinimumAssetSize(aspectRatio: string): number {
-  if (aspectRatio === "9:16") return 15000;
-  if (aspectRatio === "16:9") return 12000;
-  return 10000;
+  if (aspectRatio === "9:16") return 5000;
+  if (aspectRatio === "16:9") return 4000;
+  return 3000;
 }
 
 function validateGeneratedAsset(
