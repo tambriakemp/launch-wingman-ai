@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, VideoShot } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 // uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
@@ -63,6 +63,11 @@ const AIStudio = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [showProjectsDialog, setShowProjectsDialog] = useState(false);
+
+  // Character Bind & Multi-Shot state
+  const [characterBind, setCharacterBind] = useState<CharacterBindConfig>({ enabled: false, source: 'session' });
+  const [multiShotEnabled, setMultiShotEnabled] = useState(false);
+  const [multiShots, setMultiShots] = useState<VideoShot[]>([{ prompt: '', duration: '7' }, { prompt: '', duration: '8' }]);
 
   // Create Reel state
   const [isMergingVideos, setIsMergingVideos] = useState(false);
