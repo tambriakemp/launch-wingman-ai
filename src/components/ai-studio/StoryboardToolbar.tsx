@@ -394,7 +394,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
                       className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 text-[10.5px] font-medium rounded-md transition-all duration-150 ${
                         config.aspectRatio === value
-                          ? 'bg-background text-foreground shadow-sm border border-border/40'
+                          ? 'bg-foreground text-background shadow-sm'
                           : 'text-muted-foreground hover:text-foreground/70'
                       }`}>
                       <Icon className="h-3 w-3" />
