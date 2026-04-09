@@ -578,10 +578,23 @@ ${orientationInstruction}`;
         return null;
       };
 
-      let geminiResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY);
-      const immediateErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
-      if (immediateErrorResponse) return immediateErrorResponse;
-      if (geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult.status}`);
+      // Retry logic for transient errors (503, 500)
+      let geminiResult: GeminiImageResponse | null = null;
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        geminiResult = await requestGeminiImage(contentParts, LOVABLE_API_KEY);
+        const immediateErrorResponse = handleGeminiErrorStatus(geminiResult.status, geminiResult.errorText);
+        if (immediateErrorResponse) return immediateErrorResponse;
+
+        if (geminiResult.status >= 500 && attempt < MAX_RETRIES) {
+          const delay = (attempt + 1) * 2000;
+          console.warn(`[generate-scene-image] Gemini returned ${geminiResult.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        break;
+      }
+      if (!geminiResult || geminiResult.status !== 200) throw new Error(`Image generation failed: ${geminiResult?.status || 'unknown'}`);
 
       if (geminiResult.finishReason === "IMAGE_SAFETY") {
         const strictPrompt = sanitizePrompt(fullPrompt, "strict");
