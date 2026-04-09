@@ -157,12 +157,14 @@ const AIStudio = () => {
                 anchorImageUrl = scene1Image;
               } else {
                 // Scene 1 itself anchors to the character preview
-                const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
+                const latestStepForAnchor = currentStoryboard?.steps[task.index] ?? task.step;
+                const activePreviewForAnchor = latestStepForAnchor.is_final_look && currentPreviewFinalLook
                   ? currentPreviewFinalLook : currentPreviewCharacter;
                 anchorImageUrl = activePreviewForAnchor || undefined;
               }
 
-              const activePreview = task.step.is_final_look && currentPreviewFinalLook
+              const latestStepForPreview = currentStoryboard?.steps[task.index] ?? task.step;
+              const activePreview = latestStepForPreview.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
 
               let previousScenePrompt: string | undefined;
@@ -183,9 +185,11 @@ const AIStudio = () => {
               const timeoutId = setTimeout(() => controller.abort(), 90000);
 
               try {
+                // Always read the latest prompt from storyboard ref (user may have edited it)
+                const latestStep = currentStoryboard?.steps[task.index] ?? task.step;
                 const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                   body: {
-                    prompt: task.step.image_prompt,
+                    prompt: latestStep.image_prompt,
                     referenceImage: activePreview ? undefined : currentReferenceImage,
                     referenceImages: activePreview ? undefined : (currentReferenceImages.length > 0 ? currentReferenceImages : undefined),
                     productImage,
@@ -193,7 +197,7 @@ const AIStudio = () => {
                     environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages.slice(0, 3) : undefined,
                     previewCharacter: activePreview,
                     config: task.config,
-                    isFinalLook: task.step.is_final_look,
+                    isFinalLook: latestStep.is_final_look,
                     isUpscale: task.type === 'upscale',
                     baseImageUrl: task.baseImageUrl,
                     anchorImageUrl,
@@ -249,7 +253,7 @@ const AIStudio = () => {
                 setPreviewCharacterImage(data.imageUrl);
               }
               // For GRWM: set final look preview when the last (final look) scene generates
-              if (task.step.is_final_look && data.imageUrl) {
+              if (latestStep.is_final_look && data.imageUrl) {
                 setPreviewFinalLookImage(data.imageUrl);
               }
               } finally {
@@ -262,7 +266,7 @@ const AIStudio = () => {
               const { data, error } = await supabase.functions.invoke('generate-video', {
                 body: {
                   imageUrl: task.baseImageUrl,
-                  videoPrompt: task.step.video_prompt,
+                  videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
                   aspectRatio: task.config.aspectRatio,
                 }
               });
