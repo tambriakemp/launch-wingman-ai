@@ -1,68 +1,45 @@
 
-What I found
 
-- This is no longer a frontend “missing image” bug.
-- The logs show the new scene 4 URL is returned successfully, written into state, and the browser reports the image loaded successfully:
-  - `[AIStudio] Scene 4 image response: ...`
-  - `[AIStudio] Updating media state for scene 4...`
-  - `[SceneCard] Image loaded OK: ...`
-- The session replay also shows the new image URL gets applied to both the scene card and the lightbox.
-- Your screenshot matches that: the app is rendering an image container with controls, but the actual rendered asset is visually black.
-- The backend logs show this request used the `flux_kontext` path, so the most likely issue is the generated/stored image itself is bad for this regeneration path, not that the UI failed to display it.
+## Plan: Enhance prop/object continuity logic in storyboard generation
 
-Plan
+### Problem
+The current "NARRATIVE COHERENCE" prompt block tells the AI to persist props naturally, but the instruction is too passive — it says "persist or set down" without explicitly requiring the AI to think about **when props should be removed**. The result is the character holding a martini glass in every single scene, including ones where it makes no sense (e.g., lying in bed).
 
-1. Treat this as a generation-quality / asset-validation issue
-- Update `generate-scene-image` so complex scene regenerations do not use the Flux edit path when the request depends on multiple references, continuity, or environment fidelity.
-- Prefer the multimodal image model for these cases, since it can actually use the full reference set already being assembled in `contentParts`.
+### Solution
+Strengthen the storyboard generation prompt with an explicit **Prop Lifecycle** directive that forces the AI to plan prop entrances and exits scene-by-scene.
 
-2. Add hard validation before accepting a regenerated image
-- In `generate-scene-image`, log:
-  - chosen model path
-  - returned provider URL
-  - fetch status/content-type for the generated asset
-  - byte length before upload
-- If the provider returns a non-image, empty asset, or suspiciously bad fetch result, automatically fall back to the Gemini path instead of uploading/replacing the scene.
+### Changes
 
-3. Preserve the previous image until the replacement is proven usable
-- In `AIStudio.tsx`, do not immediately replace the existing scene image with the new URL.
-- First preload the candidate image.
-- Only swap it into `generatedMedia` after it loads successfully.
-- If preload fails, keep the old image visible and show an explicit error toast instead of replacing it with a bad output.
+**File: `supabase/functions/generate-storyboard/index.ts`**
 
-4. Add a stronger fallback for “black output” cases
-- If Flux is selected for regenerate/edit and the result looks invalid from transport-level checks, rerun with Gemini automatically.
-- Also tighten model-routing rules so Flux is skipped for:
-  - later scenes with continuity chaining
-  - environment reference scenes
-  - Path A identity-locked scenes
-  - final-look transitions
+Replace the current `NARRATIVE COHERENCE` block (~lines 295-300) with a more explicit version:
 
-5. Clean up the unrelated React ref warnings
-- Fix the `EditableField` / `ImageLightbox` ref warning noise so future debugging is clearer.
-- This is not the black-image root cause, but it is cluttering the console.
+```text
+NARRATIVE COHERENCE (CRITICAL):
+- Each scene must flow logically from the previous one — tell a cohesive mini-story with a clear arc
+- Avoid jarring environment jumps — transitions between locations must feel organic
+- The final scene should feel like a natural conclusion to the sequence
 
-Files to update
+PROP & OBJECT LIFECYCLE (CRITICAL):
+- Before writing image prompts, list every handheld prop visible in Scene 1 (drink, phone, bag, food, etc.)
+- For EACH prop, decide in which scene it is naturally set down, finished, or left behind — most props should NOT persist beyond 2-3 scenes
+- A drink should be sipped and set down, a phone pocketed, a bag placed on a surface — show the transition
+- NEVER carry a prop into a scene where it would be contextually absurd (e.g., cocktail glass in bed, gym weights at dinner)
+- Detail shots (extreme close-up, flat-lay) are ideal moments to show a prop being set down or left behind
+- If the character changes location, assume all handheld props from the previous location are left behind unless explicitly carried
+- The image_prompt for each scene must explicitly state what the character is holding — if nothing, write "hands empty" or describe a natural hand position (resting, gesturing, touching hair, etc.)
+```
 
-- `supabase/functions/generate-scene-image/index.ts`
-- `src/pages/AIStudio.tsx`
-- optionally `src/components/ai-studio/ImageLightbox.tsx` and/or `SceneCard.tsx` only for minor cleanup, not as the main fix
+Also add to the **IMAGE PROMPT FORMAT** section (after line 319, the ACTION/POSE line):
 
-Technical notes
+```text
+4. HANDS/PROPS: [explicitly state what is in each hand — or "hands free, [natural pose]"]
+```
 
-- The current evidence points away from the UI:
-  - state update succeeded
-  - `<img>` `onLoad` fired
-  - replay shows the new `src` applied
-- The weak point is the generated replacement asset itself.
-- A likely contributor is that the Flux branch only edits from a single `baseFluxImage`, while the Gemini branch can use the full multimodal reference set. That mismatch is especially risky for scene 4 regeneration where continuity and environment matter.
+This forces the model to make a conscious decision about props for every single scene rather than defaulting to repeating whatever was in scene 1.
 
-Verification
+### Technical notes
+- Single file change in the edge function
+- No database or frontend changes needed
+- The fix works by making prop state an explicit required field in the structured output, rather than relying on implicit narrative reasoning
 
-- Regenerate scene 4 again after the fix.
-- Confirm logs show either:
-  - Gemini chosen directly for that request, or
-  - Flux attempted, rejected, then Gemini fallback used.
-- Confirm the old image stays visible during regeneration.
-- Confirm the new image replaces it only after successful preload.
-- Confirm no all-black replacement appears in the scene card or lightbox.
