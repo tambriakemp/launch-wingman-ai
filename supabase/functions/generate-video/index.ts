@@ -113,7 +113,7 @@ serve(async (req) => {
           ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera."
           : "";
         klingPayload.prompt = videoPrompt + backFacingGuard;
-        klingPayload.duration = "7";
+        klingPayload.duration = "5";
       }
 
       // Character bind — Kling direct doesn't support inline elements like fal.ai
@@ -277,7 +277,7 @@ serve(async (req) => {
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
       falPayload.prompt = videoPrompt + backFacingGuard;
-      falPayload.duration = "7";
+      falPayload.duration = "5";
     }
 
     if (characterBindUrl) {
