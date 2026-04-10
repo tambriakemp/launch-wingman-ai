@@ -351,6 +351,13 @@ SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
 - NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
 - ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
 
+MOTION FRONT-LOADING (CRITICAL):
+- The character MUST already be mid-action or beginning a clear, dynamic movement from the very first frame. Do NOT start from a static pose that slowly builds up.
+- The most expressive, dynamic movement must happen in the FIRST 2 seconds of the video. Front-load all energy.
+- For short durations (3-5s): compress the entire action arc into rapid, confident movements. Every second must contain visible motion — no pauses, no settling, no wind-up.
+- For longer durations (10s): maintain continuous action throughout but still lead with the strongest movement. Layer additional micro-actions (adjusting hair, shifting objects, changing gaze) to fill the duration without dead time.
+- NEVER describe a "still moment" or "pause" at the start. The video must feel like it was captured mid-scene, not from the beginning of an action.
+
 - Example (holding prop): "She looks down at the envelope, flips it over in her hand, tucks it under her arm, then rolls her shoulders back and glances around the room at normal pace, ambient light catching her skin"
 - Example (at a counter): "She picks up the coffee cup, takes a sip, sets it back on the marble counter with a clink, wipes her lip with her thumb, then leans on the counter and looks out the window, steam curling from the cup"
 - Example (no props, alone): "She shifts her weight to one hip, crosses her arms, looks left then right at normal pace, uncrosses her arms and adjusts her jacket, takes a visible breath, tucks hair behind her ear"
@@ -417,6 +424,13 @@ SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
 - SPATIAL AWARENESS: Describe motion relative to nearby surfaces, furniture, walls, or other people visible in the scene. The character should interact with their environment, not move through empty space. If alone, movements stay self-contained (adjusting clothing, shifting weight, looking around the space).
 - NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
 - ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
+
+MOTION FRONT-LOADING (CRITICAL):
+- The character MUST already be mid-action or beginning a clear, dynamic movement from the very first frame. Do NOT start from a static pose that slowly builds up.
+- The most expressive, dynamic movement must happen in the FIRST 2 seconds of the video. Front-load all energy.
+- For short durations (3-5s): compress the entire action arc into rapid, confident movements. Every second must contain visible motion — no pauses, no settling, no wind-up.
+- For longer durations (10s): maintain continuous action throughout but still lead with the strongest movement. Layer additional micro-actions (adjusting hair, shifting objects, changing gaze) to fill the duration without dead time.
+- NEVER describe a "still moment" or "pause" at the start. The video must feel like it was captured mid-scene, not from the beginning of an action.
 
 - Example (holding prop): "She looks down at the envelope, flips it over in her hand, tucks it under her arm, then rolls her shoulders back and glances around the room at normal pace, ambient light catching her skin"
 - Example (at a counter): "She picks up the coffee cup, takes a sip, sets it back on the marble counter with a clink, wipes her lip with her thumb, then leans on the counter and looks out the window, steam curling from the cup"
