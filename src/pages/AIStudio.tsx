@@ -1186,6 +1186,36 @@ const AIStudio = () => {
             characterBind={characterBind}
             onCharacterBindChange={setCharacterBind}
             sessionReferenceUrl={referenceImage}
+            onGenerateCaptions={() => setShowCaptionsModal(true)}
+          />
+
+          <GenerateCaptionsModal
+            open={showCaptionsModal}
+            onOpenChange={setShowCaptionsModal}
+            sceneCount={storyboard?.steps.length || 0}
+            onApplyCaptions={(captions) => {
+              setTextOverlays(prev => {
+                const next = { ...prev };
+                captions.forEach((caption, i) => {
+                  const existing = next[i] || [];
+                  const newOverlay: TextOverlay = {
+                    id: crypto.randomUUID(),
+                    text: caption,
+                    x: 5,
+                    y: 70,
+                    width: 90,
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    fontFamily: 'Inter',
+                    textAlign: 'left',
+                    color: '#ffffff',
+                    bgColor: 'rgba(0,0,0,0.6)',
+                  };
+                  next[i] = [...existing, newOverlay];
+                });
+                return next;
+              });
+            }}
           />
 
           {/* Safety terms now handled inside the Create sheet panel */}
