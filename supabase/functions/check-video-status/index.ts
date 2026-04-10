@@ -61,23 +61,42 @@ serve(async (req) => {
     }
 
     // Check status using the URL provided by fal.ai
-    console.log("[check-video-status] Fetching status from:", statusUrl);
-    const statusResponse = await fetch(statusUrl, {
+    // If the URL contains a model sub-path that causes 405, fall back to base app ID
+    let resolvedStatusUrl = statusUrl;
+    const baseAppId = "fal-ai/kling-video";
+    const subPathMatch = statusUrl.match(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//);
+    if (subPathMatch) {
+      // Strip model sub-path — queue status only works with base app ID
+      resolvedStatusUrl = statusUrl.replace(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//, `${baseAppId}/requests/`);
+      console.log("[check-video-status] Rewrote status URL to:", resolvedStatusUrl);
+    }
+
+    console.log("[check-video-status] Fetching status from:", resolvedStatusUrl);
+    const statusResponse = await fetch(resolvedStatusUrl, {
       method: "GET",
       headers: { "Authorization": `Key ${falKey}` },
     });
 
     if (!statusResponse.ok) {
       const errText = await statusResponse.text();
-      console.error("[check-video-status] Status check failed:", errText);
+      console.error("[check-video-status] Status check failed:", statusResponse.status, errText);
+      // 405 means the URL path is wrong — treat as failed to stop infinite polling
+      if (statusResponse.status === 405 || statusResponse.status === 422) {
+        return new Response(JSON.stringify({ status: "failed", error: "Video status check failed (invalid URL). Please regenerate the video." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       throw new Error(`Status check failed: HTTP ${statusResponse.status}`);
     }
 
     const statusData = await statusResponse.json();
 
     if (statusData.status === "COMPLETED") {
-      // Fetch the actual result using the response URL from fal.ai
-      const resultUrl = responseUrl || statusUrl.replace('/status', '');
+      // Fetch the actual result — also fix sub-path if needed
+      let resultUrl = responseUrl || resolvedStatusUrl.replace('/status', '');
+      if (resultUrl.match(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//)) {
+        resultUrl = resultUrl.replace(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//, `${baseAppId}/requests/`);
+      }
       console.log("[check-video-status] Fetching completed result from:", resultUrl);
 
       let resultResponse: Response;
