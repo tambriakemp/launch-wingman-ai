@@ -231,6 +231,14 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     </TooltipTrigger>
                     <TooltipContent side="left"><p>Edit Prompts</p></TooltipContent>
                   </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); setTextEditorOpen(true); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <Type className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Text Overlay</p></TooltipContent>
+                  </Tooltip>
                 </div>
               </TooltipProvider>
             )}
