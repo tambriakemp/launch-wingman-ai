@@ -1201,15 +1201,15 @@ const AIStudio = () => {
                   const newOverlay: TextOverlay = {
                     id: crypto.randomUUID(),
                     text: caption,
-                    x: 5,
-                    y: 70,
-                    width: 90,
-                    fontSize: 18,
+                    x: 10,
+                    y: 35,
+                    width: 80,
+                    fontSize: 24,
                     fontWeight: 'bold',
                     fontFamily: 'Inter',
-                    textAlign: 'left',
-                    color: '#ffffff',
-                    bgColor: 'rgba(0,0,0,0.6)',
+                    textAlign: 'center',
+                    color: '#000000',
+                    bgColor: 'rgba(255,255,255,0.9)',
                   };
                   next[i] = [...existing, newOverlay];
                 });
