@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Video, CheckCircle2, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const PROVIDERS = [
@@ -30,6 +31,7 @@ export function VideoProviderToggle() {
   const [currentProvider, setCurrentProvider] = useState("fal");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadSettings();
@@ -57,6 +59,7 @@ export function VideoProviderToggle() {
         body: { action: "set", key: "video_provider", value: providerId },
       });
       setCurrentProvider(providerId);
+      queryClient.invalidateQueries({ queryKey: ["platform-setting", "video_provider"] });
       toast.success(`Video provider switched to ${PROVIDERS.find(p => p.id === providerId)?.label}`);
     } catch (e) {
       toast.error("Failed to update video provider setting");
