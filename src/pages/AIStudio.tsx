@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, VideoShot } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 // uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
@@ -65,10 +65,8 @@ const AIStudio = () => {
   const [projectName, setProjectName] = useState('');
   const [showProjectsDialog, setShowProjectsDialog] = useState(false);
 
-  // Character Bind & Multi-Shot state
+  // Character Bind state
   const [characterBind, setCharacterBind] = useState<CharacterBindConfig>({ enabled: false, source: 'session' });
-  const [multiShotEnabled, setMultiShotEnabled] = useState(false);
-  const [multiShots, setMultiShots] = useState<VideoShot[]>([{ prompt: '', duration: '7' }, { prompt: '', duration: '8' }]);
 
   // Create Reel state
   const [isMergingVideos, setIsMergingVideos] = useState(false);
@@ -272,12 +270,6 @@ const AIStudio = () => {
                 aspectRatio: task.config.aspectRatio,
                 duration: task.config.videoDuration || '5',
               };
-
-              // Multi-shot support
-              if (task.multiShot && task.multiShot.length > 0) {
-                videoBody.multiShot = task.multiShot;
-                delete videoBody.videoPrompt; // multi_prompt replaces single prompt
-              }
 
               // Character bind support
               if (task.characterBind?.enabled && task.characterBind.referenceUrl) {
@@ -1150,6 +1142,9 @@ const AIStudio = () => {
             mergedReelUrl={mergedReelUrl}
             videoCount={Object.values(generatedMedia).filter(m => m.videoUrl).length}
             anyGeneratingVideo={Object.values(generatedMedia).some(m => m.isGeneratingVideo)}
+            characterBind={characterBind}
+            onCharacterBindChange={setCharacterBind}
+            sessionReferenceUrl={referenceImage}
           />
 
           {/* Safety terms now handled inside the Create sheet panel */}
@@ -1237,11 +1232,6 @@ const AIStudio = () => {
                 selectionCount={getSelectionCount()}
                 characterBind={characterBind}
                 onCharacterBindChange={setCharacterBind}
-                multiShotEnabled={multiShotEnabled}
-                onMultiShotToggle={setMultiShotEnabled}
-                multiShots={multiShots}
-                onMultiShotsChange={setMultiShots}
-                sessionReferenceUrl={referenceImage}
               />
             </>
           ) : null}
