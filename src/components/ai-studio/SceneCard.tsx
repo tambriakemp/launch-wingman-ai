@@ -125,8 +125,8 @@ const SceneCard: React.FC<SceneCardProps> = ({
     if (!media.imageUrl) return;
     try {
       const blob = textOverlays.length > 0
-        ? await renderImageWithOverlays(media.imageUrl, textOverlays)
-        : await fetch(media.imageUrl).then(r => r.blob());
+        ? await renderImageWithOverlays(media.imageUrl, textOverlays, aspectRatio)
+        : await renderImageWithOverlays(media.imageUrl, [], aspectRatio);
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;

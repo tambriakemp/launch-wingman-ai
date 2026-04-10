@@ -1,16 +1,50 @@
-import { TextOverlay } from './types';
+import { TextOverlay, AspectRatio } from './types';
+
+const ASPECT_RATIOS: Record<AspectRatio, { w: number; h: number }> = {
+  '1:1': { w: 1, h: 1 },
+  '9:16': { w: 9, h: 16 },
+  '16:9': { w: 16, h: 9 },
+};
 
 export async function renderImageWithOverlays(
   imageUrl: string,
-  overlays: TextOverlay[]
+  overlays: TextOverlay[],
+  targetAspectRatio?: AspectRatio
 ): Promise<Blob> {
   const img = await loadImage(imageUrl);
+  
+  let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
+  let outW = srcW, outH = srcH;
+
+  // Enforce aspect ratio by center-cropping the source image
+  if (targetAspectRatio && ASPECT_RATIOS[targetAspectRatio]) {
+    const { w: aw, h: ah } = ASPECT_RATIOS[targetAspectRatio];
+    const targetRatio = aw / ah;
+    const currentRatio = srcW / srcH;
+
+    if (Math.abs(currentRatio - targetRatio) > 0.02) {
+      if (currentRatio > targetRatio) {
+        // Image is too wide — crop sides
+        const newW = Math.round(srcH * targetRatio);
+        srcX = Math.round((srcW - newW) / 2);
+        srcW = newW;
+      } else {
+        // Image is too tall — crop top/bottom
+        const newH = Math.round(srcW / targetRatio);
+        srcY = Math.round((srcH - newH) / 2);
+        srcH = newH;
+      }
+      outW = srcW;
+      outH = srcH;
+    }
+  }
+
   const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
+  canvas.width = outW;
+  canvas.height = outH;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
 
   for (const overlay of overlays) {
     const x = (overlay.x / 100) * canvas.width;

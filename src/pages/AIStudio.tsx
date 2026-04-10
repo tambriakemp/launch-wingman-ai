@@ -854,8 +854,8 @@ const AIStudio = () => {
       if (m.imageUrl && !m.imageUrl.startsWith('data:')) {
         try {
           const blob = overlays.length > 0
-            ? await renderImageWithOverlays(m.imageUrl, overlays)
-            : await fetch(m.imageUrl).then(r => r.blob());
+            ? await renderImageWithOverlays(m.imageUrl, overlays, config.aspectRatio)
+            : await renderImageWithOverlays(m.imageUrl, [], config.aspectRatio);
           zip.file(`scene-${idx + 1}.png`, blob);
           count++;
         } catch { /* skip */ }
