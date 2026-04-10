@@ -61,6 +61,7 @@ interface StoryboardToolbarProps {
   characterBind?: CharacterBindConfig;
   onCharacterBindChange?: (bind: CharacterBindConfig) => void;
   sessionReferenceUrl?: string | null;
+  onGenerateCaptions?: () => void;
 }
 
 const MicroLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
