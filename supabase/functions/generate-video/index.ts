@@ -227,10 +227,12 @@ serve(async (req) => {
       throw new Error("No request_id returned from fal.ai");
     }
 
-    // Always construct URLs with the full endpoint path — fal.ai returns
-    // truncated URLs (e.g. fal-ai/kling-video) missing the model sub-path
-    const statusUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}/status`;
-    const responseUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}`;
+    // fal.ai queue status/result URLs use the BASE app ID (fal-ai/kling-video),
+    // NOT the full model sub-path. Use URLs returned by fal.ai when available,
+    // otherwise construct with the base app ID.
+    const baseAppId = "fal-ai/kling-video";
+    const statusUrl = submitData.status_url || `https://queue.fal.run/${baseAppId}/requests/${requestId}/status`;
+    const responseUrl = submitData.response_url || `https://queue.fal.run/${baseAppId}/requests/${requestId}`;
 
     console.log("[generate-video] Submitted successfully. Request ID:", requestId, "Status URL:", statusUrl);
 
