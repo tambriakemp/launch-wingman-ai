@@ -103,5 +103,4 @@ export interface QueueItem {
   config: AppConfig;
   baseImageUrl?: string;
   characterBind?: CharacterBindConfig;
-  multiShot?: VideoShot[];
 }

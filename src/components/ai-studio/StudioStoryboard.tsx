@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, VideoShot } from './types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig } from './types';
 import SceneCard from './SceneCard';
-import { CharacterBindPanel } from './CharacterBindPanel';
-import { MultiShotEditor } from './MultiShotEditor';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Plus, ImageIcon, Video, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -25,11 +23,6 @@ interface StudioStoryboardProps {
   selectionCount: number;
   characterBind: CharacterBindConfig;
   onCharacterBindChange: (bind: CharacterBindConfig) => void;
-  multiShotEnabled: boolean;
-  onMultiShotToggle: (enabled: boolean) => void;
-  multiShots: VideoShot[];
-  onMultiShotsChange: (shots: VideoShot[]) => void;
-  sessionReferenceUrl?: string | null;
 }
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
@@ -40,8 +33,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
   onAddBlankScene, selectionCount,
   characterBind, onCharacterBindChange,
-  multiShotEnabled, onMultiShotToggle, multiShots, onMultiShotsChange,
-  sessionReferenceUrl,
 }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const filmstripRef = useRef<HTMLDivElement>(null);
@@ -168,22 +159,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
         </div>
       </div>
 
-      {/* Video Controls: Character Bind + Multi-Shot */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-        <CharacterBindPanel
-          bind={characterBind}
-          onChange={onCharacterBindChange}
-          sessionReferenceUrl={sessionReferenceUrl}
-        />
-        <MultiShotEditor
-          enabled={multiShotEnabled}
-          onToggle={onMultiShotToggle}
-          shots={multiShots}
-          onShotsChange={onMultiShotsChange}
-          defaultPrompt={step.video_prompt}
-        />
-      </div>
-
       {/* Scene Card */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
         <SceneCard
@@ -221,7 +196,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
               config: { ...config },
               baseImageUrl: generatedMedia[currentSceneIndex].imageUrl,
               characterBind: characterBind.enabled ? characterBind : undefined,
-              multiShot: multiShotEnabled ? multiShots : undefined,
             }]);
           }}
           onToggleSelect={() => onToggleSelect(currentSceneIndex)}
