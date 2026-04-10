@@ -8,7 +8,7 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
+import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, ImageIcon, Video, Film } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -53,7 +53,7 @@ interface StoryboardToolbarProps {
   onGenerateAllVideos?: () => void;
   onCreateReel?: () => void;
   onViewReel?: () => void;
-  onDownloadReel?: () => void;
+  onDownloadAllVideos?: () => void;
   isMergingVideos?: boolean;
   mergedReelUrl?: string | null;
   videoCount?: number;
@@ -168,7 +168,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   isProcessing,
   onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp,
   onGenerateStoryboard, isGeneratingStoryboard,
-  onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadReel,
+  onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadAllVideos,
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo,
   characterBind, onCharacterBindChange, sessionReferenceUrl,
 }) => {
@@ -684,29 +684,27 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     <span className="ml-auto text-[9px] text-muted-foreground">3–5 min each</span>
                   </DropdownMenuItem>
                   {videoCount >= 2 && !anyGeneratingVideo && (
-                    <>
-                      <DropdownMenuItem onClick={onCreateReel} disabled={isMergingVideos}>
-                        <Film className="h-3.5 w-3.5 mr-2" /> {isMergingVideos ? 'Creating Reel...' : mergedReelUrl ? 'Re-generate Reel' : 'Generate Reel'}
-                      </DropdownMenuItem>
-                      {mergedReelUrl && (
-                        <>
-                          <DropdownMenuItem onClick={onViewReel}><Eye className="h-3.5 w-3.5 mr-2" /> View Reel</DropdownMenuItem>
-                          <DropdownMenuItem onClick={onDownloadReel}><Download className="h-3.5 w-3.5 mr-2" /> Download Reel</DropdownMenuItem>
-                        </>
-                      )}
-                    </>
+                    <DropdownMenuItem onClick={onCreateReel} disabled={isMergingVideos}>
+                      <Film className="h-3.5 w-3.5 mr-2" /> {isMergingVideos ? 'Creating Reel...' : mergedReelUrl ? 'Re-generate Reel' : 'Generate Reel'}
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
-                    <MoreHorizontal className="h-4 w-4" />
+                  <button className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+                    <Download className="h-3.5 w-3.5" /> Download
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={onDownloadScript}><FileText className="h-3.5 w-3.5 mr-2" /> Download Script</DropdownMenuItem>
-                  <DropdownMenuItem onClick={onDownloadAll}><Download className="h-3.5 w-3.5 mr-2" /> Download All</DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDownloadAll}><Download className="h-3.5 w-3.5 mr-2" /> Download All Assets</DropdownMenuItem>
+                  {videoCount && videoCount > 0 && (
+                    <DropdownMenuItem onClick={onDownloadAllVideos}><Video className="h-3.5 w-3.5 mr-2" /> Download All Videos</DropdownMenuItem>
+                  )}
+                  {mergedReelUrl && (
+                    <DropdownMenuItem onClick={onViewReel}><Film className="h-3.5 w-3.5 mr-2" /> Download Reel</DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={onHelp}><HelpCircle className="h-3.5 w-3.5 mr-2" /> Help</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

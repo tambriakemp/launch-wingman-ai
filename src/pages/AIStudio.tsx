@@ -777,6 +777,30 @@ const AIStudio = () => {
     }
   };
 
+  const handleDownloadAllVideos = async () => {
+    const zip = new JSZip();
+    let count = 0;
+    for (const [index, media] of Object.entries(generatedMedia)) {
+      const m = media as GeneratedMedia;
+      if (m.videoUrl) {
+        try {
+          const resp = await fetch(m.videoUrl);
+          const blob = await resp.blob();
+          zip.file(`scene-${parseInt(index) + 1}.mp4`, blob);
+          count++;
+        } catch { /* skip */ }
+      }
+    }
+    if (count === 0) { toast({ title: "No videos to download" }); return; }
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = `ai-studio-videos.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleDownloadReel = async () => {
     if (!mergedReelUrl) return;
     try {
@@ -1137,7 +1161,7 @@ const AIStudio = () => {
             }}
             onCreateReel={() => setShowReelSettings(true)}
             onViewReel={() => setShowReelDialog(true)}
-            onDownloadReel={handleDownloadReel}
+            onDownloadAllVideos={handleDownloadAllVideos}
             isMergingVideos={isMergingVideos}
             mergedReelUrl={mergedReelUrl}
             videoCount={Object.values(generatedMedia).filter(m => m.videoUrl).length}
