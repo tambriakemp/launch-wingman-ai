@@ -908,6 +908,7 @@ const AIStudio = () => {
       Object.entries(generatedMedia).forEach(([idx, m]) => {
         persistMedia[idx] = {
           imageUrl: m.imageUrl, videoUrl: m.videoUrl,
+          textOverlays: textOverlays[parseInt(idx)] || [],
         };
       });
 
