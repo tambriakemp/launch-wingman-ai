@@ -690,6 +690,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       <Film className="h-3.5 w-3.5 mr-2" /> {isMergingVideos ? 'Creating Reel...' : mergedReelUrl ? 'Re-generate Reel' : 'Generate Reel'}
                     </DropdownMenuItem>
                   )}
+                  {onGenerateCaptions && (
+                    <DropdownMenuItem onClick={onGenerateCaptions}>
+                      <Type className="h-3.5 w-3.5 mr-2" /> Generate Image Captions
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
               <DropdownMenu>
