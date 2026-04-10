@@ -1,45 +1,27 @@
 
 
-## Plan: Add Video Duration Selector + Front-Load Motion in Prompts
+## Plan: Remove Multi-Shot & Move Character Bind to Step 2
 
-### Problem
-1. No user control over video duration — hardcoded to 5 seconds
-2. Short videos (3-5s) get weak movement because the AI model "saves" the best motion for the end of the clip
+### Changes
 
-### Solution
+**1. Remove Multi-Shot entirely**
 
-**Part 1: Duration Selector in Step 3 Settings**
+- `src/components/ai-studio/MultiShotEditor.tsx` — delete file
+- `src/components/ai-studio/types.ts` — remove `multiShot` from `QueueItem`
+- `src/components/ai-studio/StudioStoryboard.tsx` — remove MultiShotEditor import, props (`multiShotEnabled`, `onMultiShotToggle`, `multiShots`, `onMultiShotsChange`), and the rendered component
+- `src/pages/AIStudio.tsx` — remove `multiShotEnabled`/`multiShots` state, remove multi-shot logic in video body construction, remove props passed to StudioStoryboard
+- `supabase/functions/generate-video/index.ts` — remove `multiShot` / `multi_prompt` handling (keep single-prompt path only)
 
-Add a `videoDuration` field to `AppConfig` (type: `'3' | '5' | '10'`, default `'5'`) and render a 3-option toggle in the Settings section (Step 3) of `StoryboardToolbar.tsx`, placed between "Number of scenes" and "Camera movement".
+**2. Move Character Bind panel to bottom of Step 2 (Concept) in StoryboardToolbar**
 
-Files changed:
-- `src/components/ai-studio/types.ts` — add `videoDuration: '3' | '5' | '10'` to `AppConfig`
-- `src/components/ai-studio/constants.ts` — add `videoDuration: '5'` to `INITIAL_CONFIG`
-- `src/components/ai-studio/StoryboardToolbar.tsx` — add duration toggle UI in Step 3
+- `src/components/ai-studio/StoryboardToolbar.tsx` — add `characterBind` and `onCharacterBindChange` and `sessionReferenceUrl` props; render `CharacterBindPanel` at the bottom of the Step 2 CollapsibleSection (after all concept fields, before closing tag)
+- `src/components/ai-studio/StudioStoryboard.tsx` — remove CharacterBindPanel from the storyboard view (it was in the 2-column grid with multi-shot); keep passing `characterBind` data through to video queue items
+- `src/pages/AIStudio.tsx` — pass `characterBind`, `onCharacterBindChange`, and `sessionReferenceUrl` props to `StoryboardToolbar`
 
-**Part 2: Pass Duration to Edge Function**
+This makes Character Bind a decision users make early (Step 2) alongside their concept, which is correct since it affects how the video model generates all scenes.
 
-Pass `config.videoDuration` through the video generation call and use it in the edge function instead of the hardcoded `"5"`.
-
-Files changed:
-- `src/pages/AIStudio.tsx` — add `duration: task.config.videoDuration` to `videoBody`
-- `supabase/functions/generate-video/index.ts` — read `duration` from request body, use it for both Kling Direct and fal.ai paths (fallback to `"5"`)
-
-**Part 3: Front-Load Motion in Video Prompts**
-
-Update the storyboard generation prompt instructions to ensure the AI generates video prompts that place the most dynamic, expressive movement at the **beginning** of the clip (first 1-2 seconds). This fixes the issue where the best motion appears only in the last 3-4 seconds.
-
-Changes to the VIDEO PROMPT RULES in `supabase/functions/generate-storyboard/index.ts`:
-- Add a **MOTION FRONT-LOADING** directive: "Start with the most dynamic action immediately — the character should already be mid-gesture or beginning a clear movement in frame 1. Do NOT start from a static pose and slowly build up. The first 2 seconds must contain the primary action. For shorter durations (3-5s), compress the full action arc into rapid, confident movements."
-- Add duration-awareness: the storyboard prompt will receive the configured duration so prompts scale action density accordingly
-
-Files changed:
-- `supabase/functions/generate-storyboard/index.ts` — add front-loading motion rules to both Path A and Path B prompt templates
-
-### Technical Details
-
-- Duration toggle uses the same pill-style UI as the Orientation selector for visual consistency
-- The edge function validates duration to only accept `"3"`, `"5"`, or `"10"` — defaults to `"5"` for any invalid value
-- Multi-shot mode continues to use per-shot durations from the multi_prompt config (unchanged)
-- Storyboard generation receives `videoDuration` so the AI can calibrate prompt density for shorter clips
+### Technical Notes
+- The `CharacterBindPanel` component itself stays unchanged — only its location moves
+- The 2-column grid in StudioStoryboard that held both panels gets removed entirely
+- Video queue construction still reads `characterBind` from state (unchanged)
 
