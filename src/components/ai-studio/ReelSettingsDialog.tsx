@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Film, Clock, RotateCcw } from 'lucide-react';
+import { Film, Clock, RotateCcw, Scissors } from 'lucide-react';
 
 interface ClipInfo {
   index: number;
@@ -11,11 +11,13 @@ interface ClipInfo {
   stepName: string;
 }
 
+export type TrimDirection = 'start' | 'end';
+
 interface ReelSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clips: ClipInfo[];
-  onGenerate: (clipDurations: (number | null)[]) => void;
+  onGenerate: (clipDurations: (number | null)[], trimDirection: TrimDirection) => void;
   isGenerating: boolean;
 }
 
@@ -32,32 +34,30 @@ const ReelSettingsDialog: React.FC<ReelSettingsDialogProps> = ({
 }) => {
   const [mode, setMode] = useState<'target' | 'perclip'>('target');
   const [targetSeconds, setTargetSeconds] = useState<number | null>(null);
+  const [trimDirection, setTrimDirection] = useState<TrimDirection>('end');
   const [perClipDurations, setPerClipDurations] = useState<(number | null)[]>(
     () => clips.map(() => null)
   );
 
-  // Reset per-clip durations when clips change
   React.useEffect(() => {
     setPerClipDurations(clips.map(() => null));
   }, [clips.length]);
 
   const perClipFromTarget = useMemo(() => {
     if (targetSeconds === null || clips.length === 0) return null;
-    const each = Math.round((targetSeconds / clips.length) * 10) / 10;
-    return each;
+    return Math.round((targetSeconds / clips.length) * 10) / 10;
   }, [targetSeconds, clips.length]);
 
   const handleGenerate = () => {
     if (mode === 'target') {
       if (targetSeconds === null) {
-        // Full length — all nulls
-        onGenerate(clips.map(() => null));
+        onGenerate(clips.map(() => null), trimDirection);
       } else {
         const each = targetSeconds / clips.length;
-        onGenerate(clips.map(() => each));
+        onGenerate(clips.map(() => each), trimDirection);
       }
     } else {
-      onGenerate(perClipDurations);
+      onGenerate(perClipDurations, trimDirection);
     }
   };
 
@@ -76,11 +76,12 @@ const ReelSettingsDialog: React.FC<ReelSettingsDialogProps> = ({
     }
     const hasCustom = perClipDurations.some(d => d !== null);
     if (!hasCustom) return 'Full length';
-    // Can't know actual video lengths, so just sum the specified ones
     const sum = perClipDurations.reduce((acc, d) => acc + (d || 0), 0);
     const unsetCount = perClipDurations.filter(d => d === null).length;
     return unsetCount > 0 ? `~${sum.toFixed(1)}s + ${unsetCount} full clips` : `~${sum.toFixed(1)}s`;
   }, [mode, targetSeconds, perClipDurations]);
+
+  const showTrimOption = mode === 'target' ? targetSeconds !== null : perClipDurations.some(d => d !== null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,7 +122,7 @@ const ReelSettingsDialog: React.FC<ReelSettingsDialogProps> = ({
             </div>
             {perClipFromTarget !== null && (
               <p className="text-xs text-muted-foreground">
-                Each clip will play for ~{perClipFromTarget}s (trimmed from start)
+                Each clip will play for ~{perClipFromTarget}s
               </p>
             )}
           </TabsContent>
@@ -174,6 +175,38 @@ const ReelSettingsDialog: React.FC<ReelSettingsDialogProps> = ({
             </div>
           </TabsContent>
         </Tabs>
+
+        {showTrimOption && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Scissors className="h-3.5 w-3.5" />
+              Trim from
+            </div>
+            <div className="flex gap-[2px] p-[3px] bg-muted rounded-lg border border-border/50">
+              <button
+                onClick={() => setTrimDirection('end')}
+                className={`flex-1 py-2 text-[11.5px] font-medium rounded-md transition-all duration-150 ${
+                  trimDirection === 'end' ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:text-foreground/70'
+                }`}
+              >
+                End (keep start)
+              </button>
+              <button
+                onClick={() => setTrimDirection('start')}
+                className={`flex-1 py-2 text-[11.5px] font-medium rounded-md transition-all duration-150 ${
+                  trimDirection === 'start' ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:text-foreground/70'
+                }`}
+              >
+                Start (keep end)
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              {trimDirection === 'end'
+                ? 'Plays from the beginning and cuts early — keeps the opening action.'
+                : 'Skips the beginning and plays the final portion — keeps the best movement.'}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <span className="text-xs text-muted-foreground">
