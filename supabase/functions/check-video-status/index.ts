@@ -97,7 +97,13 @@ serve(async (req) => {
 
       if (!resultResponse.ok) {
         console.error("[check-video-status] Result fetch failed:", resultResponse.status, resultText);
-        // Return in_progress so client retries instead of crashing
+        // 422 means the URL is wrong (model path mismatch) — don't retry forever
+        if (resultResponse.status === 422) {
+          return new Response(JSON.stringify({ status: "failed", error: "Video result fetch failed (URL mismatch). Please regenerate the video." }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Other errors — retry
         return new Response(JSON.stringify({ status: "in_progress" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

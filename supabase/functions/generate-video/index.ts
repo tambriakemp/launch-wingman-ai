@@ -222,17 +222,19 @@ serve(async (req) => {
     const submitData = await submitResponse.json();
     console.log("[generate-video] fal.ai submit response keys:", Object.keys(submitData));
     const requestId = submitData.request_id;
-    const statusUrl = submitData.status_url || `https://queue.fal.run/${endpoint}/requests/${requestId}/status`;
-    const responseUrl = submitData.response_url || `https://queue.fal.run/${endpoint}/requests/${requestId}`;
 
     if (!requestId) {
       throw new Error("No request_id returned from fal.ai");
     }
 
+    // Always construct URLs with the full endpoint path — fal.ai returns
+    // truncated URLs (e.g. fal-ai/kling-video) missing the model sub-path
+    const statusUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}/status`;
+    const responseUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}`;
+
     console.log("[generate-video] Submitted successfully. Request ID:", requestId, "Status URL:", statusUrl);
 
-    // Return requestId + URLs — client will poll via check-video-status
-    return new Response(JSON.stringify({ requestId, statusUrl, responseUrl }), {
+    return new Response(JSON.stringify({ requestId, statusUrl, responseUrl, endpoint }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
