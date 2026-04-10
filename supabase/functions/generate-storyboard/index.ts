@@ -343,7 +343,17 @@ VIDEO PROMPT RULES (CRITICAL):
 - Avoid any instruction that would reveal the character's face if it is not visible in the image (e.g., "turns around", "looks at camera", "faces forward")
 - For back-facing shots: "gentle hair movement in the breeze, city lights flickering in the background, subtle shoulder movement, natural breathing rhythm"
 - For profile shots: "slight head tilt, eyes scanning the scene, ambient light shifting, chest rises with a breath"
-- Example: "She tilts her head naturally while speaking, subtle smile forming, hair catches the light as it shifts, chest rises with a breath, background city traffic moves at normal speed"
+
+SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
+- The video_prompt MUST reference every visible prop, surface, and environmental element from the image_prompt. Motion must interact logically with these elements (e.g., if holding an envelope near a counter, she places it on the counter or taps it lightly — never hands it to empty air).
+- PROP CONTINUITY: Any object the character holds or touches must have a clear, completed action arc. No mid-gesture abandonment. If she's holding something, describe what she does with it through the full duration (sets it down, tucks it away, continues holding it naturally at her side).
+- SPATIAL AWARENESS: Describe motion relative to nearby surfaces, furniture, walls, or other people visible in the scene. The character should interact with their environment, not move through empty space. If alone, movements stay self-contained (adjusting clothing, shifting weight, looking around the space).
+- NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
+- ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
+
+- Example (holding prop): "She glances down at the envelope in her hand, runs her thumb along the sealed edge, then lowers it to her side with a soft exhale, weight shifting to her left foot as she scans the room, ambient light catching her skin naturally"
+- Example (at a counter): "She sets the coffee cup on the marble counter with a soft clink, fingertips lingering on the rim, then leans back slightly, eyes drifting to the window, chest rises with a breath, steam curling from the cup"
+- Example (no props, alone): "She shifts her weight from one hip to the other, arms relaxed at her sides, eyes scanning the space with a calm expression, a subtle breeze moves her hair, she takes a slow breath and adjusts her jacket collar"
 
 Generate: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (complete, following the format above), video_prompt (natural real-time motion following rules above), script (text overlay caption), is_final_look (always false).
 Also provide analysis: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe (extracted from the reference photo).`;
@@ -400,7 +410,17 @@ VIDEO PROMPT RULES (CRITICAL):
 - Hair physics: natural strand movement, not frozen or floating
 - If the character's back or side is to the camera, KEEP that angle — do NOT rotate the character to face the camera
 - Avoid any instruction that would reveal the character's face if it is not visible in the image
-- Example: "She tilts her head naturally while speaking, subtle smile forming, hair catches the light as it shifts, chest rises with a breath, background city traffic moves at normal speed"
+
+SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
+- The video_prompt MUST reference every visible prop, surface, and environmental element from the image_prompt. Motion must interact logically with these elements (e.g., if holding an envelope near a counter, she places it on the counter or taps it lightly — never hands it to empty air).
+- PROP CONTINUITY: Any object the character holds or touches must have a clear, completed action arc. No mid-gesture abandonment. If she's holding something, describe what she does with it through the full duration (sets it down, tucks it away, continues holding it naturally at her side).
+- SPATIAL AWARENESS: Describe motion relative to nearby surfaces, furniture, walls, or other people visible in the scene. The character should interact with their environment, not move through empty space. If alone, movements stay self-contained (adjusting clothing, shifting weight, looking around the space).
+- NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
+- ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
+
+- Example (holding prop): "She glances down at the envelope in her hand, runs her thumb along the sealed edge, then lowers it to her side with a soft exhale, weight shifting to her left foot as she scans the room, ambient light catching her skin naturally"
+- Example (at a counter): "She sets the coffee cup on the marble counter with a soft clink, fingertips lingering on the rim, then leans back slightly, eyes drifting to the window, chest rises with a breath, steam curling from the cup"
+- Example (no props, alone): "She shifts her weight from one hip to the other, arms relaxed at her sides, eyes scanning the space with a calm expression, a subtle breeze moves her hair, she takes a slow breath and adjusts her jacket collar"
 
 ${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt (natural real-time motion following rules above), script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
