@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, TextOverlay } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 // uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
@@ -16,6 +16,7 @@ import {
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
+import { renderImageWithOverlays } from '@/components/ai-studio/renderImageWithOverlays';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -38,6 +39,7 @@ const AIStudio = () => {
   // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
+  const [textOverlays, setTextOverlays] = useState<Record<number, TextOverlay[]>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoCreditError, setVideoCreditError] = useState<{ message: string; code: string } | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
@@ -845,16 +847,19 @@ const AIStudio = () => {
     let count = 0;
     for (const [index, media] of Object.entries(generatedMedia)) {
       const m = media as GeneratedMedia;
+      const idx = parseInt(index);
+      const overlays = textOverlays[idx] || [];
       if (m.imageUrl && !m.imageUrl.startsWith('data:')) {
         try {
-          const resp = await fetch(m.imageUrl);
-          const blob = await resp.blob();
-          zip.file(`scene-${parseInt(index) + 1}.png`, blob);
+          const blob = overlays.length > 0
+            ? await renderImageWithOverlays(m.imageUrl, overlays)
+            : await fetch(m.imageUrl).then(r => r.blob());
+          zip.file(`scene-${idx + 1}.png`, blob);
           count++;
         } catch { /* skip */ }
       } else if (m.imageUrl?.startsWith('data:')) {
         const imgData = m.imageUrl.split(',')[1];
-        zip.file(`scene-${parseInt(index) + 1}.jpg`, imgData, { base64: true });
+        zip.file(`scene-${idx + 1}.jpg`, imgData, { base64: true });
         count++;
       }
     }
@@ -882,6 +887,7 @@ const AIStudio = () => {
     setPreviewFinalLookImage(null);
     setStoryboard(null);
     setGeneratedMedia({});
+    setTextOverlays({});
     setQueue([]);
     setEnlargedImageIndex(null);
     setIsProcessing(false);
@@ -902,6 +908,7 @@ const AIStudio = () => {
       Object.entries(generatedMedia).forEach(([idx, m]) => {
         persistMedia[idx] = {
           imageUrl: m.imageUrl, videoUrl: m.videoUrl,
+          textOverlays: textOverlays[parseInt(idx)] || [],
         };
       });
 
@@ -968,6 +975,14 @@ const AIStudio = () => {
         });
       }
       setGeneratedMedia(restoredMedia);
+      const restoredOverlays: Record<number, TextOverlay[]> = {};
+      if (loadedStoryboard?.steps) {
+        loadedStoryboard.steps.forEach((_, idx) => {
+          const saved = loadedMedia[String(idx)] || {};
+          if (saved.textOverlays?.length) restoredOverlays[idx] = saved.textOverlays;
+        });
+      }
+      setTextOverlays(restoredOverlays);
       setShowProjectsDialog(false);
       toast({ title: "Project loaded", description: `"${data.name}" restored.` });
     } catch (e: any) {
@@ -1256,6 +1271,8 @@ const AIStudio = () => {
                 selectionCount={getSelectionCount()}
                 characterBind={characterBind}
                 onCharacterBindChange={setCharacterBind}
+                textOverlays={textOverlays}
+                onUpdateTextOverlays={(index, overlays) => setTextOverlays(prev => ({ ...prev, [index]: overlays }))}
               />
             </>
           ) : null}

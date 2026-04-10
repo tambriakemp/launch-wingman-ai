@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { VlogStep, AspectRatio, GeneratedMedia } from './types';
-import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText } from 'lucide-react';
+import { VlogStep, AspectRatio, GeneratedMedia, TextOverlay } from './types';
+import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import FalKeyWarning from './FalKeyWarning';
-
+import TextOverlayEditor from './TextOverlayEditor';
+import { renderImageWithOverlays } from './renderImageWithOverlays';
 const EditableField = ({
   label, value, editedValue, isFieldEditing, colorClass,
   onEdit, onSave, onCancel, onChange
@@ -58,6 +59,8 @@ interface SceneCardProps {
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
   onUpdateScript?: (newScript: string) => void;
+  textOverlays?: TextOverlay[];
+  onUpdateTextOverlays?: (overlays: TextOverlay[]) => void;
 }
 
 const SceneCard: React.FC<SceneCardProps> = ({
@@ -65,7 +68,8 @@ const SceneCard: React.FC<SceneCardProps> = ({
   onGenerateImage, onUpscale, onGenerateVideo,
   onToggleSelect, onEnlarge,
   onUpdatePrompt, onUpdateVideoPrompt,
-  onUpdateScript
+  onUpdateScript,
+  textOverlays = [], onUpdateTextOverlays
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(step.image_prompt);
@@ -74,6 +78,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const [isEditingScript, setIsEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState(step.script);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [textEditorOpen, setTextEditorOpen] = useState(false);
 
   useEffect(() => { setEditedPrompt(step.image_prompt); }, [step.image_prompt]);
   useEffect(() => { setEditedVideoPrompt(step.video_prompt); }, [step.video_prompt]);
@@ -115,9 +120,24 @@ const SceneCard: React.FC<SceneCardProps> = ({
     }
   };
 
-  const downloadImage = (e: React.MouseEvent) => { e.stopPropagation(); if (media.imageUrl) downloadMedia(media.imageUrl, 'png'); };
+  const downloadImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!media.imageUrl) return;
+    try {
+      const blob = textOverlays.length > 0
+        ? await renderImageWithOverlays(media.imageUrl, textOverlays)
+        : await fetch(media.imageUrl).then(r => r.blob());
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch { if (media.imageUrl) window.location.href = media.imageUrl; }
+  };
   const downloadVideo = (e: React.MouseEvent) => { e.stopPropagation(); if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4'); };
-
   const [imageBroken, setImageBroken] = useState(false);
   useEffect(() => { setImageBroken(false); }, [media.imageUrl]);
   const handleImageError = () => { setImageBroken(true); };
@@ -154,7 +174,31 @@ const SceneCard: React.FC<SceneCardProps> = ({
             onClick={() => { if (hasValidImage && !isLoading) onEnlarge(); }}
           >
             {hasValidImage ? (
-              <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
+              <div className="relative w-full h-full">
+                <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
+                {/* Text overlay preview */}
+                {textOverlays.map(overlay => (
+                  <div
+                    key={overlay.id}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      fontSize: `${overlay.fontSize * 0.5}px`,
+                      fontWeight: overlay.fontWeight,
+                      color: overlay.color,
+                      backgroundColor: overlay.bgColor || 'transparent',
+                      padding: overlay.bgColor ? '2px 4px' : '1px',
+                      borderRadius: overlay.bgColor ? '3px' : undefined,
+                      lineHeight: 1.3,
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '80%',
+                    }}
+                  >
+                    {overlay.text}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                 {!isLoading && !media.error && (
@@ -210,6 +254,14 @@ const SceneCard: React.FC<SceneCardProps> = ({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="left"><p>Edit Prompts</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); setTextEditorOpen(true); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <Type className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Text Overlay</p></TooltipContent>
                   </Tooltip>
                 </div>
               </TooltipProvider>
@@ -356,6 +408,17 @@ const SceneCard: React.FC<SceneCardProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Text Overlay Editor */}
+      {hasValidImage && (
+        <TextOverlayEditor
+          open={textEditorOpen}
+          onClose={() => setTextEditorOpen(false)}
+          imageUrl={media.imageUrl!}
+          overlays={textOverlays}
+          onSave={(overlays) => onUpdateTextOverlays?.(overlays)}
+        />
+      )}
     </div>
   );
 };

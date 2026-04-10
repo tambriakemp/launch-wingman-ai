@@ -95,6 +95,17 @@ export interface CharacterBindConfig {
   referenceUrl?: string;
 }
 
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  fontSize: number;
+  fontWeight: 'normal' | 'bold';
+  color: string;
+  bgColor: string | null;
+}
+
 export interface QueueItem {
   id: string;
   type: QueueTaskType;
