@@ -90,7 +90,7 @@ serve(async (req) => {
 
       // Build Kling payload
       const klingPayload: Record<string, unknown> = {
-        model_name: "kling-v2-6",
+        model_name: "kling-v2-master",
         mode: "pro",
         image: imageUrl,
         image_fidelity: 0.65,
@@ -254,7 +254,7 @@ serve(async (req) => {
       }
     }
 
-    const endpoint = "fal-ai/kling-video/o3/pro/image-to-video";
+    const endpoint = "fal-ai/kling-video/v3/pro/image-to-video";
     console.log(`[generate-video] fal.ai path, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
 
     const falPayload: Record<string, unknown> = {
