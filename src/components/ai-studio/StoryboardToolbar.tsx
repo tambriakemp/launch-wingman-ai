@@ -53,7 +53,7 @@ interface StoryboardToolbarProps {
   onGenerateAllVideos?: () => void;
   onCreateReel?: () => void;
   onViewReel?: () => void;
-  onDownloadReel?: () => void;
+  onDownloadAllVideos?: () => void;
   isMergingVideos?: boolean;
   mergedReelUrl?: string | null;
   videoCount?: number;
