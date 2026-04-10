@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { TextOverlay } from './types';
+import { TextOverlay, TextAlign } from './types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, Bold, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Bold, X, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -16,11 +17,25 @@ interface Props {
 const COLORS = ['#FFFFFF', '#000000', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#AF52DE', '#FF2D55'];
 const BG_OPTIONS: (string | null)[] = [null, 'rgba(0,0,0,0.6)', 'rgba(255,255,255,0.8)', 'rgba(0,0,0,0.9)'];
 
+const FONTS = [
+  'Inter', 'Arial', 'Georgia', 'Times New Roman', 'Courier New',
+  'Verdana', 'Trebuchet MS', 'Impact', 'Comic Sans MS',
+  'Palatino', 'Garamond', 'Bookman', 'Tahoma',
+  'Lucida Console', 'Brush Script MT',
+];
+
+const ALIGN_OPTIONS: { value: TextAlign; icon: React.ReactNode }[] = [
+  { value: 'left', icon: <AlignLeft className="h-4 w-4" /> },
+  { value: 'center', icon: <AlignCenter className="h-4 w-4" /> },
+  { value: 'right', icon: <AlignRight className="h-4 w-4" /> },
+];
+
 const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays: initial, onSave }) => {
   const [items, setItems] = useState<TextOverlay[]>(initial);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const resizeRef = useRef<{ id: string; startX: number; origWidth: number } | null>(null);
 
   useEffect(() => { setItems(initial); }, [initial]);
 
@@ -29,8 +44,9 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
   const addText = () => {
     const id = crypto.randomUUID();
     const newItem: TextOverlay = {
-      id, text: 'Tap to edit', x: 10, y: 50,
-      fontSize: 24, fontWeight: 'normal', color: '#FFFFFF', bgColor: 'rgba(0,0,0,0.6)',
+      id, text: 'Tap to edit', x: 10, y: 50, width: 40,
+      fontSize: 24, fontWeight: 'normal', fontFamily: 'Inter', textAlign: 'left',
+      color: '#FFFFFF', bgColor: 'rgba(0,0,0,0.6)',
     };
     setItems(prev => [...prev, newItem]);
     setSelectedId(id);
@@ -56,6 +72,13 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
   }, [items]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (resizeRef.current && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = ((e.clientX - resizeRef.current.startX) / rect.width) * 100;
+      const newWidth = Math.max(10, Math.min(100, resizeRef.current.origWidth + dx));
+      updateItem(resizeRef.current.id, { width: newWidth });
+      return;
+    }
     if (!dragRef.current || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const dx = ((e.clientX - dragRef.current.startX) / rect.width) * 100;
@@ -65,7 +88,19 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
     updateItem(dragRef.current.id, { x: newX, y: newY });
   }, []);
 
-  const handlePointerUp = useCallback(() => { dragRef.current = null; }, []);
+  const handlePointerUp = useCallback(() => {
+    dragRef.current = null;
+    resizeRef.current = null;
+  }, []);
+
+  const handleResizeDown = useCallback((e: React.PointerEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    resizeRef.current = { id, startX: e.clientX, origWidth: item.width };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [items]);
 
   const handleSave = () => { onSave(items); onClose(); };
 
@@ -81,22 +116,59 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
           {selected && (
             <>
               <div className="h-6 w-px bg-border mx-1" />
-              <div className="flex items-center gap-2">
+              {/* Font family */}
+              <Select value={selected.fontFamily} onValueChange={(v) => updateItem(selected.id, { fontFamily: v })}>
+                <SelectTrigger className="h-8 w-[130px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONTS.map(f => (
+                    <SelectItem key={f} value={f} className="text-xs" style={{ fontFamily: f }}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Font size */}
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] uppercase font-bold text-muted-foreground">Size</span>
                 <Slider
                   value={[selected.fontSize]}
                   onValueChange={([v]) => updateItem(selected.id, { fontSize: v })}
                   min={12} max={72} step={1}
-                  className="w-24"
+                  className="w-20"
                 />
                 <span className="text-xs text-muted-foreground w-6">{selected.fontSize}</span>
               </div>
+              {/* Bold */}
               <button
                 onClick={() => updateItem(selected.id, { fontWeight: selected.fontWeight === 'bold' ? 'normal' : 'bold' })}
                 className={`p-1.5 rounded border ${selected.fontWeight === 'bold' ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}
               >
                 <Bold className="h-4 w-4" />
               </button>
+              {/* Alignment */}
+              <div className="flex items-center border border-border rounded overflow-hidden">
+                {ALIGN_OPTIONS.map(a => (
+                  <button
+                    key={a.value}
+                    onClick={() => updateItem(selected.id, { textAlign: a.value })}
+                    className={`p-1.5 ${selected.textAlign === a.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                  >
+                    {a.icon}
+                  </button>
+                ))}
+              </div>
+              {/* Width */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">W</span>
+                <Slider
+                  value={[selected.width]}
+                  onValueChange={([v]) => updateItem(selected.id, { width: v })}
+                  min={10} max={100} step={1}
+                  className="w-16"
+                />
+                <span className="text-xs text-muted-foreground w-8">{Math.round(selected.width)}%</span>
+              </div>
+              {/* Colors */}
               <div className="flex items-center gap-1">
                 {COLORS.map(c => (
                   <button
@@ -108,6 +180,7 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
                 ))}
               </div>
               <div className="h-6 w-px bg-border mx-1" />
+              {/* Background */}
               <div className="flex items-center gap-1">
                 <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1">BG</span>
                 {BG_OPTIONS.map((bg, i) => (
@@ -137,6 +210,8 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
             ref={containerRef}
             className="relative inline-block select-none"
             onClick={() => setSelectedId(null)}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
           >
             <img src={imageUrl} alt="Scene" className="max-w-full max-h-[75vh] object-contain rounded" draggable={false} crossOrigin="anonymous" />
             {items.map(item => (
@@ -146,21 +221,22 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
                 style={{
                   left: `${item.x}%`,
                   top: `${item.y}%`,
+                  width: `${item.width}%`,
                   fontSize: `${item.fontSize}px`,
                   fontWeight: item.fontWeight,
+                  fontFamily: item.fontFamily,
+                  textAlign: item.textAlign,
                   color: item.color,
                   backgroundColor: item.bgColor || 'transparent',
                   padding: item.bgColor ? '4px 8px' : '2px',
                   borderRadius: item.bgColor ? '4px' : undefined,
                   lineHeight: 1.3,
                   whiteSpace: 'pre-wrap',
-                  maxWidth: '80%',
+                  wordBreak: 'break-word',
                   touchAction: 'none',
                   userSelect: 'none',
                 }}
                 onPointerDown={(e) => handlePointerDown(e, item.id)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
                 onClick={(e) => { e.stopPropagation(); setSelectedId(item.id); }}
               >
                 <div
@@ -174,12 +250,19 @@ const TextOverlayEditor: React.FC<Props> = ({ open, onClose, imageUrl, overlays:
                   {item.text}
                 </div>
                 {selectedId === item.id && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    {/* Resize handle */}
+                    <div
+                      className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-8 bg-primary/80 rounded-full cursor-ew-resize hover:bg-primary"
+                      onPointerDown={(e) => handleResizeDown(e, item.id)}
+                    />
+                  </>
                 )}
               </div>
             ))}

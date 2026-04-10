@@ -95,13 +95,18 @@ export interface CharacterBindConfig {
   referenceUrl?: string;
 }
 
+export type TextAlign = 'left' | 'center' | 'right';
+
 export interface TextOverlay {
   id: string;
   text: string;
   x: number; // percentage 0-100
   y: number; // percentage 0-100
+  width: number; // percentage of container width (10-100)
   fontSize: number;
   fontWeight: 'normal' | 'bold';
+  fontFamily: string;
+  textAlign: TextAlign;
   color: string;
   bgColor: string | null;
 }
