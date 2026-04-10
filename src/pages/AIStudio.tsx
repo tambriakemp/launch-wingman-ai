@@ -16,6 +16,7 @@ import {
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
+import { renderImageWithOverlays } from '@/components/ai-studio/renderImageWithOverlays';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -883,6 +884,7 @@ const AIStudio = () => {
     setPreviewFinalLookImage(null);
     setStoryboard(null);
     setGeneratedMedia({});
+    setTextOverlays({});
     setQueue([]);
     setEnlargedImageIndex(null);
     setIsProcessing(false);
