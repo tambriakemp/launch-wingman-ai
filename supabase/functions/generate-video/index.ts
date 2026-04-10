@@ -148,7 +148,7 @@ serve(async (req) => {
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
       falPayload.prompt = videoPrompt + backFacingGuard;
-      falPayload.duration = "10";
+      falPayload.duration = "7";
     }
 
     // Character bind — use elements for identity locking
