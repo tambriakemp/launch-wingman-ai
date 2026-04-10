@@ -1262,6 +1262,8 @@ const AIStudio = () => {
                 selectionCount={getSelectionCount()}
                 characterBind={characterBind}
                 onCharacterBindChange={setCharacterBind}
+                textOverlays={textOverlays}
+                onUpdateTextOverlays={(index, overlays) => setTextOverlays(prev => ({ ...prev, [index]: overlays }))}
               />
             </>
           ) : null}

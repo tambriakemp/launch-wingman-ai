@@ -206,6 +206,8 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           onUpdatePrompt={(newPrompt) => onUpdatePrompt(currentSceneIndex, newPrompt)}
           onUpdateVideoPrompt={(newPrompt) => onUpdateVideoPrompt(currentSceneIndex, newPrompt)}
           onUpdateScript={(newScript) => onUpdateScript?.(currentSceneIndex, newScript)}
+          textOverlays={textOverlays?.[currentSceneIndex] || []}
+          onUpdateTextOverlays={(overlays) => onUpdateTextOverlays?.(currentSceneIndex, overlays)}
         />
       </div>
     </div>
