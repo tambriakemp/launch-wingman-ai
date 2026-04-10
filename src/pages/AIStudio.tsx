@@ -1142,6 +1142,9 @@ const AIStudio = () => {
             mergedReelUrl={mergedReelUrl}
             videoCount={Object.values(generatedMedia).filter(m => m.videoUrl).length}
             anyGeneratingVideo={Object.values(generatedMedia).some(m => m.isGeneratingVideo)}
+            characterBind={characterBind}
+            onCharacterBindChange={setCharacterBind}
+            sessionReferenceUrl={referenceImage}
           />
 
           {/* Safety terms now handled inside the Create sheet panel */}

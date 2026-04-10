@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { AppConfig, AspectRatio } from './types';
+import { AppConfig, AspectRatio, CharacterBindConfig } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
@@ -15,6 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import SavedCharacter from './SavedCharacter';
+import { CharacterBindPanel } from './CharacterBindPanel';
 
 import SavedLooks from './SavedLooks';
 import UploadZone from './UploadZone';
@@ -57,6 +58,9 @@ interface StoryboardToolbarProps {
   mergedReelUrl?: string | null;
   videoCount?: number;
   anyGeneratingVideo?: boolean;
+  characterBind?: CharacterBindConfig;
+  onCharacterBindChange?: (bind: CharacterBindConfig) => void;
+  sessionReferenceUrl?: string | null;
 }
 
 const MicroLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -492,6 +496,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     className="w-full bg-transparent border border-border/50 rounded-lg px-3 py-3 text-xs text-foreground outline-none focus:border-foreground/30 transition-colors placeholder:text-muted-foreground/40 min-h-[110px] resize-none leading-relaxed"
                   />
                 </div>
+              )}
+
+              {/* Character Bind */}
+              {characterBind && onCharacterBindChange && (
+                <CharacterBindPanel
+                  bind={characterBind}
+                  onChange={onCharacterBindChange}
+                  sessionReferenceUrl={sessionReferenceUrl}
+                />
               )}
             </CollapsibleSection>
 
