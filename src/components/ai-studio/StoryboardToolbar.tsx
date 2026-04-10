@@ -168,7 +168,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   isProcessing,
   onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp,
   onGenerateStoryboard, isGeneratingStoryboard,
-  onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadReel,
+  onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadAllVideos,
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo,
   characterBind, onCharacterBindChange, sessionReferenceUrl,
 }) => {
