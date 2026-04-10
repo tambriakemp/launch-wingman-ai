@@ -8,7 +8,7 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
+import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, ImageIcon, Video, Film } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
