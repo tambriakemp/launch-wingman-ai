@@ -975,6 +975,14 @@ const AIStudio = () => {
         });
       }
       setGeneratedMedia(restoredMedia);
+      const restoredOverlays: Record<number, TextOverlay[]> = {};
+      if (loadedStoryboard?.steps) {
+        loadedStoryboard.steps.forEach((_, idx) => {
+          const saved = loadedMedia[String(idx)] || {};
+          if (saved.textOverlays?.length) restoredOverlays[idx] = saved.textOverlays;
+        });
+      }
+      setTextOverlays(restoredOverlays);
       setShowProjectsDialog(false);
       toast({ title: "Project loaded", description: `"${data.name}" restored.` });
     } catch (e: any) {
