@@ -1,78 +1,45 @@
 
 
-# Admin Toggle: Require Kling API Keys for Video Generation
+## Plan: Add Video Duration Selector + Front-Load Motion in Prompts
 
-## Summary
-Add an admin-controlled platform setting (`video_provider`) that switches the video generation backend between **fal.ai** (default, current behavior) and **Kling Direct**. When set to "kling", users must provide their own Kling Access Key + Secret Key to generate videos. All existing fal.ai logic stays untouched.
+### Problem
+1. No user control over video duration — hardcoded to 5 seconds
+2. Short videos (3-5s) get weak movement because the AI model "saves" the best motion for the end of the clip
 
-## Changes
+### Solution
 
-### 1. Admin UI — New "Video Provider" toggle card
-**File:** `src/components/admin/VideoProviderToggle.tsx` (new)
+**Part 1: Duration Selector in Step 3 Settings**
 
-A card similar to `ImageModelToggle.tsx` with two options:
-- **fal.ai** (Default) — current behavior, platform FAL_KEY + user BYOK fal keys
-- **Kling Direct** — requires users to add their own Kling Access Key + Secret Key in Settings
+Add a `videoDuration` field to `AppConfig` (type: `'3' | '5' | '10'`, default `'5'`) and render a 3-option toggle in the Settings section (Step 3) of `StoryboardToolbar.tsx`, placed between "Number of scenes" and "Camera movement".
 
-Uses the existing `update-platform-settings` edge function with key `video_provider`.
+Files changed:
+- `src/components/ai-studio/types.ts` — add `videoDuration: '3' | '5' | '10'` to `AppConfig`
+- `src/components/ai-studio/constants.ts` — add `videoDuration: '5'` to `INITIAL_CONFIG`
+- `src/components/ai-studio/StoryboardToolbar.tsx` — add duration toggle UI in Step 3
 
-**File:** `src/components/admin/ConfigTab.tsx` — import and render `<VideoProviderToggle />` alongside the existing `ImageModelToggle`.
+**Part 2: Pass Duration to Edge Function**
 
-### 2. User Settings — Kling API key fields
-**File:** `src/components/settings/AiSettingsCard.tsx`
+Pass `config.videoDuration` through the video generation call and use it in the edge function instead of the hardcoded `"5"`.
 
-- Fetch the `video_provider` platform setting on mount
-- When provider is `"kling"`, show Kling key input fields (Access Key + Secret Key) instead of / in addition to the fal.ai key section
-- Store as two `user_api_keys` entries: service `kling_access_key` and `kling_secret_key`
-- Show a notice explaining that Kling keys are required when the admin has enabled Kling mode
+Files changed:
+- `src/pages/AIStudio.tsx` — add `duration: task.config.videoDuration` to `videoBody`
+- `supabase/functions/generate-video/index.ts` — read `duration` from request body, use it for both Kling Direct and fal.ai paths (fallback to `"5"`)
 
-### 3. FalKeyWarning update
-**File:** `src/components/ai-studio/FalKeyWarning.tsx`
+**Part 3: Front-Load Motion in Video Prompts**
 
-- Fetch the `video_provider` setting
-- When `"kling"`, check for Kling keys instead of fal.ai key and show appropriate instructions directing users to `app.klingai.com/global/dev`
+Update the storyboard generation prompt instructions to ensure the AI generates video prompts that place the most dynamic, expressive movement at the **beginning** of the clip (first 1-2 seconds). This fixes the issue where the best motion appears only in the last 3-4 seconds.
 
-### 4. Edge function — generate-video
-**File:** `supabase/functions/generate-video/index.ts`
+Changes to the VIDEO PROMPT RULES in `supabase/functions/generate-storyboard/index.ts`:
+- Add a **MOTION FRONT-LOADING** directive: "Start with the most dynamic action immediately — the character should already be mid-gesture or beginning a clear movement in frame 1. Do NOT start from a static pose and slowly build up. The first 2 seconds must contain the primary action. For shorter durations (3-5s), compress the full action arc into rapid, confident movements."
+- Add duration-awareness: the storyboard prompt will receive the configured duration so prompts scale action density accordingly
 
-- At the top, fetch `video_provider` from `platform_settings`
-- If `"kling"`:
-  - Look up `kling_access_key` and `kling_secret_key` from `user_api_keys` (user must provide their own)
-  - If missing, return 400 with clear error message
-  - Generate a JWT (HS256) from the keys
-  - Call `https://api-singapore.klingai.com/v1/videos/image2video` with the mapped payload
-  - Return `{ taskId, provider: "kling" }` 
-- If `"fal"` (default): existing fal.ai logic unchanged
+Files changed:
+- `supabase/functions/generate-storyboard/index.ts` — add front-loading motion rules to both Path A and Path B prompt templates
 
-### 5. Edge function — check-video-status
-**File:** `supabase/functions/check-video-status/index.ts`
+### Technical Details
 
-- Accept a `provider` field in the request
-- When `provider === "kling"`:
-  - Look up user's Kling keys, generate JWT
-  - Poll `GET /v1/videos/image2video/{taskId}`
-  - Map `succeed`→`completed`, `failed`→`failed`, else `in_progress`
-  - Extract URL from `data.task_result.videos[0].url`
-- Default: existing fal.ai polling unchanged
-
-### 6. Frontend — AIStudio response handling
-**File:** `src/pages/AIStudio.tsx`
-
-- Store `provider` from generate-video response
-- Pass `provider` + `taskId` to check-video-status calls
-- Handle both response formats
-
-## No secrets needed from you
-Since users provide their own Kling keys, no platform-level Kling secrets are required.
-
-## Files Summary
-| File | Action |
-|------|--------|
-| `src/components/admin/VideoProviderToggle.tsx` | Create |
-| `src/components/admin/ConfigTab.tsx` | Add VideoProviderToggle |
-| `src/components/settings/AiSettingsCard.tsx` | Add Kling key fields |
-| `src/components/ai-studio/FalKeyWarning.tsx` | Support Kling mode |
-| `supabase/functions/generate-video/index.ts` | Add Kling direct path |
-| `supabase/functions/check-video-status/index.ts` | Add Kling status polling |
-| `src/pages/AIStudio.tsx` | Handle provider field |
+- Duration toggle uses the same pill-style UI as the Orientation selector for visual consistency
+- The edge function validates duration to only accept `"3"`, `"5"`, or `"10"` — defaults to `"5"` for any invalid value
+- Multi-shot mode continues to use per-shot durations from the multi_prompt config (unchanged)
+- Storyboard generation receives `videoDuration` so the AI can calibrate prompt density for shorter clips
 
