@@ -1,26 +1,26 @@
 
 
-# Fix: Video Status Polling Uses Wrong Response URL
+# Fix: Slow Movement in Generated Videos
 
 ## Problem
-The `generate-video` function submits to `fal-ai/kling-video/o3/pro/image-to-video`, but fal.ai returns `response_url` and `status_url` with a base path (`fal-ai/kling-video`). When `check-video-status` fetches the completed result from this wrong URL, fal.ai returns a 422 validation error, causing an infinite polling loop.
+The generated videos have unnaturally slow character movement. Two factors contribute:
+1. **`cfg_scale: 0.7`** — This is very low, meaning the model loosely follows the prompt and defaults to its own tendencies (often slow, cinematic motion). Increasing it will make it respect movement instructions more closely.
+2. **Prompt language** — Words like "subtle", "gentle", "slight", "soft" throughout the video prompt rules encourage minimal, slow motion. The storyboard prompts need to emphasize **normal human-speed, purposeful movement**.
+3. **Negative prompt already says "slow motion"** — Good, but the positive prompt guidance overpowers it with soft/subtle language.
 
-## Fix
+## Changes
 
 ### File: `supabase/functions/generate-video/index.ts`
-- **Always construct** `statusUrl` and `responseUrl` using the full endpoint path, ignoring fal.ai's returned URLs:
-```typescript
-const statusUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}/status`;
-const responseUrl = `https://queue.fal.run/${endpoint}/requests/${requestId}`;
-```
+- Change `cfg_scale` from `0.7` to `0.5` — Kling's cfg_scale is inverted from typical diffusion models; lower values actually give the model MORE freedom. We should keep 0.7 or raise slightly. Actually for Kling, cfg_scale controls prompt adherence where higher = stricter. Raise to `0.9` so movement instructions are followed more faithfully.
+- Add to the negative prompt: `"sluggish, slow pace, frozen pose, statue-like, minimal movement"`
 
-### File: `supabase/functions/check-video-status/index.ts`
-- Add a safety measure: if the result fetch returns a 422, treat it as `failed` with a descriptive error instead of returning `in_progress` (which causes infinite retry).
-
-### File: `supabase/functions/generate-video/index.ts` (additional)
-- Pass the `endpoint` string along with `requestId`, `statusUrl`, and `responseUrl` in the response so that `check-video-status` has the correct context if URLs ever need reconstruction.
+### File: `supabase/functions/generate-storyboard/index.ts` (both Path A ~line 335 and Path B ~line 404)
+Update the VIDEO PROMPT RULES to emphasize real-time human speed:
+- Replace phrases like "subtle breathing", "gentle hair movement", "slight head tilt" with more dynamic language: "visible breathing", "hair sways naturally", "turns her head"
+- Add explicit pacing instruction: **"Movement must match real human speed — a person walks, gestures, shifts weight, and interacts with objects at normal everyday pace. NOT slow-motion, NOT cinematic float, NOT underwater-feeling. Think candid iPhone video of a real person."**
+- Update the examples to show more dynamic, normal-speed actions instead of overly gentle/subtle ones
 
 ## Scope
-- Two edge functions modified: `generate-video` and `check-video-status`
+- Two files modified: `generate-video/index.ts` and `generate-storyboard/index.ts`
 - Auto-deployed after save
 
