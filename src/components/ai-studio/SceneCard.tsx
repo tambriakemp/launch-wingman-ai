@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { VlogStep, AspectRatio, GeneratedMedia } from './types';
-import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText } from 'lucide-react';
+import { VlogStep, AspectRatio, GeneratedMedia, TextOverlay } from './types';
+import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X, FileText, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import FalKeyWarning from './FalKeyWarning';
-
+import TextOverlayEditor from './TextOverlayEditor';
+import { renderImageWithOverlays } from './renderImageWithOverlays';
 const EditableField = ({
   label, value, editedValue, isFieldEditing, colorClass,
   onEdit, onSave, onCancel, onChange
@@ -58,6 +59,8 @@ interface SceneCardProps {
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
   onUpdateScript?: (newScript: string) => void;
+  textOverlays?: TextOverlay[];
+  onUpdateTextOverlays?: (overlays: TextOverlay[]) => void;
 }
 
 const SceneCard: React.FC<SceneCardProps> = ({
@@ -65,7 +68,8 @@ const SceneCard: React.FC<SceneCardProps> = ({
   onGenerateImage, onUpscale, onGenerateVideo,
   onToggleSelect, onEnlarge,
   onUpdatePrompt, onUpdateVideoPrompt,
-  onUpdateScript
+  onUpdateScript,
+  textOverlays = [], onUpdateTextOverlays
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(step.image_prompt);
@@ -74,6 +78,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const [isEditingScript, setIsEditingScript] = useState(false);
   const [editedScript, setEditedScript] = useState(step.script);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [textEditorOpen, setTextEditorOpen] = useState(false);
 
   useEffect(() => { setEditedPrompt(step.image_prompt); }, [step.image_prompt]);
   useEffect(() => { setEditedVideoPrompt(step.video_prompt); }, [step.video_prompt]);
