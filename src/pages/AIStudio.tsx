@@ -9,7 +9,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Loader2, HelpCircle, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -39,6 +39,7 @@ const AIStudio = () => {
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [videoCreditError, setVideoCreditError] = useState<{ message: string; code: string } | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [showSafetyTerms, setShowSafetyTerms] = useState(() => {
     return localStorage.getItem('ai-studio-terms-accepted') === 'true';
