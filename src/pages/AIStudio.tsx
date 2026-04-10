@@ -270,6 +270,7 @@ const AIStudio = () => {
                 imageUrl: task.baseImageUrl,
                 videoPrompt: (storyboardRef.current?.steps[task.index]?.video_prompt ?? task.step.video_prompt),
                 aspectRatio: task.config.aspectRatio,
+                duration: task.config.videoDuration || '5',
               };
 
               // Multi-shot support

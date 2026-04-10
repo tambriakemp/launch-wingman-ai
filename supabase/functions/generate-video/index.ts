@@ -51,7 +51,9 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    const { imageUrl, videoPrompt, aspectRatio, multiShot, characterBindUrl } = await req.json();
+    const { imageUrl, videoPrompt, aspectRatio, multiShot, characterBindUrl, duration: rawDuration } = await req.json();
+    const validDurations = ["3", "5", "10"];
+    const duration = validDurations.includes(String(rawDuration)) ? String(rawDuration) : "5";
     if (!imageUrl || (!videoPrompt && !multiShot)) {
       return new Response(JSON.stringify({ error: "imageUrl and (videoPrompt or multiShot) are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -113,7 +115,7 @@ serve(async (req) => {
           ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera."
           : "";
         klingPayload.prompt = videoPrompt + backFacingGuard;
-        klingPayload.duration = "5";
+        klingPayload.duration = duration;
       }
 
       // Character bind — Kling direct doesn't support inline elements like fal.ai
@@ -277,7 +279,7 @@ serve(async (req) => {
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
       falPayload.prompt = videoPrompt + backFacingGuard;
-      falPayload.duration = "5";
+      falPayload.duration = duration;
     }
 
     if (characterBindUrl) {

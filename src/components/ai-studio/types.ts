@@ -67,6 +67,7 @@ export interface AppConfig {
   useReferenceAsStart: boolean;
   environmentMode: 'lock' | 'evolve';
   pathASceneCount: number;
+  videoDuration: '3' | '5' | '10';
 }
 
 export interface GeneratedMedia {

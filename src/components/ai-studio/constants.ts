@@ -153,6 +153,7 @@ export const INITIAL_CONFIG: AppConfig = {
   useReferenceAsStart: false,
   environmentMode: 'evolve',
   pathASceneCount: 6,
+  videoDuration: '5',
 };
 
 export const DEFAULT_MEDIA: GeneratedMedia = {

@@ -537,6 +537,22 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
 
               <div>
+                <MicroLabel>Video duration</MicroLabel>
+                <div className="flex gap-[2px] p-[3px] bg-muted rounded-lg border border-border/50">
+                  {(['3', '5', '10'] as const).map((dur) => (
+                    <button key={dur} onClick={() => setConfig(c => ({ ...c, videoDuration: dur }))}
+                      className={`flex-1 py-2 text-[11.5px] font-medium rounded-md transition-all duration-150 ${
+                        config.videoDuration === dur
+                          ? 'bg-foreground text-background shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground/70'
+                      }`}>
+                      {dur}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <MicroLabel>Camera movement</MicroLabel>
                 <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
               </div>
