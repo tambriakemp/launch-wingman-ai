@@ -127,8 +127,8 @@ serve(async (req) => {
     const falPayload: Record<string, unknown> = {
       image_url: imageUrl,
       aspect_ratio: aspectRatio || "9:16",
-      negative_prompt: "blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion, slow motion, unnatural movement",
-      cfg_scale: 0.7,
+      negative_prompt: "blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion, slow motion, unnatural movement, sluggish, slow pace, frozen pose, statue-like, minimal movement, underwater-feeling, cinematic float, dreamy drift",
+      cfg_scale: 0.9,
     };
 
     if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
