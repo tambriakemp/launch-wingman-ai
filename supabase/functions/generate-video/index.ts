@@ -111,7 +111,7 @@ serve(async (req) => {
           user_id: userId, amount: -1, type: "used", description: "Video generation (purchased credit)"
         });
       } else {
-        return new Response(JSON.stringify({ error: "No video credits remaining. Purchase more credits or add your own fal.ai API key." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "No video credits remaining. Purchase more credits or add your own fal.ai API key.", code: "NO_CREDITS" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
@@ -209,7 +209,11 @@ serve(async (req) => {
 
       const detailLower = detail.toLowerCase();
       if (detailLower.includes("exhausted") || detailLower.includes("balance") || detailLower.includes("locked") || submitResponse.status === 403) {
-        return new Response(JSON.stringify({ error: "Platform video generation balance exhausted. Please use your own fal.ai API key or purchase more credits." }), {
+        const errorCode = usingBYOK ? "USER_KEY_EXHAUSTED" : "PLATFORM_EXHAUSTED";
+        const errorMsg = usingBYOK
+          ? "Your fal.ai API key has insufficient balance. Top up your account at fal.ai/dashboard/billing to continue."
+          : "Platform video generation balance exhausted. Please use your own fal.ai API key or purchase more credits.";
+        return new Response(JSON.stringify({ error: errorMsg, code: errorCode }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }

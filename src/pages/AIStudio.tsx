@@ -287,7 +287,11 @@ const AIStudio = () => {
               });
 
               if (error) throw error;
-              if (data?.error) throw new Error(data.error);
+              if (data?.error) {
+                const err = new Error(data.error);
+                (err as any).creditCode = data.code;
+                throw err;
+              }
               if (!data?.requestId) throw new Error("No request ID returned");
 
               console.log(`[AIStudio] Video submitted for scene ${task.index + 1}, requestId: ${data.requestId}`);
@@ -352,7 +356,17 @@ const AIStudio = () => {
                 ...(task.type === 'generate_video' ? { videoError: friendlyMsg } : { error: friendlyMsg })
               }
             }));
-            if (task.type === 'generate_video') {
+
+            // Show persistent banner for credit/key exhaustion errors
+            const creditCode = error?.creditCode;
+            if (creditCode === 'NO_CREDITS' || creditCode === 'PLATFORM_EXHAUSTED' || creditCode === 'USER_KEY_EXHAUSTED') {
+              const creditMessages: Record<string, string> = {
+                NO_CREDITS: "You're out of video credits. Purchase more credits in Settings → AI & Video, or add your own fal.ai API key for unlimited generation.",
+                PLATFORM_EXHAUSTED: "Platform video credits are temporarily unavailable. Add your own fal.ai API key in Settings → AI & Video to continue generating videos.",
+                USER_KEY_EXHAUSTED: "Your fal.ai API key has insufficient balance. Top up your account at fal.ai/dashboard/billing to continue.",
+              };
+              setVideoCreditError({ message: creditMessages[creditCode] || friendlyMsg, code: creditCode });
+            } else if (task.type === 'generate_video') {
               toast({ title: "Video Generation Failed", description: friendlyMsg, variant: "destructive" });
             } else {
               toast({ title: "Generation Failed", description: friendlyMsg, variant: "destructive" });
