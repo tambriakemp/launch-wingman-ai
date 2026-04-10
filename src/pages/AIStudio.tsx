@@ -78,6 +78,7 @@ const AIStudio = () => {
   const [reelStoragePath, setReelStoragePath] = useState<string | null>(null);
   const [showReelDialog, setShowReelDialog] = useState(false);
   const [showReelSettings, setShowReelSettings] = useState(false);
+  const [showCaptionsModal, setShowCaptionsModal] = useState(false);
 
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
