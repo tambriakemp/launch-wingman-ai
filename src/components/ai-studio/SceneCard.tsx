@@ -137,6 +137,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
       URL.revokeObjectURL(blobUrl);
     } catch { if (media.imageUrl) window.location.href = media.imageUrl; }
   };
+  const downloadVideo = (e: React.MouseEvent) => { e.stopPropagation(); if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4'); };
   const [imageBroken, setImageBroken] = useState(false);
   useEffect(() => { setImageBroken(false); }, [media.imageUrl]);
   const handleImageError = () => { setImageBroken(true); };
