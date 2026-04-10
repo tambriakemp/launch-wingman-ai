@@ -92,8 +92,11 @@ serve(async (req) => {
     const statusData = await statusResponse.json();
 
     if (statusData.status === "COMPLETED") {
-      // Fetch the actual result using the response URL from fal.ai
-      const resultUrl = responseUrl || statusUrl.replace('/status', '');
+      // Fetch the actual result — also fix sub-path if needed
+      let resultUrl = responseUrl || resolvedStatusUrl.replace('/status', '');
+      if (resultUrl.match(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//)) {
+        resultUrl = resultUrl.replace(/fal-ai\/kling-video\/[^/]+\/[^/]+\/[^/]+\/requests\//, `${baseAppId}/requests/`);
+      }
       console.log("[check-video-status] Fetching completed result from:", resultUrl);
 
       let resultResponse: Response;
