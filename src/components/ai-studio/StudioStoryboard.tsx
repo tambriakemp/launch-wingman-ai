@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig } from './types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, TextOverlay } from './types';
 import SceneCard from './SceneCard';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Plus, ImageIcon, Video, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
@@ -23,6 +23,8 @@ interface StudioStoryboardProps {
   selectionCount: number;
   characterBind: CharacterBindConfig;
   onCharacterBindChange: (bind: CharacterBindConfig) => void;
+  textOverlays?: Record<number, TextOverlay[]>;
+  onUpdateTextOverlays?: (index: number, overlays: TextOverlay[]) => void;
 }
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
@@ -33,6 +35,7 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
   onAddBlankScene, selectionCount,
   characterBind, onCharacterBindChange,
+  textOverlays, onUpdateTextOverlays,
 }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const filmstripRef = useRef<HTMLDivElement>(null);
