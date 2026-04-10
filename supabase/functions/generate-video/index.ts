@@ -239,7 +239,7 @@ serve(async (req) => {
     }
 
     const endpoint = "fal-ai/kling-video/v3/pro/image-to-video";
-    console.log(`[generate-video] fal.ai path, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
+    console.log(`[generate-video] fal.ai path, characterBind: ${!!characterBindUrl}`);
 
     const falPayload: Record<string, unknown> = {
       image_url: imageUrl,
@@ -248,15 +248,7 @@ serve(async (req) => {
       cfg_scale: 0.9,
     };
 
-    if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
-      falPayload.multi_prompt = multiShot.map((shot: { prompt: string; duration: string }) => ({
-        prompt: shot.prompt,
-        duration: shot.duration,
-      }));
-      falPayload.shot_type = "customize";
-      const totalDuration = multiShot.reduce((sum: number, s: { duration: string }) => sum + parseInt(s.duration || "5", 10), 0);
-      falPayload.duration = String(Math.min(totalDuration, 15));
-    } else {
+    {
       const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
@@ -268,12 +260,6 @@ serve(async (req) => {
       falPayload.elements = [{ image_url: characterBindUrl }];
       if (falPayload.prompt) {
         falPayload.prompt = `${falPayload.prompt} @Element1`;
-      }
-      if (falPayload.multi_prompt && Array.isArray(falPayload.multi_prompt)) {
-        falPayload.multi_prompt = (falPayload.multi_prompt as any[]).map((shot) => ({
-          ...shot,
-          prompt: `${shot.prompt} @Element1`,
-        }));
       }
     }
 
