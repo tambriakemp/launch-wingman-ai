@@ -22,6 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import ReelSettingsDialog from '@/components/ai-studio/ReelSettingsDialog';
+import GenerateCaptionsModal from '@/components/ai-studio/GenerateCaptionsModal';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 
