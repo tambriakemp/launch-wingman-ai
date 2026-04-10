@@ -172,6 +172,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadAllVideos,
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo,
   characterBind, onCharacterBindChange, sessionReferenceUrl,
+  onGenerateCaptions,
 }) => {
   const [openSection, setOpenSection] = useState<string>('1');
   const [sheetOpen, setSheetOpen] = useState(false);
