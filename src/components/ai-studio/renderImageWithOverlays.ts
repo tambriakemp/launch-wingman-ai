@@ -15,33 +15,38 @@ export async function renderImageWithOverlays(
   for (const overlay of overlays) {
     const x = (overlay.x / 100) * canvas.width;
     const y = (overlay.y / 100) * canvas.height;
-    // Scale font size relative to image height (editor uses viewport-relative sizes)
+    const boxWidth = (overlay.width / 100) * canvas.width;
     const scaledFontSize = (overlay.fontSize / 100) * canvas.height * 0.06;
+    const fontFamily = overlay.fontFamily || 'sans-serif';
 
-    ctx.font = `${overlay.fontWeight === 'bold' ? 'bold ' : ''}${scaledFontSize}px sans-serif`;
+    ctx.font = `${overlay.fontWeight === 'bold' ? 'bold ' : ''}${scaledFontSize}px "${fontFamily}", sans-serif`;
     ctx.textBaseline = 'top';
 
-    const lines = overlay.text.split('\n');
+    // Word-wrap text to fit boxWidth
+    const lines = wrapText(ctx, overlay.text, boxWidth);
     const lineHeight = scaledFontSize * 1.3;
 
     if (overlay.bgColor) {
-      const maxWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+      const maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width), boxWidth);
       const totalHeight = lines.length * lineHeight;
       const pad = scaledFontSize * 0.4;
       ctx.fillStyle = overlay.bgColor;
       ctx.beginPath();
       const r = scaledFontSize * 0.25;
-      const bx = x - pad;
-      const by = y - pad;
-      const bw = maxWidth + pad * 2;
-      const bh = totalHeight + pad * 2;
-      ctx.roundRect(bx, by, bw, bh, r);
+      ctx.roundRect(x - pad, y - pad, Math.min(maxLineWidth, boxWidth) + pad * 2, totalHeight + pad * 2, r);
       ctx.fill();
     }
 
     ctx.fillStyle = overlay.color;
+    const align = overlay.textAlign || 'left';
     lines.forEach((line, i) => {
-      ctx.fillText(line, x, y + i * lineHeight);
+      let lx = x;
+      if (align === 'center') {
+        lx = x + (boxWidth - ctx.measureText(line).width) / 2;
+      } else if (align === 'right') {
+        lx = x + boxWidth - ctx.measureText(line).width;
+      }
+      ctx.fillText(line, lx, y + i * lineHeight);
     });
   }
 
@@ -51,6 +56,26 @@ export async function renderImageWithOverlays(
       'image/png'
     );
   });
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const paragraphs = text.split('\n');
+  const result: string[] = [];
+  for (const para of paragraphs) {
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        result.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    result.push(line);
+  }
+  return result;
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
