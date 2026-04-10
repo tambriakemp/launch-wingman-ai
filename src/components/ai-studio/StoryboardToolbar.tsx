@@ -8,7 +8,7 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
 } from './constants';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, ImageIcon, Video, Film } from 'lucide-react';
+import { ChevronDown, Settings2, Sparkles, Check, RectangleVertical, RectangleHorizontal, Square, CheckCircle2, ShieldCheck, Loader2, FolderOpen, Save, FileText, Download, HelpCircle, ImageIcon, Video, Film, Type } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -61,6 +61,7 @@ interface StoryboardToolbarProps {
   characterBind?: CharacterBindConfig;
   onCharacterBindChange?: (bind: CharacterBindConfig) => void;
   sessionReferenceUrl?: string | null;
+  onGenerateCaptions?: () => void;
 }
 
 const MicroLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -171,6 +172,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadAllVideos,
   isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo,
   characterBind, onCharacterBindChange, sessionReferenceUrl,
+  onGenerateCaptions,
 }) => {
   const [openSection, setOpenSection] = useState<string>('1');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -686,6 +688,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   {videoCount >= 2 && !anyGeneratingVideo && (
                     <DropdownMenuItem onClick={onCreateReel} disabled={isMergingVideos}>
                       <Film className="h-3.5 w-3.5 mr-2" /> {isMergingVideos ? 'Creating Reel...' : mergedReelUrl ? 'Re-generate Reel' : 'Generate Reel'}
+                    </DropdownMenuItem>
+                  )}
+                  {onGenerateCaptions && (
+                    <DropdownMenuItem onClick={onGenerateCaptions}>
+                      <Type className="h-3.5 w-3.5 mr-2" /> Generate Image Captions
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

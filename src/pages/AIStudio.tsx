@@ -22,6 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import ReelSettingsDialog from '@/components/ai-studio/ReelSettingsDialog';
+import GenerateCaptionsModal from '@/components/ai-studio/GenerateCaptionsModal';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 
@@ -77,6 +78,7 @@ const AIStudio = () => {
   const [reelStoragePath, setReelStoragePath] = useState<string | null>(null);
   const [showReelDialog, setShowReelDialog] = useState(false);
   const [showReelSettings, setShowReelSettings] = useState(false);
+  const [showCaptionsModal, setShowCaptionsModal] = useState(false);
 
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
@@ -1184,6 +1186,36 @@ const AIStudio = () => {
             characterBind={characterBind}
             onCharacterBindChange={setCharacterBind}
             sessionReferenceUrl={referenceImage}
+            onGenerateCaptions={() => setShowCaptionsModal(true)}
+          />
+
+          <GenerateCaptionsModal
+            open={showCaptionsModal}
+            onOpenChange={setShowCaptionsModal}
+            sceneCount={storyboard?.steps.length || 0}
+            onApplyCaptions={(captions) => {
+              setTextOverlays(prev => {
+                const next = { ...prev };
+                captions.forEach((caption, i) => {
+                  const existing = next[i] || [];
+                  const newOverlay: TextOverlay = {
+                    id: crypto.randomUUID(),
+                    text: caption,
+                    x: 5,
+                    y: 70,
+                    width: 90,
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    fontFamily: 'Inter',
+                    textAlign: 'left',
+                    color: '#ffffff',
+                    bgColor: 'rgba(0,0,0,0.6)',
+                  };
+                  next[i] = [...existing, newOverlay];
+                });
+                return next;
+              });
+            }}
           />
 
           {/* Safety terms now handled inside the Create sheet panel */}
