@@ -295,7 +295,8 @@ const AIStudio = () => {
               }
               if (!data?.requestId) throw new Error("No request ID returned");
 
-              console.log(`[AIStudio] Video submitted for scene ${task.index + 1}, requestId: ${data.requestId}`);
+              const videoProvider = data.provider || "fal"; // "fal" or "kling"
+              console.log(`[AIStudio] Video submitted for scene ${task.index + 1}, requestId: ${data.requestId}, provider: ${videoProvider}`);
 
               // Step 2: Client-side polling for completion
               const requestId = data.requestId;
@@ -309,7 +310,7 @@ const AIStudio = () => {
                 polls++;
 
                 const { data: statusData, error: statusError } = await supabase.functions.invoke('check-video-status', {
-                  body: { requestId, statusUrl, responseUrl }
+                  body: { requestId, statusUrl, responseUrl, provider: videoProvider }
                 });
 
                 if (statusError) {
