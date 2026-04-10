@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, CharacterBindConfig, TextOverlay } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 // uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
@@ -38,6 +38,7 @@ const AIStudio = () => {
   // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
+  const [textOverlays, setTextOverlays] = useState<Record<number, TextOverlay[]>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoCreditError, setVideoCreditError] = useState<{ message: string; code: string } | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
