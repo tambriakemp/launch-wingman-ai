@@ -408,6 +408,17 @@ const SceneCard: React.FC<SceneCardProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Text Overlay Editor */}
+      {hasValidImage && (
+        <TextOverlayEditor
+          open={textEditorOpen}
+          onClose={() => setTextEditorOpen(false)}
+          imageUrl={media.imageUrl!}
+          overlays={textOverlays}
+          onSave={(overlays) => onUpdateTextOverlays?.(overlays)}
+        />
+      )}
     </div>
   );
 };
