@@ -11,6 +11,7 @@ import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
 import { PinterestEnvironmentToggle } from './PinterestEnvironmentToggle';
 import { SureContactWebhooksCard } from './SureContactWebhooksCard';
 import { ImageModelToggle } from './ImageModelToggle';
+import { VideoProviderToggle } from './VideoProviderToggle';
 
 interface SureContactConfigItem {
   config_type: string;
@@ -155,6 +156,9 @@ export function ConfigTab() {
     <div className="space-y-6">
       {/* Image Model Toggle */}
       <ImageModelToggle />
+
+      {/* Video Provider Toggle */}
+      <VideoProviderToggle />
 
       {/* Environment Toggles */}
       <PinterestEnvironmentToggle />
