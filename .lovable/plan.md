@@ -1,58 +1,46 @@
 
 
-## Plan: Add Text Overlay Editor for Scene Images
+## Plan: Generate Image Captions Feature
 
 ### What it does
-Adds a draggable text overlay feature to scene card images — similar to Instagram Stories text. Users can add, position, style, and delete text blocks on top of generated images. When downloading (single or bulk), the text is burned into the exported image.
+Adds a "Generate Image Captions" option to the Generate dropdown in the AI Studio toolbar. When clicked, a modal opens where the user selects one of their project offers (or types a custom topic). AI generates a sequential caption for each scene image — captions build on each other narratively (like the Instagram story screenshots) and the final one includes a CTA. The modal also checks if the user has completed Planning and Messaging tasks and shows an encouragement message if not.
 
 ### UI Flow
-1. A new **Type (T)** icon button appears in the image panel's icon stack (below the Edit Prompts icon)
-2. Clicking it opens a **Text Overlay Editor** modal showing the image full-size with existing text overlays
-3. User clicks "Add Text" to create a new draggable text block on the image
-4. Each text block can be: dragged anywhere, edited inline, resized (font size), styled (bold, color, background), and deleted (X button)
-5. Clicking "Done" saves the overlays to state and closes the modal
+1. User clicks **Generate > Generate Image Captions** in the toolbar
+2. Modal opens with:
+   - A project selector dropdown (fetches user's projects)
+   - Once a project is selected, shows offer cards to pick from OR a freeform text input
+   - A notice if Planning/Messaging sections are incomplete ("Complete your Planning & Messaging tasks for better captions")
+   - "Generate Captions" button
+3. AI returns one caption per scene image; captions are displayed in the modal for review
+4. User can edit captions inline, then click "Apply to Images" which adds them as text overlays on the corresponding scene cards
 
-### New Component: `TextOverlayEditor.tsx`
-- Full-screen modal with the scene image as background
-- State: array of `TextOverlay` objects per scene (`{ id, text, x, y, fontSize, fontWeight, color, bgColor }`)
-- Drag implementation: `onMouseDown`/`onTouchStart` with pointer tracking, positions stored as percentage of image dimensions for resolution independence
-- Toolbar at top: "Add Text" button, font size slider, color picker, bold toggle, background toggle
-- Each text block: editable `contentEditable` div, drag handle, delete button
+### New Files
+- **`src/components/ai-studio/GenerateCaptionsModal.tsx`** — The modal component with project/offer selection, context status check, caption display and editing
+- **`supabase/functions/generate-image-captions/index.ts`** — Edge function that takes offer/topic context + planning/messaging data + scene count, returns an array of sequential captions with the last one containing a CTA
 
-### Data Model (in-memory only, no DB)
-```typescript
-interface TextOverlay {
-  id: string;
-  text: string;
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
-  fontSize: number;
-  fontWeight: 'normal' | 'bold';
-  color: string;
-  bgColor: string | null; // null = transparent, string = white/black box
-}
-```
+### Modified Files
+- **`src/components/ai-studio/StoryboardToolbar.tsx`** — Add "Generate Image Captions" menu item to the Generate dropdown; add `onGenerateCaptions` prop
+- **`src/pages/AIStudio.tsx`** — Add state for the captions modal, pass handler to toolbar, handle applying captions as text overlays
 
-- Stored in `AIStudio.tsx` as `textOverlays: Record<number, TextOverlay[]>` alongside `generatedMedia`
-- Persisted with project save (added to the saved JSON)
+### Edge Function Logic
+The `generate-image-captions` function receives:
+- `topic` (offer title + description or custom text)
+- `sceneCount` (number of images)
+- `contextData` (niche, target audience, pain point, desired outcome, core message, transformation statement, talking points — whatever is available from planning/messaging tasks)
 
-### Download with Text Baked In
-- Create a utility `renderImageWithOverlays(imageUrl, overlays, aspectRatio): Promise<Blob>` using an offscreen `<canvas>`
-- Draws image, then renders each text overlay at the correct position/style
-- Used by: single image download (`SceneCard`), "Download All Assets" (`handleDownloadAll`), and the reel flow
+System prompt instructs the AI to:
+- Generate `sceneCount` captions that build upon each other like an Instagram story sequence
+- Keep each caption punchy (1-3 short sentences)
+- Make the final caption a clear CTA
+- Use the offer/messaging context for tone and relevance
 
-### Files to Create
-- `src/components/ai-studio/TextOverlayEditor.tsx` — modal editor component
-- `src/components/ai-studio/renderImageWithOverlays.ts` — canvas rendering utility
+### Context Check Logic
+In the modal, fetch `project_tasks` for the selected project where `task_id` starts with `planning_` or `messaging_` and check completion status. If fewer than ~50% are completed, show an info banner encouraging the user to complete them first for better results.
 
-### Files to Modify
-- `src/components/ai-studio/types.ts` — add `TextOverlay` interface
-- `src/components/ai-studio/SceneCard.tsx` — add Type icon button, pass overlays, open editor, use baked image for download
-- `src/pages/AIStudio.tsx` — add `textOverlays` state, pass to SceneCard, use `renderImageWithOverlays` in `handleDownloadAll`
-
-### Technical Details
-- Drag uses percentage-based positioning so overlays scale correctly regardless of display vs export size
-- Canvas export renders at original image resolution for crisp downloads
-- Text blocks default to white text with semi-transparent black background (Instagram Stories style, matching the reference screenshots)
-- The text overlay state is separate from `generatedMedia` so regenerating an image preserves existing overlays
+### Technical Notes
+- Projects and offers are fetched client-side via Supabase queries in the modal
+- Planning/messaging context is fetched when a project is selected and passed to the edge function
+- Generated captions can be applied as text overlays using the existing `TextOverlay` system, or kept as separate caption metadata for display
+- The edge function uses Lovable AI (`google/gemini-3-flash-preview`)
 
