@@ -334,15 +334,15 @@ The script field for each scene should be a short, punchy caption line or hook a
 
 VIDEO PROMPT RULES (CRITICAL):
 - video_prompt describes NATURAL REAL-TIME motion (not slow motion) from the SAME camera angle as the image
-- Include micro-realism: natural blinking, subtle breathing chest movement, weight shifts, micro-expressions
+- PACING (MOST IMPORTANT): Movement must match real human speed — a person walks, gestures, shifts weight, and interacts with objects at normal everyday pace. NOT slow-motion, NOT cinematic float, NOT underwater-feeling, NOT dreamy drift. Think candid iPhone video of a real person going about their day.
+- Include micro-realism: natural blinking, visible breathing (chest rises and falls), weight shifts between feet, real micro-expressions
 - Skin must look alive: describe light catching pores, natural skin sheen, realistic subsurface scattering
-- Environment must feel real: describe ambient movement (leaves, fabric draping, steam, light flicker)
-- Motion pacing: real human speed — not cinematic slow-mo unless explicitly requested
-- Hair physics: natural strand movement, not frozen or floating
+- Environment must feel real: describe ambient movement (leaves rustling, fabric swaying, steam rising, light flicker)
+- Hair physics: hair sways and bounces naturally with movement, not frozen or floating
 - If the character's back or side is to the camera, KEEP that angle — do NOT rotate the character to face the camera
 - Avoid any instruction that would reveal the character's face if it is not visible in the image (e.g., "turns around", "looks at camera", "faces forward")
-- For back-facing shots: "gentle hair movement in the breeze, city lights flickering in the background, subtle shoulder movement, natural breathing rhythm"
-- For profile shots: "slight head tilt, eyes scanning the scene, ambient light shifting, chest rises with a breath"
+- For back-facing shots: "hair sways in the breeze, city lights flickering in the background, shoulders rise and fall with breathing, she shifts her weight to the other foot"
+- For profile shots: "she turns her head slightly, eyes scanning the scene, ambient light shifting, chest rises with a deep breath, she adjusts her posture"
 
 SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
 - The video_prompt MUST reference every visible prop, surface, and environmental element from the image_prompt. Motion must interact logically with these elements (e.g., if holding an envelope near a counter, she places it on the counter or taps it lightly — never hands it to empty air).
@@ -351,9 +351,9 @@ SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
 - NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
 - ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
 
-- Example (holding prop): "She glances down at the envelope in her hand, runs her thumb along the sealed edge, then lowers it to her side with a soft exhale, weight shifting to her left foot as she scans the room, ambient light catching her skin naturally"
-- Example (at a counter): "She sets the coffee cup on the marble counter with a soft clink, fingertips lingering on the rim, then leans back slightly, eyes drifting to the window, chest rises with a breath, steam curling from the cup"
-- Example (no props, alone): "She shifts her weight from one hip to the other, arms relaxed at her sides, eyes scanning the space with a calm expression, a subtle breeze moves her hair, she takes a slow breath and adjusts her jacket collar"
+- Example (holding prop): "She looks down at the envelope, flips it over in her hand, tucks it under her arm, then rolls her shoulders back and glances around the room at normal pace, ambient light catching her skin"
+- Example (at a counter): "She picks up the coffee cup, takes a sip, sets it back on the marble counter with a clink, wipes her lip with her thumb, then leans on the counter and looks out the window, steam curling from the cup"
+- Example (no props, alone): "She shifts her weight to one hip, crosses her arms, looks left then right at normal pace, uncrosses her arms and adjusts her jacket, takes a visible breath, tucks hair behind her ear"
 
 Generate: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (complete, following the format above), video_prompt (natural real-time motion following rules above), script (text overlay caption), is_final_look (always false).
 Also provide analysis: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe (extracted from the reference photo).`;
@@ -403,11 +403,11 @@ Each image_prompt MUST include the FULL character description block repeated ver
 
 VIDEO PROMPT RULES (CRITICAL):
 - video_prompt describes NATURAL REAL-TIME motion (not slow motion) from the SAME camera angle as the image
-- Include micro-realism: natural blinking, subtle breathing chest movement, weight shifts, micro-expressions
+- PACING (MOST IMPORTANT): Movement must match real human speed — a person walks, gestures, shifts weight, and interacts with objects at normal everyday pace. NOT slow-motion, NOT cinematic float, NOT underwater-feeling, NOT dreamy drift. Think candid iPhone video of a real person going about their day.
+- Include micro-realism: natural blinking, visible breathing (chest rises and falls), weight shifts between feet, real micro-expressions
 - Skin must look alive: describe light catching pores, natural skin sheen, realistic subsurface scattering
-- Environment must feel real: describe ambient movement (leaves, fabric draping, steam, light flicker)
-- Motion pacing: real human speed — not cinematic slow-mo unless explicitly requested
-- Hair physics: natural strand movement, not frozen or floating
+- Environment must feel real: describe ambient movement (leaves rustling, fabric swaying, steam rising, light flicker)
+- Hair physics: hair sways and bounces naturally with movement, not frozen or floating
 - If the character's back or side is to the camera, KEEP that angle — do NOT rotate the character to face the camera
 - Avoid any instruction that would reveal the character's face if it is not visible in the image
 
@@ -418,9 +418,9 @@ SCENE GROUNDING (CRITICAL — video_prompt must be aware of the scene):
 - NO PHANTOM INTERACTIONS: NEVER describe the character interacting with people, objects, or surfaces that are NOT described in the image_prompt. If the character is alone, all gestures must be self-directed or directed at visible objects/environment. Do NOT have the character hand something to nobody, speak to nobody, or reach toward something that doesn't exist.
 - ACTION COMPLETENESS: Each video_prompt must describe a full micro-narrative: a beginning state (matching the still image), a natural transition, and a settled end state.
 
-- Example (holding prop): "She glances down at the envelope in her hand, runs her thumb along the sealed edge, then lowers it to her side with a soft exhale, weight shifting to her left foot as she scans the room, ambient light catching her skin naturally"
-- Example (at a counter): "She sets the coffee cup on the marble counter with a soft clink, fingertips lingering on the rim, then leans back slightly, eyes drifting to the window, chest rises with a breath, steam curling from the cup"
-- Example (no props, alone): "She shifts her weight from one hip to the other, arms relaxed at her sides, eyes scanning the space with a calm expression, a subtle breeze moves her hair, she takes a slow breath and adjusts her jacket collar"
+- Example (holding prop): "She looks down at the envelope, flips it over in her hand, tucks it under her arm, then rolls her shoulders back and glances around the room at normal pace, ambient light catching her skin"
+- Example (at a counter): "She picks up the coffee cup, takes a sip, sets it back on the marble counter with a clink, wipes her lip with her thumb, then leans on the counter and looks out the window, steam curling from the cup"
+- Example (no props, alone): "She shifts her weight to one hip, crosses her arms, looks left then right at normal pace, uncrosses her arms and adjusts her jacket, takes a visible breath, tucks hair behind her ear"
 
 ${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt (COMPLETE prompt following the format above), video_prompt (natural real-time motion following rules above), script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
