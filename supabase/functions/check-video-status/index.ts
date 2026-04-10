@@ -80,13 +80,16 @@ serve(async (req) => {
     if (!statusResponse.ok) {
       const errText = await statusResponse.text();
       console.error("[check-video-status] Status check failed:", statusResponse.status, errText);
-      // 405 means the URL path is wrong — treat as failed to stop infinite polling
-      if (statusResponse.status === 405 || statusResponse.status === 422) {
-        return new Response(JSON.stringify({ status: "failed", error: "Video status check failed (invalid URL). Please regenerate the video." }), {
+      // 4xx means the URL path is wrong or request is invalid — treat as terminal failure
+      if (statusResponse.status >= 400 && statusResponse.status < 500) {
+        return new Response(JSON.stringify({ status: "failed", error: `Video status check failed (HTTP ${statusResponse.status}). Please regenerate the video.` }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`Status check failed: HTTP ${statusResponse.status}`);
+      // 5xx — transient, let client retry
+      return new Response(JSON.stringify({ status: "in_progress" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const statusData = await statusResponse.json();
