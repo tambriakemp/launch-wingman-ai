@@ -174,7 +174,31 @@ const SceneCard: React.FC<SceneCardProps> = ({
             onClick={() => { if (hasValidImage && !isLoading) onEnlarge(); }}
           >
             {hasValidImage ? (
-              <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
+              <div className="relative w-full h-full">
+                <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" onError={handleImageError} onLoad={handleImageLoad} />
+                {/* Text overlay preview */}
+                {textOverlays.map(overlay => (
+                  <div
+                    key={overlay.id}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      fontSize: `${overlay.fontSize * 0.5}px`,
+                      fontWeight: overlay.fontWeight,
+                      color: overlay.color,
+                      backgroundColor: overlay.bgColor || 'transparent',
+                      padding: overlay.bgColor ? '2px 4px' : '1px',
+                      borderRadius: overlay.bgColor ? '3px' : undefined,
+                      lineHeight: 1.3,
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '80%',
+                    }}
+                  >
+                    {overlay.text}
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                 {!isLoading && !media.error && (
