@@ -580,14 +580,14 @@ const AIStudio = () => {
   };
 
   // Create Reel — client-side Canvas + MediaRecorder merge
-  const handleCreateReel = async (clipDurations?: (number | null)[]) => {
+  const handleCreateReel = async (clipDurations?: (number | null)[], trimDirection: 'start' | 'end' = 'end') => {
     if (!storyboard) return;
-    const videoEntries: { url: string; maxDuration: number | null }[] = [];
+    const videoEntries: { url: string; maxDuration: number | null; trimDirection: 'start' | 'end' }[] = [];
     let clipIdx = 0;
     for (let i = 0; i < storyboard.steps.length; i++) {
       const url = generatedMedia[i]?.videoUrl;
       if (url) {
-        videoEntries.push({ url, maxDuration: clipDurations?.[clipIdx] ?? null });
+        videoEntries.push({ url, maxDuration: clipDurations?.[clipIdx] ?? null, trimDirection });
         clipIdx++;
       }
     }
@@ -661,7 +661,8 @@ const AIStudio = () => {
         setMergeProgress(10 + Math.round((i / preloadedVideos.length) * 70));
         const vid = preloadedVideos[i];
         const maxDur = videoEntries[i].maxDuration;
-        console.log(`[Reel] Playing video ${i + 1}/${preloadedVideos.length}, maxDuration=${maxDur}`);
+        const trimDir = videoEntries[i].trimDirection;
+        console.log(`[Reel] Playing video ${i + 1}/${preloadedVideos.length}, maxDuration=${maxDur}, trim=${trimDir}`);
 
         await new Promise<void>((resolve, reject) => {
           let timer: ReturnType<typeof setTimeout> | null = null;
@@ -673,36 +674,56 @@ const AIStudio = () => {
             resolve();
           };
 
-          // Draw the first frame of this clip immediately to avoid any flash
-          const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
-          const dw = vid.videoWidth * scale;
-          const dh = vid.videoHeight * scale;
-          ctx.fillStyle = '#000';
-          ctx.fillRect(0, 0, dims.w, dims.h);
-          ctx.drawImage(vid, (dims.w - dw) / 2, (dims.h - dh) / 2, dw, dh);
-
-          vid.onplay = () => {
-            if (maxDur !== null && maxDur > 0 && maxDur < vid.duration) {
-              timer = setTimeout(finish, maxDur * 1000);
+          // For trim-from-start: seek to (duration - maxDur) before playing
+          const setupAndPlay = () => {
+            if (trimDir === 'start' && maxDur !== null && maxDur > 0 && maxDur < vid.duration) {
+              const seekTo = vid.duration - maxDur;
+              vid.currentTime = seekTo;
             }
-            const drawFrame = () => {
-              if (vid.paused || vid.ended) return;
-              const s = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
-              const w = vid.videoWidth * s;
-              const h = vid.videoHeight * s;
-              ctx.fillStyle = '#000';
-              ctx.fillRect(0, 0, dims.w, dims.h);
-              ctx.drawImage(vid, (dims.w - w) / 2, (dims.h - h) / 2, w, h);
-              requestAnimationFrame(drawFrame);
+
+            // Draw the first frame of this clip immediately to avoid any flash
+            const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+            const dw = vid.videoWidth * scale;
+            const dh = vid.videoHeight * scale;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, dims.w, dims.h);
+            ctx.drawImage(vid, (dims.w - dw) / 2, (dims.h - dh) / 2, dw, dh);
+
+            vid.onplay = () => {
+              // For trim-from-end: set timeout to stop early
+              if (trimDir === 'end' && maxDur !== null && maxDur > 0 && maxDur < vid.duration) {
+                timer = setTimeout(finish, maxDur * 1000);
+              }
+              const drawFrame = () => {
+                if (vid.paused || vid.ended) return;
+                const s = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+                const w = vid.videoWidth * s;
+                const h = vid.videoHeight * s;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, dims.w, dims.h);
+                ctx.drawImage(vid, (dims.w - w) / 2, (dims.h - h) / 2, w, h);
+                requestAnimationFrame(drawFrame);
+              };
+              drawFrame();
             };
-            drawFrame();
+
+            vid.onended = finish;
+            vid.onerror = () => reject(new Error(`Failed to play video ${i + 1}`));
+
+            vid.play().catch(reject);
           };
 
-          vid.onended = finish;
-          vid.onerror = () => reject(new Error(`Failed to play video ${i + 1}`));
-
-          // Already preloaded — play immediately
-          vid.play().catch(reject);
+          // If we need to seek, wait for seeked event
+          if (trimDir === 'start' && maxDur !== null && maxDur > 0) {
+            vid.onseeked = () => {
+              vid.onseeked = null;
+              setupAndPlay();
+            };
+            const seekTo = Math.max(0, vid.duration - maxDur);
+            vid.currentTime = seekTo;
+          } else {
+            setupAndPlay();
+          }
         });
       }
 
@@ -1031,7 +1052,7 @@ const AIStudio = () => {
           clips={storyboard ? storyboard.steps
             .map((s, idx) => ({ index: idx, imageUrl: generatedMedia[idx]?.imageUrl, stepName: s.step_name }))
             .filter((_, idx) => !!generatedMedia[idx]?.videoUrl) : []}
-          onGenerate={(durations) => handleCreateReel(durations)}
+          onGenerate={(durations, trimDir) => handleCreateReel(durations, trimDir)}
           isGenerating={isMergingVideos}
         />
 
