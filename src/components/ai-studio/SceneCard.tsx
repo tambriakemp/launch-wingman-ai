@@ -120,9 +120,23 @@ const SceneCard: React.FC<SceneCardProps> = ({
     }
   };
 
-  const downloadImage = (e: React.MouseEvent) => { e.stopPropagation(); if (media.imageUrl) downloadMedia(media.imageUrl, 'png'); };
-  const downloadVideo = (e: React.MouseEvent) => { e.stopPropagation(); if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4'); };
-
+  const downloadImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!media.imageUrl) return;
+    try {
+      const blob = textOverlays.length > 0
+        ? await renderImageWithOverlays(media.imageUrl, textOverlays)
+        : await fetch(media.imageUrl).then(r => r.blob());
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch { if (media.imageUrl) window.location.href = media.imageUrl; }
+  };
   const [imageBroken, setImageBroken] = useState(false);
   useEffect(() => { setImageBroken(false); }, [media.imageUrl]);
   const handleImageError = () => { setImageBroken(true); };
