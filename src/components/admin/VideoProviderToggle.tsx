@@ -31,6 +31,7 @@ export function VideoProviderToggle() {
   const [currentProvider, setCurrentProvider] = useState("fal");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     loadSettings();
