@@ -1,10 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { encode as base64url } from "https://deno.land/std@0.190.0/encoding/base64url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+/** Generate a Kling JWT (HS256) from accessKey + secretKey */
+async function generateKlingJwt(accessKey: string, secretKey: string): Promise<string> {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = { iss: accessKey, iat: now - 5, exp: now + 1800, nbf: now - 5 };
+
+  const enc = new TextEncoder();
+  const headerB64 = base64url(enc.encode(JSON.stringify(header)));
+  const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
+  const signingInput = `${headerB64}.${payloadB64}`;
+
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(signingInput));
+  const sigB64 = base64url(new Uint8Array(sig));
+
+  return `${signingInput}.${sigB64}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -35,13 +56,136 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "imageUrl and (videoPrompt or multiShot) are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Service role client for credit management
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Check for BYOK key
+    // Determine video provider
+    const { data: providerSetting } = await adminClient
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "video_provider")
+      .maybeSingle();
+    const videoProvider = providerSetting?.value || "fal";
+
+    // ===================== KLING DIRECT PATH =====================
+    if (videoProvider === "kling") {
+      // Look up user's Kling keys
+      const { data: accessKeyRow } = await adminClient
+        .from("user_api_keys").select("api_key")
+        .eq("user_id", userId).eq("service", "kling_access_key").maybeSingle();
+      const { data: secretKeyRow } = await adminClient
+        .from("user_api_keys").select("api_key")
+        .eq("user_id", userId).eq("service", "kling_secret_key").maybeSingle();
+
+      if (!accessKeyRow?.api_key || !secretKeyRow?.api_key) {
+        return new Response(JSON.stringify({
+          error: "Kling API keys not configured. Go to Settings → AI & Video → Kling API Keys to add your keys.",
+          code: "KLING_KEYS_MISSING"
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const jwt = await generateKlingJwt(accessKeyRow.api_key, secretKeyRow.api_key);
+
+      // Build Kling payload
+      const klingPayload: Record<string, unknown> = {
+        model_name: "kling-v2-6",
+        mode: "pro",
+        image: imageUrl,
+        image_fidelity: 0.65,
+        cfg_scale: 0.9,
+        negative_prompt: "blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion, slow motion, unnatural movement, sluggish, slow pace, frozen pose, statue-like, minimal movement, underwater-feeling, cinematic float, dreamy drift",
+      };
+
+      if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
+        klingPayload.multi_shot = true;
+        klingPayload.shot_type = "customize";
+        klingPayload.multi_prompt = multiShot.map((shot: { prompt: string; duration: string }, idx: number) => ({
+          prompt: shot.prompt,
+          duration: shot.duration,
+          index: idx,
+        }));
+        const totalDuration = multiShot.reduce((sum: number, s: { duration: string }) => sum + parseInt(s.duration || "5", 10), 0);
+        klingPayload.duration = String(Math.min(totalDuration, 15));
+      } else {
+        const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
+          ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera."
+          : "";
+        klingPayload.prompt = videoPrompt + backFacingGuard;
+        klingPayload.duration = "7";
+      }
+
+      // Character bind — Kling direct doesn't support inline elements like fal.ai
+      // We'll append identity lock instruction to prompt instead
+      if (characterBindUrl) {
+        const bindNote = " @Element1";
+        if (klingPayload.prompt) {
+          klingPayload.prompt = `${klingPayload.prompt}${bindNote}`;
+        }
+        if (klingPayload.multi_prompt && Array.isArray(klingPayload.multi_prompt)) {
+          klingPayload.multi_prompt = (klingPayload.multi_prompt as any[]).map((shot) => ({
+            ...shot,
+            prompt: `${shot.prompt}${bindNote}`,
+          }));
+        }
+        // Kling direct uses element_id from pre-created elements, but for now
+        // we pass the reference image URL as a subject reference
+        klingPayload.subject_reference = [{ image: characterBindUrl }];
+      }
+
+      console.log("[generate-video] Kling direct payload:", JSON.stringify(klingPayload).slice(0, 500));
+
+      const submitResponse = await fetch("https://api-singapore.klingai.com/v1/videos/image2video", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${jwt}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(klingPayload),
+      });
+
+      const responseText = await submitResponse.text();
+      console.log("[generate-video] Kling response:", submitResponse.status, responseText.slice(0, 500));
+
+      if (!submitResponse.ok) {
+        let detail = `HTTP ${submitResponse.status}`;
+        try {
+          const errJson = JSON.parse(responseText);
+          detail = errJson?.message || errJson?.error || detail;
+        } catch { /* not JSON */ }
+
+        if (submitResponse.status === 401 || submitResponse.status === 403) {
+          return new Response(JSON.stringify({
+            error: "Kling API authentication failed. Please check your Access Key and Secret Key in Settings.",
+            code: "KLING_AUTH_FAILED"
+          }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        throw new Error(`Kling API error: ${detail}`);
+      }
+
+      let submitData: any;
+      try {
+        submitData = JSON.parse(responseText);
+      } catch {
+        throw new Error("Failed to parse Kling API response");
+      }
+
+      const taskId = submitData?.data?.task_id;
+      if (!taskId) {
+        console.error("[generate-video] No task_id in Kling response:", JSON.stringify(submitData).slice(0, 500));
+        throw new Error("No task_id returned from Kling API");
+      }
+
+      console.log("[generate-video] Kling submitted. taskId:", taskId);
+
+      return new Response(JSON.stringify({ requestId: taskId, provider: "kling" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ===================== FAL.AI PATH (DEFAULT) =====================
     let falKey: string | null = null;
     let usingBYOK = false;
 
@@ -56,7 +200,6 @@ serve(async (req) => {
       falKey = userKey.api_key;
       usingBYOK = true;
     } else {
-      // 2. Check/manage credits
       falKey = Deno.env.get("FAL_KEY") || null;
       if (!falKey) {
         return new Response(JSON.stringify({ error: "Platform video generation key not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -79,7 +222,6 @@ serve(async (req) => {
         credits = newCredits;
       }
 
-      // Check monthly reset
       if (new Date(credits.monthly_reset_at) < new Date()) {
         const { data: resetCredits, error: resetErr } = await adminClient
           .from("video_credits")
@@ -91,13 +233,11 @@ serve(async (req) => {
         credits = resetCredits;
       }
 
-      // Deduct credits
       if (credits.monthly_free_remaining > 0) {
         await adminClient
           .from("video_credits")
           .update({ monthly_free_remaining: credits.monthly_free_remaining - 1 })
           .eq("user_id", userId);
-
         await adminClient.from("video_credit_transactions").insert({
           user_id: userId, amount: -1, type: "free_monthly", description: "Video generation (free monthly)"
         });
@@ -106,7 +246,6 @@ serve(async (req) => {
           .from("video_credits")
           .update({ balance: credits.balance - 1 })
           .eq("user_id", userId);
-
         await adminClient.from("video_credit_transactions").insert({
           user_id: userId, amount: -1, type: "used", description: "Video generation (purchased credit)"
         });
@@ -115,15 +254,9 @@ serve(async (req) => {
       }
     }
 
-    // 3. Build request payload
-    // Use Pro endpoint when character bind is enabled (supports `elements` for face locking)
-    // Use Standard endpoint for normal/multi-shot without bind
-    // Always use Pro endpoint for maximum realism and sharpness
     const endpoint = "fal-ai/kling-video/o3/pro/image-to-video";
+    console.log(`[generate-video] fal.ai path, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
 
-    console.log(`[generate-video] Using Pro endpoint, multiShot: ${!!multiShot}, characterBind: ${!!characterBindUrl}`);
-
-    // Build the fal.ai payload
     const falPayload: Record<string, unknown> = {
       image_url: imageUrl,
       aspect_ratio: aspectRatio || "9:16",
@@ -132,18 +265,14 @@ serve(async (req) => {
     };
 
     if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
-      // Multi-shot mode
       falPayload.multi_prompt = multiShot.map((shot: { prompt: string; duration: string }) => ({
         prompt: shot.prompt,
         duration: shot.duration,
       }));
       falPayload.shot_type = "customize";
-      // Total duration is sum of shot durations
       const totalDuration = multiShot.reduce((sum: number, s: { duration: string }) => sum + parseInt(s.duration || "5", 10), 0);
-      falPayload.duration = String(Math.min(totalDuration, 15)); // Kling max 15s
-      console.log(`[generate-video] Multi-shot: ${multiShot.length} shots, total ${totalDuration}s`);
+      falPayload.duration = String(Math.min(totalDuration, 15));
     } else {
-      // Single prompt mode
       const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
         ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera. Keep the same pose orientation throughout."
         : "";
@@ -151,15 +280,8 @@ serve(async (req) => {
       falPayload.duration = "7";
     }
 
-    // Character bind — use elements for identity locking
-    // Keep image_url (don't swap to start_image_url) so fal.ai's queue
-    // result retrieval works on the base app path
     if (characterBindUrl) {
-      falPayload.elements = [{
-        image_url: characterBindUrl,
-      }];
-
-      // Append @Element1 to prompt(s) for identity binding
+      falPayload.elements = [{ image_url: characterBindUrl }];
       if (falPayload.prompt) {
         falPayload.prompt = `${falPayload.prompt} @Element1`;
       }
@@ -190,7 +312,6 @@ serve(async (req) => {
         detail = errJson?.detail || errJson?.message || detail;
       } catch { /* not JSON */ }
 
-      // Refund credit on failure if not BYOK
       if (!usingBYOK) {
         const { data: currentCredits } = await adminClient.from("video_credits").select("*").eq("user_id", userId).single();
         if (currentCredits) {
@@ -222,23 +343,19 @@ serve(async (req) => {
     }
 
     const submitData = await submitResponse.json();
-    console.log("[generate-video] fal.ai submit response keys:", Object.keys(submitData));
     const requestId = submitData.request_id;
 
     if (!requestId) {
       throw new Error("No request_id returned from fal.ai");
     }
 
-    // fal.ai queue status/result URLs use the BASE app ID (fal-ai/kling-video),
-    // NOT the full model sub-path. Use URLs returned by fal.ai when available,
-    // otherwise construct with the base app ID.
     const baseAppId = "fal-ai/kling-video";
     const statusUrl = submitData.status_url || `https://queue.fal.run/${baseAppId}/requests/${requestId}/status`;
     const responseUrl = submitData.response_url || `https://queue.fal.run/${baseAppId}/requests/${requestId}`;
 
-    console.log("[generate-video] Submitted successfully. Request ID:", requestId, "Status URL:", statusUrl);
+    console.log("[generate-video] fal.ai submitted. Request ID:", requestId);
 
-    return new Response(JSON.stringify({ requestId, statusUrl, responseUrl, endpoint }), {
+    return new Response(JSON.stringify({ requestId, statusUrl, responseUrl, endpoint, provider: "fal" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
