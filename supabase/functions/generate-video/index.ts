@@ -152,11 +152,9 @@ serve(async (req) => {
     }
 
     // Character bind — use elements for identity locking
+    // Keep image_url (don't swap to start_image_url) so fal.ai's queue
+    // result retrieval works on the base app path
     if (characterBindUrl) {
-      // For Pro i2v, use `start_image_url` instead of `image_url`
-      delete falPayload.image_url;
-      falPayload.start_image_url = imageUrl;
-
       falPayload.elements = [{
         image_url: characterBindUrl,
       }];
