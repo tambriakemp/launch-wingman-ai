@@ -184,15 +184,18 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     style={{
                       left: `${overlay.x}%`,
                       top: `${overlay.y}%`,
+                      width: `${overlay.width}%`,
                       fontSize: `${overlay.fontSize * 0.5}px`,
                       fontWeight: overlay.fontWeight,
+                      fontFamily: overlay.fontFamily,
+                      textAlign: overlay.textAlign,
                       color: overlay.color,
                       backgroundColor: overlay.bgColor || 'transparent',
                       padding: overlay.bgColor ? '2px 4px' : '1px',
                       borderRadius: overlay.bgColor ? '3px' : undefined,
                       lineHeight: 1.3,
                       whiteSpace: 'pre-wrap',
-                      maxWidth: '80%',
+                      wordBreak: 'break-word',
                     }}
                   >
                     {overlay.text}
