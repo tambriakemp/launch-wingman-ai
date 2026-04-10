@@ -59,6 +59,7 @@ export function VideoProviderToggle() {
         body: { action: "set", key: "video_provider", value: providerId },
       });
       setCurrentProvider(providerId);
+      queryClient.invalidateQueries({ queryKey: ["platform-setting", "video_provider"] });
       toast.success(`Video provider switched to ${PROVIDERS.find(p => p.id === providerId)?.label}`);
     } catch (e) {
       toast.error("Failed to update video provider setting");
