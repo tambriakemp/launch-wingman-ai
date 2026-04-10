@@ -51,11 +51,11 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    const { imageUrl, videoPrompt, aspectRatio, multiShot, characterBindUrl, duration: rawDuration } = await req.json();
+    const { imageUrl, videoPrompt, aspectRatio, characterBindUrl, duration: rawDuration } = await req.json();
     const validDurations = ["3", "5", "10"];
     const duration = validDurations.includes(String(rawDuration)) ? String(rawDuration) : "5";
-    if (!imageUrl || (!videoPrompt && !multiShot)) {
-      return new Response(JSON.stringify({ error: "imageUrl and (videoPrompt or multiShot) are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!imageUrl || !videoPrompt) {
+      return new Response(JSON.stringify({ error: "imageUrl and videoPrompt are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const adminClient = createClient(
@@ -100,17 +100,7 @@ serve(async (req) => {
         negative_prompt: "blur, distortion, low quality, shaky camera, jitter, plastic skin, wax figure, uncanny valley, oversmoothed, airbrushed, doll-like, low resolution, grainy, noisy, morphing artifacts, face warping, limb distortion, slow motion, unnatural movement, sluggish, slow pace, frozen pose, statue-like, minimal movement, underwater-feeling, cinematic float, dreamy drift",
       };
 
-      if (multiShot && Array.isArray(multiShot) && multiShot.length > 0) {
-        klingPayload.multi_shot = true;
-        klingPayload.shot_type = "customize";
-        klingPayload.multi_prompt = multiShot.map((shot: { prompt: string; duration: string }, idx: number) => ({
-          prompt: shot.prompt,
-          duration: shot.duration,
-          index: idx,
-        }));
-        const totalDuration = multiShot.reduce((sum: number, s: { duration: string }) => sum + parseInt(s.duration || "5", 10), 0);
-        klingPayload.duration = String(Math.min(totalDuration, 15));
-      } else {
+      {
         const backFacingGuard = /\b(back\s*(to|facing|turned)|from behind|over[- ]?shoulder|rear view|silhouette|facing away)\b/i.test(videoPrompt)
           ? " IMPORTANT: Maintain the exact same camera angle as the source image. Do NOT rotate the subject to face the camera."
           : "";
@@ -125,14 +115,6 @@ serve(async (req) => {
         if (klingPayload.prompt) {
           klingPayload.prompt = `${klingPayload.prompt}${bindNote}`;
         }
-        if (klingPayload.multi_prompt && Array.isArray(klingPayload.multi_prompt)) {
-          klingPayload.multi_prompt = (klingPayload.multi_prompt as any[]).map((shot) => ({
-            ...shot,
-            prompt: `${shot.prompt}${bindNote}`,
-          }));
-        }
-        // Kling direct uses element_id from pre-created elements, but for now
-        // we pass the reference image URL as a subject reference
         klingPayload.subject_reference = [{ image: characterBindUrl }];
       }
 
