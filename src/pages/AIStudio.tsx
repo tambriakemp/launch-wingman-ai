@@ -847,16 +847,19 @@ const AIStudio = () => {
     let count = 0;
     for (const [index, media] of Object.entries(generatedMedia)) {
       const m = media as GeneratedMedia;
+      const idx = parseInt(index);
+      const overlays = textOverlays[idx] || [];
       if (m.imageUrl && !m.imageUrl.startsWith('data:')) {
         try {
-          const resp = await fetch(m.imageUrl);
-          const blob = await resp.blob();
-          zip.file(`scene-${parseInt(index) + 1}.png`, blob);
+          const blob = overlays.length > 0
+            ? await renderImageWithOverlays(m.imageUrl, overlays)
+            : await fetch(m.imageUrl).then(r => r.blob());
+          zip.file(`scene-${idx + 1}.png`, blob);
           count++;
         } catch { /* skip */ }
       } else if (m.imageUrl?.startsWith('data:')) {
         const imgData = m.imageUrl.split(',')[1];
-        zip.file(`scene-${parseInt(index) + 1}.jpg`, imgData, { base64: true });
+        zip.file(`scene-${idx + 1}.jpg`, imgData, { base64: true });
         count++;
       }
     }
