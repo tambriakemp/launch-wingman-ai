@@ -9,7 +9,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Loader2, HelpCircle, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -39,6 +39,7 @@ const AIStudio = () => {
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [videoCreditError, setVideoCreditError] = useState<{ message: string; code: string } | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [showSafetyTerms, setShowSafetyTerms] = useState(() => {
     return localStorage.getItem('ai-studio-terms-accepted') === 'true';
@@ -287,7 +288,11 @@ const AIStudio = () => {
               });
 
               if (error) throw error;
-              if (data?.error) throw new Error(data.error);
+              if (data?.error) {
+                const err = new Error(data.error);
+                (err as any).creditCode = data.code;
+                throw err;
+              }
               if (!data?.requestId) throw new Error("No request ID returned");
 
               console.log(`[AIStudio] Video submitted for scene ${task.index + 1}, requestId: ${data.requestId}`);
@@ -352,7 +357,17 @@ const AIStudio = () => {
                 ...(task.type === 'generate_video' ? { videoError: friendlyMsg } : { error: friendlyMsg })
               }
             }));
-            if (task.type === 'generate_video') {
+
+            // Show persistent banner for credit/key exhaustion errors
+            const creditCode = error?.creditCode;
+            if (creditCode === 'NO_CREDITS' || creditCode === 'PLATFORM_EXHAUSTED' || creditCode === 'USER_KEY_EXHAUSTED') {
+              const creditMessages: Record<string, string> = {
+                NO_CREDITS: "You're out of video credits. Purchase more credits in Settings → AI & Video, or add your own fal.ai API key for unlimited generation.",
+                PLATFORM_EXHAUSTED: "Platform video credits are temporarily unavailable. Add your own fal.ai API key in Settings → AI & Video to continue generating videos.",
+                USER_KEY_EXHAUSTED: "Your fal.ai API key has insufficient balance. Top up your account at fal.ai/dashboard/billing to continue.",
+              };
+              setVideoCreditError({ message: creditMessages[creditCode] || friendlyMsg, code: creditCode });
+            } else if (task.type === 'generate_video') {
               toast({ title: "Video Generation Failed", description: friendlyMsg, variant: "destructive" });
             } else {
               toast({ title: "Generation Failed", description: friendlyMsg, variant: "destructive" });
@@ -1138,6 +1153,29 @@ const AIStudio = () => {
                   </p>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Persistent credit/key error banner */}
+          {videoCreditError && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">{videoCreditError.message}</p>
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-sm text-destructive underline mt-1"
+                  onClick={() => window.location.href = '/app/settings'}
+                >
+                  Go to Settings
+                </Button>
+              </div>
+              <button
+                onClick={() => setVideoCreditError(null)}
+                className="text-destructive/70 hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 
