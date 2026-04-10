@@ -264,14 +264,26 @@ const SceneCard: React.FC<SceneCardProps> = ({
               </div>
             )}
             {media.videoUrl && !isVideoLoading && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
-                <button onClick={downloadVideo} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                  <Download className="h-3 w-3" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                  <RefreshCw className="h-3 w-3" />
-                </button>
-              </div>
+              <TooltipProvider delayDuration={300}>
+                <div className="absolute top-2 right-2 flex flex-col gap-2 z-40 pointer-events-none">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={downloadVideo} className="pointer-events-auto p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Download</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); handleGenerateVideoWithAutoSave(); }} className="pointer-events-auto p-2 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Regenerate</p></TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             )}
           </div>
         </div>
