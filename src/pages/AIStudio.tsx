@@ -1156,6 +1156,29 @@ const AIStudio = () => {
             </div>
           )}
 
+          {/* Persistent credit/key error banner */}
+          {videoCreditError && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">{videoCreditError.message}</p>
+                <Button
+                  variant="link"
+                  className="h-auto p-0 text-sm text-destructive underline mt-1"
+                  onClick={() => window.location.href = '/app/settings'}
+                >
+                  Go to Settings
+                </Button>
+              </div>
+              <button
+                onClick={() => setVideoCreditError(null)}
+                className="text-destructive/70 hover:text-destructive"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {/* Scene Workspace */}
           {storyboard ? (
             <>
