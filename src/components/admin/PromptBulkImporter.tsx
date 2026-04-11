@@ -646,7 +646,7 @@ export const PromptBulkImporter = () => {
                 </div>
                 <Progress value={(coverGenProgress.current / coverGenProgress.total) * 100} className="h-2" />
               </div>
-            )
+            )}
 
             {/* Prompt list */}
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
