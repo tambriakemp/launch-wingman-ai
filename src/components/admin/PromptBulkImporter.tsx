@@ -159,9 +159,14 @@ export const PromptBulkImporter = () => {
         .upload(path, file, { contentType: file.type });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("content-media").getPublicUrl(path);
-      setReferenceImageUrl(urlData.publicUrl);
-      setReferencePreview(URL.createObjectURL(file));
+      const publicUrl = urlData.publicUrl;
+      setReferenceImageUrl(publicUrl);
+      setReferencePreview(publicUrl);
       setAutoGenerateCovers(true);
+      // Persist to DB
+      await supabase
+        .from("integration_settings")
+        .upsert({ key: "prompt_reference_image", value: publicUrl }, { onConflict: "key" });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
