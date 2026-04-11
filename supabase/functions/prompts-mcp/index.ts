@@ -334,14 +334,14 @@ app.all("/*", async (c) => {
           headers: originalRequest.headers,
           body: JSON.stringify(body),
         });
-        return await transport.handleRequest(modifiedRequest, mcpServer);
+        return await transport.handleRequest(modifiedRequest);
       }
     } catch {
       // Not JSON or not a tool call — pass through
     }
   }
 
-  return await transport.handleRequest(originalRequest, mcpServer);
+  return await transport.handleRequest(originalRequest);
 });
 
 Deno.serve(app.fetch);
