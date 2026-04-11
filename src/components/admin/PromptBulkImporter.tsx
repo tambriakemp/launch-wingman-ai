@@ -25,6 +25,7 @@ const CategoryCombobox = ({ value, onChange }: { value: string; onChange: (v: st
         .from("content_vault_resources")
         .select("tags")
         .not("tags", "is", null)
+        .in("resource_type", ["image_prompt", "video_prompt"])
         .limit(1000);
       if (data) {
         const tagSet = new Set<string>();

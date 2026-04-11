@@ -120,16 +120,27 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-2.5-flash",
           messages: [
             {
               role: "system",
               content:
-                "You are a naming specialist for AI image generation prompts. Your job is to create SHORT, UNIQUE titles that describe the VISUAL SCENE depicted, NOT to summarize or echo the prompt text. Format: 'SETTING — OUTFIT (ANGLE)'. Rules: 1) SETTING = the physical environment/location (e.g., 'Rooftop bar', 'Sunlit vineyard', 'Rainy Tokyo street'). 2) OUTFIT = the primary clothing/look (e.g., 'Red slip dress', 'Oversized blazer'). 3) ANGLE = camera perspective (e.g., 'Full Body', 'Medium Shot', 'Close-Up'). NEVER copy or paraphrase the first sentence of the prompt. Instead, identify the key visual elements. Keep titles 4-8 words total. Each title must be distinct even if prompts are similar.",
+                "You are a naming specialist for AI image generation prompts. Read the ENTIRE prompt carefully. Your job is to create SHORT, UNIQUE titles that describe the VISUAL SCENE depicted. NEVER copy or paraphrase the opening sentence of the prompt.\n\nProcess:\n1) WHERE is the scene set? (e.g., 'Rooftop bar', 'Sunlit vineyard', 'Rainy Tokyo street')\n2) WHAT is the subject wearing? (e.g., 'Red slip dress', 'Oversized blazer')\n3) What CAMERA ANGLE is described? (e.g., 'Full Body', 'Medium Shot', 'Close-Up')\n\nFormat: 'SETTING — OUTFIT (ANGLE)'\nKeep titles 4-8 words total. Each title must be distinct even if prompts are similar.",
             },
             {
               role: "user",
-              content: `Create a unique descriptive title for each prompt below. Analyze the SCENE, CLOTHING, and CAMERA ANGLE described — do NOT repeat the prompt's wording. Use format: 'SETTING — OUTFIT (ANGLE)'.\n\n${promptTexts
+              content: `Here are examples of the expected output:
+
+Input: "A woman standing on a sunlit rooftop terrace overlooking the city skyline at golden hour. She is wearing a flowing red maxi dress with delicate gold jewelry. The wind gently moves her hair. Full body shot captured with natural lighting."
+Title: "Rooftop Terrace — Red Maxi Dress (Full Body)"
+
+Input: "Close-up portrait in a cozy coffee shop with warm ambient lighting. The subject wears an oversized cream knit sweater with minimal makeup. Shallow depth of field with bokeh background."
+Title: "Coffee Shop — Cream Sweater (Close-Up)"
+
+Input: "Medium shot of a woman walking through a vibrant flower market in the early morning. She is dressed in a linen jumpsuit with a straw tote bag. Soft diffused light."
+Title: "Flower Market — Linen Jumpsuit (Medium Shot)"
+
+Now generate titles for each prompt below using the same format. Do NOT echo the prompt's wording.\n\n${promptTexts
                 .map((p, i) => `[${i + 1}]: ${p.substring(0, 600)}`)
                 .join("\n\n")}`,
             },
