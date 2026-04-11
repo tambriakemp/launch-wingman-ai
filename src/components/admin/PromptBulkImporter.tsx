@@ -50,7 +50,78 @@ export const PromptBulkImporter = () => {
     throw new Error("AI Prompts subcategory not found");
   };
 
-  const handleParsePaste = async () => {
+  const handleReferenceUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please upload an image file", variant: "destructive" });
+      return;
+    }
+    setIsUploadingRef(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `reference-photos/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("content-media")
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("content-media").getPublicUrl(path);
+      setReferenceImageUrl(urlData.publicUrl);
+      setReferencePreview(URL.createObjectURL(file));
+      setAutoGenerateCovers(true);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUploadingRef(false);
+    }
+  };
+
+  const generateCoversForImported = async (resourceIds: string[], descriptions: string[]) => {
+    const total = resourceIds.length;
+    let current = 0;
+    let errors = 0;
+    setCoverGenProgress({ current: 0, total, errors: 0 });
+
+    for (let i = 0; i < total; i++) {
+      current = i + 1;
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-prompt-cover", {
+          body: { prompt: descriptions[i], referenceImageUrl: referenceImageUrl || undefined },
+        });
+        if (error) throw new Error(error.message);
+        if (data?.error) {
+          if (data.error.includes("Rate limit")) {
+            toast({ title: "Rate limit hit — pausing generation", variant: "destructive" });
+            errors++;
+            setCoverGenProgress({ current, total, errors });
+            break;
+          }
+          throw new Error(data.error);
+        }
+        const imageBase64 = data?.imageBase64;
+        if (!imageBase64) throw new Error("No image returned");
+        const resp = await fetch(imageBase64);
+        const blob = await resp.blob();
+        const uploadPath = `vault-covers/${resourceIds[i]}-${Date.now()}.png`;
+        const { error: uploadErr } = await supabase.storage
+          .from("content-media")
+          .upload(uploadPath, blob, { contentType: "image/png" });
+        if (uploadErr) throw uploadErr;
+        const { data: publicUrlData } = supabase.storage.from("content-media").getPublicUrl(uploadPath);
+        await supabase
+          .from("content_vault_resources")
+          .update({ cover_image_url: publicUrlData.publicUrl })
+          .eq("id", resourceIds[i]);
+      } catch (err: any) {
+        console.error(`Cover gen failed for ${resourceIds[i]}:`, err.message);
+        errors++;
+      }
+      setCoverGenProgress({ current, total, errors });
+      if (i < total - 1) await new Promise((r) => setTimeout(r, 3000));
+    }
+    setCoverGenProgress(null);
+    toast({ title: `Cover generation complete`, description: `${current - errors} of ${total} covers generated.` });
+  };
+
+
     if (!rawText.trim()) return;
     setIsParsing(true);
     try {
