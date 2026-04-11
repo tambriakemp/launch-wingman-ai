@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { Skeleton } from "@/components/ui/skeleton";
 import { BulkCoverGeneratorDialog } from "@/components/content-vault/BulkCoverGeneratorDialog";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2 } from "lucide-react";
+import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
