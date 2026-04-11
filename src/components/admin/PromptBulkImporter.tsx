@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,86 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText, Download, Table, ImagePlus, Camera } from "lucide-react";
+import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText, Download, Table, ImagePlus, Camera, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+const CategoryCombobox = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from("content_vault_resources")
+        .select("tags")
+        .not("tags", "is", null)
+        .limit(1000);
+      if (data) {
+        const tagSet = new Set<string>();
+        data.forEach((r) => (r.tags as string[])?.forEach((t) => tagSet.add(t)));
+        setExistingTags([...tagSet].sort((a, b) => a.localeCompare(b)));
+      }
+    };
+    fetchTags();
+  }, []);
+
+  const filtered = existingTags.filter((t) =>
+    t.toLowerCase().includes(search.toLowerCase())
+  );
+  const showCreate = search.trim() && !existingTags.some((t) => t.toLowerCase() === search.trim().toLowerCase());
+
+  return (
+    <div>
+      <label className="text-sm font-medium mb-1 block">Category (applied to all)</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between text-xs h-8 font-normal">
+            {value || "Select or create category..."}
+            <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search categories..." value={search} onValueChange={setSearch} className="text-xs h-8" />
+            <CommandList>
+              <CommandEmpty className="py-2 px-3 text-xs text-muted-foreground">
+                {search.trim() ? `No match — press enter or click below to create` : "Type to search..."}
+              </CommandEmpty>
+              <CommandGroup>
+                {showCreate && (
+                  <CommandItem
+                    value={`create-${search.trim()}`}
+                    onSelect={() => { onChange(search.trim()); setOpen(false); setSearch(""); }}
+                    className="text-xs"
+                  >
+                    <span className="text-primary font-medium">+ Create "{search.trim()}"</span>
+                  </CommandItem>
+                )}
+                {filtered.map((tag) => (
+                  <CommandItem
+                    key={tag}
+                    value={tag}
+                    onSelect={() => { onChange(tag); setOpen(false); setSearch(""); }}
+                    className="text-xs"
+                  >
+                    <Check className={cn("mr-2 h-3 w-3", value === tag ? "opacity-100" : "opacity-0")} />
+                    {tag}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <p className="text-xs text-muted-foreground mt-1">
+        Per-prompt categories from CSV are preserved. This adds an additional category to all prompts.
+      </p>
+    </div>
+  );
+};
 
 interface ParsedPrompt {
   title: string;
@@ -559,18 +638,10 @@ export const PromptBulkImporter = () => {
         ) : (
           <div className="space-y-4">
             {/* Category input */}
-            <div>
-              <label className="text-sm font-medium mb-1 block">Category (applied to all)</label>
-              <Input
-                value={globalCategory}
-                onChange={(e) => setGlobalCategory(e.target.value)}
-                placeholder="e.g., Portraits, Landscapes..."
-                className="text-xs h-8"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Per-prompt categories from CSV are preserved. This adds an additional category to all prompts.
-              </p>
-            </div>
+            <CategoryCombobox
+              value={globalCategory}
+              onChange={setGlobalCategory}
+            />
 
             {/* Reference Photo & Auto Cover Generation */}
             <div className="space-y-3 rounded-lg border border-border p-3">

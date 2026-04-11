@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
@@ -52,10 +52,25 @@ const ContentVaultCategory = () => {
   const { isAdmin } = useAdmin();
   const canAccessVault = hasAccess('content_vault');
 
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
-  const [selectedPromptType, setSelectedPromptType] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>(searchParams.get("sub") || "all");
+  const [selectedPromptType, setSelectedPromptType] = useState<string>(searchParams.get("type") || "all");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    const t = searchParams.get("tags");
+    return t ? t.split(",").filter(Boolean) : [];
+  });
+
+  // Sync filter state to URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedSubcategory !== "all") params.set("sub", selectedSubcategory);
+    if (selectedPromptType !== "all") params.set("type", selectedPromptType);
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
+    setSearchParams(params, { replace: true });
+  }, [selectedSubcategory, selectedPromptType, searchQuery, selectedTags, setSearchParams]);
   
   // Edit/Delete/Lightbox state
   const [editingResource, setEditingResource] = useState<Resource | null>(null);

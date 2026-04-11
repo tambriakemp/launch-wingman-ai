@@ -125,12 +125,12 @@ serve(async (req) => {
             {
               role: "system",
               content:
-                "You generate titles for AI image prompts using the format: 'SETTING — OUTFIT (ANGLE)'. Extract the location/setting, the main outfit or clothing item, and the camera angle from each prompt. Example: 'Music festival grounds — Sequin crop top (Full Body)'. Keep titles concise (4-8 words). Do NOT just repeat the first sentence of the prompt.",
+                "You are a naming specialist for AI image generation prompts. Your job is to create SHORT, UNIQUE titles that describe the VISUAL SCENE depicted, NOT to summarize or echo the prompt text. Format: 'SETTING — OUTFIT (ANGLE)'. Rules: 1) SETTING = the physical environment/location (e.g., 'Rooftop bar', 'Sunlit vineyard', 'Rainy Tokyo street'). 2) OUTFIT = the primary clothing/look (e.g., 'Red slip dress', 'Oversized blazer'). 3) ANGLE = camera perspective (e.g., 'Full Body', 'Medium Shot', 'Close-Up'). NEVER copy or paraphrase the first sentence of the prompt. Instead, identify the key visual elements. Keep titles 4-8 words total. Each title must be distinct even if prompts are similar.",
             },
             {
               role: "user",
-              content: `Generate a title in the format 'SETTING — OUTFIT (ANGLE)' for each of these ${promptTexts.length} prompts:\n\n${promptTexts
-                .map((p, i) => `Prompt ${i + 1}: ${p.substring(0, 500)}`)
+              content: `Create a unique descriptive title for each prompt below. Analyze the SCENE, CLOTHING, and CAMERA ANGLE described — do NOT repeat the prompt's wording. Use format: 'SETTING — OUTFIT (ANGLE)'.\n\n${promptTexts
+                .map((p, i) => `[${i + 1}]: ${p.substring(0, 600)}`)
                 .join("\n\n")}`,
             },
           ],
