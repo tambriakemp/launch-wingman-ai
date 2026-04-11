@@ -114,6 +114,22 @@ export const PromptBulkImporter = () => {
   const [coverGenProgress, setCoverGenProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load persisted reference image on mount
+  useEffect(() => {
+    const loadRef = async () => {
+      const { data } = await supabase
+        .from("integration_settings")
+        .select("value")
+        .eq("key", "prompt_reference_image")
+        .maybeSingle();
+      if (data?.value) {
+        setReferenceImageUrl(data.value);
+        setReferencePreview(data.value);
+      }
+    };
+    loadRef();
+  }, []);
+
   const ensureSubcategoryId = async () => {
     if (subcategoryId) return subcategoryId;
     const { data } = await supabase
@@ -143,9 +159,14 @@ export const PromptBulkImporter = () => {
         .upload(path, file, { contentType: file.type });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("content-media").getPublicUrl(path);
-      setReferenceImageUrl(urlData.publicUrl);
-      setReferencePreview(URL.createObjectURL(file));
+      const publicUrl = urlData.publicUrl;
+      setReferenceImageUrl(publicUrl);
+      setReferencePreview(publicUrl);
       setAutoGenerateCovers(true);
+      // Persist to DB
+      await supabase
+        .from("integration_settings")
+        .upsert({ key: "prompt_reference_image", value: publicUrl }, { onConflict: "key" });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
@@ -668,10 +689,14 @@ export const PromptBulkImporter = () => {
                     className="h-20 w-20 rounded-lg object-cover border border-border"
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setReferenceImageUrl(null);
                       setReferencePreview(null);
                       setAutoGenerateCovers(false);
+                      await supabase
+                        .from("integration_settings")
+                        .delete()
+                        .eq("key", "prompt_reference_image");
                     }}
                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
                   >
