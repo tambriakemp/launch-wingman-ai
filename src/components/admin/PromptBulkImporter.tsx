@@ -114,6 +114,22 @@ export const PromptBulkImporter = () => {
   const [coverGenProgress, setCoverGenProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load persisted reference image on mount
+  useEffect(() => {
+    const loadRef = async () => {
+      const { data } = await supabase
+        .from("integration_settings")
+        .select("value")
+        .eq("key", "prompt_reference_image")
+        .maybeSingle();
+      if (data?.value) {
+        setReferenceImageUrl(data.value);
+        setReferencePreview(data.value);
+      }
+    };
+    loadRef();
+  }, []);
+
   const ensureSubcategoryId = async () => {
     if (subcategoryId) return subcategoryId;
     const { data } = await supabase
