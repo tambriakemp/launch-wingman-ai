@@ -481,28 +481,40 @@ const ContentVaultCategory = () => {
               ))}
             </div>
           ) : filteredResources.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {filteredResources.map((resource, index) => (
-                <ResourceCard
-                  key={resource.id}
-                  id={resource.id}
-                  title={resource.title}
-                  description={resource.description}
-                  coverImageUrl={resource.cover_image_url}
-                  coverImageFit={(resource as any).cover_image_fit}
-                  resourceUrl={resource.resource_url}
-                  previewUrl={resource.preview_url}
-                  resourceType={resource.resource_type}
-                  tags={resource.tags}
-                  onClick={() => handleResourceClick(resource, index)}
-                  isSelectable={isSelectionMode}
-                  isSelected={selectedIds.has(resource.id)}
-                  onSelectionChange={() => toggleSelection(resource.id)}
-                  isAdmin={isAdmin}
-                  onEdit={() => setEditingResource(resource)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {filteredResources.slice(0, visibleCount).map((resource, index) => (
+                  <ResourceCard
+                    key={resource.id}
+                    id={resource.id}
+                    title={resource.title}
+                    description={resource.description}
+                    coverImageUrl={resource.cover_image_url}
+                    coverImageFit={(resource as any).cover_image_fit}
+                    resourceUrl={resource.resource_url}
+                    previewUrl={resource.preview_url}
+                    resourceType={resource.resource_type}
+                    tags={resource.tags}
+                    onClick={() => handleResourceClick(resource, index)}
+                    isSelectable={isSelectionMode}
+                    isSelected={selectedIds.has(resource.id)}
+                    onSelectionChange={() => toggleSelection(resource.id)}
+                    isAdmin={isAdmin}
+                    onEdit={() => setEditingResource(resource)}
+                  />
+                ))}
+              </div>
+              {visibleCount < filteredResources.length && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setVisibleCount(prev => prev + 48)}
+                  >
+                    Load More ({filteredResources.length - visibleCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-16">
               <p className="text-muted-foreground">
