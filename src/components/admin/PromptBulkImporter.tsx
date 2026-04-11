@@ -1,13 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText, Download, Table } from "lucide-react";
+import { Sparkles, Upload, ClipboardPaste, Loader2, X, Trash2, FileText, Download, Table, ImagePlus, Camera } from "lucide-react";
 
 interface ParsedPrompt {
   title: string;
@@ -26,6 +28,12 @@ export const PromptBulkImporter = () => {
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [promptType, setPromptType] = useState<"image_prompt" | "video_prompt">("image_prompt");
+  const [autoGenerateCovers, setAutoGenerateCovers] = useState(false);
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [isUploadingRef, setIsUploadingRef] = useState(false);
+  const [coverGenProgress, setCoverGenProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
+  const refFileInputRef = useRef<HTMLInputElement>(null);
 
   const ensureSubcategoryId = async () => {
     if (subcategoryId) return subcategoryId;
@@ -40,6 +48,77 @@ export const PromptBulkImporter = () => {
       return data.id;
     }
     throw new Error("AI Prompts subcategory not found");
+  };
+
+  const handleReferenceUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please upload an image file", variant: "destructive" });
+      return;
+    }
+    setIsUploadingRef(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `reference-photos/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("content-media")
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("content-media").getPublicUrl(path);
+      setReferenceImageUrl(urlData.publicUrl);
+      setReferencePreview(URL.createObjectURL(file));
+      setAutoGenerateCovers(true);
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUploadingRef(false);
+    }
+  };
+
+  const generateCoversForImported = async (resourceIds: string[], descriptions: string[]) => {
+    const total = resourceIds.length;
+    let current = 0;
+    let errors = 0;
+    setCoverGenProgress({ current: 0, total, errors: 0 });
+
+    for (let i = 0; i < total; i++) {
+      current = i + 1;
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-prompt-cover", {
+          body: { prompt: descriptions[i], referenceImageUrl: referenceImageUrl || undefined },
+        });
+        if (error) throw new Error(error.message);
+        if (data?.error) {
+          if (data.error.includes("Rate limit")) {
+            toast({ title: "Rate limit hit — pausing generation", variant: "destructive" });
+            errors++;
+            setCoverGenProgress({ current, total, errors });
+            break;
+          }
+          throw new Error(data.error);
+        }
+        const imageBase64 = data?.imageBase64;
+        if (!imageBase64) throw new Error("No image returned");
+        const resp = await fetch(imageBase64);
+        const blob = await resp.blob();
+        const uploadPath = `vault-covers/${resourceIds[i]}-${Date.now()}.png`;
+        const { error: uploadErr } = await supabase.storage
+          .from("content-media")
+          .upload(uploadPath, blob, { contentType: "image/png" });
+        if (uploadErr) throw uploadErr;
+        const { data: publicUrlData } = supabase.storage.from("content-media").getPublicUrl(uploadPath);
+        await supabase
+          .from("content_vault_resources")
+          .update({ cover_image_url: publicUrlData.publicUrl })
+          .eq("id", resourceIds[i]);
+      } catch (err: any) {
+        console.error(`Cover gen failed for ${resourceIds[i]}:`, err.message);
+        errors++;
+      }
+      setCoverGenProgress({ current, total, errors });
+      if (i < total - 1) await new Promise((r) => setTimeout(r, 3000));
+    }
+    setCoverGenProgress(null);
+    toast({ title: `Cover generation complete`, description: `${current - errors} of ${total} covers generated.` });
   };
 
   const handleParsePaste = async () => {
@@ -324,12 +403,23 @@ export const PromptBulkImporter = () => {
         };
       });
 
-      // Insert in batches of 500 to avoid Supabase row limits
+      // Insert in batches of 500 and collect IDs for cover generation
       const BATCH_SIZE = 500;
+      const insertedIds: string[] = [];
+      const insertedDescs: string[] = [];
       for (let i = 0; i < resources.length; i += BATCH_SIZE) {
         const batch = resources.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase.from("content_vault_resources").insert(batch);
+        const { data: inserted, error } = await supabase
+          .from("content_vault_resources")
+          .insert(batch)
+          .select("id, description");
         if (error) throw error;
+        if (inserted) {
+          for (const row of inserted) {
+            insertedIds.push(row.id);
+            insertedDescs.push(row.description || "");
+          }
+        }
       }
 
       const msg = skipped > 0
@@ -339,6 +429,14 @@ export const PromptBulkImporter = () => {
       setParsedPrompts([]);
       setRawText("");
       setPdfFile(null);
+
+      // Auto-generate covers if enabled and reference photo uploaded
+      if (autoGenerateCovers && referenceImageUrl && insertedIds.length > 0) {
+        setIsImporting(false);
+        toast({ title: "Starting cover generation...", description: `Generating covers for ${insertedIds.length} prompts using your reference photo.` });
+        await generateCoversForImported(insertedIds, insertedDescs);
+        return;
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
@@ -474,16 +572,81 @@ export const PromptBulkImporter = () => {
               </p>
             </div>
 
-            {/* Bulk cover image */}
-            <div>
-              <label className="text-sm font-medium mb-1 block">Bulk Cover Image URL (optional)</label>
-              <Input
-                value={bulkCoverImage}
-                onChange={(e) => setBulkCoverImage(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="text-xs"
+            {/* Reference Photo & Auto Cover Generation */}
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-primary" />
+                  <label className="text-sm font-medium">Auto-Generate Covers</label>
+                </div>
+                <Switch
+                  checked={autoGenerateCovers}
+                  onCheckedChange={setAutoGenerateCovers}
+                  disabled={!referenceImageUrl}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Upload a reference photo to generate AI cover images for each prompt during import.
+              </p>
+
+              {referencePreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={referencePreview}
+                    alt="Reference"
+                    className="h-20 w-20 rounded-lg object-cover border border-border"
+                  />
+                  <button
+                    onClick={() => {
+                      setReferenceImageUrl(null);
+                      setReferencePreview(null);
+                      setAutoGenerateCovers(false);
+                    }}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => refFileInputRef.current?.click()}
+                  disabled={isUploadingRef}
+                  className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-border rounded-lg text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors w-full justify-center"
+                >
+                  {isUploadingRef ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4" />
+                  )}
+                  {isUploadingRef ? "Uploading..." : "Upload reference photo"}
+                </button>
+              )}
+
+              <input
+                ref={refFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleReferenceUpload(file);
+                  e.target.value = "";
+                }}
               />
             </div>
+
+            {/* Cover generation progress */}
+            {coverGenProgress && (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Generating covers: {coverGenProgress.current} of {coverGenProgress.total}</span>
+                  {coverGenProgress.errors > 0 && (
+                    <span className="text-destructive">{coverGenProgress.errors} errors</span>
+                  )}
+                </div>
+                <Progress value={(coverGenProgress.current / coverGenProgress.total) * 100} className="h-2" />
+              </div>
+            )}
 
             {/* Prompt list */}
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
@@ -541,13 +704,16 @@ export const PromptBulkImporter = () => {
                 Start Over
               </Button>
               <div className="flex-1" />
-              <Button onClick={handleImportAll} disabled={isImporting}>
+              <Button onClick={handleImportAll} disabled={isImporting || !!coverGenProgress}>
                 {isImporting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                Import {parsedPrompts.length} Prompts
+                {autoGenerateCovers && referenceImageUrl
+                  ? `Import & Generate Covers (${parsedPrompts.length})`
+                  : `Import ${parsedPrompts.length} Prompts`
+                }
               </Button>
             </div>
           </div>
