@@ -121,7 +121,7 @@ export const PromptBulkImporter = () => {
     toast({ title: `Cover generation complete`, description: `${current - errors} of ${total} covers generated.` });
   };
 
-
+  const handleParsePaste = async () => {
     if (!rawText.trim()) return;
     setIsParsing(true);
     try {
