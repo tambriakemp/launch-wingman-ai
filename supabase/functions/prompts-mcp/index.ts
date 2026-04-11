@@ -62,8 +62,7 @@ const mcpServer = new McpServer({
   version: "1.0.0",
 });
 
-mcpServer.tool({
-  name: "list_prompts",
+mcpServer.tool("list_prompts", {
   description: "List AI prompts with pagination. Filter by tag or type (image_prompt/video_prompt).",
   inputSchema: {
     type: "object" as const,
@@ -108,8 +107,7 @@ mcpServer.tool({
   },
 });
 
-mcpServer.tool({
-  name: "search_prompts",
+mcpServer.tool("search_prompts", {
   description: "Search AI prompts by keyword in title or prompt text.",
   inputSchema: {
     type: "object" as const,
@@ -140,8 +138,7 @@ mcpServer.tool({
   },
 });
 
-mcpServer.tool({
-  name: "get_prompt",
+mcpServer.tool("get_prompt", {
   description: "Get a single AI prompt by ID with full details.",
   inputSchema: {
     type: "object" as const,
@@ -179,8 +176,7 @@ mcpServer.tool({
   },
 });
 
-mcpServer.tool({
-  name: "update_prompt",
+mcpServer.tool("update_prompt", {
   description: "Update an AI prompt's title, prompt text, and/or tags.",
   inputSchema: {
     type: "object" as const,
@@ -220,10 +216,8 @@ mcpServer.tool({
   },
 });
 
-mcpServer.tool({
-  name: "regenerate_cover",
-  description:
-    "Regenerate the cover image for an AI prompt using AI image generation. Optionally pass a reference photo URL for identity preservation.",
+mcpServer.tool("regenerate_cover", {
+  description: "Regenerate the cover image for an AI prompt using AI image generation. Optionally pass a reference photo URL for identity preservation.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -321,20 +315,18 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
 
 // MCP transport
 const transport = new StreamableHttpTransport();
+transport.bind(mcpServer);
 
 // Inject auth header into tool params from the request
 app.all("/*", async (c) => {
   const authHeader = c.req.header("Authorization") || null;
 
-  // Wrap the transport to inject authHeader into every tool call
   const originalRequest = c.req.raw.clone();
   
-  // Read and modify the body to inject authHeader
   if (c.req.method === "POST") {
     try {
       const body = await c.req.json();
       
-      // If it's a tools/call request, inject authHeader into the arguments
       if (body.method === "tools/call" && body.params?.arguments) {
         body.params.arguments.authHeader = authHeader;
         const modifiedRequest = new Request(originalRequest.url, {
@@ -342,14 +334,14 @@ app.all("/*", async (c) => {
           headers: originalRequest.headers,
           body: JSON.stringify(body),
         });
-        return await transport.handleRequest(modifiedRequest, mcpServer);
+        return await transport.handleRequest(modifiedRequest);
       }
     } catch {
       // Not JSON or not a tool call — pass through
     }
   }
 
-  return await transport.handleRequest(originalRequest, mcpServer);
+  return await transport.handleRequest(originalRequest);
 });
 
 Deno.serve(app.fetch);
