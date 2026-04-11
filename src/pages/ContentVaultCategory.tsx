@@ -88,6 +88,33 @@ const ContentVaultCategory = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showBulkCoverGenerator, setShowBulkCoverGenerator] = useState(false);
+  const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+
+  // Back to top & infinite scroll
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 48);
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
