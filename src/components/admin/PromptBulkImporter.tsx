@@ -704,13 +704,16 @@ export const PromptBulkImporter = () => {
                 Start Over
               </Button>
               <div className="flex-1" />
-              <Button onClick={handleImportAll} disabled={isImporting}>
+              <Button onClick={handleImportAll} disabled={isImporting || !!coverGenProgress}>
                 {isImporting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                Import {parsedPrompts.length} Prompts
+                {autoGenerateCovers && referenceImageUrl
+                  ? `Import & Generate Covers (${parsedPrompts.length})`
+                  : `Import ${parsedPrompts.length} Prompts`
+                }
               </Button>
             </div>
           </div>
