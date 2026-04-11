@@ -61,8 +61,9 @@ const ContentVaultCategory = () => {
     const t = searchParams.get("tags");
     return t ? t.split(",").filter(Boolean) : [];
   });
+  const [visibleCount, setVisibleCount] = useState(48);
 
-  // Sync filter state to URL params
+  // Sync filter state to URL params & reset pagination on filter change
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedSubcategory !== "all") params.set("sub", selectedSubcategory);
@@ -70,6 +71,7 @@ const ContentVaultCategory = () => {
     if (searchQuery) params.set("q", searchQuery);
     if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
     setSearchParams(params, { replace: true });
+    setVisibleCount(48);
   }, [selectedSubcategory, selectedPromptType, searchQuery, selectedTags, setSearchParams]);
   
   // Edit/Delete/Lightbox state
@@ -102,7 +104,7 @@ const ContentVaultCategory = () => {
     enabled: canAccessVault && !!categorySlug,
   });
 
-  // Fetch subcategories with resource counts
+  // Fetch subcategories with resource counts (using efficient count queries)
   const { data: subcategories } = useQuery({
     queryKey: ['content-vault-subcategories-with-counts', category?.id],
     queryFn: async () => {
@@ -115,31 +117,16 @@ const ContentVaultCategory = () => {
       if (subsError) throw subsError;
       if (!subs || subs.length === 0) return [];
 
-      // Get subcategory IDs
-      const subIds = subs.map(s => s.id);
-
-      // Fetch resource counts per subcategory (paginate to handle >1000)
-      let resourceCounts: { subcategory_id: string }[] = [];
-      let rcFrom = 0;
-      const RC_PAGE = 1000;
-      while (true) {
-        const { data: rcBatch, error: rcError } = await supabase
+      // Use parallel count queries instead of fetching all rows
+      const countsPromises = subs.map(sub =>
+        supabase
           .from('content_vault_resources')
-          .select('subcategory_id')
-          .in('subcategory_id', subIds)
-          .range(rcFrom, rcFrom + RC_PAGE - 1);
-        if (rcError) throw rcError;
-        if (!rcBatch || rcBatch.length === 0) break;
-        resourceCounts = resourceCounts.concat(rcBatch);
-        if (rcBatch.length < RC_PAGE) break;
-        rcFrom += RC_PAGE;
-      }
-
-      // Count resources per subcategory
-      const countMap = new Map<string, number>();
-      resourceCounts?.forEach(r => {
-        countMap.set(r.subcategory_id, (countMap.get(r.subcategory_id) || 0) + 1);
-      });
+          .select('id', { count: 'exact', head: true })
+          .eq('subcategory_id', sub.id)
+          .then(({ count }) => ({ id: sub.id, count: count || 0 }))
+      );
+      const counts = await Promise.all(countsPromises);
+      const countMap = new Map(counts.map(c => [c.id, c.count]));
 
       return subs.map(sub => ({
         ...sub,
@@ -495,28 +482,40 @@ const ContentVaultCategory = () => {
               ))}
             </div>
           ) : filteredResources.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {filteredResources.map((resource, index) => (
-                <ResourceCard
-                  key={resource.id}
-                  id={resource.id}
-                  title={resource.title}
-                  description={resource.description}
-                  coverImageUrl={resource.cover_image_url}
-                  coverImageFit={(resource as any).cover_image_fit}
-                  resourceUrl={resource.resource_url}
-                  previewUrl={resource.preview_url}
-                  resourceType={resource.resource_type}
-                  tags={resource.tags}
-                  onClick={() => handleResourceClick(resource, index)}
-                  isSelectable={isSelectionMode}
-                  isSelected={selectedIds.has(resource.id)}
-                  onSelectionChange={() => toggleSelection(resource.id)}
-                  isAdmin={isAdmin}
-                  onEdit={() => setEditingResource(resource)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {filteredResources.slice(0, visibleCount).map((resource, index) => (
+                  <ResourceCard
+                    key={resource.id}
+                    id={resource.id}
+                    title={resource.title}
+                    description={resource.description}
+                    coverImageUrl={resource.cover_image_url}
+                    coverImageFit={(resource as any).cover_image_fit}
+                    resourceUrl={resource.resource_url}
+                    previewUrl={resource.preview_url}
+                    resourceType={resource.resource_type}
+                    tags={resource.tags}
+                    onClick={() => handleResourceClick(resource, index)}
+                    isSelectable={isSelectionMode}
+                    isSelected={selectedIds.has(resource.id)}
+                    onSelectionChange={() => toggleSelection(resource.id)}
+                    isAdmin={isAdmin}
+                    onEdit={() => setEditingResource(resource)}
+                  />
+                ))}
+              </div>
+              {visibleCount < filteredResources.length && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setVisibleCount(prev => prev + 48)}
+                  >
+                    Load More ({filteredResources.length - visibleCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-16">
               <p className="text-muted-foreground">
