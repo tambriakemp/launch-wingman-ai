@@ -315,6 +315,7 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
 
 // MCP transport
 const transport = new StreamableHttpTransport();
+transport.bind(mcpServer);
 
 // Inject auth header into tool params from the request
 app.all("/*", async (c) => {
