@@ -28,7 +28,7 @@ interface VaultFiltersProps {
   isPromptCategory?: boolean;
   selectedPromptType?: string;
   onPromptTypeChange?: (value: string) => void;
-  resources?: { resource_type: string }[];
+  resources?: { resource_type: string; tags?: string[] }[];
 }
 
 // Format tag: remove hyphens and capitalize first letter of each word
@@ -128,16 +128,19 @@ export const VaultFilters = ({
               <SelectItem value="all">{isPromptCategory ? "Clear Categories" : "Clear Tags"}</SelectItem>
               {[...allTags]
                 .sort((a, b) => formatTagName(a).localeCompare(formatTagName(b)))
-                .map((tag) => (
-                  <SelectItem 
-                    key={tag} 
-                    value={tag}
-                    disabled={selectedTags.includes(tag)}
-                  >
-                    {formatTagName(tag)}
-                    {selectedTags.includes(tag) && " ✓"}
-                  </SelectItem>
-                ))}
+                .map((tag) => {
+                  const count = resources.filter(r => r.tags?.includes(tag)).length;
+                  return (
+                    <SelectItem 
+                      key={tag} 
+                      value={tag}
+                      disabled={selectedTags.includes(tag)}
+                    >
+                      {formatTagName(tag)} ({count})
+                      {selectedTags.includes(tag) && " ✓"}
+                    </SelectItem>
+                  );
+                })}
             </SelectContent>
           </Select>
         )}
