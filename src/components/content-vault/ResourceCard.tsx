@@ -154,6 +154,8 @@ export const ResourceCard = ({
             <img 
               src={displayImageUrl} 
               alt={title}
+              loading="lazy"
+              decoding="async"
               onLoad={() => setImageLoaded(true)}
               className={`w-full h-full group-hover:scale-105 transition-all duration-500 ${
                 coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'
