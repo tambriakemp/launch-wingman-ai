@@ -513,7 +513,7 @@ const ContentVaultCategory = () => {
             isPromptCategory={isAiPrompts}
             selectedPromptType={selectedPromptType}
             onPromptTypeChange={setSelectedPromptType}
-            resources={resources || []}
+            resources={(resources || []).map(r => ({ resource_type: r.resource_type, tags: r.tags }))}
           />
 
           {/* Resources Grid */}
