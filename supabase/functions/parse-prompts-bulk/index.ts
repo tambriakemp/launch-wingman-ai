@@ -173,8 +173,8 @@ serve(async (req) => {
       const toolCall = titleData.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall) {
         const parsed = JSON.parse(toolCall.function.arguments);
-        if (parsed.titles && parsed.titles.length === promptTexts.length) {
-          titles = parsed.titles;
+      if (parsed.titles && parsed.titles.length > 0) {
+          titles = promptTexts.map((_, i) => parsed.titles[i] || `Prompt ${i + 1}`);
         }
       }
     } else {
