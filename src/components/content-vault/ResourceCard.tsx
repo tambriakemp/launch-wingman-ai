@@ -144,7 +144,7 @@ export const ResourceCard = ({
       onClick={handleCardClick}
     >
       {/* Cover Image */}
-      <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-900/50 relative overflow-hidden">
+      <div className="aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-900/50 relative overflow-hidden">
         {displayImageUrl ? (
           <div className="relative w-full h-full">
             {!imageLoaded && (

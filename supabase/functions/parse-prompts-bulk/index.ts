@@ -125,12 +125,12 @@ serve(async (req) => {
             {
               role: "system",
               content:
-                "Generate short, descriptive titles (3-6 words) for AI image generation prompts. Each title should capture the essence/subject of the prompt.",
+                "You generate titles for AI image prompts using the format: 'SETTING — OUTFIT (ANGLE)'. Extract the location/setting, the main outfit or clothing item, and the camera angle from each prompt. Example: 'Music festival grounds — Sequin crop top (Full Body)'. Keep titles concise (4-8 words). Do NOT just repeat the first sentence of the prompt.",
             },
             {
               role: "user",
-              content: `Generate a short title (3-6 words) for each of these ${promptTexts.length} prompts:\n\n${promptTexts
-                .map((p, i) => `Prompt ${i + 1}: ${p.substring(0, 200)}`)
+              content: `Generate a title in the format 'SETTING — OUTFIT (ANGLE)' for each of these ${promptTexts.length} prompts:\n\n${promptTexts
+                .map((p, i) => `Prompt ${i + 1}: ${p.substring(0, 500)}`)
                 .join("\n\n")}`,
             },
           ],
