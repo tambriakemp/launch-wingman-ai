@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle, Copy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -300,7 +300,30 @@ export const ResourceCard = ({
 
       {/* Content */}
       <CardContent className="p-4">
-        <h3 className="font-semibold text-foreground mb-1 line-clamp-1">{title}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-foreground mb-1 line-clamp-1">{title}</h3>
+          {isAiPrompt && description && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(description);
+                      toast.success("Prompt copied!");
+                    }}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-xs">Copy prompt</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         {description && (
           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{description}</p>
         )}
