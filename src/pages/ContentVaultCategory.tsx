@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { Skeleton } from "@/components/ui/skeleton";
 import { BulkCoverGeneratorDialog } from "@/components/content-vault/BulkCoverGeneratorDialog";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2 } from "lucide-react";
+import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -395,6 +395,24 @@ const ContentVaultCategory = () => {
                       <CheckSquare className="w-4 h-4 mr-2" />
                       Select All ({filteredResources.length})
                     </Button>
+                    {isAiPrompts && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const noCoverIds = filteredResources
+                            .filter((r) => !r.cover_image_url)
+                            .map((r) => r.id);
+                          setSelectedIds(new Set(noCoverIds));
+                          if (noCoverIds.length === 0) {
+                            toast.info("All visible prompts already have covers");
+                          }
+                        }}
+                      >
+                        <ImagePlus className="w-4 h-4 mr-2" />
+                        Select No Cover ({filteredResources.filter((r) => !r.cover_image_url).length})
+                      </Button>
+                    )}
                     {isAiPrompts && (
                       <Button
                         variant="outline"
