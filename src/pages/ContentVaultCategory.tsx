@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,9 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BulkCoverGeneratorDialog } from "@/components/content-vault/BulkCoverGeneratorDialog";
+import { BulkTagDialog } from "@/components/content-vault/BulkTagDialog";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus } from "lucide-react";
+import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus, Tag, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
