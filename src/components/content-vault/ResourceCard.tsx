@@ -124,10 +124,10 @@ export const ResourceCard = ({
   };
 
   const handleCardClick = () => {
+    if (showImagePreview) return;
     if (isAiPrompt) {
       onClick();
     } else if (isCanvaLink) {
-      // Track Canva link access for popularity
       trackResourceAccess(id);
       window.open(resourceUrl, '_blank');
     } else {
