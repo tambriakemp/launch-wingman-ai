@@ -92,7 +92,7 @@ const ContentVaultCategory = () => {
 
   // Back to top & infinite scroll
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 600);
@@ -100,21 +100,26 @@ const ContentVaultCategory = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Infinite scroll observer
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 48);
-        }
-      },
-      { rootMargin: "400px" }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+  // Callback ref for infinite scroll sentinel – attaches observer whenever the sentinel mounts
+  const loadMoreRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (!node) return;
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setVisibleCount((prev) => prev + 48);
+          }
+        },
+        { rootMargin: "400px" }
+      );
+      observerRef.current.observe(node);
+    },
+    [] // stable – setVisibleCount is stable from useState
+  );
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
