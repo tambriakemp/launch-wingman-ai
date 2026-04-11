@@ -13,6 +13,7 @@ const VALID_ACTIONS = [
   "get_prompt",
   "update_prompt",
   "regenerate_cover",
+  "list_characters",
 ] as const;
 
 type Action = (typeof VALID_ACTIONS)[number];
