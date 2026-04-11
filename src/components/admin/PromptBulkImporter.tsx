@@ -283,16 +283,21 @@ export const PromptBulkImporter = () => {
       }
 
       const existingDescs = new Set(
-        allExisting.map((r) => (r.description || "").trim().toLowerCase())
+        allExisting.map((r) => (r.description || "").trim().toLowerCase().replace(/\s+/g, ' '))
       );
       const existingTitles = new Set(
         allExisting.map((r) => (r.title || "").trim().toLowerCase())
       );
 
+      const seenDescs = new Set<string>();
       const unique = parsedPrompts.filter((p) => {
-        const descKey = p.text.trim().toLowerCase();
+        const descKey = p.text.trim().toLowerCase().replace(/\s+/g, ' ');
         const titleKey = p.title.trim().toLowerCase();
-        return !existingDescs.has(descKey) && !existingTitles.has(titleKey);
+        if (existingDescs.has(descKey) || existingTitles.has(titleKey) || seenDescs.has(descKey)) {
+          return false;
+        }
+        seenDescs.add(descKey);
+        return true;
       });
 
       const skipped = parsedPrompts.length - unique.length;
