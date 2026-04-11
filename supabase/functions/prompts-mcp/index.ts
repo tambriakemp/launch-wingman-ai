@@ -62,10 +62,9 @@ const mcpServer = new McpServer({
   version: "1.0.0",
 });
 
-mcpServer.tool(
-  "list_prompts",
-  "List AI prompts with pagination. Filter by tag or type (image_prompt/video_prompt).",
-  {
+mcpServer.tool("list_prompts", {
+  description: "List AI prompts with pagination. Filter by tag or type (image_prompt/video_prompt).",
+  inputSchema: {
     type: "object" as const,
     properties: {
       limit: { type: "number", description: "Max results (default 50, max 200)" },
@@ -75,7 +74,7 @@ mcpServer.tool(
       authHeader: { type: "string", description: "Authorization header value" },
     },
   },
-  async (params: any) => {
+  handler: async (params: any) => {
     const { serviceClient } = await authenticate(params.authHeader || null);
     const limit = Math.min(params.limit || 50, 200);
     const offset = params.offset || 0;
@@ -105,13 +104,12 @@ mcpServer.tool(
         },
       ],
     };
-  }
-);
+  },
+});
 
-mcpServer.tool(
-  "search_prompts",
-  "Search AI prompts by keyword in title or prompt text.",
-  {
+mcpServer.tool("search_prompts", {
+  description: "Search AI prompts by keyword in title or prompt text.",
+  inputSchema: {
     type: "object" as const,
     properties: {
       query: { type: "string", description: "Search query" },
@@ -120,7 +118,7 @@ mcpServer.tool(
     },
     required: ["query"],
   },
-  async (params: any) => {
+  handler: async (params: any) => {
     const { serviceClient } = await authenticate(params.authHeader || null);
     const limit = Math.min(params.limit || 20, 100);
 
@@ -137,13 +135,12 @@ mcpServer.tool(
     return {
       content: [{ type: "text" as const, text: JSON.stringify({ prompts: (data || []).map(mapPrompt) }) }],
     };
-  }
-);
+  },
+});
 
-mcpServer.tool(
-  "get_prompt",
-  "Get a single AI prompt by ID with full details.",
-  {
+mcpServer.tool("get_prompt", {
+  description: "Get a single AI prompt by ID with full details.",
+  inputSchema: {
     type: "object" as const,
     properties: {
       promptId: { type: "string", description: "Prompt UUID" },
@@ -151,7 +148,7 @@ mcpServer.tool(
     },
     required: ["promptId"],
   },
-  async (params: any) => {
+  handler: async (params: any) => {
     const { serviceClient } = await authenticate(params.authHeader || null);
 
     const { data, error } = await serviceClient
@@ -176,13 +173,12 @@ mcpServer.tool(
         },
       ],
     };
-  }
-);
+  },
+});
 
-mcpServer.tool(
-  "update_prompt",
-  "Update an AI prompt's title, prompt text, and/or tags.",
-  {
+mcpServer.tool("update_prompt", {
+  description: "Update an AI prompt's title, prompt text, and/or tags.",
+  inputSchema: {
     type: "object" as const,
     properties: {
       promptId: { type: "string", description: "Prompt UUID" },
@@ -193,7 +189,7 @@ mcpServer.tool(
     },
     required: ["promptId"],
   },
-  async (params: any) => {
+  handler: async (params: any) => {
     const { serviceClient } = await authenticate(params.authHeader || null);
 
     const updates: Record<string, unknown> = {};
@@ -217,13 +213,12 @@ mcpServer.tool(
     return {
       content: [{ type: "text" as const, text: JSON.stringify({ success: true, prompt: mapPrompt(data) }) }],
     };
-  }
-);
+  },
+});
 
-mcpServer.tool(
-  "regenerate_cover",
-  "Regenerate the cover image for an AI prompt using AI image generation. Optionally pass a reference photo URL for identity preservation.",
-  {
+mcpServer.tool("regenerate_cover", {
+  description: "Regenerate the cover image for an AI prompt using AI image generation. Optionally pass a reference photo URL for identity preservation.",
+  inputSchema: {
     type: "object" as const,
     properties: {
       promptId: { type: "string", description: "Prompt UUID" },
@@ -232,7 +227,7 @@ mcpServer.tool(
     },
     required: ["promptId"],
   },
-  async (params: any) => {
+  handler: async (params: any) => {
     const { serviceClient } = await authenticate(params.authHeader || null);
 
     const { data: prompt, error: fetchErr } = await serviceClient
@@ -315,8 +310,8 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
         { type: "text" as const, text: JSON.stringify({ success: true, cover_image_url: urlData.publicUrl }) },
       ],
     };
-  }
-);
+  },
+});
 
 // MCP transport
 const transport = new StreamableHttpTransport();
@@ -325,15 +320,12 @@ const transport = new StreamableHttpTransport();
 app.all("/*", async (c) => {
   const authHeader = c.req.header("Authorization") || null;
 
-  // Wrap the transport to inject authHeader into every tool call
   const originalRequest = c.req.raw.clone();
   
-  // Read and modify the body to inject authHeader
   if (c.req.method === "POST") {
     try {
       const body = await c.req.json();
       
-      // If it's a tools/call request, inject authHeader into the arguments
       if (body.method === "tools/call" && body.params?.arguments) {
         body.params.arguments.authHeader = authHeader;
         const modifiedRequest = new Request(originalRequest.url, {
