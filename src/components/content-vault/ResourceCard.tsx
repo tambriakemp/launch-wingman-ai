@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle, Copy } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle, Copy, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
   const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
@@ -274,6 +275,20 @@ export const ResourceCard = ({
           </Button>
         )}
 
+        {/* Image Preview Button for AI Prompts with cover image */}
+        {isAiPrompt && displayImageUrl && (
+          <Button 
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImagePreview(true);
+            }}
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20"
+          >
+            <Eye className="w-5 h-5" />
+          </Button>
+        )}
+
         {/* Persistent Download Button - Always visible on mobile, hover on desktop */}
         {!isCanvaLink && !isAiPrompt && (
           <Button 
@@ -351,6 +366,27 @@ export const ResourceCard = ({
           </div>
         )}
       </CardContent>
+
+      {/* Image Preview Modal for AI Prompts */}
+      {showImagePreview && displayImageUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md cursor-zoom-out"
+          onClick={() => setShowImagePreview(false)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-muted-foreground z-[110]"
+            onClick={() => setShowImagePreview(false)}
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <img
+            src={displayImageUrl}
+            alt={title}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </Card>
   );
 };
