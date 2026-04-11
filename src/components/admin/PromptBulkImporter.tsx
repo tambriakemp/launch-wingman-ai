@@ -28,6 +28,12 @@ export const PromptBulkImporter = () => {
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [promptType, setPromptType] = useState<"image_prompt" | "video_prompt">("image_prompt");
+  const [autoGenerateCovers, setAutoGenerateCovers] = useState(false);
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [isUploadingRef, setIsUploadingRef] = useState(false);
+  const [coverGenProgress, setCoverGenProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
+  const refFileInputRef = useRef<HTMLInputElement>(null);
 
   const ensureSubcategoryId = async () => {
     if (subcategoryId) return subcategoryId;
