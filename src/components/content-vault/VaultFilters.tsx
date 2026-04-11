@@ -121,11 +121,11 @@ export const VaultFilters = ({
             <SelectTrigger className="w-full sm:w-48">
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-muted-foreground" />
-                <span>{selectedTags.length > 0 ? `${selectedTags.length} tag(s)` : "Filter by Tag"}</span>
+                <span>{selectedTags.length > 0 ? `${selectedTags.length} ${isPromptCategory ? 'category(ies)' : 'tag(s)'}` : isPromptCategory ? "Filter by Category" : "Filter by Tag"}</span>
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Clear Tags</SelectItem>
+              <SelectItem value="all">{isPromptCategory ? "Clear Categories" : "Clear Tags"}</SelectItem>
               {[...allTags]
                 .sort((a, b) => formatTagName(a).localeCompare(formatTagName(b)))
                 .map((tag) => (
