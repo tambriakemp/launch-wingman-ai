@@ -403,12 +403,23 @@ export const PromptBulkImporter = () => {
         };
       });
 
-      // Insert in batches of 500 to avoid Supabase row limits
+      // Insert in batches of 500 and collect IDs for cover generation
       const BATCH_SIZE = 500;
+      const insertedIds: string[] = [];
+      const insertedDescs: string[] = [];
       for (let i = 0; i < resources.length; i += BATCH_SIZE) {
         const batch = resources.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase.from("content_vault_resources").insert(batch);
+        const { data: inserted, error } = await supabase
+          .from("content_vault_resources")
+          .insert(batch)
+          .select("id, description");
         if (error) throw error;
+        if (inserted) {
+          for (const row of inserted) {
+            insertedIds.push(row.id);
+            insertedDescs.push(row.description || "");
+          }
+        }
       }
 
       const msg = skipped > 0
@@ -418,6 +429,14 @@ export const PromptBulkImporter = () => {
       setParsedPrompts([]);
       setRawText("");
       setPdfFile(null);
+
+      // Auto-generate covers if enabled and reference photo uploaded
+      if (autoGenerateCovers && referenceImageUrl && insertedIds.length > 0) {
+        setIsImporting(false);
+        toast({ title: "Starting cover generation...", description: `Generating covers for ${insertedIds.length} prompts using your reference photo.` });
+        await generateCoversForImported(insertedIds, insertedDescs);
+        return;
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
