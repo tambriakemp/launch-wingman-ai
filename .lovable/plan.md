@@ -1,30 +1,35 @@
 
 
-## Plan: Delete 5 Duplicate Prompts
+## Plan: Taller Cover Images & Better Title Generation
 
-### What's happening
-Out of 2,662 AI prompts, 5 exact duplicates were found (same prompt text). Each has 2 copies — the older one will be kept, the newer one deleted.
+### Problem 1: Cover images too short
+The `ResourceCard` uses `aspect-[4/3]` (landscape ratio) for the image container on line 147. This crops tall/portrait AI-generated images significantly.
 
-### Records to delete
-- `778d4853-5161-4e4a-be17-0a0958eabcdc` (duplicate of "African American woman with laptop")
-- `8fedb0cc-87ec-4024-9225-e5af3c17cb7b` (duplicate of "Dark studio microphone boom")
-- `a2f1eb7a-7806-46b7-90f6-0770c8a0f66f` (duplicate of "Office interior seated desk laptop")
-- `373edfcf-e6c9-4d2d-b39e-6689c64d6714` (duplicate of "Elegant tailored blazer dress model")
-- `32f362cf-ddfc-4c5a-8337-23eaf9e4d58a` (duplicate of "Aerial Crowd, Shoulder To Shoulder")
+### Problem 2: Titles use first sentence instead of scene analysis
+The title generation prompt (line 128-133 in `parse-prompts-bulk`) sends `p.substring(0, 200)` — just the first 200 chars of each prompt. The system prompt says "capture the essence/subject" but the model likely latches onto the opening text. The prompt needs to instruct the AI to identify the **scene, setting, and subject** rather than summarizing the first sentence. It should follow the existing `SETTING — OUTFIT (ANGLE)` convention.
 
-### Implementation
-One database migration with a single DELETE statement targeting these 5 IDs.
+### Changes
 
-```sql
-DELETE FROM content_vault_resources
-WHERE id IN (
-  '778d4853-5161-4e4a-be17-0a0958eabcdc',
-  '8fedb0cc-87ec-4024-9225-e5af3c17cb7b',
-  'a2f1eb7a-7806-46b7-90f6-0770c8a0f66f',
-  '373edfcf-e6c9-4d2d-b39e-6689c64d6714',
-  '32f362cf-ddfc-4c5a-8337-23eaf9e4d58a'
-);
+**1. `src/components/content-vault/ResourceCard.tsx` (line 147)**
+- Change `aspect-[4/3]` to `aspect-[3/4]` (portrait ratio) — this makes covers significantly taller, showing more of the generated image
+
+**2. `supabase/functions/parse-prompts-bulk/index.ts` (lines 126-134)**
+- Rewrite the system prompt to explicitly instruct the model to extract SETTING, OUTFIT, and ANGLE fields and format as `SETTING — OUTFIT (ANGLE)`
+- Increase substring from 200 to 500 chars to capture more prompt context (the key fields are often mid-prompt)
+
+### Technical Details
+
+```typescript
+// ResourceCard.tsx line 147
+<div className="aspect-[3/4] bg-gradient-to-br ...">
+
+// parse-prompts-bulk system prompt
+"You generate titles for AI image prompts using the format: 'SETTING — OUTFIT (ANGLE)'. "
++ "Extract the location/setting, the main outfit or clothing item, and the camera angle from each prompt. "
++ "Example: 'Music festival grounds — Sequin crop top (Full Body)'. "
++ "Keep titles concise (4-8 words). Do NOT just repeat the first sentence."
+
+// User message — increase context window
+`...${p.substring(0, 500)}...`
 ```
-
-No code changes needed — just the one migration.
 
