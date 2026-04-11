@@ -455,6 +455,15 @@ const ContentVaultCategory = () => {
                       </Button>
                     )}
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowBulkTagDialog(true)}
+                      disabled={selectedIds.size === 0}
+                    >
+                      <Tag className="w-4 h-4 mr-2" />
+                      Tags ({selectedIds.size})
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => setShowBulkDeleteConfirm(true)}
