@@ -1,41 +1,37 @@
 
+Fix the AI Prompts infinite scroll on the Content Vault page.
 
-## Plan: Expose Reference Images to MCP Server
+Problem
+- In `src/pages/ContentVaultCategory.tsx`, the `IntersectionObserver` effect runs only once (`[]` deps).
+- On first mount, the sentinel often is not in the DOM yet because resources are still loading and the sentinel is conditionally rendered.
+- That means `loadMoreRef.current` is `null`, no observer gets attached, and scrolling to the bottom never increases `visibleCount`.
 
-### Problem
-Claude can see the `regenerate_cover` tool accepts an optional `referenceImageUrl`, but has no way to discover what reference images exist. It needs a tool to list saved characters and their photo URLs so it can automatically pass the right reference when regenerating covers.
+Implementation
+1. Repair the observer setup in `src/pages/ContentVaultCategory.tsx`
+   - Change the infinite-scroll wiring so it attaches when the sentinel actually appears, not just on initial mount.
+   - Use either:
+     - a callback ref for the sentinel, or
+     - a `useEffect` that depends on the rendered sentinel state / `filteredResources.length` / `visibleCount`.
+   - Disconnect any previous observer before attaching a new one.
 
-### Solution
-Add a new `list_characters` MCP tool (and REST endpoint) that returns saved characters with their `photo_urls`. This lets Claude:
-1. Call `list_characters` to see available reference photos
-2. Pick the appropriate `photo_urls[0]` from a character
-3. Pass it as `referenceImageUrl` when calling `regenerate_cover`
+2. Make the load behavior safe
+   - Only increment `visibleCount` when `visibleCount < filteredResources.length`.
+   - Clamp the next value so it never overshoots.
+   - Keep the existing reset-to-48 behavior when filters change.
 
-### Changes
+3. Align scroll behavior with this page’s layout
+   - Since this page lives inside `ProjectLayout`, verify the observer is watching the correct scroll context.
+   - If needed, explicitly set the observer root to the scrollable content container so category-filtered views behave consistently.
 
-**`supabase/functions/prompts-mcp/index.ts`** — Add `list_characters` tool:
-- Queries the `characters` table via service client
-- Returns `id`, `name`, `niche`, `photo_urls` for each character
-- Optionally filter by user (but since this is API-key authenticated, returns all characters for the authenticated user's account)
+4. Verify the full flow
+   - Initial load of AI Prompts
+   - Selecting a category/tag and scrolling to the bottom
+   - Reaching multiple additional batches in a row
+   - Ensuring the sentinel disappears once all items are loaded
 
-**`supabase/functions/prompts-api/index.ts`** — Add `list_characters` REST action:
-- Same logic as MCP tool, exposed as REST for consistency
+Files to update
+- `src/pages/ContentVaultCategory.tsx`
+- Possibly `src/components/layout/ProjectLayout.tsx` only if the observer needs an explicit scroll root hook/id
 
-### New Tool Schema
-
-```
-list_characters
-  Description: "List saved characters with their reference photo URLs. Use these URLs as referenceImageUrl when calling regenerate_cover."
-  Input: { limit?: number }
-  Output: { characters: [{ id, name, niche, photo_urls }] }
-```
-
-### How Claude Will Use It
-
-1. `list_characters` → gets characters with photo URLs
-2. `regenerate_cover({ promptId: "...", referenceImageUrl: characters[0].photo_urls[0] })` → generates cover with identity preservation
-
-### Files Changed
-- `supabase/functions/prompts-mcp/index.ts` — add `list_characters` tool
-- `supabase/functions/prompts-api/index.ts` — add `list_characters` action
-
+Expected result
+- After selecting a category and reaching the bottom, the next batch of prompt cards loads automatically without needing a refresh or manual action.
