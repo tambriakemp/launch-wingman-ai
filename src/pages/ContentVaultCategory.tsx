@@ -63,7 +63,7 @@ const ContentVaultCategory = () => {
   });
   const [visibleCount, setVisibleCount] = useState(48);
 
-  // Sync filter state to URL params
+  // Sync filter state to URL params & reset pagination on filter change
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedSubcategory !== "all") params.set("sub", selectedSubcategory);
@@ -71,6 +71,7 @@ const ContentVaultCategory = () => {
     if (searchQuery) params.set("q", searchQuery);
     if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
     setSearchParams(params, { replace: true });
+    setVisibleCount(48);
   }, [selectedSubcategory, selectedPromptType, searchQuery, selectedTags, setSearchParams]);
   
   // Edit/Delete/Lightbox state
