@@ -372,6 +372,29 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
         result = { success: true, cover_image_url: coverUrl };
         break;
       }
+
+      case "list_characters": {
+        const limit = Math.min(body.limit || 20, 50);
+
+        const { data, error } = await serviceClient
+          .from("characters")
+          .select("id, name, niche, photo_urls")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+
+        if (error) throw error;
+
+        result = {
+          characters: (data || []).map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            niche: c.niche,
+            photo_urls: c.photo_urls || [],
+          })),
+        };
+        break;
+      }
     }
 
     return new Response(JSON.stringify(result), {
