@@ -689,10 +689,14 @@ export const PromptBulkImporter = () => {
                     className="h-20 w-20 rounded-lg object-cover border border-border"
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setReferenceImageUrl(null);
                       setReferencePreview(null);
                       setAutoGenerateCovers(false);
+                      await supabase
+                        .from("integration_settings")
+                        .delete()
+                        .eq("key", "prompt_reference_image");
                     }}
                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
                   >
