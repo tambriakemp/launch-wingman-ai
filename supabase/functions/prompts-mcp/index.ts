@@ -313,6 +313,46 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
   },
 });
 
+mcpServer.tool("list_characters", {
+  description: "List saved characters with their reference photo URLs. Use these URLs as referenceImageUrl when calling regenerate_cover for identity preservation.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      limit: { type: "number", description: "Max results (default 20)" },
+      authHeader: { type: "string", description: "Authorization header value" },
+    },
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const limit = Math.min(params.limit || 20, 50);
+
+    const { data, error } = await serviceClient
+      .from("characters")
+      .select("id, name, niche, photo_urls")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            characters: (data || []).map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              niche: c.niche,
+              photo_urls: c.photo_urls || [],
+            })),
+          }),
+        },
+      ],
+    };
+  },
+});
+
 // MCP transport
 const transport = new StreamableHttpTransport();
 transport.bind(mcpServer);
