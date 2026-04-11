@@ -572,16 +572,81 @@ export const PromptBulkImporter = () => {
               </p>
             </div>
 
-            {/* Bulk cover image */}
-            <div>
-              <label className="text-sm font-medium mb-1 block">Bulk Cover Image URL (optional)</label>
-              <Input
-                value={bulkCoverImage}
-                onChange={(e) => setBulkCoverImage(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="text-xs"
+            {/* Reference Photo & Auto Cover Generation */}
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-primary" />
+                  <label className="text-sm font-medium">Auto-Generate Covers</label>
+                </div>
+                <Switch
+                  checked={autoGenerateCovers}
+                  onCheckedChange={setAutoGenerateCovers}
+                  disabled={!referenceImageUrl}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Upload a reference photo to generate AI cover images for each prompt during import.
+              </p>
+
+              {referencePreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={referencePreview}
+                    alt="Reference"
+                    className="h-20 w-20 rounded-lg object-cover border border-border"
+                  />
+                  <button
+                    onClick={() => {
+                      setReferenceImageUrl(null);
+                      setReferencePreview(null);
+                      setAutoGenerateCovers(false);
+                    }}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => refFileInputRef.current?.click()}
+                  disabled={isUploadingRef}
+                  className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-border rounded-lg text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors w-full justify-center"
+                >
+                  {isUploadingRef ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4" />
+                  )}
+                  {isUploadingRef ? "Uploading..." : "Upload reference photo"}
+                </button>
+              )}
+
+              <input
+                ref={refFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleReferenceUpload(file);
+                  e.target.value = "";
+                }}
               />
             </div>
+
+            {/* Cover generation progress */}
+            {coverGenProgress && (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Generating covers: {coverGenProgress.current} of {coverGenProgress.total}</span>
+                  {coverGenProgress.errors > 0 && (
+                    <span className="text-destructive">{coverGenProgress.errors} errors</span>
+                  )}
+                </div>
+                <Progress value={(coverGenProgress.current / coverGenProgress.total) * 100} className="h-2" />
+              </div>
+            )
 
             {/* Prompt list */}
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
