@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,9 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BulkCoverGeneratorDialog } from "@/components/content-vault/BulkCoverGeneratorDialog";
+import { BulkTagDialog } from "@/components/content-vault/BulkTagDialog";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus } from "lucide-react";
+import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2, ImagePlus, Tag, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -87,6 +88,33 @@ const ContentVaultCategory = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showBulkCoverGenerator, setShowBulkCoverGenerator] = useState(false);
+  const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+
+  // Back to top & infinite scroll
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 48);
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -427,6 +455,15 @@ const ContentVaultCategory = () => {
                       </Button>
                     )}
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowBulkTagDialog(true)}
+                      disabled={selectedIds.size === 0}
+                    >
+                      <Tag className="w-4 h-4 mr-2" />
+                      Tags ({selectedIds.size})
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => setShowBulkDeleteConfirm(true)}
@@ -505,14 +542,10 @@ const ContentVaultCategory = () => {
                   />
                 ))}
               </div>
+              {/* Infinite scroll sentinel */}
               {visibleCount < filteredResources.length && (
-                <div className="flex justify-center mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={() => setVisibleCount(prev => prev + 48)}
-                  >
-                    Load More ({filteredResources.length - visibleCount} remaining)
-                  </Button>
+                <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
+                  <Skeleton className="h-8 w-32 rounded-lg" />
                 </div>
               )}
             </>
@@ -580,6 +613,26 @@ const ContentVaultCategory = () => {
         coverImageFit={(promptResource as any)?.cover_image_fit}
         tags={promptResource?.tags || []}
       />
+
+      {/* Bulk Tag Dialog */}
+      <BulkTagDialog
+        open={showBulkTagDialog}
+        onOpenChange={setShowBulkTagDialog}
+        selectedIds={selectedIds}
+        allTags={allTags}
+        resources={(resources || []).map(r => ({ id: r.id, tags: r.tags || [] }))}
+      />
+
+      {/* Back to Top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
     </ProjectLayout>
   );
 };
