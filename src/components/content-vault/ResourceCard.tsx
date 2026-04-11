@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle, Copy } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle, Copy, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
