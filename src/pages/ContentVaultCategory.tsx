@@ -61,6 +61,7 @@ const ContentVaultCategory = () => {
     const t = searchParams.get("tags");
     return t ? t.split(",").filter(Boolean) : [];
   });
+  const [visibleCount, setVisibleCount] = useState(48);
 
   // Sync filter state to URL params
   useEffect(() => {
