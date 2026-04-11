@@ -1,46 +1,43 @@
 
 
-## Plan: Generate Image Captions Feature
+## Plan: Fix Title Generation & Improve Duplicate Detection
 
-### What it does
-Adds a "Generate Image Captions" option to the Generate dropdown in the AI Studio toolbar. When clicked, a modal opens where the user selects one of their project offers (or types a custom topic). AI generates a sequential caption for each scene image — captions build on each other narratively (like the Instagram story screenshots) and the final one includes a CTA. The modal also checks if the user has completed Planning and Messaging tasks and shows an encouragement message if not.
+### Problem 1: Titles defaulting to "Prompt 1", "Prompt 2"
+The edge function `parse-prompts-bulk` generates titles via AI, but falls back to `Prompt ${i+1}` when the AI response doesn't match the expected count (line 176: `parsed.titles.length === promptTexts.length`). This strict equality check fails if the AI returns fewer/more titles than prompts. The fix: relax the check and map available titles, falling back only for missing ones.
 
-### UI Flow
-1. User clicks **Generate > Generate Image Captions** in the toolbar
-2. Modal opens with:
-   - A project selector dropdown (fetches user's projects)
-   - Once a project is selected, shows offer cards to pick from OR a freeform text input
-   - A notice if Planning/Messaging sections are incomplete ("Complete your Planning & Messaging tasks for better captions")
-   - "Generate Captions" button
-3. AI returns one caption per scene image; captions are displayed in the modal for review
-4. User can edit captions inline, then click "Apply to Images" which adds them as text overlays on the corresponding scene cards
+### Problem 2: Duplicate detection not catching same-text prompts
+The current dedup logic (line 292-295) uses `&&` — it only skips a prompt if BOTH the description AND the title match. Since auto-generated titles are often generic ("Prompt 1"), near-identical prompts with different titles slip through. Additionally, there's no within-batch deduplication (if the CSV itself has duplicates).
 
-### New Files
-- **`src/components/ai-studio/GenerateCaptionsModal.tsx`** — The modal component with project/offer selection, context status check, caption display and editing
-- **`supabase/functions/generate-image-captions/index.ts`** — Edge function that takes offer/topic context + planning/messaging data + scene count, returns an array of sequential captions with the last one containing a CTA
+### Changes
 
-### Modified Files
-- **`src/components/ai-studio/StoryboardToolbar.tsx`** — Add "Generate Image Captions" menu item to the Generate dropdown; add `onGenerateCaptions` prop
-- **`src/pages/AIStudio.tsx`** — Add state for the captions modal, pass handler to toolbar, handle applying captions as text overlays
+**1. `supabase/functions/parse-prompts-bulk/index.ts`**
+- Remove the strict length equality check on line 176 — use as many titles as the AI returns, fall back for the rest
+- Use a slightly better prompt to encourage unique, descriptive titles
 
-### Edge Function Logic
-The `generate-image-captions` function receives:
-- `topic` (offer title + description or custom text)
-- `sceneCount` (number of images)
-- `contextData` (niche, target audience, pain point, desired outcome, core message, transformation statement, talking points — whatever is available from planning/messaging tasks)
+**2. `src/components/admin/PromptBulkImporter.tsx`**
+- Change dedup filter from `&&` to `||` — skip if description OR title matches existing
+- Add within-batch dedup: track seen descriptions in a Set during the filter loop so duplicate prompts within the same import are also caught
+- Normalize whitespace in description comparison (collapse multiple spaces/newlines) for near-identical matching
 
-System prompt instructs the AI to:
-- Generate `sceneCount` captions that build upon each other like an Instagram story sequence
-- Keep each caption punchy (1-3 short sentences)
-- Make the final caption a clear CTA
-- Use the offer/messaging context for tone and relevance
+### Technical Details
+```typescript
+// Dedup fix — PromptBulkImporter.tsx line 292-296
+const seenDescs = new Set<string>();
+const unique = parsedPrompts.filter((p) => {
+  const descKey = p.text.trim().toLowerCase().replace(/\s+/g, ' ');
+  const titleKey = p.title.trim().toLowerCase();
+  if (existingDescs.has(descKey) || existingTitles.has(titleKey) || seenDescs.has(descKey)) {
+    return false;
+  }
+  seenDescs.add(descKey);
+  return true;
+});
+```
 
-### Context Check Logic
-In the modal, fetch `project_tasks` for the selected project where `task_id` starts with `planning_` or `messaging_` and check completion status. If fewer than ~50% are completed, show an info banner encouraging the user to complete them first for better results.
-
-### Technical Notes
-- Projects and offers are fetched client-side via Supabase queries in the modal
-- Planning/messaging context is fetched when a project is selected and passed to the edge function
-- Generated captions can be applied as text overlays using the existing `TextOverlay` system, or kept as separate caption metadata for display
-- The edge function uses Lovable AI (`google/gemini-3-flash-preview`)
+```typescript
+// Title fallback fix — edge function line 176
+if (parsed.titles && parsed.titles.length > 0) {
+  titles = promptTexts.map((_, i) => parsed.titles[i] || `Prompt ${i + 1}`);
+}
+```
 
