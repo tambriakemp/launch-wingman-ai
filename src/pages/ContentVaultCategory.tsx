@@ -542,14 +542,10 @@ const ContentVaultCategory = () => {
                   />
                 ))}
               </div>
+              {/* Infinite scroll sentinel */}
               {visibleCount < filteredResources.length && (
-                <div className="flex justify-center mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={() => setVisibleCount(prev => prev + 48)}
-                  >
-                    Load More ({filteredResources.length - visibleCount} remaining)
-                  </Button>
+                <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
+                  <Skeleton className="h-8 w-32 rounded-lg" />
                 </div>
               )}
             </>
@@ -617,6 +613,26 @@ const ContentVaultCategory = () => {
         coverImageFit={(promptResource as any)?.cover_image_fit}
         tags={promptResource?.tags || []}
       />
+
+      {/* Bulk Tag Dialog */}
+      <BulkTagDialog
+        open={showBulkTagDialog}
+        onOpenChange={setShowBulkTagDialog}
+        selectedIds={selectedIds}
+        allTags={allTags}
+        resources={(resources || []).map(r => ({ id: r.id, tags: r.tags || [] }))}
+      />
+
+      {/* Back to Top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
     </ProjectLayout>
   );
 };
