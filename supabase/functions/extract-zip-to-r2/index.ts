@@ -279,21 +279,27 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Derive subcategory from folder structure inside the zip (if any)
+        const folderSubcat = deriveFolderSubcategory(entryName);
+
         // Determine target category + subcategory
         let categorySlug: string;
         let subcategorySlug: string;
         if (kind === "image") {
           categorySlug = "photos";
-          subcategorySlug = defaultSubcategorySlug || "lifestyle";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "lifestyle";
         } else if (kind === "video") {
           categorySlug = "videos";
-          subcategorySlug = defaultSubcategorySlug || "general";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         } else if (kind === "preset") {
           categorySlug = "lightroom-presets";
-          subcategorySlug = detectPresetType(baseName);
+          subcategorySlug = folderSubcat || detectPresetType(baseName);
+        } else if (kind === "lut") {
+          categorySlug = "luts";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         } else {
           categorySlug = "business-documents";
-          subcategorySlug = defaultSubcategorySlug || "general";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         }
 
         const categoryId = categoriesBySlug.get(categorySlug);
@@ -336,6 +342,7 @@ Deno.serve(async (req) => {
           if (kind === "image") return `Photos/${subcategorySlug}/${timestamp}-${sanitized}`;
           if (kind === "video") return `Videos/${subcategorySlug}/${timestamp}-${sanitized}`;
           if (kind === "preset") return `lightroom-presets/${subcategorySlug}/${timestamp}-${sanitized}`;
+          if (kind === "lut") return `luts/${subcategorySlug}/${timestamp}-${sanitized}`;
           return `business-documents/${subcategorySlug}/${timestamp}-${sanitized}`;
         })();
 
@@ -347,10 +354,12 @@ Deno.serve(async (req) => {
           .order("position", { ascending: false }).limit(1);
         const nextPosition = (maxPosData?.[0]?.position ?? 0) + 1;
 
-        const resourceType = kind === "image" ? "image" : kind === "video" ? "video" : kind === "preset" ? "download" : "document";
+        const resourceType = (kind === "image" || kind === "video") ? kind : (kind === "document" ? "document" : "download");
         const tags = kind === "preset"
           ? ["lightroom", "preset", subcategorySlug, "zip-upload"]
-          : [kind, subcategorySlug, "zip-upload"];
+          : kind === "lut"
+            ? ["lut", "color-grading", subcategorySlug, "zip-upload"]
+            : [kind, subcategorySlug, "zip-upload"];
 
         const { error: insertErr } = await supabase
           .from("content_vault_resources")
