@@ -1,37 +1,49 @@
 
-Fix the AI Prompts infinite scroll on the Content Vault page.
 
-Problem
-- In `src/pages/ContentVaultCategory.tsx`, the `IntersectionObserver` effect runs only once (`[]` deps).
-- On first mount, the sentinel often is not in the DOM yet because resources are still loading and the sentinel is conditionally rendered.
-- That means `loadMoreRef.current` is `null`, no observer gets attached, and scrolling to the bottom never increases `visibleCount`.
+## Answers to your questions
 
-Implementation
-1. Repair the observer setup in `src/pages/ContentVaultCategory.tsx`
-   - Change the infinite-scroll wiring so it attaches when the sentinel actually appears, not just on initial mount.
-   - Use either:
-     - a callback ref for the sentinel, or
-     - a `useEffect` that depends on the rendered sentinel state / `filteredResources.length` / `visibleCount`.
-   - Disconnect any previous observer before attaching a new one.
+### 1. Does R2 upload check for duplicates? **No.**
 
-2. Make the load behavior safe
-   - Only increment `visibleCount` when `visibleCount < filteredResources.length`.
-   - Clamp the next value so it never overshoots.
-   - Keep the existing reset-to-48 behavior when filters change.
+Every upload path (`upload-photo-to-r2`, `upload-document-to-r2`, `upload-preset-to-r2`, `process-photo-batch`) prepends `Date.now()` to the filename, so the R2 key is always unique. `sync-r2-vault` only dedupes by exact `resource_url` already in the DB — but since uploads always produce a new URL, re-uploading the same photo silently creates duplicates in both R2 and the vault.
 
-3. Align scroll behavior with this page’s layout
-   - Since this page lives inside `ProjectLayout`, verify the observer is watching the correct scroll context.
-   - If needed, explicitly set the observer root to the scrollable content container so category-filtered views behave consistently.
+### 2. Can it extract zip files? **No.**
 
-4. Verify the full flow
-   - Initial load of AI Prompts
-   - Selecting a category/tag and scrolling to the bottom
-   - Reaching multiple additional batches in a row
-   - Ensuring the sentinel disappears once all items are loaded
+`.zip` is only accepted in the **Lightroom Presets** uploader, and the entire archive is stored as one downloadable file. Photos / videos / documents uploaders reject `.zip`, and nothing inside any zip is ever unpacked.
 
-Files to update
-- `src/pages/ContentVaultCategory.tsx`
-- Possibly `src/components/layout/ProjectLayout.tsx` only if the observer needs an explicit scroll root hook/id
+---
 
-Expected result
-- After selecting a category and reaching the bottom, the next batch of prompt cards loads automatically without needing a refresh or manual action.
+## Plan
+
+### Part A — Add duplicate detection to all R2 uploads
+
+1. **Schema**: add `content_hash` (text, indexed) to `content_vault_resources`.
+2. **In each upload edge function**, before signing the PUT to R2:
+   - Compute SHA-256 of the file bytes.
+   - Query `content_vault_resources` for an existing row with that hash.
+   - If found → skip R2 upload, return existing URL, mark as duplicate in response.
+   - If not → upload to R2 and store the hash on the new row.
+3. **UI**: `R2ManagementCard` shows `uploaded: N • skipped (duplicate): M` in the toast/progress.
+4. **Backfill**: optional follow-up — `sync-r2-vault` HEADs existing R2 keys to populate `content_hash` for legacy rows.
+
+Files: migration + `upload-photo-to-r2`, `upload-document-to-r2`, `upload-preset-to-r2`, `process-photo-batch`, `R2ManagementCard.tsx`.
+
+### Part B — Zip extraction for bulk upload
+
+1. **New edge function** `extract-zip-to-r2`:
+   - Accepts a `.zip` (chunked base64 or signed-URL upload for large files).
+   - Uses `npm:fflate` (Deno-compatible, lightweight) to iterate entries.
+   - Per entry: detect type (image / video / preset), compute SHA-256, dedupe-check (Part A), upload to R2, insert vault row.
+   - Folder structure inside the zip becomes the subcategory (e.g. `lifestyle/photo1.jpg` → `Photos/lifestyle/...`).
+   - Returns `{ uploaded, skipped, failed, files: [...] }`.
+2. **UI**: new "Bulk Upload from ZIP" collapsible section in `R2ManagementCard` with drag-drop, optional default-subcategory override, per-file progress, summary toast.
+
+Files: `supabase/functions/extract-zip-to-r2/index.ts` (new), `R2ManagementCard.tsx`.
+
+### Open decisions
+
+- **Subcategory rule for zips**: use folder names inside the zip, force a single chosen subcategory, or AI-categorize each file?
+- **Duplicate behavior**: skip silently with count, skip and link to existing resource, or always upload and just warn?
+- **Zip scope**: photos/videos only, or also include presets and documents?
+
+Reply with your preferences (or "use sensible defaults" — I'll go with folder-name subcategories, skip-with-count, and photos+videos+presets) and I'll implement.
+
