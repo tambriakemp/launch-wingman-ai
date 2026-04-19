@@ -268,7 +268,21 @@ export function R2ManagementCard() {
   const [isUploadStopped, setIsUploadStopped] = useState(false);
   const [isPresetStopped, setIsPresetStopped] = useState(false);
 
-  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets;
+  // ========================
+  // Bulk ZIP Upload State
+  // ========================
+  const [zipUploadOpen, setZipUploadOpen] = useState(false);
+  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [zipDefaultSubcategory, setZipDefaultSubcategory] = useState<string>("");
+  const [isUploadingZip, setIsUploadingZip] = useState(false);
+  const [zipResult, setZipResult] = useState<{
+    summary: { uploaded: number; skippedDuplicates: number; failed: number; unsupported: number; total: number };
+    files: Array<{ name: string; status: string; error?: string; category?: string; subcategory?: string }>;
+  } | null>(null);
+  const [isZipDragging, setIsZipDragging] = useState(false);
+  const zipInputRef = useRef<HTMLInputElement>(null);
+
+  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets || isUploadingZip;
 
   // ========================
   // Effects
