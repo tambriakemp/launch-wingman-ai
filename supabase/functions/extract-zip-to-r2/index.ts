@@ -72,6 +72,7 @@ function classify(name: string): FileKind {
   if (IMAGE_EXTS.includes(ext)) return "image";
   if (VIDEO_EXTS.includes(ext)) return "video";
   if (PRESET_EXTS.includes(ext)) return "preset";
+  if (LUT_EXTS.includes(ext)) return "lut";
   if (DOC_EXTS.includes(ext)) return "document";
   return "unknown";
 }
@@ -82,6 +83,30 @@ function detectPresetType(name: string): "mobile" | "desktop" {
   const ext = getExt(name);
   if (ext === "dng") return "mobile";
   return "desktop";
+}
+
+// Slugify a folder name into a subcategory slug
+function slugifyFolder(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// Derive subcategory slug from the folder path inside the zip.
+// Uses the deepest folder containing the file (e.g. "LUTs/Cinematic/Warm/file.cube" -> "warm").
+// Returns null if file is at the root.
+function deriveFolderSubcategory(entryPath: string): string | null {
+  const parts = entryPath.split("/").filter(Boolean);
+  if (parts.length < 2) return null; // file is at root
+  const folder = parts[parts.length - 2];
+  // Skip generic top-level wrappers
+  if (["luts", "lut", "presets", "preset", "photos", "videos", "documents"].includes(folder.toLowerCase())) {
+    if (parts.length < 3) return null;
+    return slugifyFolder(parts[parts.length - 3] || folder);
+  }
+  return slugifyFolder(folder);
 }
 
 // ---------- R2 upload ----------
