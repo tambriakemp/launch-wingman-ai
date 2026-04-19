@@ -163,6 +163,29 @@ Deno.serve(async (req) => {
     const fileData = base64ToArrayBuffer(imageBase64);
     const contentType = getContentType(filename);
 
+    // Dedup: hash file bytes and check for an existing resource with the same content_hash
+    const contentHash = await sha256(fileData);
+    const { data: existingDup } = await supabase
+      .from("content_vault_resources")
+      .select("id, resource_url, title, subcategory_id")
+      .eq("content_hash", contentHash)
+      .maybeSingle();
+
+    if (existingDup) {
+      console.log(`[UPLOAD-R2] Duplicate detected (hash=${contentHash.slice(0, 12)}…), skipping upload. Linking to ${existingDup.id}`);
+      return new Response(
+        JSON.stringify({
+          url: existingDup.resource_url,
+          key: null,
+          duplicate: true,
+          existingResourceId: existingDup.id,
+          existingTitle: existingDup.title,
+          contentHash,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log(`[UPLOAD-R2] Uploading to: ${objectKey} (${fileData.byteLength} bytes)`);
 
     // AWS Signature V4 for PUT request
@@ -235,9 +258,11 @@ Deno.serve(async (req) => {
     const publicUrl = `${r2PublicUrl.replace(/\/$/, "")}/${objectKey}`;
     console.log(`[UPLOAD-R2] Upload successful: ${publicUrl}`);
 
-    const result: UploadResult = {
+    const result: UploadResult & { duplicate?: boolean; contentHash?: string } = {
       url: publicUrl,
-      key: objectKey
+      key: objectKey,
+      duplicate: false,
+      contentHash,
     };
 
     return new Response(
