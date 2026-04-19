@@ -1086,6 +1086,71 @@ export function R2ManagementCard() {
   }, [presets]);
 
   // ========================
+  // Bulk ZIP Upload Handlers
+  // ========================
+
+  const handleZipFile = useCallback((file: File) => {
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      toast.error('Please select a .zip file');
+      return;
+    }
+    // Soft cap at 50MB to keep base64 payload reasonable for the function
+    const MAX_ZIP_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_ZIP_SIZE) {
+      toast.error(`ZIP too large (max ${Math.round(MAX_ZIP_SIZE / 1024 / 1024)}MB). Split it into smaller archives.`);
+      return;
+    }
+    setZipFile(file);
+    setZipResult(null);
+  }, []);
+
+  const handleZipDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsZipDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleZipFile(f);
+  }, [handleZipFile]);
+
+  const startZipExtraction = useCallback(async () => {
+    if (!zipFile) return;
+    setIsUploadingZip(true);
+    setZipResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Not authenticated');
+        setIsUploadingZip(false);
+        return;
+      }
+      const zipBase64 = await fileToBase64(zipFile);
+      const { data, error } = await supabase.functions.invoke('extract-zip-to-r2', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          zipBase64,
+          filename: zipFile.name,
+          defaultSubcategorySlug: zipDefaultSubcategory || undefined,
+        },
+      });
+      if (error) throw error;
+      setZipResult(data);
+      const s = data?.summary;
+      if (s) {
+        const parts: string[] = [];
+        if (s.uploaded > 0) parts.push(`${s.uploaded} uploaded`);
+        if (s.skippedDuplicates > 0) parts.push(`${s.skippedDuplicates} duplicates`);
+        if (s.failed > 0) parts.push(`${s.failed} failed`);
+        if (s.unsupported > 0) parts.push(`${s.unsupported} unsupported`);
+        toast.success(`ZIP processed: ${parts.join(' • ')}`);
+      }
+    } catch (err: any) {
+      console.error('ZIP extraction error:', err);
+      toast.error(err.message || 'Failed to process ZIP');
+    } finally {
+      setIsUploadingZip(false);
+    }
+  }, [zipFile, zipDefaultSubcategory]);
+
+  // ========================
   // Helper UI Functions
   // ========================
 
