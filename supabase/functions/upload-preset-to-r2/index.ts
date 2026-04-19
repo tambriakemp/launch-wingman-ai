@@ -189,6 +189,30 @@ Deno.serve(async (req) => {
     const fileData = base64ToArrayBuffer(fileBase64);
     const contentType = getContentType(filename);
 
+    // Dedup check
+    const contentHash = await sha256(fileData);
+    const { data: existingDup } = await supabase
+      .from("content_vault_resources")
+      .select("id, resource_url, title")
+      .eq("content_hash", contentHash)
+      .maybeSingle();
+
+    if (existingDup) {
+      console.log(`[UPLOAD-PRESET] Duplicate detected, linking to ${existingDup.id}`);
+      return new Response(
+        JSON.stringify({
+          url: existingDup.resource_url,
+          key: null,
+          presetType,
+          duplicate: true,
+          existingResourceId: existingDup.id,
+          existingTitle: existingDup.title,
+          contentHash,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log(`[UPLOAD-PRESET] Uploading to: ${objectKey} (${fileData.byteLength} bytes, type: ${presetType})`);
 
     // AWS Signature V4 for PUT request
@@ -331,6 +355,7 @@ Deno.serve(async (req) => {
         resource_url: publicUrl,
         resource_type: "download",
         position: nextPosition,
+        content_hash: contentHash,
         tags: ['lightroom', 'preset', presetType],
       })
       .select("id")
