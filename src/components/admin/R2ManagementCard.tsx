@@ -562,11 +562,16 @@ export function R2ManagementCard() {
       }
 
       if (!shouldStopUploadRef.current) {
+        const dupCount = photos.filter(p => (p as any).isDuplicate).length;
         if (failedIds.length === 0) {
-          toast.success(`Successfully uploaded ${completedIds.length} photos!`);
+          if (dupCount > 0) {
+            toast.success(`Uploaded ${completedIds.length - dupCount} new • ${dupCount} duplicate(s) skipped`);
+          } else {
+            toast.success(`Successfully uploaded ${completedIds.length} photos!`);
+          }
           localStorage.removeItem(UPLOAD_STORAGE_KEY);
         } else {
-          toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed`);
+          toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed${dupCount > 0 ? `, ${dupCount} duplicates` : ''}`);
         }
       }
     } catch (err) {
