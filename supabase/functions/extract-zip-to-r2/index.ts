@@ -45,15 +45,19 @@ function cleanTitle(filename: string): string {
 const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
 const VIDEO_EXTS = ["mp4", "mov", "webm", "m4v", "avi"];
 const PRESET_EXTS = ["dng", "xmp", "lrtemplate"];
+const LUT_EXTS = ["cube", "3dl", "look", "lut", "mga", "m3d", "csp", "vlt"];
 const DOC_EXTS = ["pdf", "docx", "doc", "rtf"];
 
-type FileKind = "image" | "video" | "preset" | "document" | "unknown";
+type FileKind = "image" | "video" | "preset" | "lut" | "document" | "unknown";
 
 const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
   webp: "image/webp", bmp: "image/bmp", svg: "image/svg+xml",
   mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", m4v: "video/x-m4v", avi: "video/x-msvideo",
   dng: "image/x-adobe-dng", xmp: "application/rdf+xml", lrtemplate: "application/octet-stream",
+  cube: "application/octet-stream", "3dl": "application/octet-stream", look: "application/octet-stream",
+  lut: "application/octet-stream", mga: "application/octet-stream", m3d: "application/octet-stream",
+  csp: "application/octet-stream", vlt: "application/octet-stream",
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   doc: "application/msword",
