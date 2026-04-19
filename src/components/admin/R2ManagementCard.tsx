@@ -546,8 +546,9 @@ export function R2ManagementCard() {
                 status: "done" as const,
                 finalUrl: result.url,
                 suggestedCategory: result.subcategory,
-                confidence: result.confidence || 0
-              };
+                confidence: result.confidence || 0,
+                isDuplicate: !!result.duplicate,
+              } as PendingPhoto & { isDuplicate?: boolean };
             } else {
               failedIds.push(p.id);
               return { ...p, status: "error" as const, error: result.error };
