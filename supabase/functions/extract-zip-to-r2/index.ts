@@ -45,15 +45,19 @@ function cleanTitle(filename: string): string {
 const IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
 const VIDEO_EXTS = ["mp4", "mov", "webm", "m4v", "avi"];
 const PRESET_EXTS = ["dng", "xmp", "lrtemplate"];
+const LUT_EXTS = ["cube", "3dl", "look", "lut", "mga", "m3d", "csp", "vlt"];
 const DOC_EXTS = ["pdf", "docx", "doc", "rtf"];
 
-type FileKind = "image" | "video" | "preset" | "document" | "unknown";
+type FileKind = "image" | "video" | "preset" | "lut" | "document" | "unknown";
 
 const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
   webp: "image/webp", bmp: "image/bmp", svg: "image/svg+xml",
   mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", m4v: "video/x-m4v", avi: "video/x-msvideo",
   dng: "image/x-adobe-dng", xmp: "application/rdf+xml", lrtemplate: "application/octet-stream",
+  cube: "application/octet-stream", "3dl": "application/octet-stream", look: "application/octet-stream",
+  lut: "application/octet-stream", mga: "application/octet-stream", m3d: "application/octet-stream",
+  csp: "application/octet-stream", vlt: "application/octet-stream",
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   doc: "application/msword",
@@ -68,6 +72,7 @@ function classify(name: string): FileKind {
   if (IMAGE_EXTS.includes(ext)) return "image";
   if (VIDEO_EXTS.includes(ext)) return "video";
   if (PRESET_EXTS.includes(ext)) return "preset";
+  if (LUT_EXTS.includes(ext)) return "lut";
   if (DOC_EXTS.includes(ext)) return "document";
   return "unknown";
 }
@@ -78,6 +83,30 @@ function detectPresetType(name: string): "mobile" | "desktop" {
   const ext = getExt(name);
   if (ext === "dng") return "mobile";
   return "desktop";
+}
+
+// Slugify a folder name into a subcategory slug
+function slugifyFolder(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// Derive subcategory slug from the folder path inside the zip.
+// Uses the deepest folder containing the file (e.g. "LUTs/Cinematic/Warm/file.cube" -> "warm").
+// Returns null if file is at the root.
+function deriveFolderSubcategory(entryPath: string): string | null {
+  const parts = entryPath.split("/").filter(Boolean);
+  if (parts.length < 2) return null; // file is at root
+  const folder = parts[parts.length - 2];
+  // Skip generic top-level wrappers
+  if (["luts", "lut", "presets", "preset", "photos", "videos", "documents"].includes(folder.toLowerCase())) {
+    if (parts.length < 3) return null;
+    return slugifyFolder(parts[parts.length - 3] || folder);
+  }
+  return slugifyFolder(folder);
 }
 
 // ---------- R2 upload ----------
@@ -250,21 +279,27 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Derive subcategory from folder structure inside the zip (if any)
+        const folderSubcat = deriveFolderSubcategory(entryName);
+
         // Determine target category + subcategory
         let categorySlug: string;
         let subcategorySlug: string;
         if (kind === "image") {
           categorySlug = "photos";
-          subcategorySlug = defaultSubcategorySlug || "lifestyle";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "lifestyle";
         } else if (kind === "video") {
           categorySlug = "videos";
-          subcategorySlug = defaultSubcategorySlug || "general";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         } else if (kind === "preset") {
           categorySlug = "lightroom-presets";
-          subcategorySlug = detectPresetType(baseName);
+          subcategorySlug = folderSubcat || detectPresetType(baseName);
+        } else if (kind === "lut") {
+          categorySlug = "luts";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         } else {
           categorySlug = "business-documents";
-          subcategorySlug = defaultSubcategorySlug || "general";
+          subcategorySlug = folderSubcat || defaultSubcategorySlug || "general";
         }
 
         const categoryId = categoriesBySlug.get(categorySlug);
@@ -307,6 +342,7 @@ Deno.serve(async (req) => {
           if (kind === "image") return `Photos/${subcategorySlug}/${timestamp}-${sanitized}`;
           if (kind === "video") return `Videos/${subcategorySlug}/${timestamp}-${sanitized}`;
           if (kind === "preset") return `lightroom-presets/${subcategorySlug}/${timestamp}-${sanitized}`;
+          if (kind === "lut") return `luts/${subcategorySlug}/${timestamp}-${sanitized}`;
           return `business-documents/${subcategorySlug}/${timestamp}-${sanitized}`;
         })();
 
@@ -318,10 +354,12 @@ Deno.serve(async (req) => {
           .order("position", { ascending: false }).limit(1);
         const nextPosition = (maxPosData?.[0]?.position ?? 0) + 1;
 
-        const resourceType = kind === "image" ? "image" : kind === "video" ? "video" : kind === "preset" ? "download" : "document";
+        const resourceType = (kind === "image" || kind === "video") ? kind : (kind === "document" ? "document" : "download");
         const tags = kind === "preset"
           ? ["lightroom", "preset", subcategorySlug, "zip-upload"]
-          : [kind, subcategorySlug, "zip-upload"];
+          : kind === "lut"
+            ? ["lut", "color-grading", subcategorySlug, "zip-upload"]
+            : [kind, subcategorySlug, "zip-upload"];
 
         const { error: insertErr } = await supabase
           .from("content_vault_resources")

@@ -9,6 +9,7 @@ import {
   ShoppingBag, 
   Type,
   Folder,
+  Palette,
   LucideIcon
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ const CATEGORY_ICONS: Record<string, CategoryIconConfig> = {
   'videos': { icon: Video, color: 'text-red-500' },
   'lightroom-presets': { icon: Sliders, color: 'text-pink-500' },
   'presets': { icon: Sliders, color: 'text-pink-500' },
+  'luts': { icon: Palette, color: 'text-violet-500' },
   'etsy': { icon: ShoppingBag, color: 'text-amber-500' },
   'etsy-templates': { icon: ShoppingBag, color: 'text-amber-500' },
   'fonts': { icon: Type, color: 'text-cyan-500' },
