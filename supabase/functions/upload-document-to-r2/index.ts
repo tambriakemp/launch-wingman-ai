@@ -335,6 +335,32 @@ Deno.serve(async (req) => {
     const contentType = getContentType(filename);
     const fileExtension = getFileExtension(filename);
 
+    // Dedup check based on content hash
+    const contentHash = await sha256(fileData);
+    const { data: existingDup } = await supabase
+      .from("content_vault_resources")
+      .select("id, resource_url, title, preview_url, cover_image_url")
+      .eq("content_hash", contentHash)
+      .maybeSingle();
+
+    if (existingDup) {
+      console.log(`[UPLOAD-DOCUMENT] Duplicate detected, linking to ${existingDup.id}`);
+      return new Response(
+        JSON.stringify({
+          url: existingDup.resource_url,
+          key: null,
+          previewUrl: existingDup.preview_url,
+          thumbnailUrl: existingDup.cover_image_url,
+          resourceId: existingDup.id,
+          duplicate: true,
+          existingResourceId: existingDup.id,
+          existingTitle: existingDup.title,
+          contentHash,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log(`[UPLOAD-DOCUMENT] Uploading to: ${objectKey} (${fileData.byteLength} bytes)`);
 
     // AWS Signature V4 for PUT request
@@ -622,6 +648,7 @@ Deno.serve(async (req) => {
         resource_type: "document",
         cover_image_url: thumbnailUrl,
         position: nextPosition,
+        content_hash: contentHash,
         tags: ['document', fileExtension, subcategory],
       })
       .select("id")

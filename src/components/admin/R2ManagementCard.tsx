@@ -268,7 +268,21 @@ export function R2ManagementCard() {
   const [isUploadStopped, setIsUploadStopped] = useState(false);
   const [isPresetStopped, setIsPresetStopped] = useState(false);
 
-  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets;
+  // ========================
+  // Bulk ZIP Upload State
+  // ========================
+  const [zipUploadOpen, setZipUploadOpen] = useState(false);
+  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [zipDefaultSubcategory, setZipDefaultSubcategory] = useState<string>("");
+  const [isUploadingZip, setIsUploadingZip] = useState(false);
+  const [zipResult, setZipResult] = useState<{
+    summary: { uploaded: number; skippedDuplicates: number; failed: number; unsupported: number; total: number };
+    files: Array<{ name: string; status: string; error?: string; category?: string; subcategory?: string }>;
+  } | null>(null);
+  const [isZipDragging, setIsZipDragging] = useState(false);
+  const zipInputRef = useRef<HTMLInputElement>(null);
+
+  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets || isUploadingZip;
 
   // ========================
   // Effects
@@ -546,8 +560,9 @@ export function R2ManagementCard() {
                 status: "done" as const,
                 finalUrl: result.url,
                 suggestedCategory: result.subcategory,
-                confidence: result.confidence || 0
-              };
+                confidence: result.confidence || 0,
+                isDuplicate: !!result.duplicate,
+              } as PendingPhoto & { isDuplicate?: boolean };
             } else {
               failedIds.push(p.id);
               return { ...p, status: "error" as const, error: result.error };
@@ -562,11 +577,16 @@ export function R2ManagementCard() {
       }
 
       if (!shouldStopUploadRef.current) {
+        const dupCount = photos.filter(p => (p as any).isDuplicate).length;
         if (failedIds.length === 0) {
-          toast.success(`Successfully uploaded ${completedIds.length} photos!`);
+          if (dupCount > 0) {
+            toast.success(`Uploaded ${completedIds.length - dupCount} new • ${dupCount} duplicate(s) skipped`);
+          } else {
+            toast.success(`Successfully uploaded ${completedIds.length} photos!`);
+          }
           localStorage.removeItem(UPLOAD_STORAGE_KEY);
         } else {
-          toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed`);
+          toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed${dupCount > 0 ? `, ${dupCount} duplicates` : ''}`);
         }
       }
     } catch (err) {
@@ -1066,6 +1086,71 @@ export function R2ManagementCard() {
   }, [presets]);
 
   // ========================
+  // Bulk ZIP Upload Handlers
+  // ========================
+
+  const handleZipFile = useCallback((file: File) => {
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      toast.error('Please select a .zip file');
+      return;
+    }
+    // Soft cap at 50MB to keep base64 payload reasonable for the function
+    const MAX_ZIP_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_ZIP_SIZE) {
+      toast.error(`ZIP too large (max ${Math.round(MAX_ZIP_SIZE / 1024 / 1024)}MB). Split it into smaller archives.`);
+      return;
+    }
+    setZipFile(file);
+    setZipResult(null);
+  }, []);
+
+  const handleZipDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsZipDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleZipFile(f);
+  }, [handleZipFile]);
+
+  const startZipExtraction = useCallback(async () => {
+    if (!zipFile) return;
+    setIsUploadingZip(true);
+    setZipResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Not authenticated');
+        setIsUploadingZip(false);
+        return;
+      }
+      const zipBase64 = await fileToBase64(zipFile);
+      const { data, error } = await supabase.functions.invoke('extract-zip-to-r2', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          zipBase64,
+          filename: zipFile.name,
+          defaultSubcategorySlug: zipDefaultSubcategory || undefined,
+        },
+      });
+      if (error) throw error;
+      setZipResult(data);
+      const s = data?.summary;
+      if (s) {
+        const parts: string[] = [];
+        if (s.uploaded > 0) parts.push(`${s.uploaded} uploaded`);
+        if (s.skippedDuplicates > 0) parts.push(`${s.skippedDuplicates} duplicates`);
+        if (s.failed > 0) parts.push(`${s.failed} failed`);
+        if (s.unsupported > 0) parts.push(`${s.unsupported} unsupported`);
+        toast.success(`ZIP processed: ${parts.join(' • ')}`);
+      }
+    } catch (err: any) {
+      console.error('ZIP extraction error:', err);
+      toast.error(err.message || 'Failed to process ZIP');
+    } finally {
+      setIsUploadingZip(false);
+    }
+  }, [zipFile, zipDefaultSubcategory]);
+
+  // ========================
   // Helper UI Functions
   // ========================
 
@@ -1536,8 +1621,115 @@ export function R2ManagementCard() {
         <div className="border-t" />
 
         {/* ======================== */}
-        {/* SECTION 4: Document Upload */}
+        {/* SECTION 3b: Bulk Upload from ZIP */}
         {/* ======================== */}
+        <Collapsible open={zipUploadOpen} onOpenChange={setZipUploadOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-3 h-auto">
+              <div className="flex items-center gap-2">
+                <FileArchive className="w-4 h-4 text-purple-500" />
+                <span className="font-medium">Bulk Upload from ZIP</span>
+                <span className="text-xs text-muted-foreground">Photos, videos, presets, documents</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${zipUploadOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-3 pb-4 space-y-4">
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer mt-2 ${
+                isZipDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setIsZipDragging(true); }}
+              onDragLeave={() => setIsZipDragging(false)}
+              onDrop={handleZipDrop}
+              onClick={() => zipInputRef.current?.click()}
+            >
+              <input
+                ref={zipInputRef}
+                type="file"
+                className="hidden"
+                accept=".zip"
+                onChange={(e) => e.target.files?.[0] && handleZipFile(e.target.files[0])}
+              />
+              <FileArchive className={`w-8 h-8 mx-auto mb-2 ${isZipDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+              {zipFile ? (
+                <>
+                  <p className="text-sm font-medium">{zipFile.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{(zipFile.size / 1024 / 1024).toFixed(2)} MB • Click to choose another</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">Drop a ZIP file here or click to browse</p>
+                  <p className="text-xs text-muted-foreground mt-1">Photos, videos, presets, documents (max 50MB)</p>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Default subcategory for photos/videos/documents</Label>
+              <Input
+                value={zipDefaultSubcategory}
+                onChange={(e) => setZipDefaultSubcategory(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                placeholder="e.g. lifestyle, workspace, general"
+              />
+              <p className="text-xs text-muted-foreground">
+                Presets are auto-routed to mobile/desktop. Subcategory will be created if it doesn't exist.
+              </p>
+            </div>
+
+            <Button
+              onClick={startZipExtraction}
+              disabled={!zipFile || isUploadingZip || isProcessing}
+              className="w-full"
+            >
+              {isUploadingZip ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Extracting & uploading...</>
+              ) : (
+                <><Upload className="w-4 h-4 mr-2" />Extract & Upload ZIP</>
+              )}
+            </Button>
+
+            {zipResult && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <span className="text-green-500">✓ {zipResult.summary.uploaded} uploaded</span>
+                  <span className="text-muted-foreground">⏭ {zipResult.summary.skippedDuplicates} duplicates</span>
+                  {zipResult.summary.failed > 0 && (
+                    <span className="text-destructive">✗ {zipResult.summary.failed} failed</span>
+                  )}
+                  {zipResult.summary.unsupported > 0 && (
+                    <span className="text-muted-foreground">— {zipResult.summary.unsupported} unsupported</span>
+                  )}
+                </div>
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                    View file details ({zipResult.files.length})
+                  </summary>
+                  <ScrollArea className="h-40 mt-2">
+                    <ul className="space-y-1">
+                      {zipResult.files.map((f, i) => (
+                        <li key={i} className="flex items-center gap-2 truncate">
+                          <Badge variant="outline" className="shrink-0 text-[10px]">{f.status}</Badge>
+                          <span className="truncate" title={f.name}>{f.name}</span>
+                          {f.subcategory && <span className="text-muted-foreground shrink-0">→ {f.subcategory}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </details>
+              </div>
+            )}
+
+            <Alert className="bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs">
+                Duplicate files (matched by SHA-256 of file contents) are skipped and linked to the existing resource.
+              </AlertDescription>
+            </Alert>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div className="border-t" />
         <DocumentUploadSection />
 
         <div className="border-t" />

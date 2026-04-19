@@ -19,6 +19,8 @@ interface PhotoResult {
   subcategory?: string;
   confidence?: number;
   error?: string;
+  duplicate?: boolean;
+  existingResourceId?: string;
 }
 
 interface BatchResult {
@@ -364,6 +366,30 @@ Deno.serve(async (req) => {
       try {
         console.log(`[PROCESS-BATCH] Processing photo: ${photo.id}`);
 
+        // Step 0: Compute content hash and dedup-check up front
+        const fileBytes = base64ToArrayBuffer(photo.imageBase64);
+        const contentHash = await sha256(fileBytes);
+
+        const { data: existingDup } = await supabase
+          .from("content_vault_resources")
+          .select("id, resource_url, subcategory_id, content_vault_subcategories(slug)")
+          .eq("content_hash", contentHash)
+          .maybeSingle();
+
+        if (existingDup) {
+          console.log(`[PROCESS-BATCH] Duplicate ${photo.id} → existing ${existingDup.id}`);
+          results.push({
+            id: photo.id,
+            success: true,
+            duplicate: true,
+            existingResourceId: existingDup.id,
+            url: existingDup.resource_url,
+            subcategory: (existingDup as any).content_vault_subcategories?.slug,
+            confidence: 100,
+          });
+          continue;
+        }
+
         // Step 1: Analyze if no subcategory provided
         let subcategory: string = photo.subcategory || "";
         let confidence = 100;
@@ -420,6 +446,7 @@ Deno.serve(async (req) => {
             resource_type: "image",
             subcategory_id: subcategoryId,
             position: nextPosition,
+            content_hash: contentHash,
             tags: [subcategory, "bulk-upload"]
           });
 
