@@ -374,11 +374,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result: UploadResult = {
+    const result: UploadResult & { duplicate?: boolean; contentHash?: string } = {
       url: publicUrl,
       key: objectKey,
       presetType,
-      resourceId: resource?.id
+      resourceId: resource?.id,
+      duplicate: false,
+      contentHash,
     };
 
     console.log(`[UPLOAD-PRESET] Complete: ${publicUrl}, resourceId: ${resource?.id}`);
