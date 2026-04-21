@@ -423,7 +423,7 @@ export const ProjectSidebar = () => {
       ? "Pro plan"
       : tier === "admin"
       ? "Admin"
-      : tier === "vault"
+      : tier === "content_vault"
       ? "Vault plan"
       : "Free";
 
