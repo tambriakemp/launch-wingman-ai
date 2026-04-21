@@ -204,7 +204,9 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   const [phaseStatuses, setPhaseStatuses] = useState<Record<Phase, PhaseStatus>>(DEFAULT_PHASE_STATUSES);
   const [selectedFunnelType, setSelectedFunnelType] = useState<FunnelType | null>(null);
 
-  // Use the funnel task injection hook
+  // Guard against redundant fetches when user/project haven't actually changed
+  const lastFetchKey = useRef<string | null>(null);
+
   const { 
     normalizeFunnelType,
     injectFunnelTasks, 
@@ -397,6 +399,11 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   const fetchData = useCallback(async () => {
     if (!user || !projectId) return;
 
+    // Skip fetch if user+project haven't changed since last fetch
+    const fetchKey = `${user.id}:${projectId}`;
+    if (lastFetchKey.current === fetchKey && projectTasks.length > 0) return;
+    lastFetchKey.current = fetchKey;
+
     setIsLoading(true);
     setError(null);
 
@@ -473,7 +480,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     } finally {
       setIsLoading(false);
     }
-  }, [user, projectId, normalizeFunnelType, injectFunnelTasks]);
+  }, [user?.id, projectId, normalizeFunnelType, injectFunnelTasks]);
 
   // Initialize tasks for a new project (single batched insert)
   const initializeProjectTasks = useCallback(async () => {
@@ -503,7 +510,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
 
     // Re-fetch so the dashboard sees the new tasks immediately
     await fetchData();
-  }, [user, projectId, projectTasks, fetchData]);
+  }, [user?.id, projectId, projectTasks, fetchData]);
 
   // Start a task
   const startTask = useCallback(
@@ -531,9 +538,9 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         });
       }
 
-      await fetchData();
+      lastFetchKey.current = null; await fetchData();
     },
-    [user, projectId, projectTasks, fetchData]
+    [user?.id, projectId, projectTasks, fetchData]
   );
 
   // Complete a task
@@ -630,10 +637,10 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
           .eq('user_id', user.id);
       }
 
-      await fetchData();
+      lastFetchKey.current = null; await fetchData();
       await recalculatePhases();
     },
-    [user, projectId, projectTasks, fetchData, recalculatePhases, normalizeFunnelType, injectFunnelTasks, getTaskTemplate]
+    [user?.id, projectId, projectTasks, fetchData, recalculatePhases, normalizeFunnelType, injectFunnelTasks, getTaskTemplate]
   );
 
   // Skip a task
@@ -662,10 +669,10 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         });
       }
 
-      await fetchData();
+      lastFetchKey.current = null; await fetchData();
       await recalculatePhases();
     },
-    [user, projectId, projectTasks, fetchData, recalculatePhases]
+    [user?.id, projectId, projectTasks, fetchData, recalculatePhases]
   );
 
   // Select funnel type and inject funnel-specific tasks using the injection system
@@ -717,14 +724,15 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
       }
 
       setSelectedFunnelType(normalizedType);
-      await fetchData();
+      lastFetchKey.current = null; await fetchData();
     },
-    [user, projectId, projectTasks, fetchData, selectedFunnelType, activePhase, 
+    [user?.id, projectId, projectTasks, fetchData, selectedFunnelType, activePhase, 
      normalizeFunnelType, checkCanChangeFunnelType, handleFunnelTypeChange, injectFunnelTasks]
   );
 
   // Refresh tasks
   const refreshTasks = useCallback(async () => {
+    lastFetchKey.current = null; // force re-fetch on explicit refresh
     await fetchData();
   }, [fetchData]);
 

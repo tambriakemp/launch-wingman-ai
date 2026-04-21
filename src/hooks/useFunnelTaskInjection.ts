@@ -41,19 +41,17 @@ interface InjectionResult {
 
 export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOptions) {
   const { user } = useAuth();
+  // Use primitive userId string instead of user object to prevent unstable references
+  // that would cause fetchData to recreate on every render → infinite re-fetch loop
+  const userId = user?.id;
 
-  /**
-   * Normalize funnel type - converts legacy types to new types
-   */
   const normalizeFunnelType = useCallback((rawType: string | null): FunnelType | null => {
     if (!rawType) return null;
     
-    // Check if it's a legacy type
     if (rawType in LEGACY_FUNNEL_TYPE_MAP) {
       return LEGACY_FUNNEL_TYPE_MAP[rawType as LegacyFunnelType];
     }
     
-    // Return as-is if it's already a valid new type
     const validTypes: FunnelType[] = [
       'content_to_offer',
       'freebie_email_offer', 
@@ -69,24 +67,18 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       return rawType as FunnelType;
     }
     
-    // Default to content_to_offer for unknown types
     return 'content_to_offer';
   }, []);
 
-  /**
-   * Inject delta tasks for a specific funnel type
-   * This is called when the user completes the planning_choose_launch_path task
-   */
   const injectFunnelTasks = useCallback(async (
     funnelType: FunnelType,
     existingTasks: ProjectTask[]
   ): Promise<InjectionResult> => {
-    if (!user) {
+    if (!userId) {
       return { success: false, injectedCount: 0, error: 'Not authenticated' };
     }
 
     if (funnelType === 'all') {
-      // Just ensure universal tasks for later phases exist
       return await ensureUniversalTasksExist(existingTasks);
     }
 
@@ -101,7 +93,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         .filter(template => !existingTaskIds.has(template.taskId))
         .map(template => ({
           project_id: projectId,
-          user_id: user.id,
+          user_id: userId,
           task_id: template.taskId,
           status: 'not_started' as const,
         }));
@@ -125,16 +117,12 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         error: err instanceof Error ? err.message : 'Unknown error' 
       };
     }
-  }, [user, projectId]);
+  }, [userId, projectId]); // ← userId (string primitive) instead of user (object)
 
-  /**
-   * Ensure universal tasks exist for all phases
-   * Used for content_to_offer funnel type
-   */
   const ensureUniversalTasksExist = useCallback(async (
     existingTasks: ProjectTask[]
   ): Promise<InjectionResult> => {
-    if (!user) {
+    if (!userId) {
       return { success: false, injectedCount: 0, error: 'Not authenticated' };
     }
 
@@ -148,7 +136,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         .filter(template => !existingTaskIds.has(template.taskId))
         .map(template => ({
           project_id: projectId,
-          user_id: user.id,
+          user_id: userId,
           task_id: template.taskId,
           status: 'not_started' as const,
         }));
@@ -172,23 +160,18 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         error: err instanceof Error ? err.message : 'Unknown error' 
       };
     }
-  }, [user, projectId]);
+  }, [userId, projectId]); // ← userId (string primitive) instead of user (object)
 
-  /**
-   * Handle funnel type change
-   * This should only be allowed before Launch phase begins
-   */
   const handleFunnelTypeChange = useCallback(async (
     previousFunnelType: FunnelType | null,
     newFunnelType: FunnelType,
     existingTasks: ProjectTask[],
     activePhase: Phase
   ): Promise<InjectionResult> => {
-    if (!user) {
+    if (!userId) {
       return { success: false, injectedCount: 0, error: 'Not authenticated' };
     }
 
-    // Block changes during or after launch phase
     if (activePhase === 'launch' || activePhase === 'post-launch') {
       return { 
         success: false, 
@@ -197,42 +180,31 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       };
     }
 
-    // If previous funnel type exists, remove unstarted funnel-specific tasks
     if (previousFunnelType && previousFunnelType !== 'content_to_offer' && previousFunnelType !== 'all') {
       const previousDeltaTasks = getDeltaTasksForFunnel(previousFunnelType);
       const previousDeltaTaskIds = new Set(previousDeltaTasks.map(t => t.taskId));
 
-      // Find tasks that belong to the previous funnel and are not started
       const tasksToRemove = existingTasks.filter(t => 
         previousDeltaTaskIds.has(t.taskId) && 
         t.status === 'not_started'
       );
 
-      // Delete unstarted previous funnel tasks
       for (const task of tasksToRemove) {
         await supabase
           .from('project_tasks')
           .delete()
           .eq('id', task.id)
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
       }
     }
 
-    // Inject new funnel tasks
     return await injectFunnelTasks(newFunnelType, existingTasks);
-  }, [user, injectFunnelTasks]);
+  }, [userId, injectFunnelTasks]); // ← userId instead of user
 
-  /**
-   * Check if funnel type change is allowed
-   */
   const canChangeFunnelType = useCallback((activePhase: Phase): boolean => {
     return activePhase !== 'launch' && activePhase !== 'post-launch';
   }, []);
 
-  /**
-   * Get applicable templates for a funnel type (including modifications)
-   * This merges universal tasks with delta tasks and applies modifications
-   */
   const getApplicableTemplates = useCallback((
     funnelType: FunnelType | null
   ): TaskTemplate[] => {
@@ -242,14 +214,11 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       return universalTasks;
     }
 
-    // Get delta tasks for this funnel
     const deltaTasks = getDeltaTasksForFunnel(funnelType);
     const modifications = getTaskModificationsForFunnel(funnelType);
     
-    // Create a map for modifications
     const modificationMap = new Map(modifications.map(m => [m.taskId, m.changes]));
     
-    // Apply modifications to universal tasks
     const modifiedUniversalTasks = universalTasks.map(task => {
       const changes = modificationMap.get(task.taskId);
       if (changes) {
@@ -258,11 +227,9 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       return task;
     });
 
-    // Merge and sort by phase, then order
     const allTasks = [...modifiedUniversalTasks, ...deltaTasks];
     
     return allTasks.sort((a, b) => {
-      // First sort by phase order
       const phaseOrder: Record<Phase, number> = {
         setup: -1,
         planning: 0,
@@ -275,8 +242,6 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       };
       const phaseDiff = phaseOrder[a.phase] - phaseOrder[b.phase];
       if (phaseDiff !== 0) return phaseDiff;
-      
-      // Then by order within phase
       return a.order - b.order;
     });
   }, []);
