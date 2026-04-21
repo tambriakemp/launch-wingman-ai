@@ -36,6 +36,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // GET = pre-warm ping — respond instantly so the function stays warm
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",

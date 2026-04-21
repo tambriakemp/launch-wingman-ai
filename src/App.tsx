@@ -107,7 +107,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 2, // 2 minutes
+      staleTime: 1000 * 60 * 10, // 10 minutes — avoids re-fetching on every navigation
+      gcTime: 1000 * 60 * 15,    // keep in memory 15 minutes
     },
   },
 });

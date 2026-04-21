@@ -95,6 +95,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [impersonatedUserEmail, setImpersonatedUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Pre-warm the check-subscription edge function immediately on mount
+  // so it's already hot by the time auth resolves and the real call fires
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
+      method: 'GET',
+      headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+    }).catch(() => {}); // fire and forget
+  }, []);
+
   // Check for existing impersonation on mount - with validation
   useEffect(() => {
     const validateImpersonation = async () => {
