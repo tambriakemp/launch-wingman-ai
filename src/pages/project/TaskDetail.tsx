@@ -1127,16 +1127,19 @@ export default function TaskDetail() {
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <h2 className="editorial-eyebrow">
                 Your response
               </h2>
               {(taskId === 'planning_phase_review' || taskId === 'messaging_phase_review' || taskId === 'build_phase_review' || taskId === 'content_phase_review') && project && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="w-4 h-4" />
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 bg-white border border-hairline rounded-full px-3.5 py-1.5 font-sans text-[12.5px] text-ink-800 hover:bg-paper-100 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
                       Export
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {taskId === 'planning_phase_review' && (
