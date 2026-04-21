@@ -38,9 +38,7 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // Editorial shell: paper background, ink-900 hairline border, square corners.
-        // Default body gutters are px-8 py-6; structural sub-parts (Header/Footer/Body)
-        // break out to the edges with negative horizontal margins so hairlines run full-bleed.
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 overflow-hidden border border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-100))] px-8 py-6 text-[hsl(var(--ink-900))] shadow-[0_32px_80px_-24px_rgba(31,27,23,0.35),0_8px_24px_rgba(31,27,23,0.10)] rounded-[4px] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 overflow-hidden border border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-100))] text-[hsl(var(--ink-900))] shadow-[0_32px_80px_-24px_rgba(31,27,23,0.35),0_8px_24px_rgba(31,27,23,0.10)] rounded-[4px] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
       {...props}
@@ -68,8 +66,7 @@ interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 const DialogHeader = ({ className, children, eyebrow, eyebrowNumber, ...props }: DialogHeaderProps) => (
   <div
     className={cn(
-      // Break out of DialogContent's px-8 py-6 default to render edge-to-edge with hairline border.
-      "relative -mx-8 -mt-6 mb-6 flex flex-col gap-2 border-b border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-8 pb-5 pt-8 text-left",
+      "relative flex flex-col gap-2 border-b border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-8 pb-5 pt-8 text-left",
       className,
     )}
     {...props}
@@ -87,8 +84,7 @@ DialogHeader.displayName = "DialogHeader";
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      // Break out of DialogContent's px-8 py-6 default to render edge-to-edge.
-      "-mx-8 -mb-6 mt-6 flex flex-col-reverse gap-2 border-t border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-200))] px-8 py-4 sm:flex-row sm:items-center sm:justify-end",
+      "flex flex-col-reverse gap-2 border-t border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-200))] px-8 py-4 sm:flex-row sm:items-center sm:justify-end",
       className,
     )}
     {...props}
@@ -131,7 +127,7 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName;
  * matching the spec. Optional, dialogs may also render their own bare content.
  */
 const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("-mx-8 -my-6 bg-[hsl(var(--paper-100))] px-8 py-6", className)} {...props} />
+  <div className={cn("bg-[hsl(var(--paper-100))] px-8 py-6", className)} {...props} />
 );
 DialogBody.displayName = "DialogBody";
 
