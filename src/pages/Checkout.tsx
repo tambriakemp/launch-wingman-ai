@@ -135,7 +135,7 @@ const Checkout = () => {
       : "pro";
 
   const [selectedTier, setSelectedTier] = useState<PlanId>(initialTier);
-  const recommendedTier = initialTier;
+  const recommendedTier: PlanId = "advanced";
   const planConfig = PLANS.find((p) => p.id === selectedTier)!;
 
   // Form state
@@ -413,14 +413,18 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-paper-100 text-ink-900 font-sans">
       {/* Back link (mobile/desktop) */}
-      <div className="absolute top-4 left-4 z-10">
-        <Link
-          to="/"
+      <div className="absolute top-4 left-4 z-20">
+        <button
+          type="button"
+          onClick={() => {
+            navigate("/");
+            window.location.assign("/");
+          }}
           className="inline-flex items-center gap-1.5 text-[13px] text-fg-muted hover:text-ink-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back
-        </Link>
+        </button>
       </div>
 
       <div className="grid lg:grid-cols-2 min-h-screen">
