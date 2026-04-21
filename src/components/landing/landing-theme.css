@@ -11,7 +11,8 @@
  * so the existing components (BrowserFrame, screenshots/*) inherit the
  * cream + terracotta palette without per-file rewrites.
  */
-.landing-theme {
+.landing-theme,
+.app-cream {
   /* raw palette (HSL) */
   --bg: 35 50% 96%;            /* #FBF7F1 cream */
   --ink: 30 9% 10%;            /* #1F1B17 near-black */
@@ -23,6 +24,8 @@
   --warm-gold: 38 60% 56%;     /* #D4A24C */
   --clay-200: 30 38% 84%;      /* #E8D9C6 — featured card fill */
   --paper-50: 38 60% 98%;      /* #FDFAF5 */
+  --paper-100: 35 45% 94%;     /* #F4EEE3 */
+  --paper-200: 35 38% 90%;     /* #ECE3D2 */
 
   /* override shadcn semantic tokens within scope */
   --background: 35 50% 96%;
@@ -42,12 +45,52 @@
   --border: 35 28% 87%;
   --input: 35 28% 87%;
   --ring: 13 56% 51%;
+
+  /* Sidebar tokens — cream rail + flyout */
+  --sidebar-background: 38 60% 98%;
+  --sidebar-foreground: 30 9% 33%;
+  --sidebar-primary: 13 56% 51%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 35 35% 92%;
+  --sidebar-accent-foreground: 30 9% 10%;
+  --sidebar-border: 35 28% 87%;
+  --sidebar-ring: 13 56% 51%;
 }
 
 /* Solid cream background everywhere inside the scope */
-.landing-theme {
+.landing-theme,
+.app-cream {
   background-color: hsl(var(--bg));
   color: hsl(var(--ink));
+}
+
+/* Serif utility for the app-cream scope as well */
+.app-cream .font-serif {
+  font-family: "Playfair Display", "Iowan Old Style", "Apple Garamond",
+    Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+.app-cream .eyebrow {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: hsl(var(--terracotta));
+}
+
+.app-cream .hairline {
+  border-color: hsl(var(--hairline));
+}
+
+.app-cream .card-soft {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--hairline));
+  border-radius: 0.75rem;
+  box-shadow:
+    0 1px 1px rgba(31, 27, 23, 0.04),
+    0 8px 24px -8px rgba(31, 27, 23, 0.06);
 }
 
 /* Serif utility (used directly with `font-serif italic` etc.) */
