@@ -18,8 +18,14 @@ export const LandingHeader = () => {
   }, []);
 
   const handleSignOut = async () => {
-    await signOut();
     setMobileMenuOpen(false);
+    try {
+      await signOut();
+    } catch (e) {
+      console.error("Sign out failed", e);
+    }
+    // Force a hard reload to fully clear auth state on the landing page
+    window.location.href = "/";
   };
 
   const scrollToSection = (id: string) => {
