@@ -5,25 +5,25 @@ import { useQuery } from "@tanstack/react-query";
 
 export const useCalendarSync = () => {
   const { user } = useAuth();
+  const userId = user?.id;
 
-  // Check if user has any calendar connections
   const { data: hasConnections = false } = useQuery({
-    queryKey: ["calendar-connections-exist", user?.id],
+    queryKey: ["calendar-connections-exist", userId],
     queryFn: async () => {
-      if (!user) return false;
+      if (!userId) return false;
       const { count } = await supabase
         .from("calendar_connections")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
       return (count || 0) > 0;
     },
-    enabled: !!user,
-    staleTime: 60_000,
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 10,
   });
 
   const syncTask = useCallback(
     async (taskId: string, action: "create" | "update" | "delete") => {
-      if (!hasConnections || !user) return;
+      if (!hasConnections || !userId) return;
 
       try {
         const { data: session } = await supabase.auth.getSession();
@@ -47,7 +47,7 @@ export const useCalendarSync = () => {
         console.error("Calendar sync error:", err);
       }
     },
-    [hasConnections, user]
+    [hasConnections, userId]
   );
 
   return { syncTask, hasConnections };
