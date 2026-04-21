@@ -415,7 +415,7 @@ const Checkout = () => {
       {/* Back link (mobile/desktop) */}
       <div className="absolute top-4 left-4 z-10">
         <Link
-          to={isUpgrade ? "/settings" : "/#pricing"}
+          to="/"
           className="inline-flex items-center gap-1.5 text-[13px] text-fg-muted hover:text-ink-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
