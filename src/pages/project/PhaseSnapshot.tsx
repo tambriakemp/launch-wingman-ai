@@ -227,29 +227,29 @@ function BCover({
     <div className="relative overflow-hidden bg-paper-200 border-b border-[hsl(var(--border-hairline))]">
       {/* editorial border rule */}
       <div
-        className="absolute pointer-events-none rounded-sm"
+        className="absolute pointer-events-none rounded-sm hidden md:block"
         style={{ inset: "28px 40px", border: "1px solid hsl(var(--ink-900) / 0.08)" }}
       />
 
-      <div className="max-w-[1280px] mx-auto px-8 md:px-20 pt-12 pb-15 relative">
+      <div className="max-w-[1280px] mx-auto relative px-6 pt-8 pb-10 md:px-20 md:pt-12 md:pb-[60px]">
         {/* top masthead */}
-        <div className="flex justify-between items-center border-b border-[hsl(var(--ink-900)/0.12)] pb-3.5 mb-15 font-body text-[11px] tracking-[0.2em] uppercase text-ink-800 font-semibold">
+        <div className="flex justify-between items-center border-b border-[hsl(var(--ink-900)/0.12)] pb-[14px] mb-10 md:mb-[60px] font-body text-[11px] tracking-[0.2em] uppercase font-semibold gap-4" style={{ color: "hsl(var(--ink-800))" }}>
           <span className="inline-flex items-center gap-2.5">
             <span className="w-2 h-2 bg-terracotta-500 rounded-full" />
             The Launch Brief
           </span>
           <span className="hidden md:inline">Volume I · Issue 01</span>
-          <span>{lastUpdated}</span>
+          <span className="truncate">{lastUpdated}</span>
         </div>
 
         {/* Big cover */}
-        <div className="grid grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-10 md:gap-20 items-end mt-12 md:mt-0">
+        <div className="grid grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-10 md:gap-20 items-end">
           <div>
             <div className="font-body text-[13px] tracking-[0.2em] uppercase text-terracotta-500 font-semibold mb-6">
               The brief for —
             </div>
             <h1
-              className="font-display font-light text-[80px] md:text-[140px] leading-[0.92] tracking-[-0.04em] m-0 text-ink-900"
+              className="font-display font-light text-[64px] sm:text-[96px] md:text-[140px] leading-[0.92] tracking-[-0.04em] m-0 text-ink-900"
               style={{ fontVariationSettings: '"opsz" 144' }}
             >
               {lastWord ? (
@@ -263,7 +263,7 @@ function BCover({
                 </>
               )}
             </h1>
-            <p className="font-display italic font-light text-[22px] md:text-[30px] leading-[1.2] text-ink-800 mt-9 max-w-[560px] tracking-[-0.01em]">
+            <p className="font-display italic font-light text-[22px] md:text-[30px] leading-[1.2] mt-9 max-w-[560px] tracking-[-0.01em]" style={{ color: "hsl(var(--ink-800))" }}>
               {tagline}
             </p>
           </div>
@@ -290,7 +290,7 @@ function BCover({
 
         {/* Contents stripe */}
         {topics.length > 0 && (
-          <div className="mt-18 pt-7 border-t border-[hsl(var(--ink-900)/0.12)] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="mt-12 md:mt-[72px] pt-7 border-t border-[hsl(var(--ink-900)/0.12)] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {topics.map((tp, i) => (
               <a key={tp.id} href={`#b-topic-${tp.id}`} className="no-underline text-inherit group">
                 <div className="font-mono text-[11px] text-fg-muted mb-1">
