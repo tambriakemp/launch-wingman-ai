@@ -64,16 +64,15 @@ export function MetricUpdateSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl p-0 max-h-[calc(100vh-48px)] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Update Your Metrics</DialogTitle>
           <DialogDescription>
-            Log your current numbers to track your growth over time. 
-            Only fill in what you'd like to track.
+            Log your current numbers to track your growth over time. Only fill in what you'd like to track.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 mt-2">
+        <div className="flex-1 overflow-y-auto bg-[hsl(var(--paper-100))] px-8 py-6 space-y-5">
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Left Column - Audience Size */}

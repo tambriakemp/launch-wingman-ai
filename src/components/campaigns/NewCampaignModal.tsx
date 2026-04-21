@@ -214,15 +214,15 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         <div className="flex-1 overflow-y-auto bg-[hsl(var(--paper-100))] px-8 py-6">
         {/* Step 1: Basics */}
         {step === 0 && (
-          <div className="space-y-5">
-            <div>
+          <div className="space-y-6">
+            <div className="space-y-1.5">
               <Label>Campaign Name</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Give your campaign a clear, descriptive name</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">Give your campaign a clear, descriptive name</p>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Launch 2026" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Goal</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">What's the primary objective?</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">What's the primary objective?</p>
               <Select value={goal} onValueChange={setGoal}>
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
@@ -238,24 +238,24 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-1.5">
                 <Label>Start Date</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label>End Date</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Budget (optional)</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Set a spending limit for this campaign</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">Set a spending limit for this campaign</p>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="$0" />
             </div>
             {goal && (
-              <div>
+              <div className="space-y-1.5">
                 <Label>Goal Target *</Label>
-                <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">
+                <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">
                   {goal === "revenue" ? "Target revenue ($)" :
                     goal === "traffic" ? "Target number of visits" :
                     goal === "followers" ? "Target follower count gain" :
@@ -275,21 +275,21 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
         {/* Step 2: Attribution */}
         {step === 1 && (
-          <div className="space-y-5">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="font-display text-[14px] italic leading-relaxed text-[hsl(var(--fg-secondary))]">
                 UTM links help you track where your traffic and conversions are coming from across platforms.
               </p>
               <div className="flex items-center gap-2">
                 <Checkbox checked={autoUtm} onCheckedChange={(v) => setAutoUtm(!!v)} id="auto-utm" />
-                <Label htmlFor="auto-utm" className="text-sm font-medium">Auto-generate UTM links</Label>
+                <Label htmlFor="auto-utm">Auto-generate UTM links</Label>
               </div>
             </div>
             {autoUtm && (
-              <div className="space-y-5">
-                <div>
+              <div className="space-y-6">
+                <div className="space-y-1.5">
                   <Label>Base Destination URL</Label>
-                  <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">The page visitors will land on when they click your links</p>
+                  <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">The page visitors will land on when they click your links</p>
                   <Input
                     value={baseDestinationUrl}
                     onChange={(e) => setBaseDestinationUrl(e.target.value)}
@@ -297,16 +297,16 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                     type="url"
                   />
                 </div>
-                <div>
-                <Label className="mb-3 block">Select platforms to track</Label>
+                <div className="space-y-2.5">
+                <Label>Select platforms to track</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
                       className={cn(
-                        "border rounded-lg p-3 text-sm transition-all flex items-center gap-2 font-medium",
+                        "border rounded-[10px] px-3 py-2.5 text-[13px] font-body font-medium transition-all flex items-center gap-2 bg-white",
                         selectedPlatforms.includes(p.name)
-                          ? "border-primary bg-primary/10 text-foreground shadow-sm"
-                          : "border-border text-muted-foreground hover:border-primary/50 hover:bg-muted/50"
+                          ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)] text-[hsl(var(--ink-900))]"
+                          : "border-[hsl(var(--border-hairline))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--ink-900)/0.4)]"
                       )}>
                       <span className="text-base">{p.icon}</span>
                       {p.name}
@@ -322,48 +322,47 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         {/* Step 3: Funnel Selector */}
         {step === 2 && (
           <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Link this campaign to one of your existing funnels, or skip if this campaign doesn't use one.
-              </p>
-            </div>
+            <p className="font-display text-[14px] italic leading-relaxed text-[hsl(var(--fg-secondary))]">
+              Link this campaign to one of your existing funnels, or skip if this campaign doesn't use one.
+            </p>
             {funnelsLoading ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--fg-muted))]" />
               </div>
             ) : !funnels?.length ? (
-              <div className="text-center py-10 border border-dashed rounded-lg">
-                <p className="text-muted-foreground text-sm">No funnels found.</p>
-                <p className="text-xs text-muted-foreground mt-1">Create a project with a funnel first.</p>
+              <div className="text-center py-10 border border-dashed border-[hsl(var(--border-hairline))] rounded-[10px] bg-white">
+                <p className="text-[hsl(var(--fg-secondary))] text-sm font-body">No funnels found.</p>
+                <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-1 font-body">Create a project with a funnel first.</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {funnels.map((f) => {
                   const projectName = (f as any).projects?.name ?? "Unknown Project";
+                  const isSelected = selectedFunnelId === f.id;
                   return (
                     <button
                       key={f.id}
-                      onClick={() => setSelectedFunnelId(selectedFunnelId === f.id ? null : f.id)}
+                      onClick={() => setSelectedFunnelId(isSelected ? null : f.id)}
                       className={cn(
-                        "w-full text-left border rounded-lg p-3.5 transition-all",
-                        selectedFunnelId === f.id
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/40 hover:bg-muted/30"
+                        "w-full text-left border rounded-[10px] p-3.5 transition-all bg-white",
+                        isSelected
+                          ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)]"
+                          : "border-[hsl(var(--border-hairline))] hover:border-[hsl(var(--ink-900)/0.4)]"
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm">{getFunnelLabel(f.funnel_type)}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
+                          <p className="font-body font-semibold text-[14px] text-[hsl(var(--ink-900))]">{getFunnelLabel(f.funnel_type)}</p>
+                          <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-0.5 font-body">{projectName}</p>
                           {f.target_audience && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{f.target_audience}</p>
+                            <p className="text-[12px] text-[hsl(var(--fg-secondary))] mt-1 line-clamp-1 font-body">{f.target_audience}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {f.niche && <Badge variant="outline" className="text-[10px]">{f.niche}</Badge>}
-                          {selectedFunnelId === f.id && (
-                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="w-3 h-3 text-primary-foreground" />
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-[hsl(var(--ink-900))] flex items-center justify-center">
+                              <Check className="w-3 h-3 text-[hsl(var(--paper-100))]" />
                             </div>
                           )}
                         </div>
@@ -376,10 +375,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             <button
               onClick={() => setSelectedFunnelId(null)}
               className={cn(
-                "w-full text-center border border-dashed rounded-lg p-3 text-sm transition-all",
+                "w-full text-center border border-dashed rounded-[10px] p-3 text-[13px] font-body transition-all",
                 selectedFunnelId === null && !funnelsLoading
-                  ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border text-muted-foreground hover:border-primary/40"
+                  ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)] text-[hsl(var(--ink-900))]"
+                  : "border-[hsl(var(--border-hairline))] text-[hsl(var(--fg-muted))] hover:border-[hsl(var(--ink-900)/0.4)]"
               )}
             >
               Skip — no funnel for this campaign
@@ -391,25 +390,25 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         {step === 3 && (
           <div className="space-y-4">
             {/* Campaign Details */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campaign Details</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{name || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span className="font-medium capitalize">{goal ? goalLabels[goal] || goal : "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Dates</span><span className="font-medium">{startDate || "—"} → {endDate || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium">{budget ? `$${budget}` : "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Goal Target</span><span className="font-medium">{goalTarget ? (goal === "revenue" ? `$${Number(goalTarget).toLocaleString()}` : Number(goalTarget).toLocaleString()) : "—"}</span></div>
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Campaign Details</h4>
+              <div className="space-y-2 text-[13px] font-body">
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Name</span><span className="font-medium text-[hsl(var(--ink-900))]">{name || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Goal</span><span className="font-medium capitalize text-[hsl(var(--ink-900))]">{goal ? goalLabels[goal] || goal : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Dates</span><span className="font-medium text-[hsl(var(--ink-900))]">{startDate || "—"} → {endDate || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Budget</span><span className="font-medium text-[hsl(var(--ink-900))]">{budget ? `$${budget}` : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Goal Target</span><span className="font-medium text-[hsl(var(--ink-900))]">{goalTarget ? (goal === "revenue" ? `$${Number(goalTarget).toLocaleString()}` : Number(goalTarget).toLocaleString()) : "—"}</span></div>
               </div>
             </div>
 
             {/* Attribution */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attribution</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">UTM Links</span><span className="font-medium">{autoUtm ? "Auto-generated" : "Manual"}</span></div>
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Attribution</h4>
+              <div className="space-y-2 text-[13px] font-body">
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">UTM Links</span><span className="font-medium text-[hsl(var(--ink-900))]">{autoUtm ? "Auto-generated" : "Manual"}</span></div>
                 {autoUtm && selectedPlatforms.length > 0 && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-muted-foreground">Platforms</span>
+                  <div className="flex justify-between items-start gap-3">
+                    <span className="text-[hsl(var(--fg-muted))] shrink-0">Platforms</span>
                     <div className="flex flex-wrap gap-1 justify-end">
                       {selectedPlatforms.map((p) => (
                         <Badge key={p} variant="secondary" className="text-[11px]">{p}</Badge>
@@ -421,16 +420,16 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             </div>
 
             {/* Funnel */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funnel</h4>
-              <div className="text-sm">
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Funnel</h4>
+              <div className="text-[13px] font-body">
                 {selectedFunnel ? (
                   <div>
-                    <p className="font-medium">{getFunnelLabel(selectedFunnel.funnel_type)}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{(selectedFunnel as any).projects?.name}</p>
+                    <p className="font-semibold text-[hsl(var(--ink-900))]">{getFunnelLabel(selectedFunnel.funnel_type)}</p>
+                    <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-0.5">{(selectedFunnel as any).projects?.name}</p>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">None</p>
+                  <p className="text-[hsl(var(--fg-muted))]">None</p>
                 )}
               </div>
             </div>
