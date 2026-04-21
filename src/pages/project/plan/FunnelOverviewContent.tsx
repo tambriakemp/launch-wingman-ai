@@ -473,47 +473,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
-  const [dismissedPhases, setDismissedPhases] = useState<string[]>([]);
-
-  useEffect(() => {
-    const loadDismissed = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("dismissed_celebrations")
-        .eq("user_id", user.id)
-        .single();
-
-      if (data?.dismissed_celebrations) {
-        const celebrations = data.dismissed_celebrations as Record<string, boolean>;
-        const dismissed = Object.keys(celebrations)
-          .filter((key) => key.startsWith(projectId) && celebrations[key])
-          .map((key) => key.replace(`${projectId}_`, ""));
-        setDismissedPhases(dismissed);
-      }
-    };
-    loadDismissed();
-  }, [user?.id, projectId]);
-
-  const handleDismissCelebration = async (phase: string) => {
-    const updated = [...dismissedPhases, phase];
-    setDismissedPhases(updated);
-
-    if (!user?.id) return;
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("dismissed_celebrations")
-      .eq("user_id", user.id)
-      .single();
-
-    const existing = (profileData?.dismissed_celebrations as Record<string, boolean>) || {};
-    existing[`${projectId}_${phase}`] = true;
-
-    await supabase
-      .from("profiles")
-      .update({ dismissed_celebrations: existing })
-      .eq("user_id", user.id);
-  };
 
   const {
     projectState,
