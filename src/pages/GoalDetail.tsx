@@ -42,6 +42,7 @@ import {
   ShoppingBag,
   ChevronDown,
 } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays, formatDistanceToNow } from "date-fns";
 import type { Goal, GoalTarget, GoalTargetUpdate } from "@/pages/Goals";
@@ -601,9 +602,7 @@ const GoalDetail = () => {
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="flex-1 flex items-center justify-center bg-[hsl(var(--paper-100,30_30%_97%))]">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </div>
+        <PageLoader containerClassName="flex-1 flex items-center justify-center min-h-[60vh] bg-[hsl(var(--paper-100,30_30%_97%))]" />
       </ProjectLayout>
     );
   }

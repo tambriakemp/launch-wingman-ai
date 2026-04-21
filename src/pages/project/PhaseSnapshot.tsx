@@ -9,6 +9,7 @@ import { ExportSnapshotButton } from "@/components/phase-snapshot/ExportSnapshot
 import { usePhaseSnapshot } from "@/hooks/usePhaseSnapshot";
 import { Phase } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function LoadingSkeleton() {
   return (
@@ -44,7 +45,15 @@ export default function PhaseSnapshot() {
     return (
       <ProjectLayout>
         <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
-          <LoadingSkeleton />
+          <header className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-3">
+              Launch Brief
+            </h1>
+            <p className="text-muted-foreground leading-relaxed max-w-xl">
+              Everything you've built, organized by phase. Your complete launch picture.
+            </p>
+          </header>
+          <PageLoader />
         </div>
       </ProjectLayout>
     );

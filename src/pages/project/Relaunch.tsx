@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { RelaunchFlow } from "@/components/relaunch";
@@ -51,9 +52,7 @@ export default function Relaunch() {
   if (isLoading || accessLoading || !id) {
     return (
       <ProjectLayout>
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageLoader containerClassName="flex items-center justify-center py-16" />
       </ProjectLayout>
     );
   }

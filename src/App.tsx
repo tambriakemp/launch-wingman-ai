@@ -12,6 +12,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { initGA, trackPageView } from "@/lib/analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import { AppShellFallback } from "./components/layout/AppShellFallback";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));

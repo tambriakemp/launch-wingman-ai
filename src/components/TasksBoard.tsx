@@ -29,6 +29,7 @@ import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
 import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks, getSetupTasks } from "@/data/taskTemplates";
 import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag, Sparkles } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -483,11 +484,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

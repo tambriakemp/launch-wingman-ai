@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlaybookData, PatternInsight } from "@/hooks/usePlaybookData";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // Phase-keyed wisdom from experienced creators
 const PHASE_WISDOM: Record<string, { tip: string; source: string }[]> = {
@@ -242,18 +243,23 @@ function PlaybookEmptyState({ wisdomCards, currentPhase }: { wisdomCards: { tip:
 function PlaybookSkeleton() {
   return (
     <ProjectLayout>
-      <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
-        <div className="space-y-2 mb-8">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-5 w-96" />
-        </div>
-        {[1, 2, 3].map(i => (
-          <Card key={i}>
-            <CardContent className="pt-6">
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8 space-y-8">
+        <header>
+          <div className="flex items-start gap-4 mb-8">
+            <div className="p-3 bg-violet-100/50 dark:bg-violet-900/20 rounded-xl shrink-0">
+              <BookMarked className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Your Launch Playbook
+              </h1>
+              <p className="text-muted-foreground">
+                A reflection of how you tend to plan, message, and launch — based on what you've completed.
+              </p>
+            </div>
+          </div>
+        </header>
+        <PageLoader />
       </div>
     </ProjectLayout>
   );

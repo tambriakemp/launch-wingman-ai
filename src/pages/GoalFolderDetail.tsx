@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Folder, ChevronRight, MoreHorizontal, Pencil, Trash2, LayoutGrid } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 import type { Goal, GoalTarget } from "@/pages/Goals";
 
 interface GoalFolder {
@@ -293,9 +294,7 @@ const GoalFolderDetail = () => {
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
-        </div>
+        <PageLoader containerClassName="flex flex-1 items-center justify-center min-h-[60vh]" />
       </ProjectLayout>
     );
   }
