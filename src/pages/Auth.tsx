@@ -184,7 +184,6 @@ const Auth = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) toast.error(error.message || "Failed to sign in");
-    else toast.success("Welcome back!");
   };
 
   const handleSignUp = async (e: React.FormEvent) => {

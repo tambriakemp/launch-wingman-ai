@@ -11,11 +11,7 @@ const ProtectedAdminRoute = ({ children }: ProtectedAdminRouteProps) => {
   const { hasAdminAccess, loading: adminLoading } = useAdmin();
 
   if (authLoading || adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return null;
   }
 
   if (!user) {
