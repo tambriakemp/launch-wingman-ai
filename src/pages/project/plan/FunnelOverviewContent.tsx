@@ -513,6 +513,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -527,6 +529,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data;
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: contentData } = useQuery({
@@ -534,7 +538,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_planner")
-        .select("id, title, content_type, scheduled_at, scheduled_platforms")
+        .select("id, title, content_type, scheduled_at")
         .eq("project_id", projectId)
         .not("scheduled_at", "is", null)
         .gte("scheduled_at", new Date().toISOString().split("T")[0])
@@ -544,6 +548,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data || [];
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: snapshotData } = useQuery({
@@ -569,6 +575,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return { offer, launchDate };
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: todayPlannerCount = 0 } = useQuery({
@@ -589,6 +597,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return count || 0;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const contentCount = (() => {
