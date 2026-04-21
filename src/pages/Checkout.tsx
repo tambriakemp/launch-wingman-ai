@@ -135,7 +135,7 @@ const Checkout = () => {
       : "pro";
 
   const [selectedTier, setSelectedTier] = useState<PlanId>(initialTier);
-  const recommendedTier = initialTier;
+  const recommendedTier: PlanId = "advanced";
   const planConfig = PLANS.find((p) => p.id === selectedTier)!;
 
   // Form state
