@@ -158,7 +158,7 @@ const plans = [
     period: "/mo",
     description: "Everything you need to launch like a pro.",
     cta: "Go Pro",
-    ctaLink: "/checkout",
+    ctaLink: "/checkout?tier=pro",
     popular: true,
     features: [
       "Unlimited projects",

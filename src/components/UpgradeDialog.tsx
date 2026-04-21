@@ -48,7 +48,7 @@ export const UpgradeDialog = ({ open, onOpenChange, feature, targetTier = 'pro' 
   const features = isAdvanced ? advancedFeatures : proFeatures;
   const price = isAdvanced ? 49 : 25;
   const tierName = isAdvanced ? 'Advanced' : 'Pro';
-  const checkoutLink = isAdvanced ? '/checkout?tier=advanced' : '/checkout?upgrade=true';
+  const checkoutLink = isAdvanced ? '/checkout?tier=advanced' : '/checkout?tier=pro';
 
   const handleUpgrade = () => {
     onOpenChange(false);

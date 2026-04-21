@@ -642,9 +642,9 @@ const Auth = () => {
 
                     <div className="pro-upsell">
                       <div className="txt">
-                        Want <strong>Pro</strong> — AI Studio + unlimited projects? Upgrade at checkout.
+                        Want the <strong>Advanced</strong> plan — full marketing suite + AI Studio? Upgrade at checkout.
                       </div>
-                      <Link to="/checkout" className="link">
+                      <Link to="/checkout?tier=advanced" className="link">
                         Subscribe
                       </Link>
                     </div>
