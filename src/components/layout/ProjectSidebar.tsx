@@ -48,7 +48,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdmin } from "@/hooks/useAdmin";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { ProjectSelector } from "@/components/ProjectSelector";
@@ -314,7 +313,6 @@ export const ProjectSidebar = () => {
   const { hasAdminAccess, tier } = useFeatureAccess();
   const { collapsed, toggle } = useSidebarCollapsed();
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
-  const { hasAdminAccess: adminAccess } = useAdmin();
 
   const isPro = tier === "pro" || tier === "advanced" || tier === "admin";
   const isAdvanced = tier === "advanced" || tier === "admin";
@@ -347,6 +345,8 @@ export const ProjectSidebar = () => {
       return data;
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -361,7 +361,7 @@ export const ProjectSidebar = () => {
 
   // ── Profile ──
   const { data: profile } = useQuery({
-    queryKey: ["profile-sidebar", user?.id],
+    queryKey: ["profile", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data } = await supabase
@@ -372,6 +372,8 @@ export const ProjectSidebar = () => {
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const sections = createSections(effectiveProjectId);
@@ -631,7 +633,7 @@ export const ProjectSidebar = () => {
                 <Settings className="w-4 h-4" /> Settings
               </Link>
             </DropdownMenuItem>
-            {adminAccess && !isImpersonating && (
+            {hasAdminAccess && !isImpersonating && (
               <DropdownMenuItem asChild>
                 <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                   <Shield className="w-4 h-4" /> Admin
