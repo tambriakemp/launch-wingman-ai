@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Plus, Sparkles, Check } from "lucide-react";
 
 const painPoints = [
   "Bought a course but never finished it",
@@ -433,35 +433,60 @@ const Landing = () => {
         />
       </div>
 
-      {/* ===== POWERED BY AI ===== */}
-      <section className="py-24 lg:py-32 border-t hairline">
+      {/* ===== POWERED BY AI — dark inset card ===== */}
+      <section className="py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <Eyebrow>Powered by AI</Eyebrow>
-            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-5">
-              Your AI <span className="italic text-accent">launch team.</span>
-            </h2>
-            <p className="font-serif italic text-lg md:text-xl text-foreground/70 max-w-2xl mx-auto">
-              Not just buzzwords. Real AI tools that save you hours of work on every launch.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto mb-16">
-            {aiFeatures.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                viewport={{ once: true }}
-                className="bg-card hairline border rounded-2xl p-6"
+          <div
+            className="max-w-7xl mx-auto rounded-3xl px-6 py-16 lg:px-12 lg:py-20"
+            style={{ backgroundColor: "hsl(var(--ink))", color: "hsl(var(--bg))" }}
+          >
+            <div className="text-center mb-12">
+              <Eyebrow>Powered by AI</Eyebrow>
+              <h2
+                className="font-serif text-4xl md:text-5xl font-medium tracking-tight mb-3 leading-[1.08]"
+                style={{ color: "hsl(var(--bg))" }}
               >
-                <h3 className="font-serif text-xl text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed">{f.description}</p>
-              </motion.div>
-            ))}
-          </div>
-          <div className="max-w-3xl mx-auto">
-            <TransformationMockup />
+                Your AI <span className="italic text-accent">launch team.</span>
+              </h2>
+              <p
+                className="font-serif italic text-lg md:text-xl max-w-2xl mx-auto"
+                style={{ color: "hsla(35, 50%, 96%, 0.75)" }}
+              >
+                Not just buzzwords. Real AI tools that save you hours of work on every launch.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+              {aiFeatures.map((f, i) => (
+                <motion.div
+                  key={f.title}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  viewport={{ once: true }}
+                  className="rounded-2xl p-6"
+                  style={{
+                    backgroundColor: "hsla(35, 50%, 96%, 0.04)",
+                    border: "1px solid hsla(35, 50%, 96%, 0.10)",
+                  }}
+                >
+                  <div className="w-9 h-9 rounded-lg bg-accent text-accent-foreground inline-flex items-center justify-center mb-4">
+                    <Sparkles className="w-[18px] h-[18px]" />
+                  </div>
+                  <h3
+                    className="font-serif text-xl font-medium mb-2 tracking-tight"
+                    style={{ color: "hsl(var(--bg))" }}
+                  >
+                    {f.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "hsla(35, 50%, 96%, 0.70)" }}
+                  >
+                    {f.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -469,14 +494,14 @@ const Landing = () => {
       {/* ===== HOW IT WORKS ===== */}
       <section id="how-it-works" className="py-24 lg:py-32">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-14">
             <Eyebrow>How It Works</Eyebrow>
-            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight max-w-3xl mx-auto">
+            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight max-w-3xl mx-auto leading-[1.08]">
               Three simple steps from{" "}
               <span className="italic text-accent">idea to launch.</span>
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-12 lg:gap-16 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {steps.map((s, i) => (
               <motion.div
                 key={s.number}
@@ -484,9 +509,14 @@ const Landing = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
+                className="bg-card hairline border rounded-3xl p-8"
               >
-                <div className="font-serif text-5xl text-foreground/15 mb-4">{s.number}</div>
-                <h3 className="font-serif text-2xl text-foreground mb-3">{s.title}</h3>
+                <div className="font-serif font-light text-[68px] text-accent leading-none tracking-tight">
+                  {s.number}
+                </div>
+                <h3 className="font-serif text-2xl md:text-[26px] font-medium text-foreground mt-5 mb-3 tracking-tight">
+                  {s.title}
+                </h3>
                 <p className="text-foreground/70 leading-relaxed">{s.description}</p>
               </motion.div>
             ))}
@@ -495,27 +525,21 @@ const Landing = () => {
       </section>
 
       {/* ===== BUILT FOR YOU ===== */}
-      <section className="py-24 lg:py-32 border-t hairline">
+      <section className="py-20 lg:py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Eyebrow>Built for You</Eyebrow>
-          <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-12">
-            For the people who <span className="italic text-accent">build the work.</span>
+          <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-10 leading-[1.08]">
+            If you sell <span className="italic text-accent font-normal">something</span>, it's for you.
           </h2>
-          <div className="space-y-3 max-w-3xl mx-auto mb-20">
-            {audiences.map((row, i) => (
-              <div
-                key={i}
-                className="flex flex-wrap justify-center items-baseline gap-x-8 gap-y-2 font-serif text-2xl md:text-3xl text-foreground/80"
+          <div className="flex flex-wrap justify-center gap-2.5 max-w-4xl mx-auto mb-20">
+            {audiences.flat().map((name) => (
+              <span
+                key={name}
+                className="px-[18px] py-2.5 rounded-full text-sm font-medium text-foreground"
+                style={{ backgroundColor: "hsl(var(--clay-200))" }}
               >
-                {row.map((name, j) => (
-                  <span key={name} className="flex items-baseline gap-8">
-                    <span>{name}</span>
-                    {j < row.length - 1 && (
-                      <span className="text-accent">·</span>
-                    )}
-                  </span>
-                ))}
-              </div>
+                {name}
+              </span>
             ))}
           </div>
 
@@ -535,17 +559,17 @@ const Landing = () => {
       {/* ===== PRICING ===== */}
       <section id="pricing" className="py-24 lg:py-32 border-t hairline">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-14">
             <Eyebrow>Pricing</Eyebrow>
-            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-5">
-              Simple, <span className="italic text-accent">transparent.</span>
+            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight mb-3 leading-[1.08]">
+              Simple, <span className="italic text-accent">transparent pricing.</span>
             </h2>
             <p className="font-serif italic text-lg md:text-xl text-foreground/70 max-w-xl mx-auto">
-              No hidden fees. No surprise charges. Cancel anytime.
+              No hidden fees. No surprise charges. Just straightforward pricing for launching smarter.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
@@ -557,45 +581,78 @@ const Landing = () => {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <span className="eyebrow bg-card hairline border px-3 py-1 rounded-full">
-                      Most Popular
+                    <span
+                      className="px-3 py-1 rounded-full text-[10.5px] font-medium uppercase whitespace-nowrap"
+                      style={{
+                        backgroundColor: "hsl(var(--ink))",
+                        color: "hsl(var(--bg))",
+                        letterSpacing: "0.12em",
+                      }}
+                    >
+                      Most popular
                     </span>
                   </div>
                 )}
                 <div
-                  className={`h-full bg-card border rounded-3xl p-7 flex flex-col ${
-                    plan.popular ? "border-accent" : "hairline"
-                  }`}
+                  className="h-full rounded-3xl p-7 flex flex-col"
+                  style={
+                    plan.popular
+                      ? {
+                          backgroundColor: "hsl(var(--clay-200))",
+                          border: "none",
+                          boxShadow:
+                            "0 1px 2px hsla(30,9%,10%,0.04), 0 8px 24px -12px hsla(30,9%,10%,0.18)",
+                        }
+                      : {
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--hairline))",
+                          boxShadow: "0 1px 2px hsla(30,9%,10%,0.04)",
+                        }
+                  }
                 >
-                  <h3 className="font-serif italic text-2xl text-foreground mb-2">
+                  <h3 className="font-serif italic text-xl font-medium text-foreground mb-2.5">
                     {plan.name}
                   </h3>
-                  <div className="flex items-baseline gap-1 mb-3">
-                    <span className="font-serif text-5xl font-medium text-foreground">
+                  <div className="flex items-baseline gap-1 mb-1.5">
+                    <span className="font-serif text-[44px] font-normal text-foreground tracking-tight leading-none">
                       {plan.price}
                     </span>
-                    <span className="text-sm text-foreground/60">{plan.period}</span>
+                    <span className="text-[13px] text-foreground/60">{plan.period}</span>
                   </div>
-                  <p className="text-sm text-foreground/70 mb-6 min-h-[2.5rem]">
+                  <p className="text-[12.5px] text-foreground/60 leading-snug min-h-[36px] mb-4">
                     {plan.description}
                   </p>
 
-                  <ul className="space-y-2.5 mb-7 flex-1">
+                  <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5 text-sm">
-                        <span className="text-accent mt-2 w-1 h-1 rounded-full bg-accent shrink-0" />
-                        <span className="text-foreground/80">{feature}</span>
+                      <li
+                        key={feature}
+                        className="flex items-start gap-2 text-[13px] text-foreground/85 leading-snug"
+                      >
+                        <Check
+                          className="w-[14px] h-[14px] text-accent shrink-0 mt-0.5"
+                          strokeWidth={2.5}
+                        />
+                        <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
 
                   <Link
                     to={plan.ctaLink}
-                    className={`block text-center w-full px-5 py-3 rounded-full text-sm font-medium transition-colors ${
+                    className="block text-center w-full px-5 py-[11px] rounded-full text-sm font-medium transition-colors"
+                    style={
                       plan.popular
-                        ? "bg-foreground text-background hover:opacity-90"
-                        : "border hairline text-foreground hover:bg-muted"
-                    }`}
+                        ? {
+                            backgroundColor: "hsl(var(--accent))",
+                            color: "hsl(var(--accent-foreground))",
+                          }
+                        : {
+                            backgroundColor: "transparent",
+                            color: "hsl(var(--foreground))",
+                            border: "1px solid hsl(var(--foreground))",
+                          }
+                    }
                   >
                     {plan.cta}
                   </Link>
