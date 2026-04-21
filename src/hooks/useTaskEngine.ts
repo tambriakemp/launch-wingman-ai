@@ -374,6 +374,12 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     setActivePhase(newActivePhase);
     setPhaseStatuses(newStatuses);
 
+    // Skip DB write if nothing changed (avoids an UPDATE on every dashboard load)
+    const statusesUnchanged =
+      newActivePhase === activePhase &&
+      PHASES.every((p) => phaseStatuses[p] === newStatuses[p]);
+    if (statusesUnchanged) return;
+
     // Update project in database using local variable (not stale state)
     if (user) {
       await supabase
@@ -385,7 +391,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         .eq('id', projectId)
         .eq('user_id', user.id);
     }
-  }, [isPhaseComplete, projectId, user]);
+  }, [isPhaseComplete, projectId, user, activePhase, phaseStatuses]);
 
   // Fetch project and tasks data
   const fetchData = useCallback(async () => {
