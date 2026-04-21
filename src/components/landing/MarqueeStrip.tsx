@@ -16,12 +16,12 @@ const keywords = [
 
 export const MarqueeStrip = () => {
   return (
-    <div className="bg-accent py-4 overflow-hidden">
+    <div className="border-y hairline py-5 overflow-hidden bg-background">
       <motion.div
-        className="flex gap-8 whitespace-nowrap"
+        className="flex gap-10 whitespace-nowrap"
         animate={{ x: [0, -1920] }}
         transition={{
-          duration: 30,
+          duration: 40,
           repeat: Infinity,
           ease: "linear",
         }}
@@ -29,10 +29,10 @@ export const MarqueeStrip = () => {
         {[...keywords, ...keywords, ...keywords].map((keyword, index) => (
           <span
             key={index}
-            className="text-accent-foreground font-semibold text-lg flex items-center gap-8"
+            className="font-serif italic text-2xl text-foreground/80 flex items-center gap-10"
           >
             {keyword}
-            <span className="w-2 h-2 rounded-full bg-accent-foreground/50" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
           </span>
         ))}
       </motion.div>

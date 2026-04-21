@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 
 export const LandingHeader = () => {
   const { user, signOut } = useAuth();
@@ -14,7 +12,7 @@ export const LandingHeader = () => {
   const isLanding = location.pathname === "/";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -33,91 +31,84 @@ export const LandingHeader = () => {
     }
   };
 
-  // On landing page: start transparent over dark hero, turn white on scroll
-  // On other pages: always dark
-  const showWhiteHeader = isLanding && scrolled;
+  const navLinks = [
+    { id: "features", label: "Features" },
+    { id: "how-it-works", label: "How it works" },
+    { id: "pricing", label: "Pricing" },
+    { id: "faq", label: "FAQ" },
+  ];
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        showWhiteHeader
-          ? "bg-card/95 backdrop-blur-md border-b border-border shadow-sm"
-          : "bg-primary/95 backdrop-blur-md border-b border-border/10"
-      }`}
-    >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          <Link to="/">
-            <LaunchelyLogo textClassName={showWhiteHeader ? "text-foreground" : "text-primary-foreground"} />
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+      <div
+        className={`max-w-5xl mx-auto bg-card hairline border rounded-full transition-all duration-300 ${
+          scrolled ? "pill-shadow" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between pl-6 pr-3 py-2.5">
+          {/* Wordmark */}
+          <Link to="/" className="flex items-baseline gap-0">
+            <span className="font-serif text-xl font-semibold text-foreground tracking-tight">
+              Launchely
+            </span>
+            <span className="font-serif text-xl font-semibold text-accent">.</span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-8">
-            <button
-              onClick={() => scrollToSection("features")}
-              className={`font-medium transition-colors ${
-                showWhiteHeader ? "text-foreground/70 hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground"
-              }`}
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection("how-it-works")}
-              className={`font-medium transition-colors ${
-                showWhiteHeader ? "text-foreground/70 hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground"
-              }`}
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className={`font-medium transition-colors ${
-                showWhiteHeader ? "text-foreground/70 hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground"
-              }`}
-            >
-              Pricing
-            </button>
+          <nav className="hidden lg:flex items-center gap-7">
+            {navLinks.map((link) => (
+              <button
+                key={link.id}
+                onClick={() => scrollToSection(link.id)}
+                className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
           </nav>
 
           {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-2">
             {user ? (
               <>
-                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Link to="/app">Go to App</Link>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <Link
+                  to="/app"
+                  className="text-sm font-medium px-4 py-2 rounded-full bg-foreground text-background hover:opacity-90 transition-opacity"
+                >
+                  Go to App
+                </Link>
+                <button
                   onClick={handleSignOut}
-                  className={showWhiteHeader ? "text-foreground hover:bg-muted" : "text-primary-foreground hover:bg-primary-foreground/10"}
+                  className="p-2 rounded-full text-foreground/60 hover:text-foreground hover:bg-muted"
                   title="Sign Out"
                 >
-                  <LogOut className="w-5 h-5" />
-                </Button>
+                  <LogOut className="w-4 h-4" />
+                </button>
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  asChild
-                  className={showWhiteHeader ? "text-foreground hover:bg-muted" : "text-primary-foreground hover:bg-primary-foreground/10"}
+                <Link
+                  to="/auth"
+                  className="text-sm text-foreground/70 hover:text-foreground px-3 py-2 transition-colors"
                 >
-                  <Link to="/auth">Sign In</Link>
-                </Button>
-                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Link to="/auth?tab=signup">Get Started Free</Link>
-                </Button>
+                  Sign in
+                </Link>
+                <Link
+                  to="/auth?tab=signup"
+                  className="text-sm font-medium px-4 py-2 rounded-full border hairline text-foreground hover:bg-muted transition-colors"
+                >
+                  Start free
+                </Link>
               </>
             )}
           </div>
 
           {/* Mobile Toggle */}
           <button
-            className={`lg:hidden p-2 ${showWhiteHeader ? "text-foreground" : "text-primary-foreground"}`}
+            className="lg:hidden p-2 text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
@@ -126,49 +117,52 @@ export const LandingHeader = () => {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-card border-t border-border"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="lg:hidden max-w-5xl mx-auto mt-2 bg-card hairline border rounded-2xl pill-shadow overflow-hidden"
           >
-            <div className="container mx-auto px-4 py-4 space-y-4">
-              <button
-                className="block w-full text-left py-2 text-foreground font-medium"
-                onClick={() => scrollToSection("features")}
-              >
-                Features
-              </button>
-              <button
-                className="block w-full text-left py-2 text-foreground font-medium"
-                onClick={() => scrollToSection("how-it-works")}
-              >
-                How It Works
-              </button>
-              <button
-                className="block w-full text-left py-2 text-foreground font-medium"
-                onClick={() => scrollToSection("pricing")}
-              >
-                Pricing
-              </button>
+            <div className="p-4 space-y-1">
+              {navLinks.map((link) => (
+                <button
+                  key={link.id}
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-foreground hover:bg-muted text-sm"
+                  onClick={() => scrollToSection(link.id)}
+                >
+                  {link.label}
+                </button>
+              ))}
 
-              <div className="pt-4 border-t border-border space-y-2">
+              <div className="pt-3 mt-3 border-t hairline space-y-2">
                 {user ? (
                   <>
-                    <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link to="/app">Go to App</Link>
-                    </Button>
-                    <Button variant="outline" onClick={handleSignOut} className="w-full">
-                      <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                    </Button>
+                    <Link
+                      to="/app"
+                      className="block text-center px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium"
+                    >
+                      Go to App
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-center px-4 py-2.5 rounded-full border hairline text-foreground text-sm font-medium"
+                    >
+                      Sign Out
+                    </button>
                   </>
                 ) : (
                   <>
-                    <Button variant="outline" asChild className="w-full">
-                      <Link to="/auth">Sign In</Link>
-                    </Button>
-                    <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link to="/auth?tab=signup">Get Started Free</Link>
-                    </Button>
+                    <Link
+                      to="/auth"
+                      className="block text-center px-4 py-2.5 rounded-full border hairline text-foreground text-sm font-medium"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      to="/auth?tab=signup"
+                      className="block text-center px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium"
+                    >
+                      Start free
+                    </Link>
                   </>
                 )}
               </div>
