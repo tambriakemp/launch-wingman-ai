@@ -216,13 +216,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         {step === 0 && (
           <div className="space-y-5">
             <div>
-              <Label className="text-sm font-medium">Campaign Name</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">Give your campaign a clear, descriptive name</p>
+              <Label>Campaign Name</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Give your campaign a clear, descriptive name</p>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Launch 2026" />
             </div>
             <div>
-              <Label className="text-sm font-medium">Goal</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">What's the primary objective?</p>
+              <Label>Goal</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">What's the primary objective?</p>
               <Select value={goal} onValueChange={setGoal}>
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
@@ -239,23 +239,23 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium">Start Date</Label>
+                <Label>Start Date</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-sm font-medium">End Date</Label>
+                <Label>End Date</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium">Budget (optional)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">Set a spending limit for this campaign</p>
+              <Label>Budget (optional)</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Set a spending limit for this campaign</p>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="$0" />
             </div>
             {goal && (
               <div>
-                <Label className="text-sm font-medium">Goal Target *</Label>
-                <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
+                <Label>Goal Target *</Label>
+                <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">
                   {goal === "revenue" ? "Target revenue ($)" :
                     goal === "traffic" ? "Target number of visits" :
                     goal === "followers" ? "Target follower count gain" :
@@ -288,8 +288,8 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             {autoUtm && (
               <div className="space-y-5">
                 <div>
-                  <Label className="text-sm font-medium">Base Destination URL</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">The page visitors will land on when they click your links</p>
+                  <Label>Base Destination URL</Label>
+                  <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">The page visitors will land on when they click your links</p>
                   <Input
                     value={baseDestinationUrl}
                     onChange={(e) => setBaseDestinationUrl(e.target.value)}
@@ -298,7 +298,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                   />
                 </div>
                 <div>
-                <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
+                <Label className="mb-3 block">Select platforms to track</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
