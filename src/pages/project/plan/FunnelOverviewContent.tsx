@@ -1,12 +1,11 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek } from "date-fns";
-import { getFunnelConfig } from "@/lib/funnelUtils";
+import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, format, addWeeks } from "date-fns";
 import {
   GreetingHeader,
   NextBestTaskCard,
@@ -16,6 +15,7 @@ import {
   ProjectCompletedView,
   ProjectPausedView,
   ProjectLaunchedView,
+  AINudgeCard,
 } from "@/components/dashboard";
 import { CheckInBanner, CheckInFlow } from "@/components/check-in";
 import { MemoryReviewBanner } from "@/components/relaunch";
