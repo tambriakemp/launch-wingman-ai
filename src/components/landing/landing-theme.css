@@ -27,6 +27,28 @@
   --paper-100: 35 45% 94%;     /* #F4EEE3 */
   --paper-200: 35 38% 90%;     /* #ECE3D2 */
 
+  /* Extended palette used by editorial dashboard */
+  --ink-100: 30 9% 92%;
+  --ink-300: 30 9% 70%;
+  --ink-700: 30 9% 28%;
+  --ink-800: 30 9% 20%;
+  --ink-900: 30 9% 10%;
+  --terracotta-50: 13 56% 95%;
+  --terracotta-500: 13 56% 51%;
+  --terracotta-700: 13 56% 38%;
+  --moss-100: 110 22% 90%;
+  --moss-500: 130 28% 42%;
+  --moss-700: 130 30% 28%;
+  --fg-muted: 30 9% 50%;
+  --fg-secondary: 30 9% 33%;
+  --fg-subtle: 30 9% 70%;
+  --border-hairline: 35 28% 87%;
+  --border-default: 35 22% 80%;
+  --font-display: "Playfair Display", "Iowan Old Style", Georgia, serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
   /* override shadcn semantic tokens within scope */
   --background: 35 50% 96%;
   --foreground: 30 9% 10%;

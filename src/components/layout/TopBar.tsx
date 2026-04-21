@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Breadcrumbs } from "./Breadcrumbs";
+import { format } from "date-fns";
 import { CommandSearchPill } from "./CommandSearchPill";
 
 export const TopBar = () => {
@@ -47,7 +47,7 @@ export const TopBar = () => {
       className="sticky top-0 z-40 flex items-center justify-between gap-3 px-3 md:px-10 py-3 border-b border-[hsl(var(--hairline))] backdrop-blur-md"
       style={{ backgroundColor: "rgba(251, 247, 241, 0.85)" }}
     >
-      {/* Left: hamburger (mobile) or breadcrumbs (desktop) */}
+      {/* Left: hamburger (mobile) or date eyebrow (desktop) */}
       <div className="flex items-center gap-2 min-w-0">
         {isMobile ? (
           <Button
@@ -60,7 +60,17 @@ export const TopBar = () => {
             <Menu className="h-5 w-5" />
           </Button>
         ) : (
-          <Breadcrumbs />
+          <span
+            className="text-[hsl(var(--fg-muted))] uppercase whitespace-nowrap"
+            style={{
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              fontWeight: 600,
+            }}
+          >
+            {format(new Date(), "EEE · MMMM d")}
+          </span>
         )}
       </div>
 
