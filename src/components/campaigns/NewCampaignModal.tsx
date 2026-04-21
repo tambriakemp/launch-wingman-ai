@@ -322,48 +322,47 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         {/* Step 3: Funnel Selector */}
         {step === 2 && (
           <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Link this campaign to one of your existing funnels, or skip if this campaign doesn't use one.
-              </p>
-            </div>
+            <p className="font-display text-[14px] italic leading-relaxed text-[hsl(var(--fg-secondary))]">
+              Link this campaign to one of your existing funnels, or skip if this campaign doesn't use one.
+            </p>
             {funnelsLoading ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--fg-muted))]" />
               </div>
             ) : !funnels?.length ? (
-              <div className="text-center py-10 border border-dashed rounded-lg">
-                <p className="text-muted-foreground text-sm">No funnels found.</p>
-                <p className="text-xs text-muted-foreground mt-1">Create a project with a funnel first.</p>
+              <div className="text-center py-10 border border-dashed border-[hsl(var(--border-hairline))] rounded-[10px] bg-white">
+                <p className="text-[hsl(var(--fg-secondary))] text-sm font-body">No funnels found.</p>
+                <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-1 font-body">Create a project with a funnel first.</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {funnels.map((f) => {
                   const projectName = (f as any).projects?.name ?? "Unknown Project";
+                  const isSelected = selectedFunnelId === f.id;
                   return (
                     <button
                       key={f.id}
-                      onClick={() => setSelectedFunnelId(selectedFunnelId === f.id ? null : f.id)}
+                      onClick={() => setSelectedFunnelId(isSelected ? null : f.id)}
                       className={cn(
-                        "w-full text-left border rounded-lg p-3.5 transition-all",
-                        selectedFunnelId === f.id
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/40 hover:bg-muted/30"
+                        "w-full text-left border rounded-[10px] p-3.5 transition-all bg-white",
+                        isSelected
+                          ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)]"
+                          : "border-[hsl(var(--border-hairline))] hover:border-[hsl(var(--ink-900)/0.4)]"
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm">{getFunnelLabel(f.funnel_type)}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
+                          <p className="font-body font-semibold text-[14px] text-[hsl(var(--ink-900))]">{getFunnelLabel(f.funnel_type)}</p>
+                          <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-0.5 font-body">{projectName}</p>
                           {f.target_audience && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{f.target_audience}</p>
+                            <p className="text-[12px] text-[hsl(var(--fg-secondary))] mt-1 line-clamp-1 font-body">{f.target_audience}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {f.niche && <Badge variant="outline" className="text-[10px]">{f.niche}</Badge>}
-                          {selectedFunnelId === f.id && (
-                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="w-3 h-3 text-primary-foreground" />
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-[hsl(var(--ink-900))] flex items-center justify-center">
+                              <Check className="w-3 h-3 text-[hsl(var(--paper-100))]" />
                             </div>
                           )}
                         </div>
@@ -376,10 +375,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             <button
               onClick={() => setSelectedFunnelId(null)}
               className={cn(
-                "w-full text-center border border-dashed rounded-lg p-3 text-sm transition-all",
+                "w-full text-center border border-dashed rounded-[10px] p-3 text-[13px] font-body transition-all",
                 selectedFunnelId === null && !funnelsLoading
-                  ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border text-muted-foreground hover:border-primary/40"
+                  ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)] text-[hsl(var(--ink-900))]"
+                  : "border-[hsl(var(--border-hairline))] text-[hsl(var(--fg-muted))] hover:border-[hsl(var(--ink-900)/0.4)]"
               )}
             >
               Skip — no funnel for this campaign
