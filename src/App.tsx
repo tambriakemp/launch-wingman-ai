@@ -126,6 +126,12 @@ const PageViewTracker = () => {
   return null;
 };
 
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+    <div className="text-sm">Loading…</div>
+  </div>
+);
+
 const App = () => (
   <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
@@ -138,6 +144,7 @@ const App = () => (
           <PageViewTracker />
           <ScrollToTop />
           <ImpersonationBanner />
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Public marketing pages */}
             <Route path="/" element={<Landing />} />
@@ -744,6 +751,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </TikTokEnvironmentProvider>
         </AuthProvider>
       </BrowserRouter>
