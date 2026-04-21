@@ -613,55 +613,16 @@ export default function OfferSnapshotTask() {
           </div>
         </motion.div>
 
-        {/* Offer Stack Builder */}
-        {funnelConfig && (
-          <OfferStackBuilder
-            funnelType={funnelConfigKey!}
-            offers={offers}
-            onChange={setOffers}
-            audienceData={audienceData}
-            onSaveNow={saveOffersToDb}
-          />
-        )}
-
-        {/* Completion Status */}
-        <div className="mt-8 pt-6 border-t border-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{configuredCount}</span>
-              /{activeOffers.length} offers configured
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={handleComplete}
-              className="flex-1"
-              disabled={configuredCount === 0 || isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save & mark complete →"
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleSaveForLater}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save for Later"}
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-4 text-center">
-            You can always come back and adjust your offers later.
-          </p>
-        </div>
-      </div>
-    </div>
+      {/* Offer Stack Builder */}
+      {funnelConfig && (
+        <OfferStackBuilder
+          funnelType={funnelConfigKey!}
+          offers={offers}
+          onChange={setOffers}
+          audienceData={audienceData}
+          onSaveNow={saveOffersToDb}
+        />
+      )}
+    </EditorialTaskShell>
   );
 }
