@@ -957,9 +957,9 @@ export default function TaskDetail() {
 
   if (engineLoading || !taskTemplate) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin" />
+      <div className="min-h-screen bg-paper-100 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-fg-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-terracotta" />
           <span>Loading your task...</span>
         </div>
       </div>
@@ -1006,49 +1006,45 @@ export default function TaskDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        {/* Header / Context Section */}
-        <div className="mb-10">
-          <Link
-            to={`/projects/${projectId}/dashboard`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
+    <div className="min-h-screen bg-paper-100">
+      <div className="max-w-[760px] mx-auto px-4 sm:px-10 pt-7 pb-20">
+        {/* Back link */}
+        <Link
+          to={`/projects/${projectId}/tasks`}
+          className="inline-flex items-center gap-1.5 text-[13px] text-fg-muted hover:text-ink-900 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Launch Tasks
+        </Link>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {phaseLabel} Phase
+        {/* Hero */}
+        <div className="mt-5 mb-9">
+          <div className="flex items-center gap-2.5 mb-4 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-clay-200 text-terracotta text-[11px] font-semibold tracking-[0.08em] uppercase">
+              {phaseLabel}
             </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              Estimated time: {timeRange}
+            <span className="font-mono text-[12px] text-fg-muted inline-flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {timeRange}
             </span>
+            {getLearnMoreArticleId(taskTemplate.taskId) && (
+              <Link
+                to={`/projects/${projectId}/library?article=${getLearnMoreArticleId(taskTemplate.taskId)}&returnTo=${encodeURIComponent(location.pathname)}`}
+                className="text-[12px] text-fg-muted hover:text-ink-800 transition-colors underline-offset-2 hover:underline"
+              >
+                Learn more
+              </Link>
+            )}
           </div>
-
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+          <h1 className="font-display-hero text-[32px] sm:text-[44px] md:text-[48px] font-normal leading-[1.05] tracking-[-0.025em] text-ink-900 m-0">
             {taskTemplate.title}
           </h1>
-          
-          {/* Learn more link - only shown for specific tasks */}
-          {getLearnMoreArticleId(taskTemplate.taskId) && (
-            <Link
-              to={`/projects/${projectId}/library?article=${getLearnMoreArticleId(taskTemplate.taskId)}&returnTo=${encodeURIComponent(location.pathname)}`}
-              className="text-sm text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-            >
-              Learn more
-            </Link>
-          )}
         </div>
 
-        {/* Why This Matters Section */}
+        {/* Why this matters */}
         <section className="mb-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Why this matters
-            </h2>
+          <div className="flex items-center justify-between mb-3.5">
+            <span className="editorial-eyebrow">Why this matters</span>
             {hasVoiceSnippetSupport(taskTemplate.taskId, taskTemplate.whyItMatters) && (
               <VoiceSnippetButton
                 taskId={taskTemplate.taskId}
@@ -1056,26 +1052,21 @@ export default function TaskDetail() {
               />
             )}
           </div>
-          <p className="text-foreground/80 leading-relaxed">
+          <p className="font-display text-[18px] sm:text-[20px] leading-[1.5] tracking-[-0.005em] text-ink-900 font-normal m-0">
             {taskTemplate.whyItMatters}
           </p>
         </section>
 
-
-        <div className="h-px bg-border mb-10" />
-
-        {/* What to Do Section */}
+        {/* What to do */}
         <section className="mb-10">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-            What to do
-          </h2>
-          <ol className="space-y-3">
+          <div className="editorial-eyebrow mb-3.5">What to do</div>
+          <ol className="grid gap-3 m-0 p-0 list-none">
             {taskTemplate.instructions.map((instruction, index) => (
-              <li key={index} className="flex gap-3 items-start">
-                <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
+              <li key={index} className="grid grid-cols-[28px_1fr] gap-3.5 items-baseline">
+                <span className="font-display italic font-normal text-[22px] text-terracotta tracking-[-0.02em] leading-none">
                   {index + 1}
                 </span>
-                <span className="text-foreground/80 pt-0.5">{instruction}</span>
+                <span className="text-[15px] leading-[1.6] text-ink-800">{instruction}</span>
               </li>
             ))}
           </ol>
@@ -1084,7 +1075,7 @@ export default function TaskDetail() {
         {/* Video Instructions Section */}
         <VideoInstructionsSection taskId={taskId || ''} isAdmin={isAdmin} />
 
-        <div className="h-px bg-border mb-10" />
+        <div className="h-px bg-hairline mb-10" />
 
         {/* Task Input Area */}
         <section className="mb-10">

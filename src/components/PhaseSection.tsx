@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon, Sparkles, Crown } from "lucide-react";
+import { Check, Lock, ChevronDown, LucideIcon, Sparkles, Crown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,18 @@ const FUNNEL_TYPE_LABELS: Record<string, string> = {
   'launch': 'Launch',
 };
 
+// Editorial italic one-liners for each phase
+const PHASE_SUMMARIES: Record<string, string> = {
+  Setup: "Pick the shape of the thing you're launching.",
+  Planning: "Clarify who this is for and why it works.",
+  Messaging: "Turn what you know into language people feel.",
+  Build: "Put the pieces in place — calmly, one by one.",
+  Content: "The pieces that bring the launch into the world.",
+  "Pre-Launch": "Warm the room before you open the doors.",
+  Launch: "Ship it. Then take an afternoon off.",
+  "Post-Launch": "Reflect, refine, and rest before the next one.",
+};
+
 interface PhaseSectionProps {
   projectId: string;
   label: string;
@@ -33,6 +45,7 @@ interface PhaseSectionProps {
   prerequisiteTasks?: TaskTemplate[];
   defaultOpen?: boolean;
   isProOnly?: boolean;
+  phaseNumber?: number;
 }
 
 export const PhaseSection = ({
@@ -43,6 +56,7 @@ export const PhaseSection = ({
   prerequisiteTasks = [],
   defaultOpen = true,
   isProOnly = false,
+  phaseNumber,
 }: PhaseSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -56,7 +70,7 @@ export const PhaseSection = ({
 
   useEffect(() => {
     const fetchProjectTasks = async () => {
-      if (!user || !projectId) return;
+      if (!userId || !projectId) return;
 
       const { data, error } = await supabase
         .from("project_tasks")
@@ -93,14 +107,11 @@ export const PhaseSection = ({
   };
 
   // Check if prerequisite phase is complete
-  const isPrerequisiteComplete = prerequisiteTasks.length === 0 || 
+  const isPrerequisiteComplete = prerequisiteTasks.length === 0 ||
     prerequisiteTasks.every(t => getTaskStatus(t.taskId) === "completed");
 
   const areDependenciesCompleted = (task: TaskTemplate): boolean => {
-    // If no dependencies, only check if phase prerequisite is complete
     if (task.dependencies.length === 0) return isPrerequisiteComplete;
-    
-    // Check all dependencies are completed
     return task.dependencies.every(depId => {
       const status = getTaskStatus(depId);
       return status === "completed";
@@ -115,95 +126,138 @@ export const PhaseSection = ({
   const completedCount = tasks.filter(
     t => getTaskStatus(t.taskId) === "completed"
   ).length;
+  const totalCount = tasks.length;
+  const pct = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+  const allComplete = totalCount > 0 && completedCount === totalCount;
 
-  // Find the next best task for the focus indicator
   const nextBestTaskIndex = tasks.findIndex(t => {
     const status = getTaskStatus(t.taskId);
     return !isTaskLocked(t) && status !== "completed";
   });
-  
-  const allComplete = completedCount === tasks.length;
+  const hasActiveTask = nextBestTaskIndex >= 0;
 
   const handleTaskClick = (task: TaskTemplate) => {
     if (isTaskLocked(task)) return;
     navigate(task.route.replace(":id", projectId));
   };
 
-  // Determine status text
-  const getStatusText = () => {
-    if (!isPrerequisiteComplete) {
-      return "Complete previous phase first";
-    }
-    if (allComplete) {
-      return "Complete";
-    }
-    return `Step ${nextBestTaskIndex + 1}`;
-  };
+  // Status pill text + tone
+  const statusInfo = allComplete
+    ? { label: "Complete", bg: "bg-moss-100", color: "text-moss-700" }
+    : hasActiveTask
+      ? { label: "In progress", bg: "bg-clay-200", color: "text-terracotta" }
+      : { label: "Upcoming", bg: "bg-ink-100", color: "text-fg-muted" };
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border bg-card">
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      <div className="rounded-2xl border border-hairline bg-white">
+        <div className="flex items-center justify-center py-10">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-terracotta"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-lg border bg-card">
-      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
-        <div className="flex items-center gap-3">
-          <Icon className="w-5 h-5 text-muted-foreground" />
-          <span className="font-medium">{label}</span>
-          {!isPrerequisiteComplete && (
-            <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-          )}
-          {isProOnly && !hasFullAccess && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowUpgradeDialog(true);
-                  }}
-                  className="hover:scale-110 transition-transform"
-                >
-                  <Crown className="w-4 h-4 text-yellow-500" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Pro feature - Upgrade to access</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {getStatusText()}
-          </span>
-          <ChevronDown 
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="rounded-2xl border border-hairline bg-white overflow-hidden"
+    >
+      <CollapsibleTrigger className="w-full text-left">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 sm:gap-5 px-4 sm:px-6 py-4 sm:py-5 hover:bg-paper-100/40 transition-colors">
+          {/* Phase icon chip */}
+          <div
             className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform",
+              "w-9 h-9 rounded-[10px] inline-flex items-center justify-center shrink-0",
+              allComplete ? "bg-moss-100 text-moss-700" : "bg-clay-200 text-terracotta"
+            )}
+          >
+            <Icon className="w-4 h-4" />
+          </div>
+
+          {/* Phase title + summary */}
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              {phaseNumber !== undefined && (
+                <span className="editorial-eyebrow whitespace-nowrap">
+                  Phase {phaseNumber}
+                </span>
+              )}
+              <h2 className="font-display text-[20px] sm:text-[22px] font-medium leading-none tracking-[-0.015em] text-ink-900 m-0">
+                {label}
+              </h2>
+              {!isPrerequisiteComplete && (
+                <Lock className="w-3.5 h-3.5 text-fg-muted" />
+              )}
+              {isProOnly && !hasFullAccess && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowUpgradeDialog(true);
+                      }}
+                      className="hover:scale-110 transition-transform"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-yellow-500" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Pro feature - Upgrade to access</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <div className="font-display italic text-[13px] sm:text-[13.5px] text-fg-secondary mt-1 leading-snug">
+              {PHASE_SUMMARIES[label] || ""}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="hidden md:flex items-center gap-2.5 min-w-[140px]">
+            <div className="flex-1 h-1 bg-paper-300 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  allComplete ? "bg-moss-500" : "bg-terracotta"
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="font-mono text-[11px] text-fg-muted min-w-[34px] text-right">
+              {completedCount}/{totalCount}
+            </span>
+          </div>
+
+          {/* Status pill */}
+          <span
+            className={cn(
+              "hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-[0.08em] uppercase whitespace-nowrap",
+              statusInfo.bg,
+              statusInfo.color
+            )}
+          >
+            {statusInfo.label}
+          </span>
+
+          {/* Chevron */}
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-fg-muted transition-transform shrink-0",
               !isOpen && "-rotate-90"
-            )} 
+            )}
           />
         </div>
       </CollapsibleTrigger>
-      
+
       <CollapsibleContent>
-        <div className="border-t">
+        <div className="border-t border-hairline">
           {tasks.map((task, index) => {
             const status = getTaskStatus(task.taskId);
             const locked = isTaskLocked(task);
             const isCompleted = status === "completed";
-            
-            // Find if this is the next best task (first unlocked, not completed)
-            const isNextBestTask = !locked && !isCompleted && 
-              tasks.findIndex(t => {
-                const s = getTaskStatus(t.taskId);
-                return !isTaskLocked(t) && s !== "completed";
-              }) === index;
+            const isNextBestTask = !locked && !isCompleted && index === nextBestTaskIndex;
 
             return (
               <button
@@ -211,74 +265,78 @@ export const PhaseSection = ({
                 onClick={() => handleTaskClick(task)}
                 disabled={locked}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
-                  "border-b last:border-b-0",
+                  "w-full grid grid-cols-[28px_1fr_auto] gap-3.5 items-center px-4 sm:px-[18px] py-3 text-left transition-colors",
+                  index < tasks.length - 1 && "border-b border-hairline",
                   locked
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-muted/50",
-                  isNextBestTask && "bg-primary/5 border-l-2 border-l-primary"
+                    ? "opacity-55 cursor-not-allowed"
+                    : "hover:bg-paper-100",
+                  isNextBestTask &&
+                    "bg-clay-200/35 hover:bg-clay-200/50 border-l-[3px] border-l-terracotta"
                 )}
+                style={isNextBestTask ? undefined : { borderLeft: "3px solid transparent" }}
               >
-                {/* Checkbox */}
-                <div className="flex-shrink-0">
-                  {isCompleted ? (
-                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                      <Check className="w-3 h-3 text-muted-foreground" />
-                    </div>
-                  ) : isNextBestTask ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-primary" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-muted-foreground/40" />
+                {/* Circle checkbox */}
+                <span
+                  className={cn(
+                    "w-[18px] h-[18px] rounded-full inline-flex items-center justify-center shrink-0 border-[1.5px]",
+                    isCompleted
+                      ? "bg-moss-500 border-moss-500"
+                      : "border-ink-300 bg-transparent"
                   )}
-                </div>
+                >
+                  {isCompleted && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                </span>
 
-                {/* Title and time */}
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className={cn(
-                    "font-medium text-sm",
-                    isCompleted && "text-muted-foreground line-through",
-                    isNextBestTask && "text-foreground"
-                  )}>
+                {/* Title + tags */}
+                <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                  <span
+                    className={cn(
+                      "font-display text-[15px] sm:text-[15.5px] font-medium tracking-[-0.005em] truncate",
+                      isCompleted ? "text-fg-muted line-through" : "text-ink-900"
+                    )}
+                  >
                     {task.title}
                   </span>
-                  
-                  {/* Funnel-specific task indicator */}
+
                   {task.funnelTypes && task.funnelTypes.length > 0 && !task.funnelTypes.includes('all') && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium flex-shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-plum-100 text-plum-700 text-[10.5px] font-semibold tracking-wide whitespace-nowrap">
                       <Sparkles className="w-2.5 h-2.5" />
                       {FUNNEL_TYPE_LABELS[task.funnelTypes[0]] || task.funnelTypes[0]}
                     </span>
                   )}
-                  
-                  {locked && (
-                    <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                  )}
-                  
-                  <span className={cn(
-                    "text-xs text-muted-foreground",
-                    isCompleted && "opacity-60"
-                  )}>
-                    • {task.estimatedMinutesMin}–{task.estimatedMinutesMax} min
-                  </span>
+
+                  {locked && <Lock className="w-3 h-3 text-fg-muted" />}
                 </div>
 
-                {/* CTA for next best task, arrow for other actionable tasks */}
-                {isNextBestTask ? (
-                  <span className="text-xs font-medium text-primary flex items-center gap-1">
-                    Start <ChevronRight className="w-3.5 h-3.5" />
+                {/* Right cluster: time, "Up next", action */}
+                <div className="inline-flex items-center gap-3 sm:gap-3.5 whitespace-nowrap shrink-0">
+                  <span className="font-mono text-[11px] text-fg-muted hidden xs:inline">
+                    {task.estimatedMinutesMin}–{task.estimatedMinutesMax} min
                   </span>
-                ) : !locked && !isCompleted ? (
-                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                ) : null}
+                  {isNextBestTask && (
+                    <span className="hidden sm:inline text-[10.5px] font-semibold tracking-[0.08em] uppercase text-terracotta whitespace-nowrap">
+                      Up next
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      "text-[12.5px] font-medium inline-flex items-center gap-1 min-w-[52px] justify-end",
+                      isNextBestTask ? "text-terracotta" : "text-fg-muted"
+                    )}
+                  >
+                    {isCompleted ? "Open" : isNextBestTask ? "Start" : "Open"}
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </CollapsibleContent>
-      
-      <UpgradeDialog 
-        open={showUpgradeDialog} 
-        onOpenChange={setShowUpgradeDialog} 
+
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
         feature={label}
       />
     </Collapsible>
