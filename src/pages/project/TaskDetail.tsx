@@ -1246,13 +1246,14 @@ export default function TaskDetail() {
                     <div key={option.value}>
                       <Label
                         htmlFor={option.value}
-                        className={`flex flex-col p-4 rounded-lg border transition-all ${
-                          isLocked 
-                            ? "cursor-not-allowed opacity-60 border-border bg-muted/20"
+                        className={cn(
+                          "flex flex-col p-5 rounded-2xl border bg-white transition-all",
+                          isLocked
+                            ? "cursor-not-allowed opacity-60 border-hairline"
                             : isSelected
-                              ? "border-primary bg-primary/5 ring-1 ring-primary cursor-pointer"
-                              : "border-border hover:border-muted-foreground/30 hover:bg-muted/30 cursor-pointer"
-                        }`}
+                            ? "border-terracotta bg-clay-100 cursor-pointer"
+                            : "border-hairline hover:border-ink-300 cursor-pointer"
+                        )}
                         onClick={(e) => {
                           if (isLocked) {
                             e.preventDefault();
@@ -1261,22 +1262,28 @@ export default function TaskDetail() {
                         }}
                       >
                         <div className="flex items-start gap-4">
-                          <RadioGroupItem 
-                            value={option.value} 
-                            id={option.value} 
-                            className="mt-0.5" 
+                          <RadioGroupItem
+                            value={option.value}
+                            id={option.value}
+                            className="mt-0.5 border-ink-300 text-terracotta data-[state=checked]:border-terracotta"
                             disabled={isLocked}
                           />
                           <div className="space-y-1 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`font-medium ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+                              <span className={cn(
+                                "font-display text-[17px] tracking-[-0.01em]",
+                                isLocked ? "text-fg-muted" : "text-ink-900"
+                              )}>
                                 {option.label}
                               </span>
                               {isLocked && (
-                                <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                <Crown className="w-4 h-4 text-terracotta flex-shrink-0" />
                               )}
                             </div>
-                            <p className={`text-sm leading-relaxed ${isLocked ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
+                            <p className={cn(
+                              "text-[14px] leading-relaxed",
+                              isLocked ? "text-fg-muted/70" : "text-fg-secondary"
+                            )}>
                               {option.description}
                             </p>
                           </div>
