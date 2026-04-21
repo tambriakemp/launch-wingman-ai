@@ -205,12 +205,15 @@ const FlyoutNavItem = ({ item, isActive, isPro, isAdvanced, hasAdminAccess, onNa
     <button
       onClick={() => onNavigate(item.href)}
       className={cn(
-        "flex items-center gap-2 px-2 rounded-md text-sm transition-colors w-full text-left py-[14px]",
+        "relative flex items-center gap-2 px-2 rounded-md text-sm transition-colors w-full text-left py-2.5",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
       )}
     >
+      {isActive && (
+        <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-sidebar-primary rounded-r-full" />
+      )}
       <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
       <span>{item.label}</span>
     </button>
@@ -407,10 +410,15 @@ export const ProjectSidebar = () => {
           animate={{ x: 0, opacity: 1 }}
           className="fixed left-0 top-0 h-dvh w-[72px] bg-sidebar border-r border-sidebar-border z-50 flex flex-col items-center py-3"
         >
-          {/* Logo mark */}
+          {/* Logo mark — ink square with serif L */}
           <Link to="/app" className="mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">L</span>
+            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
+              <span
+                className="text-background text-base font-semibold leading-none"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+              >
+                L
+              </span>
             </div>
           </Link>
 
@@ -430,19 +438,19 @@ export const ProjectSidebar = () => {
                   {isActive && (
                     <motion.div
                       layoutId="rail-indicator"
-                      className="absolute left-0 top-1 bottom-1 w-0.5 bg-primary rounded-r-full"
+                      className="absolute left-0 top-1 bottom-1 w-0.5 bg-sidebar-primary rounded-r-full"
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     />
                   )}
                   <div className={cn(
                     "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                    isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                   )}>
                     <section.icon className="w-[18px] h-[18px]" />
                   </div>
                   <span className={cn(
                     "text-[10px] leading-tight transition-colors",
-                    isActive ? "text-sidebar-foreground font-medium" : "text-sidebar-foreground/60"
+                    isActive ? "text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground"
                   )}>
                     {section.label}
                   </span>
@@ -455,7 +463,7 @@ export const ProjectSidebar = () => {
           <div className="flex flex-col items-center gap-1 mt-auto">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
                   <HelpCircle className="w-[18px] h-[18px]" />
                 </button>
               </TooltipTrigger>
@@ -463,7 +471,7 @@ export const ProjectSidebar = () => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
                   <Settings className="w-[18px] h-[18px]" />
                 </button>
               </TooltipTrigger>
@@ -482,7 +490,8 @@ export const ProjectSidebar = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.15 }}
-              className="fixed left-[72px] top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col shadow-xl"
+              className="fixed left-[72px] top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col"
+              style={{ boxShadow: "0 8px 24px -12px rgba(31,27,23,.12)" }}
             >
               {/* Project selector — always visible */}
               <div className="px-3 py-2 border-b border-sidebar-border">
@@ -490,8 +499,8 @@ export const ProjectSidebar = () => {
               </div>
 
               {/* Section header */}
-              <div className="px-4 border-b border-sidebar-border mx-0 py-[20px] my-0">
-                <span className="font-bold uppercase tracking-widest text-sidebar-foreground/70 text-sm">
+              <div className="px-4 py-4 border-b border-sidebar-border">
+                <span className="uppercase tracking-[0.18em] text-[11px] font-semibold text-sidebar-foreground">
                   {activeSection.label}
                 </span>
               </div>
