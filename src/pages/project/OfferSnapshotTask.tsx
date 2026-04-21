@@ -481,7 +481,6 @@ export default function OfferSnapshotTask() {
   }
 
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
-  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
   const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
   const activeOffers = offers.filter(o => !o.isSkipped);
 
