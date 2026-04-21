@@ -1,8 +1,6 @@
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { SubscriptionTier } from "@/lib/subscriptionTiers";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -18,8 +16,9 @@ import {
   Settings,
   HelpCircle,
   Megaphone,
-  BarChart3,
-  ChevronRight,
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   Target,
   Wand2,
   CalendarCheck,
@@ -31,21 +30,37 @@ import {
   FileText,
   Mail,
   Layers,
-  
+  MoreHorizontal,
+  LogOut,
+  Shield,
+  ArrowLeftCircle,
 } from "lucide-react";
-import { ProjectSelector } from "@/components/ProjectSelector";
-import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { ProjectSelector } from "@/components/ProjectSelector";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ── Types ──
-
 interface SectionItem {
   id: string;
   label: string;
@@ -60,11 +75,8 @@ interface Section {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  showProjectSelector?: boolean;
   items: SectionItem[];
 }
-
-// ── Section factory ──
 
 const createSections = (projectId?: string): Section[] => [
   {
@@ -77,7 +89,6 @@ const createSections = (projectId?: string): Section[] => [
       { id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId },
       { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" },
-      
     ],
   },
   {
@@ -93,8 +104,6 @@ const createSections = (projectId?: string): Section[] => [
       { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isAdvancedOnly: true },
       { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
       { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
-      
-      
     ],
   },
   {
@@ -123,116 +132,190 @@ const createSections = (projectId?: string): Section[] => [
   },
 ];
 
-// ── Helper: find which section owns a path ──
+// ── Wordmark ──
+const Wordmark = ({ size = 20 }: { size?: number }) => (
+  <span
+    className="leading-none"
+    style={{
+      fontFamily: '"Playfair Display", Georgia, serif',
+      fontStyle: "italic",
+      fontWeight: 500,
+      fontSize: size,
+      letterSpacing: "-0.02em",
+      color: "hsl(var(--ink-900))",
+    }}
+  >
+    Launchely<span style={{ color: "hsl(var(--terracotta-500))" }}>.</span>
+  </span>
+);
 
-function findActiveSection(sections: Section[], pathname: string): string | null {
-  for (const section of sections) {
-    for (const item of section.items) {
-      if (item.href === "#") continue;
-      if (pathname === item.href || pathname.startsWith(item.href + "/")) return section.id;
-    }
-  }
-  return null;
-}
-
-// ── Flyout nav item renderer ──
-
-interface FlyoutItemProps {
+// ── Nav Row ──
+interface NavRowProps {
   item: SectionItem;
   isActive: boolean;
   isPro: boolean;
   isAdvanced: boolean;
   hasAdminAccess: boolean;
+  collapsed: boolean;
   onNavigate: (href: string) => void;
-  onUpgradeClick: (feature: string, targetTier?: 'pro' | 'advanced') => void;
+  onUpgradeClick: (feature: string, targetTier?: "pro" | "advanced") => void;
 }
 
-const FlyoutNavItem = ({ item, isActive, isPro, isAdvanced, hasAdminAccess, onNavigate, onUpgradeClick }: FlyoutItemProps) => {
+const NavRow = ({
+  item,
+  isActive,
+  isPro,
+  isAdvanced,
+  hasAdminAccess,
+  collapsed,
+  onNavigate,
+  onUpgradeClick,
+}: NavRowProps) => {
   const isProLocked = item.isProOnly && !isPro && !isAdvanced && !hasAdminAccess;
   const isAdvancedLocked = item.isAdvancedOnly && !isAdvanced && !hasAdminAccess;
+  const locked = isProLocked || isAdvancedLocked;
+  const disabled = item.requiresProject;
 
-  if (item.requiresProject) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed">
-            <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
-      </Tooltip>
-    );
-  }
+  const handleClick = () => {
+    if (disabled) return;
+    if (locked) {
+      onUpgradeClick(item.label, isAdvancedLocked ? "advanced" : "pro");
+      return;
+    }
+    onNavigate(item.href);
+  };
 
-  if (isAdvancedLocked) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={() => onUpgradeClick(item.label, 'advanced')}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
-          >
-            <item.icon className="w-4 h-4" />
-            <span className="flex-1">{item.label}</span>
-            <Crown className="w-3 h-3 text-primary" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right"><p>Advanced feature — Upgrade to access</p></TooltipContent>
-      </Tooltip>
-    );
-  }
+  const Icon = item.icon;
 
-  if (isProLocked) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={() => onUpgradeClick(item.label, 'pro')}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
-          >
-            <item.icon className="w-4 h-4" />
-            <span className="flex-1">{item.label}</span>
-            <Crown className="w-3 h-3 text-primary" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right"><p>Pro feature – Upgrade to access</p></TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return (
+  const button = (
     <button
-      onClick={() => onNavigate(item.href)}
+      type="button"
+      onClick={handleClick}
       className={cn(
-        "relative flex items-center gap-2 px-2 rounded-md text-sm transition-colors w-full text-left py-2.5",
+        "group relative flex items-center gap-2.5 w-full rounded-lg text-left transition-colors",
+        collapsed ? "justify-center px-0 py-2 h-9" : "px-3 py-[7px]",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+          ? "bg-[hsl(var(--clay-200))] text-[hsl(var(--ink-900))]"
+          : "text-[hsl(var(--ink-800))] hover:bg-[hsl(var(--ink-900)/0.04)]",
+        disabled && "opacity-40 cursor-not-allowed"
       )}
+      style={{ fontFamily: 'var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif)' }}
     >
-      {isActive && (
-        <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-sidebar-primary rounded-r-full" />
+      <Icon
+        className={cn(
+          "w-4 h-4 shrink-0",
+          isActive ? "text-[hsl(var(--terracotta-500))]" : "text-[hsl(var(--fg-muted))]"
+        )}
+      />
+      {!collapsed && (
+        <>
+          <span
+            className="flex-1 truncate"
+            style={{ fontSize: 13.5, fontWeight: isActive ? 600 : 500 }}
+          >
+            {item.label}
+          </span>
+          {locked && <Crown className="w-3 h-3 text-[hsl(var(--terracotta-500))]" />}
+        </>
       )}
-      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
-      <span>{item.label}</span>
     </button>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={150}>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          <span className="text-xs">
+            {item.label}
+            {disabled && " (select project)"}
+            {locked && " (upgrade)"}
+          </span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return button;
+};
+
+// ── Section Block ──
+const SectionBlock = ({
+  section,
+  collapsed,
+  isActiveRoute,
+  isPro,
+  isAdvanced,
+  hasAdminAccess,
+  onNavigate,
+  onUpgradeClick,
+}: {
+  section: Section;
+  collapsed: boolean;
+  isActiveRoute: (href: string) => boolean;
+  isPro: boolean;
+  isAdvanced: boolean;
+  hasAdminAccess: boolean;
+  onNavigate: (href: string) => void;
+  onUpgradeClick: (feature: string, targetTier?: "pro" | "advanced") => void;
+}) => {
+  const SectionIcon = section.icon;
+  return (
+    <div className={cn("mb-4", collapsed && "mb-3")}>
+      {!collapsed && (
+        <div
+          className="flex items-center gap-2 px-3 pt-1 pb-2 text-[hsl(var(--fg-muted))]"
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            fontFamily: 'var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif)',
+          }}
+        >
+          <SectionIcon className="w-3 h-3" />
+          {section.label}
+        </div>
+      )}
+      {collapsed && (
+        <div className="h-px mx-3 my-2 bg-[hsl(var(--border-hairline))]" />
+      )}
+      <div className="grid gap-0.5 px-2">
+        {section.items.map((item) => (
+          <NavRow
+            key={item.id}
+            item={item}
+            isActive={isActiveRoute(item.href)}
+            isPro={isPro}
+            isAdvanced={isAdvanced}
+            hasAdminAccess={hasAdminAccess}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+            onUpgradeClick={onUpgradeClick}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 
 // ══════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════
-
 export const ProjectSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id: projectId } = useParams();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
+  const [upgradeTargetTier, setUpgradeTargetTier] = useState<"pro" | "advanced">("pro");
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { hasAdminAccess, tier } = useFeatureAccess();
+  const { collapsed, toggle } = useSidebarCollapsed();
+  const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
+  const { hasAdminAccess: adminAccess } = useAdmin();
+
   const isPro = tier === "pro" || tier === "advanced" || tier === "admin";
   const isAdvanced = tier === "advanced" || tier === "admin";
 
@@ -241,17 +324,25 @@ export const ProjectSidebar = () => {
   useEffect(() => {
     const stored = localStorage.getItem("lastProjectInfo");
     if (stored) {
-      try { setStoredProjectId(JSON.parse(stored).id); } catch { /* ignore */ }
+      try {
+        setStoredProjectId(JSON.parse(stored).id);
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
   const effectiveProjectId = projectId || storedProjectId;
 
-  // ── Project queries ──
+  // ── Project query ──
   const { data: project } = useQuery({
-    queryKey: ["project", projectId],
+    queryKey: ["project-sidebar", projectId],
     queryFn: async () => {
       if (!projectId) return null;
-      const { data, error } = await supabase.from("projects").select("name").eq("id", projectId).single();
+      const { data, error } = await supabase
+        .from("projects")
+        .select("name")
+        .eq("id", projectId)
+        .single();
       if (error) throw error;
       return data;
     },
@@ -260,272 +351,369 @@ export const ProjectSidebar = () => {
 
   useEffect(() => {
     if (projectId && project?.name) {
-      localStorage.setItem("lastProjectInfo", JSON.stringify({ id: projectId, name: project.name }));
+      localStorage.setItem(
+        "lastProjectInfo",
+        JSON.stringify({ id: projectId, name: project.name })
+      );
       setStoredProjectId(projectId);
     }
   }, [projectId, project?.name]);
 
-  // ── Sections ──
+  // ── Profile ──
+  const { data: profile } = useQuery({
+    queryKey: ["profile-sidebar", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const sections = createSections(effectiveProjectId);
 
-  // ── Open section state (desktop flyout) ──
-  const [openSection, setOpenSection] = useState<string | null>(null);
-
-  // Auto-open section based on route
-  useEffect(() => {
-    const active = findActiveSection(sections, location.pathname);
-    setOpenSection(active);
-  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [upgradeTargetTier, setUpgradeTargetTier] = useState<'pro' | 'advanced'>('pro');
-
-  const handleUpgradeClick = useCallback((feature: string, targetTier?: 'pro' | 'advanced') => {
-    setUpgradeFeature(feature);
-    setUpgradeTargetTier(targetTier || 'pro');
-    setShowUpgradeDialog(true);
-  }, []);
-
-  const isActiveRoute = useCallback((href: string) => {
-    if (href === "#") return false;
-    if (href === "/app") return location.pathname === href;
-    // Exact match always wins
-    if (location.pathname === href) return true;
-    // For prefix matching, only match if no sibling route is a more specific match
-    if (location.pathname.startsWith(href + "/")) {
-      // Check if any other known route is a better (longer) prefix match
-      const allHrefs = sections.flatMap(s => s.items.map(i => i.href)).filter(h => h !== "#");
-      const hasBetterMatch = allHrefs.some(
-        other => other !== href && other.length > href.length &&
-          (location.pathname === other || location.pathname.startsWith(other + "/"))
-      );
-      return !hasBetterMatch;
-    }
-    return false;
-  }, [location.pathname]);
-
-  // ── Outside-click handling for desktop flyout ──
-  const railRef = useRef<HTMLDivElement>(null);
-  const flyoutRef = useRef<HTMLDivElement>(null);
-
-  // Outside-click removed — flyout closes on nav or rail toggle
-
-  const handleDesktopNav = (href: string) => {
-    setOpenSection(null);
-    navigate(href);
-  };
-
-  // ── Mobile accordion state ──
-  const [mobileOpenSection, setMobileOpenSection] = useState<string | null>(() =>
-    findActiveSection(sections, location.pathname)
+  const isActiveRoute = useCallback(
+    (href: string) => {
+      if (href === "#") return false;
+      if (location.pathname === href) return true;
+      if (location.pathname.startsWith(href + "/")) {
+        const allHrefs = sections
+          .flatMap((s) => s.items.map((i) => i.href))
+          .filter((h) => h !== "#");
+        const hasBetter = allHrefs.some(
+          (other) =>
+            other !== href &&
+            other.length > href.length &&
+            (location.pathname === other ||
+              location.pathname.startsWith(other + "/"))
+        );
+        return !hasBetter;
+      }
+      return false;
+    },
+    [location.pathname, sections]
   );
 
-  const handleMobileNav = (href: string) => {
-    close();
-    navigate(href);
-  };
+  const handleUpgradeClick = useCallback(
+    (feature: string, targetTier?: "pro" | "advanced") => {
+      setUpgradeFeature(feature);
+      setUpgradeTargetTier(targetTier || "pro");
+      setShowUpgradeDialog(true);
+    },
+    []
+  );
+
+  const handleNavigate = useCallback(
+    (href: string) => {
+      if (href === "#") return;
+      if (isMobile) close();
+      navigate(href);
+    },
+    [navigate, isMobile, close]
+  );
+
+  const tierLabel =
+    tier === "advanced"
+      ? "Advanced plan"
+      : tier === "pro"
+      ? "Pro plan"
+      : tier === "admin"
+      ? "Admin"
+      : tier === "vault"
+      ? "Vault plan"
+      : "Free";
+
+  const displayName = profile?.first_name || user?.email?.split("@")[0] || "You";
+  const userInitial = (profile?.first_name?.[0] || user?.email?.[0] || "U").toUpperCase();
+
+  // ── Sidebar inner content (used by both desktop + mobile) ──
+  const renderSidebarBody = (effectiveCollapsed: boolean) => (
+    <div
+      className="h-full flex flex-col"
+      style={{
+        background: "hsl(var(--paper-100))",
+        borderRight: "1px solid hsl(var(--border-hairline))",
+      }}
+    >
+      {/* Top: wordmark + collapse toggle */}
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          effectiveCollapsed ? "px-2 pt-5 pb-3" : "px-4 pt-5 pb-3"
+        )}
+      >
+        <Link to="/app" className={cn(effectiveCollapsed && "mx-auto")}>
+          {effectiveCollapsed ? (
+            <span
+              className="text-[hsl(var(--ink-900))] leading-none"
+              style={{
+                fontFamily: '"Playfair Display", Georgia, serif',
+                fontStyle: "italic",
+                fontWeight: 500,
+                fontSize: 22,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              L<span style={{ color: "hsl(var(--terracotta-500))" }}>.</span>
+            </span>
+          ) : (
+            <Wordmark size={20} />
+          )}
+        </Link>
+        {!isMobile && !effectiveCollapsed && (
+          <button
+            onClick={toggle}
+            className="h-7 w-7 rounded-md flex items-center justify-center text-[hsl(var(--fg-muted))] hover:bg-[hsl(var(--ink-900)/0.05)] transition-colors"
+            aria-label="Collapse sidebar"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Project switcher */}
+      <div className={cn(effectiveCollapsed ? "px-2 mb-3" : "px-3 mb-3")}>
+        {effectiveCollapsed ? (
+          <Tooltip delayDuration={150}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggle}
+                className="w-full h-9 rounded-lg bg-white border border-[hsl(var(--border-hairline))] flex items-center justify-center hover:bg-[hsl(var(--ink-900)/0.03)] transition-colors"
+                aria-label="Expand sidebar"
+              >
+                <span
+                  className="w-6 h-6 rounded-full bg-[hsl(var(--terracotta-500))] text-white inline-flex items-center justify-center"
+                  style={{
+                    fontFamily: '"Playfair Display", Georgia, serif',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  {(project?.name?.[0] || "L").toUpperCase()}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              <span className="text-xs">{project?.name || "Expand sidebar"}</span>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <ProjectSwitcherPill
+            currentProjectId={effectiveProjectId}
+            projectName={project?.name || "Select project"}
+          />
+        )}
+      </div>
+
+      {/* Sections */}
+      <nav className="flex-1 overflow-y-auto scrollbar-hide pb-2">
+        {sections.map((section) => (
+          <SectionBlock
+            key={section.id}
+            section={section}
+            collapsed={effectiveCollapsed}
+            isActiveRoute={isActiveRoute}
+            isPro={isPro}
+            isAdvanced={isAdvanced}
+            hasAdminAccess={hasAdminAccess}
+            onNavigate={handleNavigate}
+            onUpgradeClick={handleUpgradeClick}
+          />
+        ))}
+
+        {/* Help & Settings cluster */}
+        <div className={cn("mt-2 pt-2 border-t border-[hsl(var(--border-hairline))]", effectiveCollapsed ? "mx-2" : "mx-3")}>
+          <NavRow
+            item={{ id: "help", label: "Help & Support", icon: HelpCircle, href: "/help" }}
+            isActive={isActiveRoute("/help")}
+            isPro={isPro}
+            isAdvanced={isAdvanced}
+            hasAdminAccess={hasAdminAccess}
+            collapsed={effectiveCollapsed}
+            onNavigate={handleNavigate}
+            onUpgradeClick={handleUpgradeClick}
+          />
+          <NavRow
+            item={{ id: "settings", label: "Settings", icon: Settings, href: "/settings" }}
+            isActive={isActiveRoute("/settings")}
+            isPro={isPro}
+            isAdvanced={isAdvanced}
+            hasAdminAccess={hasAdminAccess}
+            collapsed={effectiveCollapsed}
+            onNavigate={handleNavigate}
+            onUpgradeClick={handleUpgradeClick}
+          />
+        </div>
+      </nav>
+
+      {/* Footer: user */}
+      <div
+        className={cn(
+          "border-t border-[hsl(var(--border-hairline))]",
+          effectiveCollapsed ? "px-2 py-3" : "px-3 py-3"
+        )}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "w-full flex items-center gap-2.5 rounded-lg hover:bg-[hsl(var(--ink-900)/0.04)] transition-colors",
+                effectiveCollapsed ? "justify-center p-1.5" : "p-2"
+              )}
+            >
+              <span
+                className="w-7 h-7 rounded-full shrink-0 inline-flex items-center justify-center text-white text-xs font-semibold"
+                style={{
+                  background: "linear-gradient(135deg, #E8D9C6, #C65A3E)",
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                }}
+              >
+                {userInitial}
+              </span>
+              {!effectiveCollapsed && (
+                <>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div
+                      className="truncate text-[hsl(var(--ink-900))]"
+                      style={{ fontSize: 13, fontWeight: 600 }}
+                    >
+                      {displayName}
+                    </div>
+                    <div
+                      className="text-[hsl(var(--fg-muted))]"
+                      style={{ fontSize: 11 }}
+                    >
+                      {tierLabel}
+                    </div>
+                  </div>
+                  <MoreHorizontal className="w-4 h-4 text-[hsl(var(--fg-muted))]" />
+                </>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-52">
+            {user && (
+              <>
+                {isImpersonating ? (
+                  <div className="px-2 py-1.5 bg-amber-500/10 border-b border-amber-500/20">
+                    <p className="text-xs text-amber-600 font-medium">Viewing as:</p>
+                    <p className="text-sm text-amber-700 truncate">{impersonatedUserEmail}</p>
+                  </div>
+                ) : (
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">
+                      {profile?.first_name} {profile?.last_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                )}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {isImpersonating && (
+              <>
+                <DropdownMenuItem
+                  onClick={stopImpersonation}
+                  className="flex items-center gap-2 cursor-pointer text-amber-600"
+                >
+                  <ArrowLeftCircle className="w-4 h-4" />
+                  Return to Admin
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem asChild>
+              <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                <Settings className="w-4 h-4" /> Settings
+              </Link>
+            </DropdownMenuItem>
+            {adminAccess && !isImpersonating && (
+              <DropdownMenuItem asChild>
+                <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                  <Shield className="w-4 h-4" /> Admin
+                </Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={signOut}
+              className="flex items-center gap-2 cursor-pointer text-destructive"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Collapsed: show expand button below user */}
+        {!isMobile && effectiveCollapsed && (
+          <button
+            onClick={toggle}
+            className="mt-2 w-full h-7 rounded-md flex items-center justify-center text-[hsl(var(--fg-muted))] hover:bg-[hsl(var(--ink-900)/0.05)] transition-colors"
+            aria-label="Expand sidebar"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   // ══════════ MOBILE ══════════
   if (isMobile) {
     return (
       <TooltipProvider>
-        <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-          <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-r border-sidebar-border">
-            <div className="h-full flex flex-col">
-              {/* Logo */}
-              <div className="px-4 py-3 border-b border-sidebar-border">
-                <Link to="/app" onClick={close}>
-                  <LaunchelyLogo size="md" textClassName="text-sidebar-accent-foreground text-base" />
-                </Link>
-              </div>
-
-              {/* Accordion sections */}
-              <nav className="flex-1 overflow-y-auto scrollbar-hide px-2 py-2 space-y-1">
-                {sections.map((section) => {
-                  const isExpanded = mobileOpenSection === section.id;
-                  return (
-                    <div key={section.id}>
-                      <button
-                        onClick={() => setMobileOpenSection(isExpanded ? null : section.id)}
-                        className="flex items-center gap-2.5 w-full px-2 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                      >
-                        <section.icon className="w-4 h-4 text-sidebar-foreground/70" />
-                        <span className="flex-1 text-left">{section.label}</span>
-                        <ChevronRight className={cn("w-4 h-4 text-sidebar-foreground/40 transition-transform duration-200", isExpanded && "rotate-90")} />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="pl-6 space-y-0.5 mt-0.5 mb-1">
-                          {section.showProjectSelector && (
-                            <div className="px-1 py-1.5">
-                              <ProjectSelector currentProjectId={effectiveProjectId} />
-                            </div>
-                          )}
-                          {section.items.map((item) => (
-                            <FlyoutNavItem
-                              key={item.id}
-                              item={item}
-                              isActive={isActiveRoute(item.href)}
-                              isPro={isPro}
-                              isAdvanced={isAdvanced}
-                              hasAdminAccess={hasAdminAccess}
-                              onNavigate={handleMobileNav}
-                              onUpgradeClick={handleUpgradeClick}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </nav>
-
-              {/* Footer */}
-              <div className="px-3 py-3 border-t border-sidebar-border space-y-0.5">
-                <button onClick={() => handleMobileNav("/help")} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 w-full text-left">
-                  <HelpCircle className="w-4 h-4" /> Help & Support
-                </button>
-                <button onClick={() => handleMobileNav("/settings")} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 w-full text-left">
-                  <Settings className="w-4 h-4" /> Settings
-                </button>
-              </div>
-            </div>
+        <Sheet open={isOpen} onOpenChange={(o) => !o && close()}>
+          <SheetContent side="left" className="w-[260px] p-0 border-0">
+            {renderSidebarBody(false)}
           </SheetContent>
         </Sheet>
-        <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} targetTier={upgradeTargetTier} />
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          feature={upgradeFeature}
+          targetTier={upgradeTargetTier}
+        />
       </TooltipProvider>
     );
   }
 
   // ══════════ DESKTOP ══════════
-  const activeSection = sections.find((s) => s.id === openSection);
-
   return (
     <TooltipProvider>
-      {/* Spacer div — participates in flex flow to push content */}
-      <div className={cn("hidden md:block shrink-0 transition-all duration-200", activeSection ? "w-[280px]" : "w-[72px]")}>
-        {/* Icon Rail */}
-        <motion.div
-          ref={railRef}
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="fixed left-0 top-0 h-dvh w-[72px] bg-sidebar border-r border-sidebar-border z-50 flex flex-col items-center py-3"
-        >
-          {/* Logo mark — ink square with serif L */}
-          <Link to="/app" className="mb-4">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-              <span
-                className="text-background text-base font-semibold leading-none"
-                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-              >
-                L
-              </span>
-            </div>
-          </Link>
-
-          {/* Section icons */}
-          <div className="flex-1 flex flex-col items-center gap-1">
-            {sections.map((section) => {
-              const isOpen = openSection === section.id;
-              const isActive = openSection
-                ? isOpen
-                : findActiveSection([section], location.pathname) === section.id;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setOpenSection(isOpen ? null : section.id)}
-                  className={cn("relative w-full flex flex-col items-center justify-center py-2 gap-1")}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="rail-indicator"
-                      className="absolute left-0 top-1 bottom-1 w-0.5 bg-sidebar-primary rounded-r-full"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                  )}
-                  <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-                  )}>
-                    <section.icon className="w-[18px] h-[18px]" />
-                  </div>
-                  <span className={cn(
-                    "text-[10px] leading-tight transition-colors",
-                    isActive ? "text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground"
-                  )}>
-                    {section.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Bottom icons */}
-          <div className="flex flex-col items-center gap-1 mt-auto">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
-                  <HelpCircle className="w-[18px] h-[18px]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">Help & Support</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
-                  <Settings className="w-[18px] h-[18px]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">Settings</TooltipContent>
-            </Tooltip>
-          </div>
-        </motion.div>
-
-        {/* Flyout Panel */}
-        <AnimatePresence>
-          {activeSection && (
-            <motion.div
-              ref={flyoutRef}
-              key={activeSection.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.15 }}
-              className="fixed left-[72px] top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col"
-              style={{ boxShadow: "0 8px 24px -12px rgba(31,27,23,.12)" }}
-            >
-              {/* Project selector — always visible */}
-              <div className="px-3 py-2 border-b border-sidebar-border">
-                <ProjectSelector currentProjectId={effectiveProjectId} />
-              </div>
-
-              {/* Section header */}
-              <div className="px-4 py-4 border-b border-sidebar-border">
-                <span className="uppercase tracking-[0.18em] text-[11px] font-semibold text-sidebar-foreground">
-                  {activeSection.label}
-                </span>
-              </div>
-
-              {/* Nav items */}
-              <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-3 space-y-1">
-                {activeSection.items.map((item) => (
-                  <FlyoutNavItem
-                    key={item.id}
-                    item={item}
-                    isActive={isActiveRoute(item.href)}
-                    isPro={isPro}
-                    isAdvanced={isAdvanced}
-                    hasAdminAccess={hasAdminAccess}
-                    onNavigate={handleDesktopNav}
-                    onUpgradeClick={handleUpgradeClick}
-                  />
-                ))}
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} targetTier={upgradeTargetTier} />
+      <aside
+        className={cn(
+          "hidden md:block shrink-0 sticky top-0 h-dvh transition-[width] duration-200 ease-out z-40",
+          collapsed ? "w-[64px]" : "w-[240px]"
+        )}
+      >
+        {renderSidebarBody(collapsed)}
+      </aside>
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        feature={upgradeFeature}
+        targetTier={upgradeTargetTier}
+      />
     </TooltipProvider>
+  );
+};
+
+// ── Project Switcher Pill (wraps the existing ProjectSelector logic in a styled trigger) ──
+const ProjectSwitcherPill = ({
+  currentProjectId,
+  projectName,
+}: {
+  currentProjectId?: string;
+  projectName: string;
+}) => {
+  // Re-use the existing ProjectSelector entirely so creation flow + tier gating stays intact.
+  return (
+    <div className="[&_button]:!bg-white [&_button]:!border [&_button]:!border-[hsl(var(--border-hairline))] [&_button]:!text-[hsl(var(--ink-900))] [&_button]:!h-auto [&_button]:!py-2.5 [&_button]:!px-3 [&_button]:!rounded-[10px] [&_button:hover]:!bg-[hsl(var(--ink-900)/0.03)]">
+      <ProjectSelector currentProjectId={currentProjectId} />
+    </div>
   );
 };
