@@ -131,7 +131,7 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName;
  * matching the spec. Optional, dialogs may also render their own bare content.
  */
 const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("bg-[hsl(var(--paper-100))] px-8 py-6", className)} {...props} />
+  <div className={cn("-mx-8 -my-6 bg-[hsl(var(--paper-100))] px-8 py-6", className)} {...props} />
 );
 DialogBody.displayName = "DialogBody";
 
