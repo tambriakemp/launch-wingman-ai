@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +27,7 @@ import { VideoInstructionsSection } from "@/components/build/VideoInstructionsSe
 import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
-import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
+import { PHASE_LABELS, PHASES, TaskTemplate } from "@/types/tasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
