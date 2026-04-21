@@ -695,18 +695,18 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         await injectFunnelTasks(normalizedType, projectTasks);
       }
 
-      // Also ensure messaging tasks exist
-      const messagingTasks = getUniversalTasks().filter(t => t.phase === 'messaging');
-      for (const template of messagingTasks) {
-        const exists = projectTasks.find(pt => pt.taskId === template.taskId);
-        if (!exists) {
-          await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
-        }
+      // Also ensure messaging tasks exist (single batched insert)
+      const existingIds = new Set(projectTasks.map(pt => pt.taskId));
+      const messagingRows = getUniversalTasks()
+        .filter(t => t.phase === 'messaging' && !existingIds.has(t.taskId))
+        .map(template => ({
+          project_id: projectId,
+          user_id: user.id,
+          task_id: template.taskId,
+          status: 'not_started' as const,
+        }));
+      if (messagingRows.length > 0) {
+        await supabase.from('project_tasks').insert(messagingRows);
       }
 
       setSelectedFunnelType(normalizedType);
