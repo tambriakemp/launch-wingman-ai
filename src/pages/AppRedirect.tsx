@@ -17,65 +17,44 @@ const AppRedirect = () => {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [showCreateProject, setShowCreateProject] = useState(searchParams.get('new') === '1');
   const [projectName, setProjectName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    const checkOnboardingStatus = async () => {
+    const redirect = async () => {
       if (authLoading) return;
       if (!user) { navigate('/auth', { replace: true }); return; }
-
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('onboarding_completed_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) console.error('Error checking onboarding status:', error);
-        if (!profile?.onboarding_completed_at) { navigate('/onboarding', { replace: true }); return; }
-      } catch (error) {
-        console.error('Error checking onboarding:', error);
-      } finally {
-        setCheckingOnboarding(false);
-      }
-    };
-    checkOnboardingStatus();
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    const redirectToProject = async () => {
-      if (authLoading || checkingOnboarding) return;
       if (searchParams.get('new') === '1') { setChecking(false); return; }
-      if (!user) { navigate('/auth', { replace: true }); return; }
 
+      // Check localStorage cache first for instant redirect
       const stored = localStorage.getItem('lastProjectInfo');
       if (stored) {
         try {
           const lastProject: LastProjectInfo = JSON.parse(stored);
           if (lastProject.id) {
-            const { data: existingProject } = await supabase
-              .from('projects')
-              .select('id')
-              .eq('id', lastProject.id)
-              .eq('user_id', user.id)
-              .maybeSingle();
+            // Fire both validation + onboarding check in parallel
+            const [{ data: existingProject }, { data: profile }] = await Promise.all([
+              supabase.from('projects').select('id').eq('id', lastProject.id).eq('user_id', user.id).maybeSingle(),
+              supabase.from('profiles').select('onboarding_completed_at').eq('user_id', user.id).maybeSingle(),
+            ]);
+
+            if (!profile?.onboarding_completed_at) { navigate('/onboarding', { replace: true }); return; }
             if (existingProject) { navigate(`/projects/${lastProject.id}/dashboard`, { replace: true }); return; }
-            else { localStorage.removeItem('lastProjectInfo'); }
+            localStorage.removeItem('lastProjectInfo');
           }
         } catch (e) { /* Invalid JSON */ }
       }
 
+      // No cache — run onboarding + project fetch in parallel
       try {
-        const { data: projects, error } = await supabase
-          .from('projects')
-          .select('id, name')
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        if (error) throw error;
+        const [{ data: profile }, { data: projects }] = await Promise.all([
+          supabase.from('profiles').select('onboarding_completed_at').eq('user_id', user.id).maybeSingle(),
+          supabase.from('projects').select('id, name').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1),
+        ]);
+
+        if (!profile?.onboarding_completed_at) { navigate('/onboarding', { replace: true }); return; }
+
         if (projects && projects.length > 0) {
           localStorage.setItem('lastProjectInfo', JSON.stringify({ id: projects[0].id, name: projects[0].name }));
           navigate(`/projects/${projects[0].id}/dashboard`, { replace: true });
@@ -83,14 +62,14 @@ const AppRedirect = () => {
           setShowCreateProject(true);
         }
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error('Error in redirect:', error);
         setShowCreateProject(true);
       } finally {
         setChecking(false);
       }
     };
-    redirectToProject();
-  }, [user, authLoading, navigate, checkingOnboarding]);
+    redirect();
+  }, [user, authLoading, navigate, searchParams]);
 
   const handleCreateProject = async () => {
     if (!projectName.trim() || !user) return;
@@ -124,7 +103,7 @@ const AppRedirect = () => {
     }
   };
 
-  if (authLoading || checking || checkingOnboarding) {
+  if (authLoading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

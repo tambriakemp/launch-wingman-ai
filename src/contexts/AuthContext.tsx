@@ -38,7 +38,7 @@ const IMPERSONATION_KEY = 'coach_hub_impersonation';
 const ADMIN_INFO_KEY = 'coach_hub_admin_info';
 const EXPLICIT_LOGOUT_KEY = 'launchely_explicit_logout';
 const SUBSCRIPTION_CACHE_KEY = 'launchely_subscription_status_cache';
-const SUBSCRIPTION_CACHE_TTL = 5 * 60 * 1000;
+const SUBSCRIPTION_CACHE_TTL = 30 * 60 * 1000;
 
 interface SubscriptionCache {
   userId: string;
@@ -184,27 +184,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // Always apply cache immediately so UI never waits
     const cached = getCachedSubscriptionStatus(session.user.id);
-
     if (cached) {
       setIsSubscribed(cached.isSubscribed);
       setSubscriptionTier(cached.subscriptionTier);
       setSubscriptionEnd(cached.subscriptionEnd);
       setSubscriptionLoading(false);
     } else {
-      setSubscriptionLoading(true);
+      // No cache — apply free defaults immediately, refresh in background
+      setIsSubscribed(false);
+      setSubscriptionTier(null);
+      setSubscriptionEnd(null);
+      setSubscriptionLoading(false);
     }
 
+    // Always refresh in background — never blocks navigation
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
         console.error('Error checking subscription:', error);
-        if (!cached) {
-          setIsSubscribed(false);
-          setSubscriptionTier(null);
-          setSubscriptionEnd(null);
-          setSubscriptionLoading(false);
-        }
         return;
       }
       
@@ -213,7 +212,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newEnd = data?.subscription_end ?? null;
       const previousSubscribed = prevSubscribedRef.current;
       
-      // Only check for changes after the initial subscription check
       if (hasCheckedInitialSubscription.current && previousSubscribed !== null) {
         const userEmail = user?.email || session.user?.email;
         const userId = user?.id || session.user?.id;
@@ -221,12 +219,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
           : undefined;
         
-        // Detect Pro signup: was not subscribed, now is subscribed
         if (!previousSubscribed && newSubscribed && userEmail) {
           notifyAdminOfSubscriptionChange('pro_signup', userEmail, userName, userId);
         }
-        
-        // Detect Pro cancellation: was subscribed, now is not subscribed
         if (previousSubscribed && !newSubscribed && userEmail) {
           notifyAdminOfSubscriptionChange('pro_cancellation', userEmail, userName, userId);
         }
@@ -241,8 +236,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       cacheSubscriptionStatus(session.user.id, newSubscribed, newTier, newEnd);
     } catch (error) {
       console.error('Error checking subscription:', error);
-    } finally {
-      setSubscriptionLoading(false);
     }
   }, [session, user, notifyAdminOfSubscriptionChange]);
 
@@ -358,15 +351,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Safety timeout to prevent infinite loading
+  // Safety timeout to prevent infinite loading — 3s max, subscription check never blocks UI
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (loading || subscriptionLoading) {
-        console.warn('[AuthContext] Loading timeout - forcing completion');
+      if (loading) {
+        console.warn('[AuthContext] Auth loading timeout - forcing completion');
         setLoading(false);
+      }
+      if (subscriptionLoading) {
         setSubscriptionLoading(false);
       }
-    }, 10000);
+    }, 3000);
     
     return () => clearTimeout(timeout);
   }, [loading, subscriptionLoading]);

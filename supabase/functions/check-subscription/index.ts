@@ -115,17 +115,30 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      logStep("No customer found");
-      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+
+    // Check if we have a cached Stripe customer ID in profiles to skip the slow customers.list call
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let customerId: string | null = profileData?.stripe_customer_id || null;
+
+    if (!customerId) {
+      const customers = await stripe.customers.list({ email, limit: 1 });
+      if (customers.data.length === 0) {
+        logStep("No customer found");
+        return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      customerId = customers.data[0].id;
+      // Cache for future calls
+      await supabaseClient.from('profiles').update({ stripe_customer_id: customerId }).eq('user_id', userId);
     }
 
-    const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
     const subscriptions = await stripe.subscriptions.list({
