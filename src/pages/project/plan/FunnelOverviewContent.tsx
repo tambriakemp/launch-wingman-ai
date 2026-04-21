@@ -899,16 +899,20 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           </button>
         </div>
 
-        <StuckHelpDialog
-          open={stuckModalOpen}
-          onOpenChange={setStuckModalOpen}
-          currentTask={{
-            title: nextBestTask?.title || "Getting started",
-            whyItMatters:
-              nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
-          }}
-          projectContext={project?.name}
-        />
+        <Suspense fallback={null}>
+          {stuckModalOpen && (
+            <StuckHelpDialog
+              open={stuckModalOpen}
+              onOpenChange={setStuckModalOpen}
+              currentTask={{
+                title: nextBestTask?.title || "Getting started",
+                whyItMatters:
+                  nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
+              }}
+              projectContext={project?.name}
+            />
+          )}
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
