@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import ColorsSection from "@/components/branding/ColorsSection";
 import FontsSection from "@/components/branding/FontsSection";
 import PhotosSection from "@/components/branding/PhotosSection";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 import {
   Accordion,
   AccordionContent,

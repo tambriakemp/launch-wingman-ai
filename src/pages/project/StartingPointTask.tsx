@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { toast } from "sonner";
 import { PHASE_LABELS } from "@/types/tasks";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 
 // Custom TikTok icon
 const TikTokIcon = ({ className }: { className?: string }) => (

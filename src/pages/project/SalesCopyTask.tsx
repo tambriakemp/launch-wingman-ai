@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SalesPageCopyTab } from "@/components/content/sales-copy";
 import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
 import { generateVoiceScript } from "@/lib/generateVoiceScript";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 
 export default function SalesCopyTask() {
   const { id: projectId } = useParams();

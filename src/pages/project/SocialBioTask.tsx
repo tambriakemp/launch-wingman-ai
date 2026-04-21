@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SocialBioBuilder } from "@/components/SocialBioBuilder";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 
 export default function SocialBioTask() {
   const { id: projectId } = useParams();
