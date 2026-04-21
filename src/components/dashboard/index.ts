@@ -1,11 +1,7 @@
 export { GreetingHeader } from "./GreetingHeader";
 export { NextBestTaskCard } from "./NextBestTaskCard";
-export { ProgressSnapshotCard } from "./ProgressSnapshotCard";
 export { UpcomingContentCard } from "./UpcomingContentCard";
-export { StuckHelpCard } from "./StuckHelpCard";
 export { StuckHelpDialog } from "./StuckHelpDialog";
-export { DailyMotivationCard } from "./DailyMotivationCard";
-export { PhaseCelebrationCard } from "./PhaseCelebrationCard";
 export { ProjectCompletedView } from "./ProjectCompletedView";
 export { ProjectPausedView } from "./ProjectPausedView";
 export { ProjectLaunchedView } from "./ProjectLaunchedView";
