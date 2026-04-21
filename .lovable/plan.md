@@ -1,104 +1,158 @@
 
 
-## Restyle Sidebar, Topbar & Project Dashboard — Editorial Cream + Terracotta
+## Rebuild Sidebar + Dashboard to match the uploaded design exactly
 
-Bring the signed-in app (`/projects/:id/dashboard`, all other ProjectLayout pages) onto the same Editorial Cream + Terracotta design system used by the landing page. All current navigation items, routes, and functionality stay exactly the same — only the look/feel changes.
+Goal: the signed-in app's sidebar and project dashboard match the four uploaded JSX mockups (Sidebar, Dashboard, Header, Primitives) pixel-for-pixel — single 240px sidebar (collapsible to icon rail), editorial dashboard with hero "Next step", phase timeline cards, and a 1.55fr/1fr two-column body. All current navigation items, routes, queries, gating, and functionality stay identical.
 
-### Theme rollout
+---
 
-Promote the cream + terracotta palette from a landing-only scope to an opt-in **app theme**:
+### 1. Sidebar — single 240px bar, collapsible to icon rail
 
-- Move the palette tokens out of `.landing-theme` into a new `.app-cream` class so both the landing page and the signed-in app can opt in (landing page keeps using it; the new ProjectLayout wraps everything in `.app-cream`).
-- Add **sidebar token overrides** inside the same scope so the existing dark `--sidebar-*` variables become cream/ink for the rail and flyout:
-  - `--sidebar-background: 38 60% 98%` (paper-50, slightly warmer than canvas)
-  - `--sidebar-foreground: 30 9% 33%` (muted ink)
-  - `--sidebar-primary: 13 56% 51%` (terracotta — active indicator)
-  - `--sidebar-accent: 35 35% 92%` (cream hover)
-  - `--sidebar-accent-foreground: 30 9% 10%` (ink)
-  - `--sidebar-border: 35 28% 87%` (hairline)
-- Keep the dark theme tokens untouched in `:root` so any non-app pages we haven't restyled stay safe.
+Replace the current 72px-rail-plus-flyout architecture in `ProjectSidebar.tsx` with one always-visible 240px sidebar that holds every section and item. The sidebar collapses to a 64px icon-only rail (with tooltips) when toggled.
 
-### Topbar (new — matches uploaded HTML exactly)
+**Structure (top to bottom)**
+- Wordmark "Launchely." (Playfair italic, terracotta period) at top — replaces the ink "L" tile.
+- Project switcher pill: white card, hairline border, terracotta circle with first letter, `PROJECT` eyebrow + project name + chevron. Opens the existing `<ProjectSelector>` dropdown.
+- Sections in order: Launch, Marketing, Planner, Resources. Each section has:
+  - Section header row: small section icon + uppercase tracked label (10.5px, 0.14em letter-spacing, muted ink).
+  - Item rows: 16px icon (muted ink, terracotta when active) + label (13.5px Plus Jakarta, 500/600 weight). Active row = `clay-200` background pill, ink-900 text. Hover = `rgba(31,27,23,0.04)`. Padding `7px 10px 7px 12px`, 8px radius.
+  - Crown icon stays for tier-locked items.
+- Footer: avatar circle + name + plan tier ("Pro plan" / "Free" / etc.) + `more` icon → opens existing user dropdown (Profile / Settings / Admin / Sign out).
+- Collapse toggle: small chevron button at top-right of sidebar. State persisted in `localStorage` (`launchely.sidebar.collapsed`). Collapsed = 64px wide, icon-only, item labels hidden, section labels hidden, tooltips on hover.
+- Mobile: same expanded sidebar inside the existing `Sheet` slide-out (already wired via `MobileSidebarContext`).
 
-Rebuild `TopBar.tsx`:
+**All current navigation items kept** — Dashboard, Launch Tasks, Offer, Launch Brief, Playbook, Campaigns, AI Avatar Studio, Social Planner, Carousel Builder, Hook Generator, Ideas Bank, Sales Page Writer, Email Sequence, My Planner, Calendar, Daily Page, Habits, Goals, Brain Dump, Weekly Review, Content Vault, Library, Assessments. Bottom Help & Settings move into a small footer cluster above the user row (or stay in user dropdown — see Q below).
 
-- Layout: `flex justify-between items-center`, padding `12px 40px` (responsive `px-3 md:px-10`), height auto, `border-b border-hairline`, sticky top-0, **translucent cream background** `rgba(251,247,241,0.85)` with `backdrop-blur(12px)`.
-- **Left — Breadcrumbs**: small Plus Jakarta Sans 13px, muted ink. Format: `Section / Page` where the active page is rendered in `--ink-900` 500 weight. Derived from the current route (e.g. `Launch / Dashboard`, `Marketing / Campaigns`, `Planner / Goals`). On mobile, replaced by the existing hamburger.
-- **Center — Search pill**: cream `--paper-200` background, `1px hairline` border, `rounded-full`, `padding 6px 14px`, magnifier glyph + placeholder "Search tasks, content…" + spacer + `⌘K` kbd chip (white bg, hairline border, mono font, 10px). Min-width 260, max-width 420, flex-1, margin-x 20px. Opens the existing global command palette on click or `⌘K`/`Ctrl+K`.
-- **Right — Actions**: ghost icon buttons (28px, `rounded-lg`, hover `bg-ink/5`):
-  1. Help (`BookOpen` icon) → `/help`
-  2. Notifications (`Bell` icon)
-  3. Avatar — 28×28 circle, `bg-ink-900` background, paper-100 text, Playfair Display 12px 600, single initial. Click opens the existing dropdown (Profile/Settings/Admin/Sign out) — preserves Impersonation banner state and admin link.
-- All current behavior preserved: mobile menu trigger, impersonation banner offset, admin dropdown items, sign-out.
+---
 
-### Sidebar (restyle, no functional changes)
+### 2. Topbar — minimal change
 
-Keep the **72px Icon Rail + flyout** architecture and all section/item definitions as-is. Restyle to cream:
+The cream sticky topbar already matches the design system. Two small tweaks:
+- Remove the breadcrumb left-side (the new sidebar already shows the active section). Replace with a thin "today" line: `Mon · April 20` style date eyebrow (small uppercase tracked).
+- Keep the centered ⌘K search pill, Help/Bell/Avatar trio on the right.
 
-- Rail: `bg-sidebar-background` (paper-50 cream), right border `hairline`, no shadow.
-- Logo mark: replace yellow primary tile with an ink-900 square containing serif "L" (Playfair 600) — matches the landing wordmark.
-- Section icons: muted ink at rest, ink-900 + cream-accent tile when active. Replace yellow rail indicator with **terracotta** vertical bar.
-- Section labels (10px under each icon): muted ink → ink-900 when active.
-- Bottom Help/Settings: same restyling.
-- Flyout panel (`w-52`): `bg-sidebar-background`, hairline right border, soft shadow `0 8px 24px -12px rgba(31,27,23,.12)`.
-- Flyout section header: small uppercase tracked Plus Jakarta, muted ink (drop the bold-XL look).
-- Flyout items: `text-sm` ink, hover `bg-sidebar-accent` cream, **active = cream pill bg + terracotta left-border accent + ink-900 text**.
-- Crown lock icons stay terracotta.
-- Mobile sheet: same cream palette, accordion sections preserved.
+---
 
-### Project Dashboard body (`FunnelOverviewContent`)
+### 3. Dashboard body — exact match to `Dashboard_Launchely_Design_System.jsx`
 
-Restructure visual treatment only — all data, queries, sections, banners, and routes preserved. The existing `<main>` already inherits the new tokens via ProjectLayout, so most cards just update visually. Specific touch-ups:
+Rewrite `FunnelOverviewContent.tsx` (and refactor child components) so the layout, spacing, and colors match the mockup. All data sources, queries, gating, and routes preserved.
 
-- Page background: cream canvas (inherits).
-- **GreetingHeader**: serif `Good morning, {name}` with `{name}` italic terracotta; project line in body; "View Project Summary" link in terracotta with hairline underline; project state badge → cream pill with hairline border + ink text.
-- **Cards** (NextBestTask, Today metrics, LaunchSnapshot, UpcomingContent, MemoryReviewBanner, CheckInBanner): white `--card`, 1px hairline border, `rounded-xl`, soft shadow `0 1px 1px rgba(31,27,23,.04), 0 8px 24px -8px rgba(31,27,23,.06)`. Drop heavy shadows.
-- **Section eyebrows** (e.g. "TODAY"): replace bold uppercase muted with the landing `eyebrow` style (terracotta uppercase tracked).
-- **Today metrics tiles**: numerals in Playfair Display 32px 500, label in Plus Jakarta 11px muted, the "View →" / "Planner →" links in terracotta.
-- **NextBestTaskCard** (hero): white card, terracotta "NEXT" eyebrow, serif title (Playfair 24px 500) with optional italic accent on a key word, ink body, primary CTA = ink-900 pill button with paper text "Start →"; secondary actions inherit ghost styling.
-- **LaunchTimelineInline**: phase pills become cream chips with hairline border; active phase = terracotta border + terracotta text + warm-cream fill; complete = muted-ink check + cream fill; locked = paper-200 + muted-ink.
-- **PhaseCelebrationCard**: cream-200 (`--clay-200`) background, no border, serif headline, terracotta confetti icon, ink-900 dismiss link.
-- **"Feeling stuck?" link**: muted ink, terracotta on hover.
-- Loaders: terracotta spinner.
+**A. Header block** (`GreetingHeader` rebuild)
+- Eyebrow: `Mon · April 20` (live date, formatted).
+- Title: `Good evening, {name}.` — Playfair Display 48px, weight 400, with `{name}` rendered as `<em>` italic in terracotta-500.
+- Subtitle row: "You're building **{Project Name}** · `[In progress]` moss-green pill · "View project summary" link with hairline underline.
+- Right-side actions: ghost "Share update" pill button + solid terracotta "+ New piece" pill button. (Wires: Share update → existing share flow if present, else hidden; + New piece → new task dialog.)
+- Bottom border: hairline divider.
 
-No prop or data-shape changes. Components like `LaunchSnapshotCard`, `UpcomingContentCard`, `LaunchTimelineInline`, `MemoryReviewBanner`, `CheckInBanner`, `NextBestTaskCard`, `PhaseCelebrationCard`, `GreetingHeader` get class-only edits to swap hardcoded yellow/blue/dark-grey to the cream/ink/terracotta tokens.
+**B. Launch Timeline section** (`LaunchTimelineInline` rebuild)
+- Eyebrow row (terracotta): `LAUNCH TIMELINE` left, body title `Halfway through {ActivePhase}.` (Playfair 22px), right-side meta: `6–7 weeks total · ends {launchDate}`.
+- Phase cards in a CSS grid `repeat(N, 1fr)`, gap 8px, where N = number of visible phases (currently 6: Planning, Messaging, Build, Content, Pre-Launch, Launch).
+- Each phase card:
+  - Done: white bg, hairline border, mono week label muted, ink phase name, **moss-500 solid bar** at bottom + small green check top-right.
+  - Active: **ink-900 bg**, paper-100 text, terracotta dot top-right, terracotta mono week label, semi-transparent bar with terracotta progress fill (uses real `pct` from phase progress).
+  - Upcoming: white bg, hairline border, muted text, paper-200 empty bar.
+- Card shape: `rounded-xl`, padding `12px 12px 14px`.
 
-### Mockup of theme application
+**C. Two-column body** — CSS grid `1.55fr / 1fr`, gap 28px.
+
+**Primary column (left):**
+1. **Hero "Next step" card** (`NextBestTaskCard` rebuild)
+   - Background: linear-gradient `clay-200 → #EFE4D3`, large `rounded-2xl`, padding 36px.
+   - Decorative radial-gradient blob top-right.
+   - Top row: pill chip with terracotta dot + `NEXT STEP · {Phase} · {n} OF {total}` + small "What's this?" link.
+   - Title: Playfair 36px, ink-900, max 560px (e.g. `{nextTask.title}`).
+   - Body: 15.5px ink-800 description (uses task description / why it matters).
+   - Action row: ink-900 pill button "Start this step →" (navigates to task) + meta cluster (`calendar` icon + estimate, `sparkles` icon + "AI will help" if applicable, "Skip for now" link).
+
+2. **Two small cards row** (grid 1fr/1fr):
+   - **"Planning complete" card**: moss-100 pill with check + `{previousPhase} complete` eyebrow, Playfair 20px headline ("You've laid the foundation."), short narrative copy. (Pulled from a small phase-narrative map keyed by completed phase.)
+   - **"Your launch" summary card**: `YOUR LAUNCH` eyebrow, project name (Playfair 22px), then key/value rows (Offer, Funnel, Launch date) — values pulled from project data; launch date in terracotta.
+
+3. **Upcoming content card** (`UpcomingContentCard` restyle)
+   - Card chrome: white, hairline border, `rounded-2xl`, padding 24px.
+   - Header: `UPCOMING CONTENT` terracotta eyebrow + `This week's rhythm.` Playfair title; right link `View content plan →` (terracotta, → arrow).
+   - Rows grid `110px 1fr auto`: mono date (`Tomorrow · Apr 21`), title (Playfair 15) + kind subtitle, right-side `clay-200` tag pill (e.g., "Instagram", "Email").
+   - Hairline dividers between rows.
+
+**Secondary column (right):**
+1. **Check-in banner** (`CheckInBanner` restyle)
+   - Background: linear-gradient `#F8E9C5 → #F2D9A8` (warm amber), `rounded-xl`, padding 18/20.
+   - Left: Playfair 16 "Want to do a quick check-in?" + 12px subtitle "Three questions. Keeps momentum honest."
+   - Right: ink-900 pill button "Start check-in".
+
+2. **"Today" stats card**
+   - White bg, hairline border, `rounded-2xl`, padding 20.
+   - `TODAY` terracotta eyebrow.
+   - Two rows separated by hairline:
+     - "Due today" + small subtitle + huge Playfair 34 numeric (count from real tasks query).
+     - "Content this week" + "Go to Planner →" terracotta link + Playfair 34 numeric (count from content query).
+
+3. **AI nudge card** (replaces existing AI tip / can subsume `MemoryReviewBanner` if there's a relevant nudge)
+   - Background: ink-900, paper-100 text, `rounded-2xl`, padding 22.
+   - Eyebrow row: terracotta `sparkles` icon + `FROM YOUR AI TEAM` eyebrow in terracotta.
+   - Body: Playfair italic 18px, 1.4 line-height — pulls from existing AI nudge / coach copy. Falls back to a static "keep going" line if none.
+   - Action row: ghost outlined pill "Show me an example" + ghost text "Dismiss".
+
+**D. "Stuck" footer** (replaces "Feeling stuck?" link)
+- Centered Playfair italic 16px muted: `Feeling stuck?` + terracotta underlined `Get help with this step →`. Opens existing `StuckHelpDialog`.
+
+**E. Banners that already exist** (`MemoryReviewBanner`, `PhaseCelebrationCard`, completed/paused/launched views)
+- Keep them; restyle classes only to use `clay-200` / `terracotta-500` / hairline borders / Playfair headlines so they sit naturally above the dashboard. No data changes.
+
+---
+
+### Mockup
 
 ```text
-┌───────────────────────────────────────────────────────────────────┐
-│ Launch / Dashboard           [⌕ Search tasks, content…  ⌘K]   ? 🔔 T │  ← topbar (cream blur)
-├──────┬────────────────────────────────────────────────────────────┤
-│ ▌L  │                                                            │
-│ ▌◇  │    Good morning, Tania.                                    │
-│  L  │    You're building: Lead Magnet Launch  [Draft]            │
-│  ◆  │    ↪ View Project Summary                                  │
-│  ★  │                                                            │
-│  ▢  │    ─── NEXT ───                                            │
-│  ⚙  │    Write your hero headline                                │
-│     │    Why it matters · Estimated 15-20 min      [ Start → ]   │
-│     │                                                            │
-│     │    ─── TODAY ───                                           │
-│     │    [Due Today  3]   [Content This Week  5]                 │
-└──────┴────────────────────────────────────────────────────────────┘
+┌────────────┬─────────────────────────────────────────────────────────────┐
+│ Launchely. │ Mon · April 20                                              │
+│ ─────────  │ Good evening, Tambra.                                       │
+│ 🅛 Project │ You're building AI Skool · [In progress] · View summary     │
+│  Launchely │ ─────────────────────────────────────────────────────────── │
+│            │ LAUNCH TIMELINE   Halfway through Messaging.   6–7w · May28 │
+│ LAUNCH     │ [Plan✓][Messaging●][Build ][Content][Pre-Lch][Launch]       │
+│  ▢ Dashbd  │                                                             │
+│  ▢ Tasks   │ ┌──────────────── 1.55fr ──────────┬──── 1fr ──────────┐   │
+│  ▢ Offer   │ │ ╭ NEXT STEP · Messaging · 1/6 ╮  │ Quick check-in     │   │
+│  ▢ Brief   │ │ Clarify your core message.      │ ─────────────────  │   │
+│  ▢ Playbk  │ │ [Start this step →]  ⏱ 10–20m   │ TODAY              │   │
+│            │ │                                  │ Due today      0   │   │
+│ MARKETING  │ │ [✓ Planning ][YOUR LAUNCH info] │ Content week   7   │   │
+│  ▢ ...     │ │                                  │ ─────────────────  │   │
+│            │ │ UPCOMING CONTENT — This week's   │ ✦ FROM YOUR AI TEAM│   │
+│ PLANNER    │ │ Tomorrow · Apr 21  Blog · Gen.. │ "Your last titles…"│   │
+│  ▢ ...     │ │ Wed · Apr 22       Email · Nurt │                    │   │
+│            │ └──────────────────────────────────┴────────────────────┘   │
+│ RESOURCES  │                Feeling stuck? Get help →                    │
+│  ▢ ...     │                                                             │
+│ ────────── │                                                             │
+│ ◐ Tambra   │                                                             │
+│   Pro plan │                                                             │
+└────────────┴─────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ### Files to change
 
-- `src/components/landing/landing-theme.css` — rename root scope to `.app-cream` (keep `.landing-theme` as alias), add sidebar token overrides.
-- `src/index.css` — no token changes (defaults preserved for non-themed pages).
-- `src/components/layout/ProjectLayout.tsx` — wrap in `<div className="app-cream font-sans">`, swap `bg-muted/30` → cream canvas.
-- `src/components/layout/AdminLayout.tsx` — same wrapper so admin pages inherit cream.
-- `src/components/layout/TopBar.tsx` — full rebuild per spec above (breadcrumbs from route + central search pill + 3 right actions).
-- `src/components/layout/ProjectSidebar.tsx` — class-only edits (rail/flyout colors, indicator color, logo mark, active states, mobile sheet).
-- `src/pages/project/plan/FunnelOverviewContent.tsx` — restyle classes on cards/eyebrows/links only.
-- `src/components/dashboard/GreetingHeader.tsx` — serif headline with terracotta italic accent.
-- `src/components/dashboard/NextBestTaskCard.tsx`, `LaunchSnapshotCard.tsx`, `UpcomingContentCard.tsx`, `LaunchTimelineInline.tsx`, `PhaseCelebrationCard.tsx`, `MemoryReviewBanner.tsx`, `CheckInBanner.tsx`, `ProgressSnapshotCard.tsx` — class-only restyles.
-- New helper: `src/components/layout/Breadcrumbs.tsx` — derives `Section / Page` from `useLocation` + the same section map used by ProjectSidebar.
-- New helper: `src/components/layout/CommandSearchPill.tsx` — the cream search pill (opens existing command palette / dispatches `⌘K`).
+- `src/components/layout/ProjectSidebar.tsx` — full rewrite to single 240px / 64px collapsible sidebar (keep all sections + items + gating + mobile sheet).
+- `src/components/layout/TopBar.tsx` — replace breadcrumbs with date eyebrow.
+- `src/components/layout/ProjectLayout.tsx` — adjust left offset (240px expanded / 64px collapsed) and remove the old 72px rail spacer logic.
+- `src/components/layout/AdminLayout.tsx` — same offset adjustment.
+- `src/pages/project/plan/FunnelOverviewContent.tsx` — restructure to match the mockup grid and sections.
+- `src/components/dashboard/GreetingHeader.tsx` — rebuild per spec.
+- `src/components/dashboard/NextBestTaskCard.tsx` — rebuild as the gradient hero.
+- `src/components/dashboard/UpcomingContentCard.tsx` — restyle to match.
+- `src/components/dashboard/LaunchSnapshotCard.tsx` — restyle to "Your launch" card; new "Planning complete" sibling card may be added inline in `FunnelOverviewContent`.
+- `src/components/check-in/CheckInBanner.tsx` — amber gradient restyle.
+- `src/components/dashboard/PhaseCelebrationCard.tsx` — clay restyle (kept for full-phase celebrations).
+- `src/components/relaunch/MemoryReviewBanner.tsx` — light restyle to fit cream theme.
+- New (small): `src/components/dashboard/AINudgeCard.tsx` — ink-900 italic nudge card (right column).
+- `src/components/landing/landing-theme.css` — verify all referenced tokens exist (`--clay-200`, `--moss-100/500/700`, `--terracotta-50/500/700`, `--paper-100/200`, `--ink-100/300/700/800/900`, `--border-hairline`, `--font-display`, `--font-mono`); add any missing ones.
+- `src/hooks/useSidebarCollapsed.ts` — new tiny hook for collapse state + localStorage persistence.
 
 ### Out of scope
 
-- Other public pages (Auth, About, Contact, Pricing, Blog) keep current look.
-- Internal feature pages (Tasks board, Planner views, Content Vault, AI Studio workspaces) inherit the cream tokens automatically via ProjectLayout but their bespoke layouts will not be re-architected — only the surrounding chrome (sidebar, topbar) and the project dashboard body change visually in this pass. We can roll the same restyle to those pages as a follow-up.
+- Other pages (Tasks, Planner, Vault, Marketing tools, Auth, public pages) — they inherit the new sidebar/topbar chrome automatically but their own bodies are not redesigned in this pass.
+- No data-shape, query, RLS, or route changes.
 
