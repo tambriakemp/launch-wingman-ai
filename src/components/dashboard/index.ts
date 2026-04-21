@@ -12,3 +12,4 @@ export { ProjectLaunchedView } from "./ProjectLaunchedView";
 export { ChildProjectsCard } from "./ChildProjectsCard";
 export { ProjectMenu } from "./ProjectMenu";
 export { RelaunchNudgeBanner } from "./RelaunchNudgeBanner";
+export { AINudgeCard } from "./AINudgeCard";
