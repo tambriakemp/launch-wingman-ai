@@ -591,6 +591,26 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     refetchOnWindowFocus: false,
   });
 
+  const { data: upcomingPlannerCount = 0 } = useQuery({
+    queryKey: ["upcoming-planner-count", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const today = new Date();
+      const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
+      const { count } = await supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("task_scope", "planner")
+        .neq("column_id", "done")
+        .gt("due_at", endOfToday);
+      return count || 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const contentCount = (() => {
     if (!contentData) return 0;
     const now = new Date();
