@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Settings, Shield, LogOut, Menu, ArrowLeftCircle } from "lucide-react";
+import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Breadcrumbs } from "./Breadcrumbs";
+import { CommandSearchPill } from "./CommandSearchPill";
 
 export const TopBar = () => {
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
@@ -22,7 +23,6 @@ export const TopBar = () => {
   const isMobile = useIsMobile();
   const { toggle } = useMobileSidebar();
 
-  // Fetch user profile for first name
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -37,13 +37,19 @@ export const TopBar = () => {
     enabled: !!user?.id,
   });
 
-  const userInitial = profile?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
+  const userInitial =
+    profile?.first_name?.[0]?.toUpperCase() ||
+    user?.email?.[0]?.toUpperCase() ||
+    "U";
 
   return (
-    <header className="h-12 border-b border-border bg-background flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
-      <div className="flex items-center gap-2">
-        {/* Mobile hamburger menu */}
-        {isMobile && (
+    <header
+      className="sticky top-0 z-40 flex items-center justify-between gap-3 px-3 md:px-10 py-3 border-b border-[hsl(var(--hairline))] backdrop-blur-md"
+      style={{ backgroundColor: "rgba(251, 247, 241, 0.85)" }}
+    >
+      {/* Left: hamburger (mobile) or breadcrumbs (desktop) */}
+      <div className="flex items-center gap-2 min-w-0">
+        {isMobile ? (
           <Button
             variant="ghost"
             size="sm"
@@ -53,20 +59,45 @@ export const TopBar = () => {
           >
             <Menu className="h-5 w-5" />
           </Button>
+        ) : (
+          <Breadcrumbs />
         )}
       </div>
 
-      <nav className="flex items-center gap-1 md:gap-2">
-        {/* Profile Avatar Dropdown */}
+      {/* Center: search pill */}
+      <CommandSearchPill />
+
+      {/* Right: actions */}
+      <nav className="flex items-center gap-1 shrink-0">
+        <Link
+          to="/help"
+          className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors"
+          aria-label="Help"
+        >
+          <BookOpen className="w-4 h-4" />
+        </Link>
+        <button
+          type="button"
+          className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="w-4 h-4" />
+        </button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
-              <Avatar className="h-8 w-8 bg-[#1a1a1a]">
-                <AvatarFallback className="bg-[#1a1a1a] text-white text-sm font-medium">
-                  {userInitial}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+            <button
+              type="button"
+              className="ml-1 h-7 w-7 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-opacity"
+              aria-label="Account menu"
+            >
+              <span
+                className="text-[12px] font-semibold leading-none"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+              >
+                {userInitial}
+              </span>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             {user && (
@@ -89,8 +120,8 @@ export const TopBar = () => {
             )}
             {isImpersonating && (
               <>
-                <DropdownMenuItem 
-                  onClick={stopImpersonation} 
+                <DropdownMenuItem
+                  onClick={stopImpersonation}
                   className="flex items-center gap-2 cursor-pointer text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
                 >
                   <ArrowLeftCircle className="w-4 h-4" />
@@ -114,7 +145,10 @@ export const TopBar = () => {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+            <DropdownMenuItem
+              onClick={signOut}
+              className="flex items-center gap-2 cursor-pointer text-destructive"
+            >
               <LogOut className="w-4 h-4" />
               Sign Out
             </DropdownMenuItem>

@@ -14,11 +14,11 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
   return (
     <MobileSidebarProvider>
       <ImpersonationBanner />
-      <div className={`min-h-screen bg-background flex w-full ${isImpersonating ? 'pt-10' : ''}`}>
+      <div className={`app-cream font-sans min-h-screen flex w-full ${isImpersonating ? 'pt-10' : ''}`}>
         <ProjectSidebar />
         <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
-          <main className="flex-1 px-2.5 py-4 md:p-6 overflow-auto bg-muted/30">{children}</main>
+          <main className="flex-1 px-2.5 py-4 md:p-6 overflow-auto">{children}</main>
         </div>
       </div>
     </MobileSidebarProvider>

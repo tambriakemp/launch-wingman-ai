@@ -56,11 +56,9 @@ const LaunchTimelineInline = ({
   const funnelConfig = getFunnelConfig(funnelType);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Launch Timeline
-        </p>
+        <p className="eyebrow">Launch Timeline</p>
         {funnelConfig?.typicalSetupTime && (
           <span className="text-[10px] text-muted-foreground">
             ~{funnelConfig.typicalSetupTime} total
@@ -80,8 +78,8 @@ const LaunchTimelineInline = ({
 
           return (
             <div key={phase} className="flex-1 min-w-0 text-center">
-              <div className={`h-1.5 rounded-full mb-1 ${isComplete ? 'bg-primary' : isActive ? 'bg-primary/40' : 'bg-border'}`} />
-              <p className={`text-[10px] leading-tight truncate ${isActive ? 'text-primary font-semibold' : isComplete ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+              <div className={`h-1.5 rounded-full mb-1 ${isComplete ? 'bg-[hsl(var(--terracotta))]' : isActive ? 'bg-[hsl(var(--terracotta))]/40' : 'bg-[hsl(var(--hairline))]'}`} />
+              <p className={`text-[10px] leading-tight truncate ${isActive ? 'text-[hsl(var(--terracotta))] font-semibold' : isComplete ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                 {est.label}
               </p>
               <p className="text-[9px] text-muted-foreground/60">
@@ -256,12 +254,13 @@ const LaunchSnapshotCard = ({ projectId }: { projectId: string }) => {
   if (items.length === 0 && !snapshotData?.transformation) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Your Launch
-      </p>
+    <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-5 space-y-3">
+      <p className="eyebrow">Your Launch</p>
       {snapshotData?.transformation && (
-        <p className="text-sm text-foreground/80 italic leading-relaxed">
+        <p
+          className="text-base text-foreground/80 italic leading-relaxed"
+          style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+        >
           "
           {snapshotData.transformation.length > 100
             ? snapshotData.transformation.slice(0, 100) + "..."
@@ -502,7 +501,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--terracotta))]" />
       </div>
     );
   }
@@ -701,7 +700,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             route={nextBestTask.route}
           />
         ) : (
-          <div className="p-6 rounded-lg border border-border bg-card text-center">
+          <div className="p-6 rounded-xl border border-[hsl(var(--hairline))] bg-card text-center">
             <p className="text-muted-foreground">
               {isPhaseComplete
                 ? "All tasks in this phase are complete! You're ready to move forward."
@@ -712,40 +711,42 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
         {/* Today — slim 2-column grid */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Today
-          </p>
+          <p className="eyebrow">Today</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+            <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4 flex flex-col gap-1">
               <p className="text-[11px] text-muted-foreground">Due Today</p>
               <p
-                className={`text-2xl font-semibold ${
+                className={`text-3xl font-medium leading-none ${
                   todayPlannerCount > 0
                     ? "text-foreground"
                     : "text-muted-foreground"
                 }`}
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
               >
                 {todayPlannerCount}
               </p>
               {todayPlannerCount > 0 && (
                 <Link
                   to="/planner"
-                  className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                  className="text-xs text-[hsl(var(--terracotta))] hover:opacity-80 inline-flex items-center gap-1 mt-1"
                 >
                   View <ArrowRight className="w-3 h-3" />
                 </Link>
               )}
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
+            <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4 flex flex-col gap-1">
               <p className="text-[11px] text-muted-foreground">
                 Content This Week
               </p>
-              <p className="text-2xl font-semibold text-foreground">
+              <p
+                className="text-3xl font-medium text-foreground leading-none"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+              >
                 {contentCount}
               </p>
               <Link
                 to={`/projects/${projectId}/content`}
-                className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                className="text-xs text-[hsl(var(--terracotta))] hover:opacity-80 inline-flex items-center gap-1 mt-1"
               >
                 Planner <ArrowRight className="w-3 h-3" />
               </Link>
@@ -769,7 +770,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         <div className="text-center py-2">
           <button
             onClick={() => setStuckModalOpen(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            className="text-xs text-muted-foreground hover:text-[hsl(var(--terracotta))] transition-colors underline-offset-2 hover:underline"
           >
             Feeling stuck? Get help with this step →
           </button>
