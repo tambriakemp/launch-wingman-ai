@@ -987,6 +987,30 @@ export default function TaskDetail() {
 
   const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+
+  // ===== Side-rail data =====
+  const phaseNumber = PHASES.indexOf(taskTemplate.phase) + 1;
+  const phaseSummary = PHASE_SUMMARIES[phaseLabel] || "";
+
+  // Sibling tasks in same phase, ordered by template order if available
+  const siblingTasks = projectTasks
+    .map((pt) => ({ pt, tmpl: getTaskTemplate(pt.taskId) }))
+    .filter((x) => x.tmpl?.phase === taskTemplate.phase)
+    .map((x) => ({
+      taskId: x.pt.taskId,
+      title: x.tmpl?.title || x.pt.taskId,
+      status: x.pt.status,
+    }));
+  const phaseCompleted = siblingTasks.filter((t) => t.status === "completed").length;
+  const phaseTotal = siblingTasks.length;
+  const phaseProgressPct = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
+
+  // Pick a stable rotating reminder per task
+  const reminderIndex = taskId
+    ? taskId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % QUIET_REMINDERS.length
+    : 0;
+  const quietReminder = QUIET_REMINDERS[reminderIndex];
+
   
   // Pre-Launch: Show intro screen
   if (showPreLaunchIntro) {
