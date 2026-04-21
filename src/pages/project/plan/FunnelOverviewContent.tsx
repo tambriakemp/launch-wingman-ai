@@ -894,8 +894,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
             <TodayStatsCard
               dueToday={todayPlannerCount}
-              contentThisWeek={contentCount}
-              projectId={projectId}
+              upcomingPlanner={upcomingPlannerCount}
             />
             <AINudgeCard />
           </div>
