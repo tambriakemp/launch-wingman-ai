@@ -957,9 +957,9 @@ export default function TaskDetail() {
 
   if (engineLoading || !taskTemplate) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin" />
+      <div className="min-h-screen bg-paper-100 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-fg-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-terracotta" />
           <span>Loading your task...</span>
         </div>
       </div>
