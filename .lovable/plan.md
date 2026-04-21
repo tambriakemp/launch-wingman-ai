@@ -1,90 +1,104 @@
 
 
-## Redesign Landing Page — Editorial Cream + Terracotta
+## Restyle Sidebar, Topbar & Project Dashboard — Editorial Cream + Terracotta
 
-Match the uploaded design system (cream background, serif italic headlines, terracotta accent) on the marketing landing page, while keeping all existing product mockups but recoloring them to fit the new palette.
+Bring the signed-in app (`/projects/:id/dashboard`, all other ProjectLayout pages) onto the same Editorial Cream + Terracotta design system used by the landing page. All current navigation items, routes, and functionality stay exactly the same — only the look/feel changes.
 
-### New design system
+### Theme rollout
 
-**Color palette** (added as scoped landing CSS variables, won't affect the app):
-- Background: `#FBF7F1` (warm cream)
-- Foreground / ink: `#1F1B17` (near-black)
-- Muted ink: `#5C544B` (warm gray)
-- Hairline border: `#E8E1D5`
-- Card: `#FFFFFF`
-- Accent (terracotta): `#C65A3E` — used for the period in "Launchely.", italic emphasis words ("Start launching"), eyebrow labels, X icons, dot bullets, FAQ +, "Due tomorrow"
-- Mockup browser chrome: cream tone instead of grey
+Promote the cream + terracotta palette from a landing-only scope to an opt-in **app theme**:
 
-**Typography**:
-- Headlines: serif (`Playfair Display` via Google Fonts, weights 500/600/700) — large, with selected words in italic terracotta
-- Eyebrow labels: small uppercase tracked, terracotta
-- Body & UI: keep `Plus Jakarta Sans`
-- Quotes: serif italic
+- Move the palette tokens out of `.landing-theme` into a new `.app-cream` class so both the landing page and the signed-in app can opt in (landing page keeps using it; the new ProjectLayout wraps everything in `.app-cream`).
+- Add **sidebar token overrides** inside the same scope so the existing dark `--sidebar-*` variables become cream/ink for the rail and flyout:
+  - `--sidebar-background: 38 60% 98%` (paper-50, slightly warmer than canvas)
+  - `--sidebar-foreground: 30 9% 33%` (muted ink)
+  - `--sidebar-primary: 13 56% 51%` (terracotta — active indicator)
+  - `--sidebar-accent: 35 35% 92%` (cream hover)
+  - `--sidebar-accent-foreground: 30 9% 10%` (ink)
+  - `--sidebar-border: 35 28% 87%` (hairline)
+- Keep the dark theme tokens untouched in `:root` so any non-app pages we haven't restyled stay safe.
 
-**Layout primitives**:
-- Pill-shaped floating header (rounded-full, white, hairline border, centered nav)
-- Generous whitespace, minimal cards (white on cream, subtle 1px border, soft shadow)
-- Section eyebrow → big serif headline → italic serif subhead pattern
-- Audience tags as plain text in flowing rows (not pills)
-- Pricing cards: white, italic serif tier names, oversized serif `$25` with small `/mo`, "MOST POPULAR" small uppercase tracked label above the Pro card
-- FAQ: flat rows separated by hairlines, terracotta `+` toggles
-- Final CTA: small uppercase eyebrow, huge serif `Stop watching. Start shipping.` with "Start shipping." in italic terracotta, simple text-link CTA
+### Topbar (new — matches uploaded HTML exactly)
 
-### Sections (preserved structure, restyled)
+Rebuild `TopBar.tsx`:
 
-1. **Hero** — cream bg, eyebrow `◆ AI-POWERED · BUILT FOR COACHES & CREATORS`, serif headline `Stop buying courses. Start launching.` (last two words italic terracotta), italic serif subhead, text-link "Start free today" + outline pill button "See features →", helper line under buttons. **Dashboard mockup** sits below in a soft floating frame.
-2. **Marquee strip** — keep, restyle to cream/ink tokens.
-3. **Sound familiar?** — eyebrow `SOUND FAMILIAR?`, serif headline, 2×3 white cards with terracotta `✕` and ink text (no emoji).
-4. **The Shift (Old vs New)** — eyebrow `THE SHIFT`, serif headline `Everything you need. Nothing you don't.`, single rounded card with two columns split by hairline, italic serif column titles, rows separated by hairlines, terracotta ✕ vs ink ✓.
-5. **Launch / Marketing / Resources / Planning** — four alternating feature blocks. Each: eyebrow (terracotta), large serif headline, italic serif lede, terracotta ✓ checklist, paired mockup (Tasks / AI Studio / Content Vault / Planner) in restyled BrowserFrame.
-6. **Powered by AI** — eyebrow + headline + italic subhead + 4 minimal feature cards.
-7. **How it works** — 3 numbered steps (`01 02 03` in light serif), each with serif title + body.
-8. **Built for you** — audience names as plain serif text in flowing centered rows, then big serif italic Sarah Chen quote with "under two weeks" in terracotta.
-9. **Pricing** — 4 cards in a row, italic serif tier names, oversized serif prices, MOST POPULAR label on Pro, simple feature list with terracotta dot bullets, single CTA per card.
-10. **FAQ** — flat hairline-separated accordion, serif questions, terracotta `+`/`−`.
-11. **Final CTA** — `READY TO LAUNCH?` eyebrow + huge serif headline + text-link CTA.
-12. **Footer** — restyled to cream/ink with serif `Launchely.` wordmark.
+- Layout: `flex justify-between items-center`, padding `12px 40px` (responsive `px-3 md:px-10`), height auto, `border-b border-hairline`, sticky top-0, **translucent cream background** `rgba(251,247,241,0.85)` with `backdrop-blur(12px)`.
+- **Left — Breadcrumbs**: small Plus Jakarta Sans 13px, muted ink. Format: `Section / Page` where the active page is rendered in `--ink-900` 500 weight. Derived from the current route (e.g. `Launch / Dashboard`, `Marketing / Campaigns`, `Planner / Goals`). On mobile, replaced by the existing hamburger.
+- **Center — Search pill**: cream `--paper-200` background, `1px hairline` border, `rounded-full`, `padding 6px 14px`, magnifier glyph + placeholder "Search tasks, content…" + spacer + `⌘K` kbd chip (white bg, hairline border, mono font, 10px). Min-width 260, max-width 420, flex-1, margin-x 20px. Opens the existing global command palette on click or `⌘K`/`Ctrl+K`.
+- **Right — Actions**: ghost icon buttons (28px, `rounded-lg`, hover `bg-ink/5`):
+  1. Help (`BookOpen` icon) → `/help`
+  2. Notifications (`Bell` icon)
+  3. Avatar — 28×28 circle, `bg-ink-900` background, paper-100 text, Playfair Display 12px 600, single initial. Click opens the existing dropdown (Profile/Settings/Admin/Sign out) — preserves Impersonation banner state and admin link.
+- All current behavior preserved: mobile menu trigger, impersonation banner offset, admin dropdown items, sign-out.
 
-### Mockup recoloring
+### Sidebar (restyle, no functional changes)
 
-All 7 mockups (`DashboardMockup`, `TasksMockup`, `AIStudioMockup`, `SocialHubMockup`, `ContentVaultMockup`, `PlannerMockup`, `TransformationMockup`) keep their layout and content but are recolored:
-- `BrowserFrame` chrome → cream `#F5EFE5` header, hairline border, soft shadow
-- Replace the bright accent yellow / blue pill colors used inside mockups with terracotta (`#C65A3E`) for primary actions and a warm gold `#D4A24C` only where a secondary highlight is needed
-- Cards inside mockups: white on cream
-- Status colors: keep semantic green for "Completed", swap "Due tomorrow"/urgent to terracotta, swap progress bar fills to terracotta
-- Replace any pure neutral greys with warm-tinted greys to match cream theme
+Keep the **72px Icon Rail + flyout** architecture and all section/item definitions as-is. Restyle to cream:
 
-This is done by passing landing-scoped CSS variables to a wrapper around each mockup so the same components render with the new palette only on the landing page (no impact on the actual app).
+- Rail: `bg-sidebar-background` (paper-50 cream), right border `hairline`, no shadow.
+- Logo mark: replace yellow primary tile with an ink-900 square containing serif "L" (Playfair 600) — matches the landing wordmark.
+- Section icons: muted ink at rest, ink-900 + cream-accent tile when active. Replace yellow rail indicator with **terracotta** vertical bar.
+- Section labels (10px under each icon): muted ink → ink-900 when active.
+- Bottom Help/Settings: same restyling.
+- Flyout panel (`w-52`): `bg-sidebar-background`, hairline right border, soft shadow `0 8px 24px -12px rgba(31,27,23,.12)`.
+- Flyout section header: small uppercase tracked Plus Jakarta, muted ink (drop the bold-XL look).
+- Flyout items: `text-sm` ink, hover `bg-sidebar-accent` cream, **active = cream pill bg + terracotta left-border accent + ink-900 text**.
+- Crown lock icons stay terracotta.
+- Mobile sheet: same cream palette, accordion sections preserved.
 
-### Header
+### Project Dashboard body (`FunnelOverviewContent`)
 
-Replace current dark/transparent header with a floating **pill nav**: white rounded-full bar, hairline border, soft shadow, centered links (`Features · How it works · Pricing · FAQ`), `Sign in` link + `Start free` outline pill on the right. Same fixed-top behavior, sits 16px from top.
+Restructure visual treatment only — all data, queries, sections, banners, and routes preserved. The existing `<main>` already inherits the new tokens via ProjectLayout, so most cards just update visually. Specific touch-ups:
 
-### Technical notes
+- Page background: cream canvas (inherits).
+- **GreetingHeader**: serif `Good morning, {name}` with `{name}` italic terracotta; project line in body; "View Project Summary" link in terracotta with hairline underline; project state badge → cream pill with hairline border + ink text.
+- **Cards** (NextBestTask, Today metrics, LaunchSnapshot, UpcomingContent, MemoryReviewBanner, CheckInBanner): white `--card`, 1px hairline border, `rounded-xl`, soft shadow `0 1px 1px rgba(31,27,23,.04), 0 8px 24px -8px rgba(31,27,23,.06)`. Drop heavy shadows.
+- **Section eyebrows** (e.g. "TODAY"): replace bold uppercase muted with the landing `eyebrow` style (terracotta uppercase tracked).
+- **Today metrics tiles**: numerals in Playfair Display 32px 500, label in Plus Jakarta 11px muted, the "View →" / "Planner →" links in terracotta.
+- **NextBestTaskCard** (hero): white card, terracotta "NEXT" eyebrow, serif title (Playfair 24px 500) with optional italic accent on a key word, ink body, primary CTA = ink-900 pill button with paper text "Start →"; secondary actions inherit ghost styling.
+- **LaunchTimelineInline**: phase pills become cream chips with hairline border; active phase = terracotta border + terracotta text + warm-cream fill; complete = muted-ink check + cream fill; locked = paper-200 + muted-ink.
+- **PhaseCelebrationCard**: cream-200 (`--clay-200`) background, no border, serif headline, terracotta confetti icon, ink-900 dismiss link.
+- **"Feeling stuck?" link**: muted ink, terracotta on hover.
+- Loaders: terracotta spinner.
 
-- New file `src/components/landing/landing-theme.css` defines scoped tokens under a `.landing-theme` class:
-  - `--bg`, `--ink`, `--muted-ink`, `--hairline`, `--card`, `--accent`, `--accent-soft`, plus serif font stack and remaps `--background/--foreground/--card/--border/--accent/--muted` only inside that scope.
-- Wrap `Landing.tsx` root in `<div className="landing-theme font-sans">`. All children (including `LandingHeader`, `LandingFooter`, and mockups) inherit the remapped tokens — no per-component color rewrites needed for the body of the page.
-- Add `Playfair Display` via `@fontsource/playfair-display` (weights 500, 600, 700) and add a `font-serif` Tailwind family in `tailwind.config.ts`. Use `font-serif italic` utility for emphasized headline words and quote blocks.
-- Replace the existing yellow `--accent` lookups inside the landing scope with terracotta. Inside mockups, swap hardcoded `bg-amber-*` / `text-amber-*` / yellow used as primary highlight to `var(--accent)` via a small set of utility class swaps; status semantic colors (green for done, blue for info) stay.
-- `LandingHeader` updated: detect `landing-theme` ancestor and render the pill style; on other pages it keeps current behavior.
-- `BrowserFrame` accepts an optional `tone="cream"` prop; landing page passes it. App usages elsewhere are unaffected.
-- All animations (Framer Motion) preserved.
-- Mobile: stack hero, single-column features, vertical pricing cards, hamburger menu in pill header.
+No prop or data-shape changes. Components like `LaunchSnapshotCard`, `UpcomingContentCard`, `LaunchTimelineInline`, `MemoryReviewBanner`, `CheckInBanner`, `NextBestTaskCard`, `PhaseCelebrationCard`, `GreetingHeader` get class-only edits to swap hardcoded yellow/blue/dark-grey to the cream/ink/terracotta tokens.
+
+### Mockup of theme application
+
+```text
+┌───────────────────────────────────────────────────────────────────┐
+│ Launch / Dashboard           [⌕ Search tasks, content…  ⌘K]   ? 🔔 T │  ← topbar (cream blur)
+├──────┬────────────────────────────────────────────────────────────┤
+│ ▌L  │                                                            │
+│ ▌◇  │    Good morning, Tania.                                    │
+│  L  │    You're building: Lead Magnet Launch  [Draft]            │
+│  ◆  │    ↪ View Project Summary                                  │
+│  ★  │                                                            │
+│  ▢  │    ─── NEXT ───                                            │
+│  ⚙  │    Write your hero headline                                │
+│     │    Why it matters · Estimated 15-20 min      [ Start → ]   │
+│     │                                                            │
+│     │    ─── TODAY ───                                           │
+│     │    [Due Today  3]   [Content This Week  5]                 │
+└──────┴────────────────────────────────────────────────────────────┘
+```
 
 ### Files to change
 
-- `src/pages/Landing.tsx` (full restructure of section markup + classes; data arrays kept)
-- `src/components/landing/LandingHeader.tsx` (pill variant)
-- `src/components/landing/LandingFooter.tsx` (cream restyle)
-- `src/components/landing/BrowserFrame.tsx` (add `tone` prop, cream variant)
-- `src/components/landing/landing-theme.css` (new — scoped tokens + Playfair import)
-- `src/index.css` (import the new file)
-- `tailwind.config.ts` (add `font-serif: ["Playfair Display", ...]`)
-- All 7 mockup files in `src/components/landing/screenshots/` (swap yellow/blue primary highlights to `var(--accent)` via class changes; layout untouched)
-- `package.json` — add `@fontsource/playfair-display`
+- `src/components/landing/landing-theme.css` — rename root scope to `.app-cream` (keep `.landing-theme` as alias), add sidebar token overrides.
+- `src/index.css` — no token changes (defaults preserved for non-themed pages).
+- `src/components/layout/ProjectLayout.tsx` — wrap in `<div className="app-cream font-sans">`, swap `bg-muted/30` → cream canvas.
+- `src/components/layout/AdminLayout.tsx` — same wrapper so admin pages inherit cream.
+- `src/components/layout/TopBar.tsx` — full rebuild per spec above (breadcrumbs from route + central search pill + 3 right actions).
+- `src/components/layout/ProjectSidebar.tsx` — class-only edits (rail/flyout colors, indicator color, logo mark, active states, mobile sheet).
+- `src/pages/project/plan/FunnelOverviewContent.tsx` — restyle classes on cards/eyebrows/links only.
+- `src/components/dashboard/GreetingHeader.tsx` — serif headline with terracotta italic accent.
+- `src/components/dashboard/NextBestTaskCard.tsx`, `LaunchSnapshotCard.tsx`, `UpcomingContentCard.tsx`, `LaunchTimelineInline.tsx`, `PhaseCelebrationCard.tsx`, `MemoryReviewBanner.tsx`, `CheckInBanner.tsx`, `ProgressSnapshotCard.tsx` — class-only restyles.
+- New helper: `src/components/layout/Breadcrumbs.tsx` — derives `Section / Page` from `useLocation` + the same section map used by ProjectSidebar.
+- New helper: `src/components/layout/CommandSearchPill.tsx` — the cream search pill (opens existing command palette / dispatches `⌘K`).
 
 ### Out of scope
 
-- The signed-in app (`/app/...`), feature subpages (`/features/*`), Auth, Pricing checkout, and other public pages (`About`, `Contact`, `HowItWorks`, `Blog`) keep their current look unless you ask. We can roll the same theme to those next as a follow-up.
+- Other public pages (Auth, About, Contact, Pricing, Blog) keep current look.
+- Internal feature pages (Tasks board, Planner views, Content Vault, AI Studio workspaces) inherit the cream tokens automatically via ProjectLayout but their bespoke layouts will not be re-architected — only the surrounding chrome (sidebar, topbar) and the project dashboard body change visually in this pass. We can roll the same restyle to those pages as a follow-up.
 
