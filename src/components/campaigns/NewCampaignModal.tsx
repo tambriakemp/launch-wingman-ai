@@ -214,15 +214,15 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         <div className="flex-1 overflow-y-auto bg-[hsl(var(--paper-100))] px-8 py-6">
         {/* Step 1: Basics */}
         {step === 0 && (
-          <div className="space-y-5">
-            <div>
+          <div className="space-y-6">
+            <div className="space-y-1.5">
               <Label>Campaign Name</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Give your campaign a clear, descriptive name</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">Give your campaign a clear, descriptive name</p>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Launch 2026" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Goal</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">What's the primary objective?</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">What's the primary objective?</p>
               <Select value={goal} onValueChange={setGoal}>
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
@@ -238,24 +238,24 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-1.5">
                 <Label>Start Date</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label>End Date</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Budget (optional)</Label>
-              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Set a spending limit for this campaign</p>
+              <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">Set a spending limit for this campaign</p>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="$0" />
             </div>
             {goal && (
-              <div>
+              <div className="space-y-1.5">
                 <Label>Goal Target *</Label>
-                <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">
+                <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">
                   {goal === "revenue" ? "Target revenue ($)" :
                     goal === "traffic" ? "Target number of visits" :
                     goal === "followers" ? "Target follower count gain" :
@@ -275,21 +275,21 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
         {/* Step 2: Attribution */}
         {step === 1 && (
-          <div className="space-y-5">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="font-display text-[14px] italic leading-relaxed text-[hsl(var(--fg-secondary))]">
                 UTM links help you track where your traffic and conversions are coming from across platforms.
               </p>
               <div className="flex items-center gap-2">
                 <Checkbox checked={autoUtm} onCheckedChange={(v) => setAutoUtm(!!v)} id="auto-utm" />
-                <Label htmlFor="auto-utm" className="text-sm font-medium">Auto-generate UTM links</Label>
+                <Label htmlFor="auto-utm">Auto-generate UTM links</Label>
               </div>
             </div>
             {autoUtm && (
-              <div className="space-y-5">
-                <div>
+              <div className="space-y-6">
+                <div className="space-y-1.5">
                   <Label>Base Destination URL</Label>
-                  <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">The page visitors will land on when they click your links</p>
+                  <p className="text-[11.5px] leading-snug text-[hsl(var(--fg-muted))] font-body">The page visitors will land on when they click your links</p>
                   <Input
                     value={baseDestinationUrl}
                     onChange={(e) => setBaseDestinationUrl(e.target.value)}
@@ -297,8 +297,8 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                     type="url"
                   />
                 </div>
-                <div>
-                <Label className="mb-3 block">Select platforms to track</Label>
+                <div className="space-y-2.5">
+                <Label>Select platforms to track</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
