@@ -44,6 +44,24 @@ import { ExportMessagingButton } from "@/components/messaging/ExportMessagingBut
 import { ExportBuildButton } from "@/components/build/ExportBuildButton";
 import { ExportContentButton } from "@/components/content/ExportContentButton";
 
+// Editorial italic one-liners per phase (matches PhaseSection.tsx)
+const PHASE_SUMMARIES: Record<string, string> = {
+  Setup: "Pick the shape of the thing you're launching.",
+  Planning: "Clarify who this is for and why it works.",
+  Messaging: "Turn what you know into language people feel.",
+  Build: "Put the pieces in place — calmly, one by one.",
+  Content: "The pieces that bring the launch into the world.",
+  "Pre-Launch": "Warm the room before you open the doors.",
+  Launch: "Ship it. Then take an afternoon off.",
+  "Post-Launch": "Reflect, refine, and rest before the next one.",
+};
+
+const QUIET_REMINDERS = [
+  "Imperfect and shipped beats perfect and stuck.",
+  "You don't have to finish today. You just have to begin.",
+  "One quiet step is still forward motion.",
+];
+
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
   const navigate = useNavigate();
