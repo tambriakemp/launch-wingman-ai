@@ -149,7 +149,107 @@ export default function SalesCopyTask() {
     );
   }
 
-  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
+  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+  const voiceScript = generateVoiceScript(taskId, taskTemplate.whyItMatters);
+
+  return (
+    <EditorialTaskShell
+      projectId={projectId!}
+      taskId="messaging_sales_copy"
+      phase={taskTemplate.phase}
+      title={taskTemplate.title}
+      whyItMatters={taskTemplate.whyItMatters}
+      instructions={taskTemplate.instructions}
+      estimatedTimeRange={timeRange}
+      voiceButton={voiceScript ? <VoiceSnippetButton taskId={taskId} script={voiceScript} /> : undefined}
+      footer={
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleSaveAndComplete}
+            disabled={!hasSalesCopy || isSaving}
+            className="flex-1 gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Save & Complete
+              </>
+            )}
+          </Button>
+          <Button variant="outline" onClick={handleSaveForLater} className="sm:w-auto">
+            Save for Later
+          </Button>
+        </div>
+      }
+    >
+      {isAdvanced ? (
+        <div className="flex items-center justify-between gap-4 mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-ink-800 leading-relaxed">
+              Pro tip: Use the AI-powered Sales Page Writer to generate a full draft in seconds, then refine it section by section below.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/app/ai-studio/sales-page')}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 whitespace-nowrap"
+          >
+            Open AI Writer <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-4 mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-ink-800 leading-relaxed">
+              Want AI to write your full sales page draft in seconds?
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/#pricing')}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 whitespace-nowrap"
+          >
+            Upgrade to Advanced <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {projectId && <SalesPageCopyTab projectId={projectId} />}
+
+      <div className="h-px bg-hairline my-10" />
+
+      <div>
+        <h2 className="editorial-eyebrow mb-4">Before you finish</h2>
+        <div className="space-y-3">
+          {taskTemplate.completionCriteria.map((criteria, index) => (
+            <div
+              key={index}
+              className="flex items-start gap-3 p-3 rounded-lg border border-hairline bg-white"
+            >
+              <Checkbox
+                id={`criteria-${index}`}
+                checked={completedCriteria.includes(criteria)}
+                onCheckedChange={() => handleCriteriaToggle(criteria)}
+                className="mt-0.5"
+              />
+              <Label
+                htmlFor={`criteria-${index}`}
+                className="text-sm text-ink-800 cursor-pointer leading-relaxed"
+              >
+                {criteria}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </EditorialTaskShell>
+  );
+}
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
   const voiceScript = generateVoiceScript(taskId, taskTemplate.whyItMatters);
 

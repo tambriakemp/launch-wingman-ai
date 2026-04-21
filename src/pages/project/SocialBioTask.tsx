@@ -153,7 +153,75 @@ export default function SocialBioTask() {
     );
   }
 
-  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
+  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+
+  return (
+    <EditorialTaskShell
+      projectId={projectId!}
+      taskId="messaging_social_bio"
+      phase={taskTemplate.phase}
+      title={taskTemplate.title}
+      whyItMatters={taskTemplate.whyItMatters}
+      instructions={taskTemplate.instructions}
+      estimatedTimeRange={timeRange}
+      footer={
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleSaveAndComplete}
+            disabled={!hasBios || isSaving}
+            className="flex-1 gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Save & Complete
+              </>
+            )}
+          </Button>
+          <Button variant="outline" onClick={handleSaveForLater} className="sm:w-auto">
+            Save for Later
+          </Button>
+        </div>
+      }
+    >
+      {projectId && (
+        <SocialBioBuilder projectId={projectId} onBiosChange={handleBiosChange} />
+      )}
+
+      <div className="h-px bg-hairline my-10" />
+
+      <div>
+        <h2 className="editorial-eyebrow mb-4">Before you finish</h2>
+        <div className="space-y-3">
+          {taskTemplate.completionCriteria.map((criteria, index) => (
+            <div
+              key={index}
+              className="flex items-start gap-3 p-3 rounded-lg border border-hairline bg-white"
+            >
+              <Checkbox
+                id={`criteria-${index}`}
+                checked={completedCriteria.includes(criteria)}
+                onCheckedChange={() => handleCriteriaToggle(criteria)}
+                className="mt-0.5"
+              />
+              <Label
+                htmlFor={`criteria-${index}`}
+                className="text-sm text-ink-800 cursor-pointer leading-relaxed"
+              >
+                {criteria}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </EditorialTaskShell>
+  );
+}
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
 
   return (

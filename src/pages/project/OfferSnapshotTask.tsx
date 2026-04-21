@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProjectTask } from "@/types/tasks";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 
 // Niche options map for label lookup (same as useTaskEngine)
 const NICHE_OPTIONS_MAP: Record<string, string> = {
@@ -479,79 +480,88 @@ export default function OfferSnapshotTask() {
     );
   }
 
-  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
   const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
   const activeOffers = offers.filter(o => !o.isSkipped);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            to={`/projects/${projectId}/dashboard`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {phaseLabel} Phase
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              Estimated time: {timeRange}
-            </span>
-            {autoSaveStatus !== 'idle' && (
-              <span className="ml-auto text-xs flex items-center gap-1">
-                {autoSaveStatus === 'saving' && (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Saving...
-                  </>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <>
-                    <Check className="w-3 h-3 text-emerald-500" />
-                    Saved
-                  </>
-                )}
-              </span>
+    <EditorialTaskShell
+      projectId={projectId!}
+      taskId="planning_offer_stack"
+      phase={taskTemplate.phase}
+      title={taskTemplate.title}
+      whyItMatters={taskTemplate.whyItMatters}
+      instructions={taskTemplate.instructions}
+      estimatedTimeRange={timeRange}
+      headerActions={
+        autoSaveStatus !== 'idle' ? (
+          <span className="ml-auto text-xs flex items-center gap-1 text-fg-muted">
+            {autoSaveStatus === 'saving' && (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Saving...
+              </>
             )}
+            {autoSaveStatus === 'saved' && (
+              <>
+                <Check className="w-3 h-3 text-emerald-500" />
+                Saved
+              </>
+            )}
+          </span>
+        ) : undefined
+      }
+      voiceButton={
+        <VoiceSnippetButton
+          taskId={`offer_stack_${selectedFunnelType}`}
+          script={getOfferStackVoiceScript(selectedFunnelType)}
+        />
+      }
+      footer={
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-fg-muted">
+              <span className="font-medium text-ink-900">{configuredCount}</span>
+              /{activeOffers.length} offers configured
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-            {taskTemplate.title}
-          </h1>
-        </div>
-
-        {/* Why This Matters */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Why this matters
-            </h2>
-            <VoiceSnippetButton
-              taskId={`offer_stack_${selectedFunnelType}`}
-              script={getOfferStackVoiceScript(selectedFunnelType)}
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleComplete}
+              className="flex-1"
+              disabled={configuredCount === 0 || isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save & mark complete →"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleSaveForLater}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save for Later"}
+            </Button>
           </div>
-          <p className="text-foreground/80 leading-relaxed">
-            {taskTemplate.whyItMatters}
+
+          <p className="text-xs text-fg-muted mt-4 text-center">
+            You can always come back and adjust your offers later.
           </p>
-        </section>
-
-        <div className="h-px bg-border mb-8" />
-
-        {/* Funnel Context Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 rounded-xl bg-primary/5 border border-primary/20"
-        >
+        </>
+      }
+    >
+      {/* Funnel Context Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 p-4 rounded-xl bg-primary/5 border border-primary/20"
+      >
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -603,55 +613,16 @@ export default function OfferSnapshotTask() {
           </div>
         </motion.div>
 
-        {/* Offer Stack Builder */}
-        {funnelConfig && (
-          <OfferStackBuilder
-            funnelType={funnelConfigKey!}
-            offers={offers}
-            onChange={setOffers}
-            audienceData={audienceData}
-            onSaveNow={saveOffersToDb}
-          />
-        )}
-
-        {/* Completion Status */}
-        <div className="mt-8 pt-6 border-t border-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{configuredCount}</span>
-              /{activeOffers.length} offers configured
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={handleComplete}
-              className="flex-1"
-              disabled={configuredCount === 0 || isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save & mark complete →"
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleSaveForLater}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save for Later"}
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-4 text-center">
-            You can always come back and adjust your offers later.
-          </p>
-        </div>
-      </div>
-    </div>
+      {/* Offer Stack Builder */}
+      {funnelConfig && (
+        <OfferStackBuilder
+          funnelType={funnelConfigKey!}
+          offers={offers}
+          onChange={setOffers}
+          audienceData={audienceData}
+          onSaveNow={saveOffersToDb}
+        />
+      )}
+    </EditorialTaskShell>
   );
 }

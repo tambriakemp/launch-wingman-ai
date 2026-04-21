@@ -162,7 +162,155 @@ export default function StartingPointTask() {
     );
   }
 
-  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
+  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+
+  return (
+    <EditorialTaskShell
+      projectId={projectId!}
+      taskId="launch_capture_starting_point"
+      phase={taskTemplate.phase}
+      title={taskTemplate.title}
+      whyItMatters={taskTemplate.whyItMatters}
+      instructions={taskTemplate.instructions}
+      estimatedTimeRange={timeRange}
+      footer={
+        <>
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              disabled={isSaving}
+              className="text-fg-muted"
+            >
+              Skip for now
+            </Button>
+            <Button onClick={handleSaveAndComplete} disabled={isSaving} className="flex-1">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save & Continue"
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-center text-fg-muted mt-6">
+            All fields are optional. This is for personal reflection only — not performance tracking.
+          </p>
+        </>
+      }
+    >
+      <div className="space-y-6">
+        {/* Audience Size */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-ink-900">Audience Size</h3>
+          <p className="text-sm text-fg-muted -mt-2">
+            Rough estimates are fine — skip any you don't track.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="instagram" className="text-sm text-fg-muted flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-pink-500" />
+                Instagram followers
+              </Label>
+              <Input id="instagram" type="number" placeholder="Optional" value={instagramFollowers} onChange={(e) => setInstagramFollowers(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="facebook" className="text-sm text-fg-muted flex items-center gap-2">
+                <Facebook className="w-4 h-4 text-blue-600" />
+                Facebook followers
+              </Label>
+              <Input id="facebook" type="number" placeholder="Optional" value={facebookFollowers} onChange={(e) => setFacebookFollowers(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tiktok" className="text-sm text-fg-muted flex items-center gap-2">
+                <TikTokIcon className="w-4 h-4" />
+                TikTok followers
+              </Label>
+              <Input id="tiktok" type="number" placeholder="Optional" value={tiktokFollowers} onChange={(e) => setTiktokFollowers(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm text-fg-muted">Email list size</Label>
+              <Input id="email" type="number" placeholder="Optional" value={emailListSize} onChange={(e) => setEmailListSize(e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Context */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-ink-900">Revenue Context</h3>
+          <p className="text-sm text-fg-muted -mt-2">This is just for your reference — completely optional.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="monthly" className="text-sm text-fg-muted">Monthly revenue ($)</Label>
+              <Input id="monthly" type="number" step="0.01" placeholder="Optional" value={monthlyRevenue} onChange={(e) => setMonthlyRevenue(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="yearly" className="text-sm text-fg-muted">Yearly revenue ($)</Label>
+              <Input id="yearly" type="number" step="0.01" placeholder="Optional" value={ytdRevenue} onChange={(e) => setYtdRevenue(e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {/* Confidence Check */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-ink-900">Confidence Check</h3>
+          <p className="text-sm text-fg-muted -mt-2">How confident are you in these numbers?</p>
+          <RadioGroup value={confidenceLevel} onValueChange={setConfidenceLevel}>
+            <div className="space-y-2">
+              <Label htmlFor="unsure" className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${confidenceLevel === "unsure" ? "border-primary bg-primary/5" : "border-hairline hover:border-fg-muted/30"}`}>
+                <RadioGroupItem value="unsure" id="unsure" />
+                <div>
+                  <span className="font-medium">Unsure</span>
+                  <p className="text-sm text-fg-muted">These are rough guesses</p>
+                </div>
+              </Label>
+              <Label htmlFor="somewhat" className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${confidenceLevel === "somewhat" ? "border-primary bg-primary/5" : "border-hairline hover:border-fg-muted/30"}`}>
+                <RadioGroupItem value="somewhat" id="somewhat" />
+                <div>
+                  <span className="font-medium">Somewhat confident</span>
+                  <p className="text-sm text-fg-muted">Close enough for reflection</p>
+                </div>
+              </Label>
+              <Label htmlFor="confident" className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${confidenceLevel === "confident" ? "border-primary bg-primary/5" : "border-hairline hover:border-fg-muted/30"}`}>
+                <RadioGroupItem value="confident" id="confident" />
+                <div>
+                  <span className="font-medium">Confident</span>
+                  <p className="text-sm text-fg-muted">I checked my numbers</p>
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Help me estimate */}
+        <motion.div className="p-4 rounded-xl bg-paper-200/50 border border-hairline" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <button onClick={() => setShowEstimateHelp(!showEstimateHelp)} className="flex items-center gap-2 text-sm font-medium text-fg-muted hover:text-ink-900 transition-colors w-full">
+            <Sparkles className="w-4 h-4" />
+            <span>Help me estimate</span>
+            <HelpCircle className="w-4 h-4 ml-auto" />
+          </button>
+          <AnimatePresence>
+            {showEstimateHelp && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pt-4 border-t border-hairline text-sm text-fg-muted space-y-3">
+                <p className="font-medium text-ink-900">How to approximate your numbers:</p>
+                <ul className="space-y-2 list-disc list-inside">
+                  <li><strong>Social followers:</strong> Check your profile — the number shown is usually accurate enough.</li>
+                  <li><strong>Email list:</strong> Log into your email platform and look at your subscriber count.</li>
+                  <li><strong>Revenue:</strong> Check your payment processor (Stripe, PayPal) or estimate based on recent months.</li>
+                  <li><strong>Don't have exact numbers?</strong> Round to the nearest hundred — that's perfectly fine for reflection.</li>
+                </ul>
+                <p className="text-xs">Remember: This data is for you, not for performance tracking. Estimates are acceptable.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </EditorialTaskShell>
+  );
+}
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
 
   return (

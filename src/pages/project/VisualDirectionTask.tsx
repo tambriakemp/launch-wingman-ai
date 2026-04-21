@@ -129,7 +129,147 @@ const VisualDirectionTask = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <EditorialTaskShell
+        projectId={projectId!}
+        taskId="messaging_visual_direction"
+        phase={"messaging" as const}
+        title="Set Your Launch Visual Direction"
+        whyItMatters="When your visuals feel consistent, posting feels easier — and your audience understands you faster. This isn't about perfect branding. It's about choosing a direction so you don't second-guess every post."
+        instructions={[
+          "Choose a small set of visual cues for this launch",
+          "Keep it simple — less is better",
+          "You can change this later or use a different direction next launch",
+        ]}
+        estimatedTimeRange="~10 minutes"
+        footer={
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <Button variant="outline" onClick={() => navigate(`/projects/${projectId}/dashboard`)} className="w-full sm:w-auto">
+              Save for Later
+            </Button>
+            <Button onClick={handleSaveAndComplete} disabled={!allConfirmed || saveMutation.isPending} className="w-full sm:w-auto">
+              {saveMutation.isPending ? "Saving..." : "Save & Complete"}
+            </Button>
+          </div>
+        }
+      >
+        <h2 className="editorial-eyebrow mb-4">Your visual direction</h2>
+        <Accordion type="multiple" defaultValue={["colors", "fonts", "photos"]} className="space-y-4">
+          <AccordionItem value="colors" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-4 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Palette className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium text-ink-900">Choose your color palette</p>
+                  <p className="text-sm text-fg-muted font-normal">
+                    These don't have to be perfect. <a href="https://coolors.co" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">Coolors.co <ExternalLink className="h-3 w-3" /></a> is a great site to get inspiration.
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6">
+              <ColorsSection projectId={projectId!} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="fonts" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-4 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Type className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium text-ink-900">Which font styles feel right for this launch?</p>
+                  <p className="text-sm text-fg-muted font-normal">You're choosing a feel, not a font file.</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6">
+              <FontsSection projectId={projectId!} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="photos" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-4 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <Camera className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium text-ink-900">What kind of visuals feel aligned?</p>
+                  <p className="text-sm text-fg-muted font-normal">Pick what feels easiest to stay consistent with.</p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6">
+              <PhotosSection />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <section className="mt-10 p-5 rounded-xl bg-paper-200/30 border border-hairline">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-ink-900 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Need help choosing?
+              </h3>
+              <p className="text-sm text-fg-muted">Get suggestions based on your audience, offer, and tone</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowAiHelp(true)}>
+              Help me choose
+            </Button>
+          </div>
+        </section>
+
+        <div className="h-px bg-hairline my-10" />
+
+        <h2 className="editorial-eyebrow mb-4">This step is complete when</h2>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <Checkbox id="chosen_direction" checked={confirmations.chosen_direction} onCheckedChange={(checked) => handleConfirmationChange("chosen_direction", checked as boolean)} />
+            <Label htmlFor="chosen_direction" className="text-sm leading-relaxed cursor-pointer text-ink-800">
+              I've chosen a simple visual direction
+            </Label>
+          </div>
+          <div className="flex items-start gap-3">
+            <Checkbox id="understand_launch_only" checked={confirmations.understand_launch_only} onCheckedChange={(checked) => handleConfirmationChange("understand_launch_only", checked as boolean)} />
+            <Label htmlFor="understand_launch_only" className="text-sm leading-relaxed cursor-pointer text-ink-800">
+              I understand this is just for this launch
+            </Label>
+          </div>
+        </div>
+      </EditorialTaskShell>
+
+      {/* AI Help Dialog */}
+      <Dialog open={showAiHelp} onOpenChange={setShowAiHelp}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Help Me Choose
+            </DialogTitle>
+            <DialogDescription>Visual direction suggestions based on your launch</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <h4 className="font-medium">Colors</h4>
+              <p className="text-sm text-fg-muted">Consider your audience's expectations. For professional services, lean toward muted, sophisticated tones. For creative or lifestyle offers, you can be bolder.</p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="font-medium">Fonts</h4>
+              <p className="text-sm text-fg-muted">Match your tone: playful audiences appreciate rounded, friendly fonts; professional audiences respond to clean, structured typography.</p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="font-medium">Photos</h4>
+              <p className="text-sm text-fg-muted">Choose imagery that reflects the transformation you offer. Before/after, lifestyle shots, or behind-the-scenes can all work depending on your message.</p>
+            </div>
+            <div className="pt-2 text-xs text-fg-muted italic">These are suggestions only — they won't override your selections.</div>
+          </div>
+          <Button onClick={() => setShowAiHelp(false)} className="w-full">Got it</Button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default VisualDirectionTask;
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         {/* Header / Context Section */}
         <div className="mb-10">
