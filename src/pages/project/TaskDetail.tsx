@@ -1211,7 +1211,7 @@ export default function TaskDetail() {
               </span>
             )}
             {autoSaveStatus === 'saved' && (
-              <span className="text-xs text-green-600 flex items-center gap-1">
+              <span className="text-xs text-moss-700 flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Saved
               </span>
