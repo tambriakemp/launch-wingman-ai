@@ -1050,7 +1050,7 @@ export default function TaskDetail() {
 
   return (
     <div className="min-h-screen bg-paper-100">
-      <div className="max-w-[760px] mx-auto px-4 sm:px-10 pt-7 pb-20">
+      <div className="max-w-[1140px] mx-auto px-4 sm:px-10 pt-7 pb-20">
         {/* Back link */}
         <Link
           to={`/projects/${projectId}/tasks`}
@@ -1059,6 +1059,9 @@ export default function TaskDetail() {
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to Launch Tasks
         </Link>
+
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-12">
+          <div className="min-w-0">
 
         {/* Hero */}
         <div className="mt-5 mb-9">
