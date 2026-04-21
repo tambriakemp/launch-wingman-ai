@@ -150,14 +150,14 @@ export function ProjectSettingsDialog({
         <DialogTrigger asChild>
           {trigger || <Button variant="outline">Project Settings</Button>}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[460px] p-0">
           <DialogHeader>
             <DialogTitle>Project Settings</DialogTitle>
             <DialogDescription>
               Update your project details.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 px-8 py-6 bg-[hsl(var(--paper-100))]">
             <div className="grid gap-2">
               <Label htmlFor="name">Project Name</Label>
               <Input
