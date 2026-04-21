@@ -1,62 +1,63 @@
 
 
-## Eliminate the grey "blank screen" between page navigations
+## Finish the Task Detail editorial redesign
 
-### What's happening
+Building on the previous round, this finishes the two pieces I deferred: the right-hand side rail, and the editorial restyling of the form/inputs/buttons/footer.
 
-There are **two distinct sources** of the grey/blank screen between clicks, and both need to be fixed:
+### 1. Add the right-hand side rail (desktop only)
 
-**1. Lazy-route Suspense gap (every navigation)**
-Every page uses `lazy()` in `App.tsx`. When you click a nav link, React must download the destination page's JS chunk before it can render anything. Since `RouteFallback = null`, *nothing* paints during that download — the screen goes blank/grey for ~200–800ms. The previous page does NOT stay visible because each page renders its own `<ProjectLayout>` which unmounts on route change.
+Convert the Task Detail layout from a single 760px column to a two-column grid on `lg+` (`grid-cols-[minmax(0,1fr)_300px] gap-12`), max width ~1140px. On mobile, the rail collapses below the main content.
 
-**2. Page-level loaders that render only a tiny centered spinner**
-Several pages (the ones the user is most likely to hit) early-return a *bare spinner inside ProjectLayout* with no header/title visible — making it look like the dashboard "broke." Examples:
+**Rail contents (top to bottom, sticky `top-8`):**
 
-| Page | Current loading state |
-|---|---|
-| `ProjectExecute` (Launch Tasks) | `TasksBoard` shows just `animate-spin` circle, no page header above |
-| `DailyPage` | Centered spinner only |
-| `WeeklyReview` | Centered spinner only |
-| `Planner` (Calendar) | Centered spinner only |
-| `Relaunch` | Centered spinner only |
-| `CampaignDetail` | Centered spinner only |
-| `PhaseSnapshot` | Skeleton block only |
-| `GoalDetail` / `GoalFolderDetail` | "Loading..." text only |
-| `ContentVault` / `ContentVaultCategory` | Skeleton-only, no header |
-| `Playbook` | `PlaybookSkeleton` only |
+1. **Phase progress strip** — small editorial card:
+   - Eyebrow: "Phase {N} · {phaseLabel}"
+   - Headline (display serif): the phase summary
+   - Mono progress fraction `{completed}/{total}`
+   - Thin terracotta progress bar (1px hairline track, terracotta fill)
+   - Compact list of the 3–4 sibling tasks in this phase, current one bolded, completed ones with terracotta check mark
 
-The dashboard (`FunnelOverviewContent`) the user wants to match shows a **terracotta spinner inside the already-rendered ProjectLayout shell** — the sidebar + topbar are visible the whole time and only the content body shows the spinner.
+2. **Up next card** — uses `nextBestTask` already returned by `useTaskEngine`:
+   - Eyebrow: "Up next"
+   - Display-serif title (link to next task)
+   - Mono time estimate + phase chip
+   - Small terracotta "Open →" link
 
-### The fix
+3. **Quiet reminder card** — dark `bg-ink-900 text-paper-100` rounded-2xl card:
+   - Small italic display-serif quote about working "one quiet step at a time"
+   - Subtle terracotta divider, then a one-line tip (rotates between 2–3 hard-coded reminders).
 
-**A. Persist the layout shell during route transitions** — so the sidebar + topbar never blink out:
+Pull data from existing hooks — `projectTasks`, `nextBestTask`, `taskTemplate.phase`, and the `PHASES` / `PHASE_LABELS` constants. No new queries needed.
 
-1. Add a new component `AppShellFallback` used as the global `Suspense fallback` in `App.tsx`. It renders `<ProjectLayout>` with a centered terracotta `Loader2` (matching the dashboard's loader exactly). Use it only for protected `/app`-style routes (not for marketing pages like `/`, `/auth`, `/go`).
-2. Split routes into two `<Suspense>` blocks:
-   - **Public/marketing routes** → keep `fallback={null}` (those pages have their own full-screen layouts).
-   - **Protected app routes** → wrap in a second `<Suspense fallback={<AppShellFallback />}>` so during lazy chunk download the user sees sidebar + topbar + dashboard-style spinner instead of a blank screen.
+### 2. Editorial restyling of the form area
 
-**B. Standardize every page's loading state** to match the dashboard pattern:
-   - Always render `<ProjectLayout>` and the **page header** (icon + title + subtitle) immediately, even while data is loading.
-   - Replace bare spinners and "Loading..." text with the same `<Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--terracotta))]" />` inside a `flex items-center justify-center h-64` container, placed *below* the header.
-   - Pages to update:
-     - `ProjectExecute.tsx` — pass an `isLoading` flag so `TasksBoard` renders the spinner *under* the rendered "Launch Tasks" header (or move the loader from `TasksBoard` up to the page).
-     - `DailyPage.tsx`, `WeeklyReview.tsx`, `Planner.tsx`, `Relaunch.tsx`, `CampaignDetail.tsx`, `PhaseSnapshot.tsx`, `GoalDetail.tsx`, `GoalFolderDetail.tsx`, `ContentVault.tsx`, `ContentVaultCategory.tsx`, `Playbook.tsx` — render the page header above the loader.
+Restyle in place inside the existing `Your response` section so all current logic, validation, AI assist, exports, and conditional renderings stay intact.
 
-**C. Create a single shared `<PageLoader />` component** at `src/components/ui/page-loader.tsx` so all pages use the exact same dashboard-style spinner (terracotta, sized `w-8 h-8`, container `flex items-center justify-center h-64`). Reuse it everywhere instead of bespoke spinners.
+- **Section eyebrow**: replace `text-sm font-medium text-muted-foreground uppercase` headers with the existing `editorial-eyebrow` utility (already in `index.css`).
+- **Inputs / Textareas / Selects**: wrap in a shared visual style — `bg-white border border-hairline rounded-2xl px-4 py-3 text-[15px] text-ink-900 placeholder:text-fg-muted focus:border-terracotta focus:ring-0`. Add a small className override; do not swap the underlying shadcn primitives.
+- **Radio options** (path/option pickers): convert from default radio cards to editorial cards — `bg-white border border-hairline rounded-2xl p-5`, selected state = `border-terracotta bg-clay-100`, terracotta filled circle indicator on the left, display-serif title + body description.
+- **Checklist items / completion criteria**: circular `border border-ink-300` checkbox with terracotta fill when checked, label in `text-[15px] text-ink-800`, struck-through label uses `text-fg-muted` (no harsh strikethrough color).
+- **Export dropdown trigger**: convert to ghost pill `bg-white border border-hairline rounded-full px-3.5 py-1.5 text-[12.5px] text-ink-800` to match the "View phase snapshot" pill from the index page.
 
-### Result
+### 3. Bottom action area + "Still stuck?" footer
 
-- Clicking *any* nav link → sidebar + topbar stay painted continuously.
-- During lazy chunk load → the destination page's shell is already showing the dashboard-style terracotta spinner.
-- Once the page mounts → the page header appears immediately; only the content area below shows the spinner until data resolves.
-- Smooth, dashboard-like transitions everywhere — no grey screens.
+- **Save & mark complete button**: replace the default shadcn `<Button size="lg">` with a full editorial pill:
+  - `bg-ink-900 text-paper-100 hover:bg-ink-800 rounded-full px-6 py-3 text-[14px] font-medium`
+  - Disabled state: `bg-ink-100 text-fg-muted` with no hover
+  - Loading state keeps the `Loader2` spinner
+  - Caret arrow stays as `→`
+- **"You're ready to save and continue!"** confirmation — restyle to `bg-moss-100 text-moss-700 border border-moss-500/20 rounded-2xl` with a moss `CheckCircle2`.
+- **"Still stuck?" footer**: remove the centered layout, replace with the same gradient card pattern used at the bottom of `ProjectExecute.tsx`:
+  - `rounded-2xl border border-hairline` with the cream→clay gradient
+  - Left: small ink-900 circle icon (`HelpCircle` in `text-paper-100`)
+  - Middle: display-serif "Stuck on this step?" + sans subtitle "Tell us where you're blocked and we'll point you forward."
+  - Right: pill button `bg-ink-900 text-paper-100 rounded-full px-4 py-2.5` → opens existing `StuckHelpDialog` (logic unchanged).
 
-### Files to change
+### 4. Page background + container
 
-- `src/App.tsx` — add second `<Suspense>` block with `<AppShellFallback />` for protected routes.
-- `src/components/ui/page-loader.tsx` — **new** shared loader.
-- `src/components/layout/AppShellFallback.tsx` — **new** ProjectLayout + PageLoader wrapper.
-- `src/components/TasksBoard.tsx` — slimmer inline loader (header stays in `ProjectExecute`).
-- `src/pages/DailyPage.tsx`, `WeeklyReview.tsx`, `Planner.tsx`, `project/Relaunch.tsx`, `CampaignDetail.tsx`, `project/PhaseSnapshot.tsx`, `GoalDetail.tsx`, `GoalFolderDetail.tsx`, `ContentVault.tsx`, `ContentVaultCategory.tsx`, `project/Playbook.tsx` — render page header during loading + use shared `<PageLoader />`.
+Wrap the whole page in `bg-paper-100 min-h-screen` (already done) and update the inner container from `max-w-[760px]` to `max-w-[1140px]` with a two-column grid on `lg+`. The hero, "Why this matters", "What to do", and form sections all live in the left column. The rail sits in the right.
+
+### Files to edit
+
+- `src/pages/project/TaskDetail.tsx` — only file touched. All changes are JSX/className updates plus a new inline `<aside>` for the rail. No hook/data/logic changes, no new files.
 
