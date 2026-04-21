@@ -108,13 +108,13 @@ export function EndingSnapshotDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+      <DialogContent className="sm:max-w-lg p-0 max-h-[calc(100vh-48px)] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
               <PartyPopper className="w-5 h-5 text-amber-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <DialogTitle>Congratulations on your launch!</DialogTitle>
               <DialogDescription>
                 Take a moment to capture how it went. All fields are optional.
@@ -123,13 +123,13 @@ export function EndingSnapshotDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="flex-1 overflow-y-auto bg-[hsl(var(--paper-100))] px-8 py-6 space-y-5">
           {/* Launch Results */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-muted-foreground">Launch Results</Label>
+            <Label className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Launch Results</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="sales" className="text-sm">Sales count</Label>
+                <Label htmlFor="sales">Sales count</Label>
                 <Input
                   id="sales"
                   type="number"
@@ -139,7 +139,7 @@ export function EndingSnapshotDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="revenue" className="text-sm">Revenue from launch</Label>
+                <Label htmlFor="revenue">Revenue from launch</Label>
                 <Input
                   id="revenue"
                   type="number"
@@ -153,10 +153,10 @@ export function EndingSnapshotDialog({
 
           {/* Growth */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-muted-foreground">Growth</Label>
+            <Label className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Growth</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="newFollowers" className="text-sm">New followers gained</Label>
+                <Label htmlFor="newFollowers">New followers gained</Label>
                 <Input
                   id="newFollowers"
                   type="number"
@@ -166,7 +166,7 @@ export function EndingSnapshotDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="emailGrowth" className="text-sm">Email list growth</Label>
+                <Label htmlFor="emailGrowth">Email list growth</Label>
                 <Input
                   id="emailGrowth"
                   type="number"
@@ -180,9 +180,7 @@ export function EndingSnapshotDialog({
 
           {/* Reflection */}
           <div className="space-y-1.5">
-            <Label htmlFor="reflection" className="text-sm font-medium text-muted-foreground">
-              What felt different this time?
-            </Label>
+            <Label htmlFor="reflection">What felt different this time?</Label>
             <Textarea
               id="reflection"
               placeholder="Take a moment to reflect..."
@@ -194,7 +192,7 @@ export function EndingSnapshotDialog({
           </div>
         </div>
 
-        <div className="flex justify-between pt-2">
+        <DialogFooter className="shrink-0 sm:justify-between">
           <Button
             variant="ghost"
             onClick={handleSkip}
@@ -208,7 +206,7 @@ export function EndingSnapshotDialog({
           >
             {isSaving ? "Saving..." : "Save Snapshot"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
