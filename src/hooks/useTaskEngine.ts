@@ -468,27 +468,35 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     }
   }, [user, projectId, normalizeFunnelType, injectFunnelTasks]);
 
-  // Initialize tasks for a new project
+  // Initialize tasks for a new project (single batched insert)
   const initializeProjectTasks = useCallback(async () => {
     if (!user || !projectId || projectTasks.length > 0) return;
 
-    // Create tasks for universal templates (planning AND messaging phases)
     const universalTasks = getUniversalTasks().filter(
       t => t.phase === 'setup' || t.phase === 'planning' || t.phase === 'messaging'
     );
-    
-    for (const template of universalTasks) {
-      const exists = projectTasks.find(pt => pt.taskId === template.taskId);
-      if (!exists) {
-        await supabase.from('project_tasks').insert({
-          project_id: projectId,
-          user_id: user.id,
-          task_id: template.taskId,
-          status: 'not_started',
-        });
-      }
+
+    const existingIds = new Set(projectTasks.map(pt => pt.taskId));
+    const rows = universalTasks
+      .filter(t => !existingIds.has(t.taskId))
+      .map(template => ({
+        project_id: projectId,
+        user_id: user.id,
+        task_id: template.taskId,
+        status: 'not_started' as const,
+      }));
+
+    if (rows.length === 0) return;
+
+    const { error } = await supabase.from('project_tasks').insert(rows);
+    if (error) {
+      console.error('Error batch-initializing project tasks:', error);
+      return;
     }
-  }, [user, projectId, projectTasks]);
+
+    // Re-fetch so the dashboard sees the new tasks immediately
+    await fetchData();
+  }, [user, projectId, projectTasks, fetchData]);
 
   // Start a task
   const startTask = useCallback(
@@ -687,18 +695,18 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         await injectFunnelTasks(normalizedType, projectTasks);
       }
 
-      // Also ensure messaging tasks exist
-      const messagingTasks = getUniversalTasks().filter(t => t.phase === 'messaging');
-      for (const template of messagingTasks) {
-        const exists = projectTasks.find(pt => pt.taskId === template.taskId);
-        if (!exists) {
-          await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
-        }
+      // Also ensure messaging tasks exist (single batched insert)
+      const existingIds = new Set(projectTasks.map(pt => pt.taskId));
+      const messagingRows = getUniversalTasks()
+        .filter(t => t.phase === 'messaging' && !existingIds.has(t.taskId))
+        .map(template => ({
+          project_id: projectId,
+          user_id: user.id,
+          task_id: template.taskId,
+          status: 'not_started' as const,
+        }));
+      if (messagingRows.length > 0) {
+        await supabase.from('project_tasks').insert(messagingRows);
       }
 
       setSelectedFunnelType(normalizedType);

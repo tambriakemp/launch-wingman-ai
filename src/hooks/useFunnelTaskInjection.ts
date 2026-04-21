@@ -92,50 +92,31 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
 
     try {
       const deltaTasks = getDeltaTasksForFunnel(funnelType);
-      const existingTaskIds = new Set(existingTasks.map(t => t.taskId));
-      let injectedCount = 0;
-
-      // Inject delta tasks that don't already exist
-      for (const template of deltaTasks) {
-        if (!existingTaskIds.has(template.taskId)) {
-          const { error } = await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
-
-          if (error) {
-            console.error('Error injecting task:', template.taskId, error);
-          } else {
-            injectedCount++;
-          }
-        }
-      }
-
-      // Also ensure universal tasks for Build, Content, Launch, and Post-Launch exist
-      const universalTasks = getUniversalTasks().filter(
+      const universalLaterTasks = getUniversalTasks().filter(
         t => t.phase !== 'planning' && t.phase !== 'messaging'
       );
+      const existingTaskIds = new Set(existingTasks.map(t => t.taskId));
 
-      for (const template of universalTasks) {
-        if (!existingTaskIds.has(template.taskId)) {
-          const { error } = await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
+      const rows = [...deltaTasks, ...universalLaterTasks]
+        .filter(template => !existingTaskIds.has(template.taskId))
+        .map(template => ({
+          project_id: projectId,
+          user_id: user.id,
+          task_id: template.taskId,
+          status: 'not_started' as const,
+        }));
 
-          if (error) {
-            console.error('Error injecting universal task:', template.taskId, error);
-          } else {
-            injectedCount++;
-          }
-        }
+      if (rows.length === 0) {
+        return { success: true, injectedCount: 0 };
       }
 
-      return { success: true, injectedCount };
+      const { error } = await supabase.from('project_tasks').insert(rows);
+      if (error) {
+        console.error('Error batch-injecting tasks:', error);
+        return { success: false, injectedCount: 0, error: error.message };
+      }
+
+      return { success: true, injectedCount: rows.length };
     } catch (err) {
       console.error('Error during task injection:', err);
       return { 
@@ -162,26 +143,27 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         t => t.phase !== 'planning' && t.phase !== 'messaging'
       );
       const existingTaskIds = new Set(existingTasks.map(t => t.taskId));
-      let injectedCount = 0;
 
-      for (const template of universalTasks) {
-        if (!existingTaskIds.has(template.taskId)) {
-          const { error } = await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
+      const rows = universalTasks
+        .filter(template => !existingTaskIds.has(template.taskId))
+        .map(template => ({
+          project_id: projectId,
+          user_id: user.id,
+          task_id: template.taskId,
+          status: 'not_started' as const,
+        }));
 
-          if (error) {
-            console.error('Error injecting universal task:', template.taskId, error);
-          } else {
-            injectedCount++;
-          }
-        }
+      if (rows.length === 0) {
+        return { success: true, injectedCount: 0 };
       }
 
-      return { success: true, injectedCount };
+      const { error } = await supabase.from('project_tasks').insert(rows);
+      if (error) {
+        console.error('Error batch-injecting universal tasks:', error);
+        return { success: false, injectedCount: 0, error: error.message };
+      }
+
+      return { success: true, injectedCount: rows.length };
     } catch (err) {
       console.error('Error ensuring universal tasks:', err);
       return { 
