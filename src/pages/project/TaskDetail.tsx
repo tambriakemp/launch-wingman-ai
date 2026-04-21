@@ -1376,17 +1376,20 @@ export default function TaskDetail() {
                   <div key={field.name}>
                     {/* Optional Section Header */}
                     {hasSection && (
-                      <div className="mt-8 mb-4 pt-6 border-t border-border/50">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <div className="mt-8 mb-4 pt-6 border-t border-hairline">
+                        <p className="editorial-eyebrow">
                           {field.sectionLabel}
                         </p>
                       </div>
                     )}
                     
-                    <div className={`space-y-2 ${hasSection ? 'opacity-80' : ''}`}>
-                      <Label htmlFor={field.name} className={`text-sm ${hasSection ? 'font-normal text-muted-foreground' : 'font-medium'}`}>
+                    <div className={`space-y-2 ${hasSection ? 'opacity-90' : ''}`}>
+                      <Label htmlFor={field.name} className={cn(
+                        "text-[13px]",
+                        hasSection ? "font-normal text-fg-muted" : "font-medium text-ink-800"
+                      )}>
                         {field.label}
-                        {field.required && <span className="text-destructive ml-1">*</span>}
+                        {field.required && <span className="text-terracotta ml-1">*</span>}
                       </Label>
                       
                       {field.type === 'textarea' ? (
@@ -1395,14 +1398,14 @@ export default function TaskDetail() {
                           placeholder={field.placeholder}
                           value={formData[field.name] || ''}
                           onChange={(e) => handleFormChange(field.name, e.target.value)}
-                          className="min-h-[120px]"
+                          className="min-h-[120px] bg-white border border-hairline rounded-2xl px-4 py-3 text-[15px] text-ink-900 placeholder:text-fg-muted focus-visible:border-terracotta focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                       ) : field.type === 'select' && field.options ? (
                         <Select
                           value={formData[field.name] || ''}
                           onValueChange={(value) => handleFormChange(field.name, value)}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full bg-white border border-hairline rounded-2xl px-4 py-3 h-auto text-[15px] text-ink-900 focus:ring-0 focus:ring-offset-0 focus:border-terracotta">
                             <SelectValue placeholder={field.placeholder || 'Select...'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1420,12 +1423,13 @@ export default function TaskDetail() {
                           placeholder={field.placeholder}
                           value={formData[field.name] || ''}
                           onChange={(e) => handleFormChange(field.name, e.target.value)}
+                          className="bg-white border border-hairline rounded-2xl px-4 py-3 h-auto text-[15px] text-ink-900 placeholder:text-fg-muted focus-visible:border-terracotta focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                       )}
                       
                       {/* Helper text for optional fields */}
                       {field.helperText && (
-                        <p className="text-xs text-muted-foreground/70 mt-1">
+                        <p className="text-xs text-fg-muted/80 mt-1">
                           {field.helperText}
                         </p>
                       )}
