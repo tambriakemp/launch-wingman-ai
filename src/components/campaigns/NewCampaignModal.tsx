@@ -303,10 +303,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
                       className={cn(
-                        "border rounded-lg p-3 text-sm transition-all flex items-center gap-2 font-medium",
+                        "border rounded-[10px] px-3 py-2.5 text-[13px] font-body font-medium transition-all flex items-center gap-2 bg-white",
                         selectedPlatforms.includes(p.name)
-                          ? "border-primary bg-primary/10 text-foreground shadow-sm"
-                          : "border-border text-muted-foreground hover:border-primary/50 hover:bg-muted/50"
+                          ? "border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900)/0.04)] text-[hsl(var(--ink-900))]"
+                          : "border-[hsl(var(--border-hairline))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--ink-900)/0.4)]"
                       )}>
                       <span className="text-base">{p.icon}</span>
                       {p.name}
