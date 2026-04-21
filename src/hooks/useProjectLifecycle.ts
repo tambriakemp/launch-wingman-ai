@@ -69,24 +69,33 @@ function determineProjectState(
 
 export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): UseProjectLifecycleReturn {
   const { user } = useAuth();
+  const userId = user?.id;
   const [projectState, setProjectState] = useState<ProjectState>('draft');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch current project state
   const fetchState = useCallback(async () => {
-    if (!user || !projectId) return;
+    if (!userId || !projectId) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .select('status, active_phase, phase_statuses')
-        .eq('id', projectId)
-        .eq('user_id', user.id)
-        .single();
+      const [{ data: project, error: projectError }, { count }] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('status, active_phase, phase_statuses')
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .single(),
+        supabase
+          .from('project_tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('project_id', projectId)
+          .eq('user_id', userId)
+          .eq('status', 'completed'),
+      ]);
 
       if (projectError) throw projectError;
 
@@ -97,13 +106,6 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
         setProjectState(project.status as ProjectState);
         return;
       }
-
-      const { count } = await supabase
-        .from('project_tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('project_id', projectId)
-        .eq('user_id', user.id)
-        .eq('status', 'completed');
 
       const hasCompletedTasks = (count || 0) > 0;
 
@@ -122,7 +124,7 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
           .from('projects')
           .update({ status: state })
           .eq('id', projectId)
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
       }
     } catch (err) {
       console.error('Error fetching project lifecycle state:', err);
@@ -130,12 +132,12 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
     } finally {
       setIsLoading(false);
     }
-  }, [user, projectId]);
+  }, [userId, projectId]);
 
   // Transition to a new state
   const transitionTo = useCallback(
     async (newState: ProjectState): Promise<boolean> => {
-      if (!user) return false;
+      if (!userId) return false;
 
       // Validate transition
       if (!canTransitionTo(projectState, newState)) {
@@ -148,7 +150,7 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
           .from('projects')
           .update({ status: newState })
           .eq('id', projectId)
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
 
         if (error) throw error;
 
@@ -161,7 +163,7 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
         return false;
       }
     },
-    [user, projectId, projectState]
+    [userId, projectId, projectState]
   );
 
   // Convenience methods for common transitions
