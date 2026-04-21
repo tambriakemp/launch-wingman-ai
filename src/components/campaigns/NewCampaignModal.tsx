@@ -390,25 +390,25 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         {step === 3 && (
           <div className="space-y-4">
             {/* Campaign Details */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campaign Details</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{name || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span className="font-medium capitalize">{goal ? goalLabels[goal] || goal : "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Dates</span><span className="font-medium">{startDate || "—"} → {endDate || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium">{budget ? `$${budget}` : "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Goal Target</span><span className="font-medium">{goalTarget ? (goal === "revenue" ? `$${Number(goalTarget).toLocaleString()}` : Number(goalTarget).toLocaleString()) : "—"}</span></div>
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Campaign Details</h4>
+              <div className="space-y-2 text-[13px] font-body">
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Name</span><span className="font-medium text-[hsl(var(--ink-900))]">{name || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Goal</span><span className="font-medium capitalize text-[hsl(var(--ink-900))]">{goal ? goalLabels[goal] || goal : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Dates</span><span className="font-medium text-[hsl(var(--ink-900))]">{startDate || "—"} → {endDate || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Budget</span><span className="font-medium text-[hsl(var(--ink-900))]">{budget ? `$${budget}` : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">Goal Target</span><span className="font-medium text-[hsl(var(--ink-900))]">{goalTarget ? (goal === "revenue" ? `$${Number(goalTarget).toLocaleString()}` : Number(goalTarget).toLocaleString()) : "—"}</span></div>
               </div>
             </div>
 
             {/* Attribution */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attribution</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">UTM Links</span><span className="font-medium">{autoUtm ? "Auto-generated" : "Manual"}</span></div>
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Attribution</h4>
+              <div className="space-y-2 text-[13px] font-body">
+                <div className="flex justify-between"><span className="text-[hsl(var(--fg-muted))]">UTM Links</span><span className="font-medium text-[hsl(var(--ink-900))]">{autoUtm ? "Auto-generated" : "Manual"}</span></div>
                 {autoUtm && selectedPlatforms.length > 0 && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-muted-foreground">Platforms</span>
+                  <div className="flex justify-between items-start gap-3">
+                    <span className="text-[hsl(var(--fg-muted))] shrink-0">Platforms</span>
                     <div className="flex flex-wrap gap-1 justify-end">
                       {selectedPlatforms.map((p) => (
                         <Badge key={p} variant="secondary" className="text-[11px]">{p}</Badge>
@@ -420,16 +420,16 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             </div>
 
             {/* Funnel */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funnel</h4>
-              <div className="text-sm">
+            <div className="border border-[hsl(var(--border-hairline))] rounded-[10px] p-4 space-y-3 bg-white">
+              <h4 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--terracotta-500))]">Funnel</h4>
+              <div className="text-[13px] font-body">
                 {selectedFunnel ? (
                   <div>
-                    <p className="font-medium">{getFunnelLabel(selectedFunnel.funnel_type)}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{(selectedFunnel as any).projects?.name}</p>
+                    <p className="font-semibold text-[hsl(var(--ink-900))]">{getFunnelLabel(selectedFunnel.funnel_type)}</p>
+                    <p className="text-[12px] text-[hsl(var(--fg-muted))] mt-0.5">{(selectedFunnel as any).projects?.name}</p>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">None</p>
+                  <p className="text-[hsl(var(--fg-muted))]">None</p>
                 )}
               </div>
             </div>
