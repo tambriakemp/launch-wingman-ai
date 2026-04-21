@@ -81,26 +81,31 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
     setError(null);
 
     try {
-      // Run project fetch and completed-task count in parallel
-      const [projectRes, countRes] = await Promise.all([
-        supabase
-          .from('projects')
-          .select('status, active_phase, phase_statuses')
-          .eq('id', projectId)
-          .eq('user_id', user.id)
-          .single(),
-        supabase
-          .from('project_tasks')
-          .select('*', { count: 'exact', head: true })
-          .eq('project_id', projectId)
-          .eq('user_id', user.id)
-          .eq('status', 'completed'),
-      ]);
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .select('status, active_phase, phase_statuses')
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .single();
 
-      const { data: project, error: projectError } = projectRes;
       if (projectError) throw projectError;
 
-      const hasCompletedTasks = (countRes.count || 0) > 0;
+      const validStates: ProjectState[] = ['draft', 'in_progress', 'launched', 'completed', 'paused', 'archived'];
+      const launchComplete = (project.phase_statuses as Record<string, string> | null)?.launch === 'complete';
+
+      if (validStates.includes(project.status as ProjectState) && !launchComplete) {
+        setProjectState(project.status as ProjectState);
+        return;
+      }
+
+      const { count } = await supabase
+        .from('project_tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .eq('status', 'completed');
+
+      const hasCompletedTasks = (count || 0) > 0;
 
       const state = determineProjectState(
         project.status,
