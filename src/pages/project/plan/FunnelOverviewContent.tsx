@@ -354,15 +354,13 @@ const YourLaunchCard = ({
   </div>
 );
 
-// ── Today stats card ──
+// ── Today (Planner) stats card ──
 const TodayStatsCard = ({
   dueToday,
-  contentThisWeek,
-  projectId,
+  upcomingPlanner,
 }: {
   dueToday: number;
-  contentThisWeek: number;
-  projectId: string;
+  upcomingPlanner: number;
 }) => (
   <div
     className="bg-white"
@@ -372,17 +370,30 @@ const TodayStatsCard = ({
       padding: 20,
     }}
   >
-    <div
-      className="uppercase"
-      style={{
-        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-        fontSize: 11,
-        letterSpacing: "0.14em",
-        color: "hsl(var(--terracotta-500))",
-        fontWeight: 600,
-      }}
-    >
-      Today
+    <div className="flex justify-between items-center gap-3">
+      <div
+        className="uppercase"
+        style={{
+          fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          color: "hsl(var(--terracotta-500))",
+          fontWeight: 600,
+        }}
+      >
+        Today
+      </div>
+      <Link
+        to="/planner"
+        className="hover:opacity-80 transition-opacity whitespace-nowrap"
+        style={{
+          fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+          fontSize: 12,
+          color: "hsl(var(--terracotta-500))",
+        }}
+      >
+        View Planner →
+      </Link>
     </div>
     <div className="mt-3 grid gap-2.5">
       <div
@@ -396,21 +407,10 @@ const TodayStatsCard = ({
           >
             Due today
           </div>
-          <Link
-            to="/planner"
-            className="hover:opacity-80 transition-opacity whitespace-nowrap"
-            style={{
-              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-              fontSize: 11,
-              color: "hsl(var(--terracotta-500))",
-            }}
-          >
-            View Planner →
-          </Link>
         </div>
         <Link
           to="/planner"
-          className="text-[hsl(var(--ink-900))] hover:opacity-80 transition-opacity"
+          className="text-[hsl(var(--ink-900))] hover:opacity-80 transition-opacity shrink-0"
           style={{
             fontFamily: '"Playfair Display", Georgia, serif',
             fontWeight: 400,
@@ -428,22 +428,12 @@ const TodayStatsCard = ({
             className="text-[hsl(var(--ink-800))] whitespace-nowrap"
             style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 13 }}
           >
-            Content this week
+            Upcoming tasks
           </div>
-          <Link
-            to={`/projects/${projectId}/content`}
-            className="hover:opacity-80 transition-opacity whitespace-nowrap"
-            style={{
-              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-              fontSize: 11,
-              color: "hsl(var(--terracotta-500))",
-            }}
-          >
-            Go to Planner →
-          </Link>
         </div>
-        <div
-          className="text-[hsl(var(--ink-900))] shrink-0"
+        <Link
+          to="/planner"
+          className="text-[hsl(var(--ink-900))] hover:opacity-80 transition-opacity shrink-0"
           style={{
             fontFamily: '"Playfair Display", Georgia, serif',
             fontWeight: 400,
@@ -452,8 +442,8 @@ const TodayStatsCard = ({
             lineHeight: 1,
           }}
         >
-          {contentThisWeek}
-        </div>
+          {upcomingPlanner}
+        </Link>
       </div>
     </div>
   </div>
@@ -594,6 +584,26 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         .neq("column_id", "done")
         .gte("due_at", startOfDay)
         .lte("due_at", endOfDay);
+      return count || 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: upcomingPlannerCount = 0 } = useQuery({
+    queryKey: ["upcoming-planner-count", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const today = new Date();
+      const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
+      const { count } = await supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("task_scope", "planner")
+        .neq("column_id", "done")
+        .gt("due_at", endOfToday);
       return count || 0;
     },
     enabled: !!user?.id,
@@ -884,8 +894,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
             <TodayStatsCard
               dueToday={todayPlannerCount}
-              contentThisWeek={contentCount}
-              projectId={projectId}
+              upcomingPlanner={upcomingPlannerCount}
             />
             <AINudgeCard />
           </div>
