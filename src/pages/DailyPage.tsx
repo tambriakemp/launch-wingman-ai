@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Sun, Moon, BookOpen, F
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface DailyPageData {
   id?: string;
@@ -197,11 +198,24 @@ const DailyPage = () => {
   const prioritiesSet = [page.priority_1, page.priority_2, page.priority_3]
     .filter(Boolean).length;
 
+  const headerBlock = (
+    <div className="flex items-start gap-4 mb-6">
+      <div className="p-3 bg-sky-100/50 dark:bg-sky-900/20 rounded-xl shrink-0">
+        <BookOpen className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+      </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Daily Page</h1>
+        <p className="text-sm text-muted-foreground hidden sm:block">Set intentions, track priorities, and reflect on your day.</p>
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28">
+          {headerBlock}
+          <PageLoader containerClassName="flex items-center justify-center h-[50vh]" />
         </div>
       </ProjectLayout>
     );

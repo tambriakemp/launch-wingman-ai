@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Campaign } from "@/types/campaign";
 import { Loader2 } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function CampaignDetail() {
   const { campaignId } = useParams();
@@ -57,7 +58,9 @@ export default function CampaignDetail() {
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          <PageLoader />
+        </div>
       </ProjectLayout>
     );
   }

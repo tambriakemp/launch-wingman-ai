@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface WeeklyReviewData {
   wins: string;
@@ -202,11 +203,24 @@ const WeeklyReview = () => {
     return total > 0 ? Math.round((done / total) * 100) : 0;
   }, [habitStats]);
 
+  const headerBlock = (
+    <div className="flex items-start gap-4 mb-6">
+      <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/20 rounded-xl shrink-0">
+        <RefreshCw className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Weekly Review</h1>
+        <p className="text-sm text-muted-foreground hidden sm:block">Reflect on your week, celebrate wins, and plan ahead.</p>
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-16">
+          {headerBlock}
+          <PageLoader containerClassName="flex items-center justify-center min-h-[50vh]" />
         </div>
       </ProjectLayout>
     );
