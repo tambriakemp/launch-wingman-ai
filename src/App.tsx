@@ -127,11 +127,9 @@ const PageViewTracker = () => {
   return null;
 };
 
-const RouteFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
-    <div className="text-sm">Loading…</div>
-  </div>
-);
+// No global route fallback — each page renders its own loader.
+// Returning null prevents a flash of a "Loading…" screen during lazy chunk loads.
+const RouteFallback = () => null;
 
 const App = () => (
   <ErrorBoundary>
