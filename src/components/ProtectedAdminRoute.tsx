@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { AppShellFallback } from "./layout/AppShellFallback";
 
 interface ProtectedAdminRouteProps {
   children: React.ReactNode;
@@ -22,7 +24,9 @@ const ProtectedAdminRoute = ({ children }: ProtectedAdminRouteProps) => {
     return <Navigate to="/app" replace />;
   }
 
-  return <>{children}</>;
+  // Render the persistent app shell while the destination route's lazy
+  // chunk downloads — prevents the brief blank screen between navigations.
+  return <Suspense fallback={<AppShellFallback />}>{children}</Suspense>;
 };
 
 export default ProtectedAdminRoute;
