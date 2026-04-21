@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProjectTask } from "@/types/tasks";
+import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
 
 // Niche options map for label lookup (same as useTaskEngine)
 const NICHE_OPTIONS_MAP: Record<string, string> = {
@@ -479,7 +480,7 @@ export default function OfferSnapshotTask() {
     );
   }
 
-  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
+  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
   const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
   const activeOffers = offers.filter(o => !o.isSkipped);
