@@ -67,7 +67,7 @@ const ProjectExecute = () => {
               className="inline-flex items-center gap-1.5 bg-white border border-hairline rounded-full px-3.5 py-1.5 font-sans text-[12.5px] text-ink-800 hover:bg-paper-100 transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
-              View phase snapshot
+              Launch Brief
             </Link>
           </div>
 
