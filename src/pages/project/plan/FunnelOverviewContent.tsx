@@ -389,19 +389,24 @@ const TodayStatsCard = ({
         className="flex justify-between items-center gap-3"
         style={{ padding: "10px 0", borderBottom: "1px solid hsl(var(--border-hairline))" }}
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div
             className="text-[hsl(var(--ink-800))] whitespace-nowrap"
             style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 13 }}
           >
             Due today
           </div>
-          <div
-            className="text-[hsl(var(--fg-muted))] mt-0.5"
-            style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 11 }}
+          <Link
+            to="/planner"
+            className="hover:opacity-80 transition-opacity whitespace-nowrap"
+            style={{
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: 11,
+              color: "hsl(var(--terracotta-500))",
+            }}
           >
-            {dueToday === 0 ? "Nothing overdue — breathe." : "Tap to see your list."}
-          </div>
+            View Planner →
+          </Link>
         </div>
         <Link
           to="/planner"
