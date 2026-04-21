@@ -395,23 +395,24 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     setError(null);
 
     try {
-      // Fetch project data
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .select('active_phase, selected_funnel_type, phase_statuses')
-        .eq('id', projectId)
-        .eq('user_id', user.id)
-        .single();
+      // Fetch project data and tasks in parallel
+      const [projectRes, tasksRes] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('active_phase, selected_funnel_type, phase_statuses')
+          .eq('id', projectId)
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('project_tasks')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('user_id', user.id),
+      ]);
 
+      const { data: project, error: projectError } = projectRes;
+      const { data: tasks, error: tasksError } = tasksRes;
       if (projectError) throw projectError;
-
-      // Fetch project tasks
-      const { data: tasks, error: tasksError } = await supabase
-        .from('project_tasks')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('user_id', user.id);
-
       if (tasksError) throw tasksError;
 
       // Map database results to ProjectTask type
