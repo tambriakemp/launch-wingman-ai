@@ -1,27 +1,41 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Check } from "lucide-react";
+import {
+  Loader2,
+  Check,
+  Compass,
+  MessageCircle,
+  Hammer,
+  PenTool,
+  Megaphone,
+  Rocket,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, lazy, Suspense } from "react";
 import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, format } from "date-fns";
 import {
   GreetingHeader,
   NextBestTaskCard,
   UpcomingContentCard,
-  StuckHelpDialog,
-  PhaseCelebrationCard,
   ProjectCompletedView,
   ProjectPausedView,
   ProjectLaunchedView,
   AINudgeCard,
 } from "@/components/dashboard";
-import { CheckInBanner, CheckInFlow } from "@/components/check-in";
-import { MemoryReviewBanner } from "@/components/relaunch";
+import { CheckInBanner } from "@/components/check-in";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase, PhaseStatus } from "@/types/tasks";
+
+// Lazy-loaded heavy dialogs (only mounted on demand)
+const CheckInFlow = lazy(() =>
+  import("@/components/check-in").then((m) => ({ default: m.CheckInFlow }))
+);
+const StuckHelpDialog = lazy(() =>
+  import("@/components/dashboard/StuckHelpDialog").then((m) => ({ default: m.StuckHelpDialog }))
+);
 
 interface Props {
   projectId: string;
@@ -29,13 +43,17 @@ interface Props {
 
 // Visible phases for the editorial timeline (matches mockup)
 const VISIBLE_PHASES: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
-const PHASE_WEEK_ESTIMATES: Partial<Record<Phase, number>> = {
-  planning: 1,
-  messaging: 1,
-  build: 2,
-  content: 1,
-  'pre-launch': 1,
-  launch: 1,
+
+// Icons per phase (replaces week-number labels)
+const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  setup: Compass,
+  planning: Compass,
+  messaging: MessageCircle,
+  build: Hammer,
+  content: PenTool,
+  'pre-launch': Megaphone,
+  launch: Rocket,
+  'post-launch': Rocket,
 };
 
 // ── Editorial Launch Timeline ──
