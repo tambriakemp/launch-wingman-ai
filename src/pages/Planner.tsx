@@ -17,6 +17,7 @@ import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
 import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const Planner = () => {
   const { user } = useAuth();
@@ -277,9 +278,18 @@ const Planner = () => {
   if (accessLoading || spacesLoading) {
     return (
       <ProjectLayout>
-        <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="px-4 pt-6 pb-2">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="p-3 bg-amber-100/50 dark:bg-amber-900/20 rounded-xl shrink-0">
+              <CalendarDays className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Calendar</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">Plan your schedule, track tasks, and stay on top of your week.</p>
+            </div>
+          </div>
         </div>
+        <PageLoader containerClassName="flex items-center justify-center min-h-[50vh]" />
       </ProjectLayout>
     );
   }
