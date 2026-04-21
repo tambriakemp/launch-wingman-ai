@@ -18,6 +18,7 @@ export default {
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        serif: ['"Playfair Display"', '"Iowan Old Style"', '"Apple Garamond"', "Georgia", '"Times New Roman"', "serif"],
       },
       colors: {
         border: "hsl(var(--border))",

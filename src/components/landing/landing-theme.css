@@ -1,0 +1,100 @@
+/* Editorial Cream + Terracotta theme — scoped to landing page only */
+@import "@fontsource/playfair-display/500.css";
+@import "@fontsource/playfair-display/500-italic.css";
+@import "@fontsource/playfair-display/600.css";
+@import "@fontsource/playfair-display/600-italic.css";
+@import "@fontsource/playfair-display/700.css";
+@import "@fontsource/playfair-display/700-italic.css";
+
+/*
+ * Remap the design tokens used across the landing page and its mockups
+ * so the existing components (BrowserFrame, screenshots/*) inherit the
+ * cream + terracotta palette without per-file rewrites.
+ */
+.landing-theme {
+  /* raw palette (HSL) */
+  --bg: 35 50% 96%;            /* #FBF7F1 cream */
+  --ink: 30 9% 10%;            /* #1F1B17 near-black */
+  --muted-ink: 30 9% 33%;      /* #5C544B warm gray */
+  --hairline: 35 28% 87%;      /* #E8E1D5 */
+  --card-ink: 0 0% 100%;       /* white */
+  --terracotta: 13 56% 51%;    /* #C65A3E */
+  --terracotta-soft: 13 56% 95%;
+  --warm-gold: 38 60% 56%;     /* #D4A24C */
+
+  /* override shadcn semantic tokens within scope */
+  --background: 35 50% 96%;
+  --foreground: 30 9% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 30 9% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 9% 10%;
+  --primary: 30 9% 10%;
+  --primary-foreground: 35 50% 96%;
+  --secondary: 35 28% 92%;
+  --secondary-foreground: 30 9% 10%;
+  --muted: 35 30% 94%;
+  --muted-foreground: 30 9% 33%;
+  --accent: 13 56% 51%;
+  --accent-foreground: 0 0% 100%;
+  --border: 35 28% 87%;
+  --input: 35 28% 87%;
+  --ring: 13 56% 51%;
+}
+
+/* Solid cream background everywhere inside the scope */
+.landing-theme {
+  background-color: hsl(var(--bg));
+  color: hsl(var(--ink));
+}
+
+/* Serif utility (used directly with `font-serif italic` etc.) */
+.landing-theme .font-serif {
+  font-family: "Playfair Display", "Iowan Old Style", "Apple Garamond",
+    Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* Eyebrow label */
+.landing-theme .eyebrow {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: hsl(var(--terracotta));
+}
+
+/* Hairline border helper */
+.landing-theme .hairline {
+  border-color: hsl(var(--hairline));
+}
+
+/* Landing-specific BrowserFrame chrome (cream tint) */
+.landing-theme .browser-chrome {
+  background-color: hsl(35 35% 92%);
+  border-color: hsl(var(--hairline));
+}
+
+/* Soft floating shadow used on hero mockup */
+.landing-theme .float-shadow {
+  box-shadow:
+    0 1px 1px hsla(30, 9%, 10%, 0.04),
+    0 8px 24px -8px hsla(30, 9%, 10%, 0.08),
+    0 24px 64px -16px hsla(30, 9%, 10%, 0.12);
+}
+
+/* Pill nav shadow */
+.landing-theme .pill-shadow {
+  box-shadow:
+    0 1px 2px hsla(30, 9%, 10%, 0.04),
+    0 8px 24px -12px hsla(30, 9%, 10%, 0.12);
+}
+
+/* Hide focus ring on accordion triggers for cleaner FAQ rows */
+.landing-theme .faq-row [data-state="open"] .faq-plus::before {
+  content: "−";
+}
+.landing-theme .faq-row .faq-plus::before {
+  content: "+";
+}
