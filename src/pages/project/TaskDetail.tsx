@@ -1337,24 +1337,25 @@ export default function TaskDetail() {
                 return (
                   <div
                     key={option.value}
-                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                    className={cn(
+                      "flex items-start gap-4 p-5 rounded-2xl border bg-white cursor-pointer transition-all",
                       checklistItems.includes(option.value)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                    }`}
+                        ? "border-terracotta bg-clay-100"
+                        : "border-hairline hover:border-ink-300"
+                    )}
                     onClick={() => handleChecklistToggle(option.value)}
                   >
                     <Checkbox
                       id={option.value}
                       checked={checklistItems.includes(option.value)}
                       onCheckedChange={() => handleChecklistToggle(option.value)}
-                      className="mt-0.5"
+                      className="mt-0.5 h-4 w-4 rounded-full border-ink-300 data-[state=checked]:bg-terracotta data-[state=checked]:border-terracotta data-[state=checked]:text-paper-100"
                     />
-                    <div className="space-y-1 flex-1">
-                      <Label htmlFor={option.value} className="font-medium text-foreground cursor-pointer">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <Label htmlFor={option.value} className="font-display text-[16px] tracking-[-0.01em] text-ink-900 cursor-pointer">
                         {option.label}
                       </Label>
-                      <div className="text-sm text-muted-foreground leading-relaxed">
+                      <div className="text-[14px] text-fg-secondary leading-relaxed">
                         {dynamicDescription || option.description}
                       </div>
                     </div>
