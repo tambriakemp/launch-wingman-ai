@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { slugify, buildFinalUrl, generateShortCode, CHANNEL_UTM_DEFAULTS } from "./links/utmHelpers";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,47 +180,49 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl">New Campaign</DialogTitle>
+      <DialogContent className="sm:max-w-2xl p-0 max-h-[calc(100vh-48px)] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle>New Campaign</DialogTitle>
         </DialogHeader>
 
-        {/* Modern step indicator */}
-        <div className="flex items-center gap-0 mb-6">
+        {/* Step indicator */}
+        <div className="shrink-0 flex items-center gap-0 px-8 py-5 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center flex-1 last:flex-none">
               <div className="flex items-center gap-2">
                 <div className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all",
-                  i < step ? "bg-primary text-primary-foreground" :
-                  i === step ? "bg-primary text-primary-foreground ring-4 ring-primary/20" :
-                  "bg-muted text-muted-foreground"
+                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold font-body transition-all",
+                  i < step ? "bg-[hsl(var(--ink-900))] text-[hsl(var(--paper-100))]" :
+                  i === step ? "bg-[hsl(var(--ink-900))] text-[hsl(var(--paper-100))] ring-4 ring-[hsl(var(--ink-900)/0.12)]" :
+                  "bg-[hsl(var(--paper-200))] text-[hsl(var(--fg-muted))] border border-[hsl(var(--border-hairline))]"
                 )}>
                   {i < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
                 </div>
                 <span className={cn(
-                  "text-sm font-medium hidden sm:inline",
-                  i <= step ? "text-foreground" : "text-muted-foreground"
+                  "text-[13px] font-body font-medium hidden sm:inline",
+                  i <= step ? "text-[hsl(var(--ink-900))]" : "text-[hsl(var(--fg-muted))]"
                 )}>{s}</span>
               </div>
               {i < steps.length - 1 && (
-                <div className={cn("flex-1 h-px mx-3", i < step ? "bg-primary" : "bg-border")} />
+                <div className={cn("flex-1 h-px mx-3", i < step ? "bg-[hsl(var(--ink-900))]" : "bg-[hsl(var(--border-hairline))]")} />
               )}
             </div>
           ))}
         </div>
 
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto bg-[hsl(var(--paper-100))] px-8 py-6">
         {/* Step 1: Basics */}
         {step === 0 && (
           <div className="space-y-5">
             <div>
-              <Label className="text-sm font-medium">Campaign Name</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">Give your campaign a clear, descriptive name</p>
+              <Label>Campaign Name</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Give your campaign a clear, descriptive name</p>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Launch 2026" />
             </div>
             <div>
-              <Label className="text-sm font-medium">Goal</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">What's the primary objective?</p>
+              <Label>Goal</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">What's the primary objective?</p>
               <Select value={goal} onValueChange={setGoal}>
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
@@ -237,23 +239,23 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium">Start Date</Label>
+                <Label>Start Date</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-sm font-medium">End Date</Label>
+                <Label>End Date</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium">Budget (optional)</Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">Set a spending limit for this campaign</p>
+              <Label>Budget (optional)</Label>
+              <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">Set a spending limit for this campaign</p>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="$0" />
             </div>
             {goal && (
               <div>
-                <Label className="text-sm font-medium">Goal Target *</Label>
-                <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
+                <Label>Goal Target *</Label>
+                <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">
                   {goal === "revenue" ? "Target revenue ($)" :
                     goal === "traffic" ? "Target number of visits" :
                     goal === "followers" ? "Target follower count gain" :
@@ -286,8 +288,8 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             {autoUtm && (
               <div className="space-y-5">
                 <div>
-                  <Label className="text-sm font-medium">Base Destination URL</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">The page visitors will land on when they click your links</p>
+                  <Label>Base Destination URL</Label>
+                  <p className="text-[11.5px] text-[hsl(var(--fg-muted))] mt-1 mb-2 font-body">The page visitors will land on when they click your links</p>
                   <Input
                     value={baseDestinationUrl}
                     onChange={(e) => setBaseDestinationUrl(e.target.value)}
@@ -296,7 +298,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                   />
                 </div>
                 <div>
-                <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
+                <Label className="mb-3 block">Select platforms to track</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
@@ -435,7 +437,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           </div>
         )}
 
-        <div className="flex justify-between pt-4 border-t">
+        </div>
+        {/* /Body */}
+
+        <DialogFooter className="shrink-0 sm:justify-between">
           <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)} disabled={saving}>
             {step > 0 ? "Back" : "Cancel"}
           </Button>
@@ -452,7 +457,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           }} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...</> : step < 3 ? "Next" : "Create Campaign"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
