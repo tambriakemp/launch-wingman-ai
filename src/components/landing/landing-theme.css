@@ -21,6 +21,8 @@
   --terracotta: 13 56% 51%;    /* #C65A3E */
   --terracotta-soft: 13 56% 95%;
   --warm-gold: 38 60% 56%;     /* #D4A24C */
+  --clay-200: 30 38% 84%;      /* #E8D9C6 — featured card fill */
+  --paper-50: 38 60% 98%;      /* #FDFAF5 */
 
   /* override shadcn semantic tokens within scope */
   --background: 35 50% 96%;
