@@ -705,6 +705,8 @@ export const ProjectSidebar = () => {
 };
 
 // ── Project Switcher Pill (wraps the existing ProjectSelector logic in a styled trigger) ──
+// Editorial styling: paper-100 trigger, ink-900 hairline border, square-ish corners,
+// matches the spec's project-switcher chip in the sidebar.
 const ProjectSwitcherPill = ({
   currentProjectId,
   projectName,
@@ -714,7 +716,22 @@ const ProjectSwitcherPill = ({
 }) => {
   // Re-use the existing ProjectSelector entirely so creation flow + tier gating stays intact.
   return (
-    <div className="[&_button]:!bg-white [&_button]:!border [&_button]:!border-[hsl(var(--border-hairline))] [&_button]:!text-[hsl(var(--ink-900))] [&_button]:!h-auto [&_button]:!py-2.5 [&_button]:!px-3 [&_button]:!rounded-[10px] [&_button:hover]:!bg-[hsl(var(--ink-900)/0.03)]">
+    <div
+      className={[
+        "[&_button]:!bg-white",
+        "[&_button]:!border",
+        "[&_button]:!border-[hsl(var(--border-hairline))]",
+        "[&_button]:!text-[hsl(var(--ink-900))]",
+        "[&_button]:!h-auto",
+        "[&_button]:!py-2.5",
+        "[&_button]:!px-3",
+        "[&_button]:!rounded-[10px]",
+        "[&_button]:!shadow-none",
+        "[&_button:hover]:!bg-[hsl(var(--paper-200))]",
+        "[&_button:hover]:!border-[hsl(var(--ink-900))]",
+        "[&_button]:transition-colors",
+      ].join(" ")}
+    >
       <ProjectSelector currentProjectId={currentProjectId} />
     </div>
   );
