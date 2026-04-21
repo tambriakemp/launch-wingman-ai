@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +27,7 @@ import { VideoInstructionsSection } from "@/components/build/VideoInstructionsSe
 import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
-import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
+import { PHASE_LABELS, PHASES, TaskTemplate } from "@/types/tasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
@@ -42,6 +43,24 @@ import { ExportPlanButton } from "@/components/planning/ExportPlanButton";
 import { ExportMessagingButton } from "@/components/messaging/ExportMessagingButton";
 import { ExportBuildButton } from "@/components/build/ExportBuildButton";
 import { ExportContentButton } from "@/components/content/ExportContentButton";
+
+// Editorial italic one-liners per phase (matches PhaseSection.tsx)
+const PHASE_SUMMARIES: Record<string, string> = {
+  Setup: "Pick the shape of the thing you're launching.",
+  Planning: "Clarify who this is for and why it works.",
+  Messaging: "Turn what you know into language people feel.",
+  Build: "Put the pieces in place — calmly, one by one.",
+  Content: "The pieces that bring the launch into the world.",
+  "Pre-Launch": "Warm the room before you open the doors.",
+  Launch: "Ship it. Then take an afternoon off.",
+  "Post-Launch": "Reflect, refine, and rest before the next one.",
+};
+
+const QUIET_REMINDERS = [
+  "Imperfect and shipped beats perfect and stuck.",
+  "You don't have to finish today. You just have to begin.",
+  "One quiet step is still forward motion.",
+];
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -968,6 +987,30 @@ export default function TaskDetail() {
 
   const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+
+  // ===== Side-rail data =====
+  const phaseNumber = PHASES.indexOf(taskTemplate.phase) + 1;
+  const phaseSummary = PHASE_SUMMARIES[phaseLabel] || "";
+
+  // Sibling tasks in same phase, ordered by template order if available
+  const siblingTasks = projectTasks
+    .map((pt) => ({ pt, tmpl: getTaskTemplate(pt.taskId) }))
+    .filter((x) => x.tmpl?.phase === taskTemplate.phase)
+    .map((x) => ({
+      taskId: x.pt.taskId,
+      title: x.tmpl?.title || x.pt.taskId,
+      status: x.pt.status,
+    }));
+  const phaseCompleted = siblingTasks.filter((t) => t.status === "completed").length;
+  const phaseTotal = siblingTasks.length;
+  const phaseProgressPct = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
+
+  // Pick a stable rotating reminder per task
+  const reminderIndex = taskId
+    ? taskId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % QUIET_REMINDERS.length
+    : 0;
+  const quietReminder = QUIET_REMINDERS[reminderIndex];
+
   
   // Pre-Launch: Show intro screen
   if (showPreLaunchIntro) {
@@ -1007,7 +1050,7 @@ export default function TaskDetail() {
 
   return (
     <div className="min-h-screen bg-paper-100">
-      <div className="max-w-[760px] mx-auto px-4 sm:px-10 pt-7 pb-20">
+      <div className="max-w-[1140px] mx-auto px-4 sm:px-10 pt-7 pb-20">
         {/* Back link */}
         <Link
           to={`/projects/${projectId}/tasks`}
@@ -1016,6 +1059,9 @@ export default function TaskDetail() {
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to Launch Tasks
         </Link>
+
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-12">
+          <div className="min-w-0">
 
         {/* Hero */}
         <div className="mt-5 mb-9">
@@ -1081,16 +1127,19 @@ export default function TaskDetail() {
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <h2 className="editorial-eyebrow">
                 Your response
               </h2>
               {(taskId === 'planning_phase_review' || taskId === 'messaging_phase_review' || taskId === 'build_phase_review' || taskId === 'content_phase_review') && project && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="w-4 h-4" />
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 bg-white border border-hairline rounded-full px-3.5 py-1.5 font-sans text-[12.5px] text-ink-800 hover:bg-paper-100 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
                       Export
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {taskId === 'planning_phase_review' && (
@@ -1162,7 +1211,7 @@ export default function TaskDetail() {
               </span>
             )}
             {autoSaveStatus === 'saved' && (
-              <span className="text-xs text-green-600 flex items-center gap-1">
+              <span className="text-xs text-moss-700 flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Saved
               </span>
@@ -1197,13 +1246,14 @@ export default function TaskDetail() {
                     <div key={option.value}>
                       <Label
                         htmlFor={option.value}
-                        className={`flex flex-col p-4 rounded-lg border transition-all ${
-                          isLocked 
-                            ? "cursor-not-allowed opacity-60 border-border bg-muted/20"
+                        className={cn(
+                          "flex flex-col p-5 rounded-2xl border bg-white transition-all",
+                          isLocked
+                            ? "cursor-not-allowed opacity-60 border-hairline"
                             : isSelected
-                              ? "border-primary bg-primary/5 ring-1 ring-primary cursor-pointer"
-                              : "border-border hover:border-muted-foreground/30 hover:bg-muted/30 cursor-pointer"
-                        }`}
+                            ? "border-terracotta bg-clay-100 cursor-pointer"
+                            : "border-hairline hover:border-ink-300 cursor-pointer"
+                        )}
                         onClick={(e) => {
                           if (isLocked) {
                             e.preventDefault();
@@ -1212,22 +1262,28 @@ export default function TaskDetail() {
                         }}
                       >
                         <div className="flex items-start gap-4">
-                          <RadioGroupItem 
-                            value={option.value} 
-                            id={option.value} 
-                            className="mt-0.5" 
+                          <RadioGroupItem
+                            value={option.value}
+                            id={option.value}
+                            className="mt-0.5 border-ink-300 text-terracotta data-[state=checked]:border-terracotta"
                             disabled={isLocked}
                           />
                           <div className="space-y-1 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`font-medium ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+                              <span className={cn(
+                                "font-display text-[17px] tracking-[-0.01em]",
+                                isLocked ? "text-fg-muted" : "text-ink-900"
+                              )}>
                                 {option.label}
                               </span>
                               {isLocked && (
-                                <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                <Crown className="w-4 h-4 text-terracotta flex-shrink-0" />
                               )}
                             </div>
-                            <p className={`text-sm leading-relaxed ${isLocked ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
+                            <p className={cn(
+                              "text-[14px] leading-relaxed",
+                              isLocked ? "text-fg-muted/70" : "text-fg-secondary"
+                            )}>
                               {option.description}
                             </p>
                           </div>
@@ -1281,24 +1337,25 @@ export default function TaskDetail() {
                 return (
                   <div
                     key={option.value}
-                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                    className={cn(
+                      "flex items-start gap-4 p-5 rounded-2xl border bg-white cursor-pointer transition-all",
                       checklistItems.includes(option.value)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                    }`}
+                        ? "border-terracotta bg-clay-100"
+                        : "border-hairline hover:border-ink-300"
+                    )}
                     onClick={() => handleChecklistToggle(option.value)}
                   >
                     <Checkbox
                       id={option.value}
                       checked={checklistItems.includes(option.value)}
                       onCheckedChange={() => handleChecklistToggle(option.value)}
-                      className="mt-0.5"
+                      className="mt-0.5 h-4 w-4 rounded-full border-ink-300 data-[state=checked]:bg-terracotta data-[state=checked]:border-terracotta data-[state=checked]:text-paper-100"
                     />
-                    <div className="space-y-1 flex-1">
-                      <Label htmlFor={option.value} className="font-medium text-foreground cursor-pointer">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <Label htmlFor={option.value} className="font-display text-[16px] tracking-[-0.01em] text-ink-900 cursor-pointer">
                         {option.label}
                       </Label>
-                      <div className="text-sm text-muted-foreground leading-relaxed">
+                      <div className="text-[14px] text-fg-secondary leading-relaxed">
                         {dynamicDescription || option.description}
                       </div>
                     </div>
@@ -1319,17 +1376,20 @@ export default function TaskDetail() {
                   <div key={field.name}>
                     {/* Optional Section Header */}
                     {hasSection && (
-                      <div className="mt-8 mb-4 pt-6 border-t border-border/50">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <div className="mt-8 mb-4 pt-6 border-t border-hairline">
+                        <p className="editorial-eyebrow">
                           {field.sectionLabel}
                         </p>
                       </div>
                     )}
                     
-                    <div className={`space-y-2 ${hasSection ? 'opacity-80' : ''}`}>
-                      <Label htmlFor={field.name} className={`text-sm ${hasSection ? 'font-normal text-muted-foreground' : 'font-medium'}`}>
+                    <div className={`space-y-2 ${hasSection ? 'opacity-90' : ''}`}>
+                      <Label htmlFor={field.name} className={cn(
+                        "text-[13px]",
+                        hasSection ? "font-normal text-fg-muted" : "font-medium text-ink-800"
+                      )}>
                         {field.label}
-                        {field.required && <span className="text-destructive ml-1">*</span>}
+                        {field.required && <span className="text-terracotta ml-1">*</span>}
                       </Label>
                       
                       {field.type === 'textarea' ? (
@@ -1338,14 +1398,14 @@ export default function TaskDetail() {
                           placeholder={field.placeholder}
                           value={formData[field.name] || ''}
                           onChange={(e) => handleFormChange(field.name, e.target.value)}
-                          className="min-h-[120px]"
+                          className="min-h-[120px] bg-white border border-hairline rounded-2xl px-4 py-3 text-[15px] text-ink-900 placeholder:text-fg-muted focus-visible:border-terracotta focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                       ) : field.type === 'select' && field.options ? (
                         <Select
                           value={formData[field.name] || ''}
                           onValueChange={(value) => handleFormChange(field.name, value)}
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full bg-white border border-hairline rounded-2xl px-4 py-3 h-auto text-[15px] text-ink-900 focus:ring-0 focus:ring-offset-0 focus:border-terracotta">
                             <SelectValue placeholder={field.placeholder || 'Select...'} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1363,12 +1423,13 @@ export default function TaskDetail() {
                           placeholder={field.placeholder}
                           value={formData[field.name] || ''}
                           onChange={(e) => handleFormChange(field.name, e.target.value)}
+                          className="bg-white border border-hairline rounded-2xl px-4 py-3 h-auto text-[15px] text-ink-900 placeholder:text-fg-muted focus-visible:border-terracotta focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
                       )}
                       
                       {/* Helper text for optional fields */}
                       {field.helperText && (
-                        <p className="text-xs text-muted-foreground/70 mt-1">
+                        <p className="text-xs text-fg-muted/80 mt-1">
                           {field.helperText}
                         </p>
                       )}
@@ -1482,15 +1543,15 @@ export default function TaskDetail() {
 
         {!hasCustomCompletionUI && (
           <>
-            <div className="h-px bg-border mb-10" />
+            <div className="h-px bg-hairline mb-10" />
 
             {/* "This Is Enough" Reinforcement Callout for Launch task */}
             {taskId === 'launch_share_offer_once' && (
-              <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm text-foreground font-medium mb-1">
+              <div className="mb-6 p-4 rounded-2xl bg-clay-100 border border-terracotta/20">
+                <p className="font-display text-[16px] text-ink-900 mb-1 tracking-[-0.01em]">
                   This counts as a launch.
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[14px] text-fg-secondary">
                   One clear share is enough for this step.
                 </p>
               </div>
@@ -1498,7 +1559,7 @@ export default function TaskDetail() {
 
             {/* What Done Looks Like Section */}
             <section className="mb-10">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+              <h2 className="editorial-eyebrow mb-4">
                 This step is complete when:
               </h2>
               
@@ -1512,15 +1573,16 @@ export default function TaskDetail() {
                       id={`criteria-${index}`}
                       checked={completedCriteria.includes(criteria)}
                       onCheckedChange={() => handleCriteriaToggle(criteria)}
-                      className="cursor-pointer"
+                      className="cursor-pointer h-4 w-4 rounded-full border-ink-300 data-[state=checked]:bg-terracotta data-[state=checked]:border-terracotta data-[state=checked]:text-paper-100"
                     />
                     <Label
                       htmlFor={`criteria-${index}`}
-                      className={`flex-1 text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex-1 text-[15px] cursor-pointer transition-colors",
                         completedCriteria.includes(criteria)
-                          ? "text-muted-foreground line-through"
-                          : "text-foreground"
-                      }`}
+                          ? "text-fg-muted line-through decoration-fg-muted/40"
+                          : "text-ink-800"
+                      )}
                     >
                       {criteria}
                     </Label>
@@ -1530,15 +1592,15 @@ export default function TaskDetail() {
               
               {/* Note about requirement */}
               {!allCriteriaComplete && (
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-3 text-[12px] text-fg-muted">
                   Check off all items above before saving and marking complete.
                 </p>
               )}
 
               {isTaskComplete && (
-                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                <div className="mt-4 p-3 rounded-2xl bg-moss-100 border border-moss-500/20 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-moss-700 shrink-0" />
+                  <p className="text-[14px] text-moss-700">
                     You're ready to save and continue!
                   </p>
                 </div>
@@ -1557,45 +1619,158 @@ export default function TaskDetail() {
 
             {/* Completion Action */}
             <section className="mb-12">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto"
+              <button
+                type="button"
                 onClick={handleSaveAndComplete}
                 disabled={!isTaskComplete || isSaving}
+                className={cn(
+                  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-medium font-sans transition-colors",
+                  !isTaskComplete || isSaving
+                    ? "bg-ink-100 text-fg-muted cursor-not-allowed"
+                    : "bg-ink-900 text-paper-100 hover:bg-ink-800"
+                )}
               >
                 {isSaving ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
-                  "Save & mark complete →"
+                  <>Save & mark complete <span aria-hidden>→</span></>
                 )}
-              </Button>
+              </button>
             </section>
           </>
         )}
 
-        <div className="h-px bg-border mb-10" />
-
-        {/* I'm Stuck Support Section */}
-        <section className="text-center pb-8">
-          <div className="inline-flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <HelpCircle className="w-4 h-4" />
-              <span className="text-sm">Still stuck?</span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Not sure how to move forward? Get help with this step.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setIsStuckDialogOpen(true)}
-            >
-              I'm stuck
-            </Button>
+        {/* Stuck on this step? — gradient card footer */}
+        <div
+          className="mt-2 px-6 py-5 rounded-2xl border border-hairline flex items-center gap-5 flex-wrap"
+          style={{
+            background:
+              "linear-gradient(160deg, #ffffff 0%, hsl(var(--clay-200)) 100%)",
+          }}
+        >
+          <div className="w-10 h-10 rounded-full bg-ink-900 inline-flex items-center justify-center text-paper-100 shrink-0">
+            <HelpCircle className="w-4 h-4" />
           </div>
-        </section>
+          <div className="flex-1 min-w-[220px]">
+            <div className="font-display text-[16px] sm:text-[17px] font-medium text-ink-900 tracking-[-0.01em]">
+              Stuck on this step?
+            </div>
+            <div className="font-sans text-[13px] text-fg-secondary mt-0.5">
+              Tell us where you're blocked and we'll point you forward.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsStuckDialogOpen(true)}
+            className="bg-ink-900 text-paper-100 hover:bg-ink-800 px-4 py-2.5 rounded-full font-sans text-[13px] font-medium whitespace-nowrap transition-colors"
+          >
+            I'm stuck
+          </button>
+        </div>
+          </div>
+
+          {/* ===== Side rail (desktop) ===== */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-8 space-y-6">
+              {/* Phase progress strip */}
+              <div className="rounded-2xl border border-hairline bg-white p-5">
+                <div className="editorial-eyebrow mb-2">
+                  Phase {phaseNumber} · {phaseLabel}
+                </div>
+                {phaseSummary && (
+                  <div className="font-display italic text-[14px] leading-snug text-ink-800 mb-4">
+                    {phaseSummary}
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-[11.5px] text-fg-muted">
+                    {phaseCompleted}/{phaseTotal}
+                  </span>
+                  <span className="font-mono text-[11.5px] text-fg-muted">
+                    {phaseProgressPct}%
+                  </span>
+                </div>
+                <div className="h-px w-full bg-hairline relative overflow-hidden mb-4">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-terracotta"
+                    style={{ width: `${phaseProgressPct}%`, height: "1px" }}
+                  />
+                </div>
+                <ul className="space-y-2">
+                  {siblingTasks.map((s) => {
+                    const isCurrent = s.taskId === taskId;
+                    const isDone = s.status === "completed";
+                    return (
+                      <li key={s.taskId} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                        <span className="mt-0.5 w-3.5 inline-flex justify-center shrink-0">
+                          {isDone ? (
+                            <Check className="w-3 h-3 text-terracotta" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-ink-300 inline-block" />
+                          )}
+                        </span>
+                        <span
+                          className={cn(
+                            "min-w-0",
+                            isCurrent
+                              ? "text-ink-900 font-semibold"
+                              : isDone
+                              ? "text-fg-muted"
+                              : "text-ink-800"
+                          )}
+                        >
+                          {s.title}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              {/* Up next card */}
+              {nextBestTask && nextBestTask.taskId !== taskId && (
+                <div className="rounded-2xl border border-hairline bg-white p-5">
+                  <div className="editorial-eyebrow mb-2">Up next</div>
+                  <Link
+                    to={nextBestTask.route}
+                    className="block font-display text-[18px] leading-snug text-ink-900 tracking-[-0.01em] hover:text-terracotta transition-colors"
+                  >
+                    {nextBestTask.title}
+                  </Link>
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    <span className="font-mono text-[11.5px] text-fg-muted inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {nextBestTask.estimatedTimeRange}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-clay-100 text-terracotta text-[10.5px] font-semibold tracking-[0.08em] uppercase">
+                      {PHASE_LABELS[nextBestTask.phase] || nextBestTask.phase}
+                    </span>
+                  </div>
+                  <Link
+                    to={nextBestTask.route}
+                    className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-terracotta hover:underline"
+                  >
+                    Open <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              )}
+
+              {/* Quiet reminder */}
+              <div className="rounded-2xl bg-ink-900 text-paper-100 p-5">
+                <p className="font-display italic text-[14.5px] leading-snug">
+                  "Work one quiet step at a time."
+                </p>
+                <div className="my-3 h-px w-10 bg-terracotta" />
+                <p className="font-sans text-[12.5px] text-paper-100/75 leading-relaxed">
+                  {quietReminder}
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       {/* Stuck Help Dialog */}
