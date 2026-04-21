@@ -325,28 +325,28 @@ const YourLaunchCard = ({
       {projectName || "Your launch"}
     </div>
     <div
-      className="mt-3.5 grid gap-1.5"
+      className="mt-3.5 grid gap-1.5 min-w-0"
       style={{
         fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
         fontSize: 12.5,
         color: "hsl(var(--fg-secondary))",
       }}
     >
-      <div className="flex justify-between gap-3 whitespace-nowrap">
-        <span>Offer</span>
-        <strong className="text-[hsl(var(--ink-900))] font-medium truncate">
+      <div className="flex justify-between gap-3 min-w-0">
+        <span className="shrink-0">Offer</span>
+        <strong className="text-[hsl(var(--ink-900))] font-medium truncate min-w-0">
           {offerTitle || "—"}
         </strong>
       </div>
-      <div className="flex justify-between gap-3 whitespace-nowrap">
-        <span>Funnel</span>
-        <strong className="text-[hsl(var(--ink-900))] font-medium truncate">
+      <div className="flex justify-between gap-3 min-w-0">
+        <span className="shrink-0">Funnel</span>
+        <strong className="text-[hsl(var(--ink-900))] font-medium truncate min-w-0">
           {funnelLabel || "—"}
         </strong>
       </div>
-      <div className="flex justify-between gap-3 whitespace-nowrap">
-        <span>Launch</span>
-        <strong style={{ color: "hsl(var(--terracotta-500))", fontWeight: 500 }}>
+      <div className="flex justify-between gap-3 min-w-0">
+        <span className="shrink-0">Launch</span>
+        <strong className="shrink-0" style={{ color: "hsl(var(--terracotta-500))", fontWeight: 500 }}>
           {launchDate ? format(parseISO(launchDate), "MMM d") : "Not set"}
         </strong>
       </div>
