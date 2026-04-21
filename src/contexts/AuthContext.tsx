@@ -37,6 +37,51 @@ const ADMIN_SESSION_KEY = 'coach_hub_admin_session';
 const IMPERSONATION_KEY = 'coach_hub_impersonation';
 const ADMIN_INFO_KEY = 'coach_hub_admin_info';
 const EXPLICIT_LOGOUT_KEY = 'launchely_explicit_logout';
+const SUBSCRIPTION_CACHE_KEY = 'launchely_subscription_status_cache';
+const SUBSCRIPTION_CACHE_TTL = 5 * 60 * 1000;
+
+interface SubscriptionCache {
+  userId: string;
+  isSubscribed: boolean;
+  subscriptionTier: SubscriptionTier | null;
+  subscriptionEnd: string | null;
+  timestamp: number;
+}
+
+const getCachedSubscriptionStatus = (userId: string): SubscriptionCache | null => {
+  try {
+    const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    if (!cached) return null;
+
+    const data: SubscriptionCache = JSON.parse(cached);
+    const isValid = data.userId === userId && (Date.now() - data.timestamp) < SUBSCRIPTION_CACHE_TTL;
+
+    return isValid ? data : null;
+  } catch {
+    return null;
+  }
+};
+
+const cacheSubscriptionStatus = (
+  userId: string,
+  isSubscribed: boolean,
+  subscriptionTier: SubscriptionTier | null,
+  subscriptionEnd: string | null
+) => {
+  try {
+    const data: SubscriptionCache = {
+      userId,
+      isSubscribed,
+      subscriptionTier,
+      subscriptionEnd,
+      timestamp: Date.now(),
+    };
+
+    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignore storage errors
+  }
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -129,6 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkSubscription = useCallback(async () => {
     if (!session) {
+      localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
       setIsSubscribed(false);
       setSubscriptionTier(null);
       setSubscriptionEnd(null);
@@ -138,19 +184,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    setSubscriptionLoading(true);
+    const cached = getCachedSubscriptionStatus(session.user.id);
+
+    if (cached) {
+      setIsSubscribed(cached.isSubscribed);
+      setSubscriptionTier(cached.subscriptionTier);
+      setSubscriptionEnd(cached.subscriptionEnd);
+      setSubscriptionLoading(false);
+    } else {
+      setSubscriptionLoading(true);
+    }
+
     try {
-    const { data, error } = await supabase.functions.invoke('check-subscription');
+      const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
         console.error('Error checking subscription:', error);
-        setIsSubscribed(false);
-        setSubscriptionTier(null);
-        setSubscriptionEnd(null);
-        setSubscriptionLoading(false);
+        if (!cached) {
+          setIsSubscribed(false);
+          setSubscriptionTier(null);
+          setSubscriptionEnd(null);
+          setSubscriptionLoading(false);
+        }
         return;
       }
       
       const newSubscribed = data?.subscribed ?? false;
+      const newTier = data?.subscription_tier || null;
+      const newEnd = data?.subscription_end ?? null;
       const previousSubscribed = prevSubscribedRef.current;
       
       // Only check for changes after the initial subscription check
@@ -176,8 +236,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasCheckedInitialSubscription.current = true;
       
       setIsSubscribed(newSubscribed);
-      setSubscriptionTier(data?.subscription_tier || null);
-      setSubscriptionEnd(data?.subscription_end ?? null);
+      setSubscriptionTier(newTier);
+      setSubscriptionEnd(newEnd);
+      cacheSubscriptionStatus(session.user.id, newSubscribed, newTier, newEnd);
     } catch (error) {
       console.error('Error checking subscription:', error);
     } finally {
@@ -451,6 +512,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem(IMPERSONATION_KEY);
     localStorage.removeItem(ADMIN_INFO_KEY);
+    localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
     // Clear admin cache on logout
     localStorage.removeItem('launchely_admin_status_cache');
     setIsImpersonating(false);
@@ -622,7 +684,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       session, 
-      loading: loading || subscriptionLoading, 
+      loading,
       isSubscribed, 
       subscriptionTier,
       subscriptionEnd,
