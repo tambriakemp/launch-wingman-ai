@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdmin } from "@/hooks/useAdmin";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import {
@@ -19,7 +19,7 @@ import { CommandSearchPill } from "./CommandSearchPill";
 
 export const TopBar = () => {
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
-  const { hasAdminAccess } = useAdmin();
+  const { hasAdminAccess } = useFeatureAccess();
   const isMobile = useIsMobile();
   const { toggle } = useMobileSidebar();
 
@@ -31,10 +31,12 @@ export const TopBar = () => {
         .from("profiles")
         .select("first_name, last_name")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const userInitial =

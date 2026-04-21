@@ -262,19 +262,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       if (!isInitialized.current) {
         if (initialSession) {
-          // Validate the session is actually valid by attempting a refresh
-          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError || !refreshed.session) {
-            // Session is stale, treat as logged out
-            console.warn('[AuthContext] Stale session detected, clearing');
-            currentUserId.current = null;
-            setSession(null);
-            setUser(null);
-            setSubscriptionLoading(false);
+          const expiresAtMs = (initialSession.expires_at ?? 0) * 1000;
+          const isExpiringSoon = expiresAtMs > 0 && expiresAtMs < Date.now() + 60_000;
+
+          if (isExpiringSoon) {
+            const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshed.session) {
+              console.warn('[AuthContext] Stale session detected, clearing');
+              currentUserId.current = null;
+              setSession(null);
+              setUser(null);
+              setSubscriptionLoading(false);
+            } else {
+              currentUserId.current = refreshed.session.user.id;
+              setSession(refreshed.session);
+              setUser(refreshed.session.user);
+            }
           } else {
-            currentUserId.current = refreshed.session.user.id;
-            setSession(refreshed.session);
-            setUser(refreshed.session.user);
+            currentUserId.current = initialSession.user.id;
+            setSession(initialSession);
+            setUser(initialSession.user);
           }
         } else {
           currentUserId.current = null;
