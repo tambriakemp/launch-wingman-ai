@@ -68,7 +68,8 @@ interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 const DialogHeader = ({ className, children, eyebrow, eyebrowNumber, ...props }: DialogHeaderProps) => (
   <div
     className={cn(
-      "relative flex flex-col gap-2 border-b border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-8 pb-5 pt-8 text-left",
+      // Break out of DialogContent's px-8 py-6 default to render edge-to-edge with hairline border.
+      "relative -mx-8 -mt-6 mb-6 flex flex-col gap-2 border-b border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-8 pb-5 pt-8 text-left",
       className,
     )}
     {...props}
@@ -86,7 +87,8 @@ DialogHeader.displayName = "DialogHeader";
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse gap-2 border-t border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-200))] px-8 py-4 sm:flex-row sm:items-center sm:justify-end",
+      // Break out of DialogContent's px-8 py-6 default to render edge-to-edge.
+      "-mx-8 -mb-6 mt-6 flex flex-col-reverse gap-2 border-t border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-200))] px-8 py-4 sm:flex-row sm:items-center sm:justify-end",
       className,
     )}
     {...props}
