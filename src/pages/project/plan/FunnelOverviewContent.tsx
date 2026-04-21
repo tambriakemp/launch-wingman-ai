@@ -512,11 +512,23 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, parent_project:projects!projects_parent_project_id_fkey(id, name)")
+        .select("*")
         .eq("id", projectId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+
+      // Fetch parent project separately (avoids fragile self-join FK hint)
+      let parent_project: { id: string; name: string } | null = null;
+      if (data.parent_project_id) {
+        const { data: parent } = await supabase
+          .from("projects")
+          .select("id, name")
+          .eq("id", data.parent_project_id)
+          .maybeSingle();
+        parent_project = parent || null;
+      }
+      return { ...data, parent_project };
     },
     enabled: !!projectId,
     staleTime: 60_000,
