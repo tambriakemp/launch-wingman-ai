@@ -623,23 +623,6 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
 
       </div>
 
-      {planningComplete && (
-        <Link
-          to={`/projects/${projectId}/summary`}
-          className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 mb-6 hover:bg-primary/10 transition-colors group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">Your Launch Brief is building</p>
-              <p className="text-xs text-muted-foreground">Your planning answers are collecting here — see what's in it</p>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-      )}
 
       {/* Checklist View */}
       {currentFunnelType && (

@@ -263,7 +263,7 @@ function BCover({
                 </>
               )}
             </h1>
-            <p className="font-display italic font-light text-[22px] md:text-[30px] leading-[1.2] mt-9 max-w-[560px] tracking-[-0.01em]" style={{ color: "hsl(var(--ink-800))" }}>
+            <p className="font-display italic font-light text-[15px] md:text-[18px] leading-[1.4] mt-8 max-w-[520px] tracking-[-0.005em]" style={{ color: "hsl(var(--ink-800))" }}>
               {tagline}
             </p>
           </div>
