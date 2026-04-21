@@ -498,16 +498,16 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               Your funnel type has changed. Would you like to update your task list to match the new funnel?
             </span>
             <div className="flex gap-2 ml-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleDismissFunnelChange}
                 disabled={isRepopulating}
               >
                 Keep Current Tasks
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={handleRepopulateTasks}
                 disabled={isRepopulating}
               >
@@ -528,102 +528,14 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
         </Alert>
       )}
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:flex-initial">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full md:w-52 h-9 pl-8"
-            />
-          </div>
-
-          <FilterPopover
-            selectedStatus={selectedStatus}
-            onStatusChange={setSelectedStatus}
-            selectedLabels={selectedLabels}
-            onLabelsChange={setSelectedLabels}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            onClear={clearFilters}
-          />
-
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground">
-              <X className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Clear</span>
-            </Button>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          <Link to={`/projects/${projectId}/summary`} className="hidden sm:block">
-            <Button variant="outline" size="sm" className="h-9 gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden lg:inline">View Phase Snapshot</span>
-              <span className="lg:hidden">Snapshot</span>
-            </Button>
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Board Settings</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Link to={`/projects/${projectId}/summary`} className="sm:hidden">
-                <DropdownMenuItem>
-                  <FileText className="w-4 h-4 mr-2" />
-                  View Phase Snapshot
-                </DropdownMenuItem>
-              </Link>
-              <LoadLaunchTasksDialog
-                projectId={projectId}
-                projectType={projectType}
-                onTasksLoaded={fetchTasks}
-                taskCount={tasks.length}
-                trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <ListChecks className="w-4 h-4 mr-2" />
-                    Load Launch Tasks
-                  </DropdownMenuItem>
-                }
-              />
-              {tasks.length > 0 && (
-                <LoadLaunchTasksDialog
-                  projectId={projectId}
-                  projectType={projectType}
-                  onTasksLoaded={fetchTasks}
-                  taskCount={tasks.length}
-                  showDeleteOnly
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete All Tasks
-                    </DropdownMenuItem>
-                  }
-                />
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-        </div>
-      </div>
-
       {/* Phase Task Sections */}
-      <div className="space-y-4 mb-6">
+      <div className="grid gap-4 mb-6">
         <PhaseSection
           projectId={projectId}
           label="Setup"
           icon={Sparkles}
           tasks={getSetupTasks()}
+          phaseNumber={1}
         />
 
         <PhaseSection
@@ -632,15 +544,18 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           icon={ClipboardList}
           tasks={getPlanningTasks(currentFunnelType)}
           prerequisiteTasks={getSetupTasks()}
+          phaseNumber={2}
         />
 
         {!currentFunnelType ? (
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-              <Rocket className="w-5 h-5 text-primary" />
+          <div className="rounded-2xl border border-dashed border-hairline bg-paper-100 p-6 text-center">
+            <div className="w-10 h-10 rounded-xl bg-clay-200 text-terracotta flex items-center justify-center mx-auto mb-3">
+              <Rocket className="w-5 h-5" />
             </div>
-            <p className="text-sm font-semibold text-foreground mb-1">Complete the setup step above to unlock your full task list</p>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+            <p className="font-display text-[15px] font-medium text-ink-900 mb-1">
+              Complete the setup step above to unlock your full task list
+            </p>
+            <p className="text-[12.5px] text-fg-secondary max-w-xs mx-auto">
               Once you choose how you'll sell your offer in the Setup phase, your personalized tasks for Planning, Build, Content, and Launch will appear here — tailored to your path.
             </p>
           </div>
@@ -652,6 +567,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               icon={MessageSquare}
               tasks={getMessagingTasks(currentFunnelType)}
               prerequisiteTasks={getPlanningTasks(currentFunnelType)}
+              phaseNumber={3}
             />
             <PhaseSection
               projectId={projectId}
@@ -660,6 +576,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               tasks={getBuildTasksForFunnel(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType)]}
               isProOnly
+              phaseNumber={4}
             />
 
             <PhaseSection
@@ -669,6 +586,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               tasks={getContentTasksForFunnel(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType)]}
               isProOnly
+              phaseNumber={5}
             />
 
             <PhaseSection
@@ -678,6 +596,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               tasks={getPreLaunchTasks(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
               isProOnly
+              phaseNumber={6}
             />
 
             <PhaseSection
@@ -687,6 +606,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               tasks={getLaunchTasksForFunnel(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType)]}
               isProOnly
+              phaseNumber={7}
             />
 
             <PhaseSection
@@ -696,6 +616,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               tasks={getPostLaunchTasks(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
               isProOnly
+              phaseNumber={8}
             />
           </>
         )}
