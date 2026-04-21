@@ -421,7 +421,7 @@ function BLede({ projectName }: { projectName: string }) {
         Editor's note
       </div>
       <p
-        className="font-display font-light text-[28px] md:text-[34px] leading-[1.28] tracking-[-0.01em] text-ink-900 m-0 max-w-[26ch]"
+        className="font-display font-light text-[28px] md:text-[34px] leading-[1.28] tracking-[-0.01em] text-ink-900 m-0 max-w-[52ch]"
       >
         <span
           className="font-display font-medium float-left mr-3.5 mt-1 text-terracotta-500 leading-[0.9] tracking-[-0.04em]"
