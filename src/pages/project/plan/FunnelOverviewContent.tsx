@@ -1,27 +1,41 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Check } from "lucide-react";
+import {
+  Loader2,
+  Check,
+  Compass,
+  MessageCircle,
+  Hammer,
+  PenTool,
+  Megaphone,
+  Rocket,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, lazy, Suspense } from "react";
 import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, format } from "date-fns";
 import {
   GreetingHeader,
   NextBestTaskCard,
   UpcomingContentCard,
-  StuckHelpDialog,
-  PhaseCelebrationCard,
   ProjectCompletedView,
   ProjectPausedView,
   ProjectLaunchedView,
   AINudgeCard,
 } from "@/components/dashboard";
-import { CheckInBanner, CheckInFlow } from "@/components/check-in";
-import { MemoryReviewBanner } from "@/components/relaunch";
+import { CheckInBanner } from "@/components/check-in";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase, PhaseStatus } from "@/types/tasks";
+
+// Lazy-loaded heavy dialogs (only mounted on demand)
+const CheckInFlow = lazy(() =>
+  import("@/components/check-in").then((m) => ({ default: m.CheckInFlow }))
+);
+const StuckHelpDialog = lazy(() =>
+  import("@/components/dashboard/StuckHelpDialog").then((m) => ({ default: m.StuckHelpDialog }))
+);
 
 interface Props {
   projectId: string;
@@ -29,13 +43,17 @@ interface Props {
 
 // Visible phases for the editorial timeline (matches mockup)
 const VISIBLE_PHASES: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
-const PHASE_WEEK_ESTIMATES: Partial<Record<Phase, number>> = {
-  planning: 1,
-  messaging: 1,
-  build: 2,
-  content: 1,
-  'pre-launch': 1,
-  launch: 1,
+
+// Icons per phase (replaces week-number labels)
+const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  setup: Compass,
+  planning: Compass,
+  messaging: MessageCircle,
+  build: Hammer,
+  content: PenTool,
+  'pre-launch': Megaphone,
+  launch: Rocket,
+  'post-launch': Rocket,
 };
 
 // ── Editorial Launch Timeline ──
@@ -43,16 +61,11 @@ const LaunchTimelineEditorial = ({
   phaseStatuses,
   activePhase,
   activePct,
-  launchDate,
 }: {
   phaseStatuses: Record<Phase, PhaseStatus>;
   activePhase: Phase;
   activePct: number;
-  launchDate?: string | null;
 }) => {
-  let weekCursor = 1;
-  const totalWeeks = VISIBLE_PHASES.reduce((sum, p) => sum + (PHASE_WEEK_ESTIMATES[p] || 1), 0);
-
   return (
     <section
       style={{
@@ -60,50 +73,31 @@ const LaunchTimelineEditorial = ({
         borderTop: "1px solid hsl(var(--border-hairline))",
       }}
     >
-      <div className="flex justify-between items-baseline mb-4 flex-wrap gap-3">
-        <div>
-          <div
-            className="uppercase"
-            style={{
-              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              color: "hsl(var(--terracotta-500))",
-              fontWeight: 600,
-            }}
-          >
-            Launch timeline
-          </div>
-          <div
-            className="text-[hsl(var(--ink-900))] mt-1"
-            style={{
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontWeight: 500,
-              fontSize: 22,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {phaseStatuses[activePhase] === 'complete'
-              ? `${PHASE_LABELS[activePhase]} complete.`
-              : `Halfway through ${PHASE_LABELS[activePhase]}.`}
-          </div>
-        </div>
+      <div className="mb-4">
         <div
-          className="text-[hsl(var(--fg-muted))]"
+          className="uppercase"
           style={{
             fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-            fontSize: 12,
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            color: "hsl(var(--terracotta-500))",
+            fontWeight: 600,
           }}
         >
-          {totalWeeks - 1}–{totalWeeks} weeks total
-          {launchDate && (
-            <>
-              {" · "}ends{" "}
-              <strong className="text-[hsl(var(--ink-900))]">
-                {format(parseISO(launchDate), "MMM d")}
-              </strong>
-            </>
-          )}
+          Launch timeline
+        </div>
+        <div
+          className="text-[hsl(var(--ink-900))] mt-1"
+          style={{
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontWeight: 500,
+            fontSize: 22,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {phaseStatuses[activePhase] === 'complete'
+            ? `${PHASE_LABELS[activePhase]} complete.`
+            : `Halfway through ${PHASE_LABELS[activePhase]}.`}
         </div>
       </div>
       <div
@@ -111,14 +105,15 @@ const LaunchTimelineEditorial = ({
         style={{ gridTemplateColumns: `repeat(${VISIBLE_PHASES.length}, 1fr)` }}
       >
         {VISIBLE_PHASES.map((phase) => {
-          const weeks = PHASE_WEEK_ESTIMATES[phase] || 1;
-          const startWeek = weekCursor;
-          const endWeek = weekCursor + weeks - 1;
-          weekCursor += weeks;
           const status = phaseStatuses[phase];
           const isDone = status === 'complete';
           const isActive = phase === activePhase && !isDone;
-          const weekLabel = startWeek === endWeek ? `W ${startWeek}` : `W ${startWeek}–${endWeek}`;
+          const PhaseIcon = PHASE_ICONS[phase];
+          const iconColor = isActive
+            ? "hsl(var(--terracotta-500))"
+            : isDone
+            ? "hsl(var(--ink-900))"
+            : "hsl(var(--fg-muted))";
 
           return (
             <div
@@ -133,17 +128,10 @@ const LaunchTimelineEditorial = ({
               }}
             >
               <div className="flex justify-between items-center gap-1.5">
-                <span
-                  className="truncate"
-                  style={{
-                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: 10,
-                    letterSpacing: "0.06em",
-                    color: isActive ? "hsl(var(--terracotta-500))" : "hsl(var(--fg-muted))",
-                  }}
-                >
-                  {weekLabel}
-                </span>
+                <PhaseIcon
+                  className="shrink-0"
+                  style={{ width: 16, height: 16, color: iconColor }}
+                />
                 {isDone && (
                   <Check
                     className="shrink-0"
@@ -401,19 +389,24 @@ const TodayStatsCard = ({
         className="flex justify-between items-center gap-3"
         style={{ padding: "10px 0", borderBottom: "1px solid hsl(var(--border-hairline))" }}
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div
             className="text-[hsl(var(--ink-800))] whitespace-nowrap"
             style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 13 }}
           >
             Due today
           </div>
-          <div
-            className="text-[hsl(var(--fg-muted))] mt-0.5"
-            style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 11 }}
+          <Link
+            to="/planner"
+            className="hover:opacity-80 transition-opacity whitespace-nowrap"
+            style={{
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: 11,
+              color: "hsl(var(--terracotta-500))",
+            }}
           >
-            {dueToday === 0 ? "Nothing overdue — breathe." : "Tap to see your list."}
-          </div>
+            View Planner →
+          </Link>
         </div>
         <Link
           to="/planner"
@@ -485,47 +478,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
-  const [dismissedPhases, setDismissedPhases] = useState<string[]>([]);
-
-  useEffect(() => {
-    const loadDismissed = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("dismissed_celebrations")
-        .eq("user_id", user.id)
-        .single();
-
-      if (data?.dismissed_celebrations) {
-        const celebrations = data.dismissed_celebrations as Record<string, boolean>;
-        const dismissed = Object.keys(celebrations)
-          .filter((key) => key.startsWith(projectId) && celebrations[key])
-          .map((key) => key.replace(`${projectId}_`, ""));
-        setDismissedPhases(dismissed);
-      }
-    };
-    loadDismissed();
-  }, [user?.id, projectId]);
-
-  const handleDismissCelebration = async (phase: string) => {
-    const updated = [...dismissedPhases, phase];
-    setDismissedPhases(updated);
-
-    if (!user?.id) return;
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("dismissed_celebrations")
-      .eq("user_id", user.id)
-      .single();
-
-    const existing = (profileData?.dismissed_celebrations as Record<string, boolean>) || {};
-    existing[`${projectId}_${phase}`] = true;
-
-    await supabase
-      .from("profiles")
-      .update({ dismissed_celebrations: existing })
-      .eq("user_id", user.id);
-  };
 
   const {
     projectState,
@@ -561,6 +513,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -575,6 +529,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data;
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: contentData } = useQuery({
@@ -582,7 +538,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_planner")
-        .select("id, title, content_type, scheduled_at, scheduled_platforms")
+        .select("id, title, content_type, scheduled_at")
         .eq("project_id", projectId)
         .not("scheduled_at", "is", null)
         .gte("scheduled_at", new Date().toISOString().split("T")[0])
@@ -592,6 +548,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data || [];
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: snapshotData } = useQuery({
@@ -617,6 +575,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return { offer, launchDate };
     },
     enabled: !!projectId,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: todayPlannerCount = 0 } = useQuery({
@@ -637,6 +597,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return count || 0;
     },
     enabled: !!user?.id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const contentCount = (() => {
@@ -794,8 +756,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         transition={{ duration: 0.2 }}
         style={{ maxWidth: 1200, margin: "0 auto", padding: "8px 0 96px" }}
       >
-        <MemoryReviewBanner projectId={projectId} />
-
         <GreetingHeader
           firstName={profile?.first_name}
           projectName={project?.name}
@@ -823,21 +783,12 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             phaseStatuses={phaseStatuses}
             activePhase={activePhase}
             activePct={activePhasePct}
-            launchDate={snapshotData?.launchDate}
           />
         )}
 
-        {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
-          <div className="mt-6">
-            <PhaseCelebrationCard
-              completedPhase={mostRecentlyCompletedPhase}
-              nextPhase={nextPhaseAfterCompleted}
-              onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
-            />
-          </div>
-        )}
-
-        <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
+        <Suspense fallback={null}>
+          {checkInOpen && <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />}
+        </Suspense>
 
         {/* Two-column body */}
         <div
@@ -963,16 +914,20 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           </button>
         </div>
 
-        <StuckHelpDialog
-          open={stuckModalOpen}
-          onOpenChange={setStuckModalOpen}
-          currentTask={{
-            title: nextBestTask?.title || "Getting started",
-            whyItMatters:
-              nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
-          }}
-          projectContext={project?.name}
-        />
+        <Suspense fallback={null}>
+          {stuckModalOpen && (
+            <StuckHelpDialog
+              open={stuckModalOpen}
+              onOpenChange={setStuckModalOpen}
+              currentTask={{
+                title: nextBestTask?.title || "Getting started",
+                whyItMatters:
+                  nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
+              }}
+              projectContext={project?.name}
+            />
+          )}
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
