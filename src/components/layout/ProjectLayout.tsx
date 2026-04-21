@@ -10,7 +10,7 @@ interface ProjectLayoutProps {
 
 export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
   const { isImpersonating } = useAuth();
-  
+
   return (
     <MobileSidebarProvider>
       <ImpersonationBanner />
@@ -18,7 +18,7 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
         <ProjectSidebar />
         <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
-          <main className="flex-1 px-2.5 py-4 md:p-6 overflow-auto">{children}</main>
+          <main className="flex-1 px-2.5 py-4 md:px-8 md:py-6 overflow-auto">{children}</main>
         </div>
       </div>
     </MobileSidebarProvider>
