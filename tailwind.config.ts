@@ -19,6 +19,8 @@ export default {
       fontFamily: {
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
         serif: ['"Playfair Display"', '"Iowan Old Style"', '"Apple Garamond"', "Georgia", '"Times New Roman"', "serif"],
+        display: ['Fraunces', '"Iowan Old Style"', '"Apple Garamond"', "Georgia", '"Times New Roman"', "serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -85,6 +87,40 @@ export default {
           foreground: "hsl(var(--callout-foreground))",
           accent: "hsl(var(--callout-accent))",
         },
+        /* === Editorial palette (Launch Tasks design system) === */
+        paper: {
+          50: "hsl(var(--paper-50))",
+          100: "hsl(var(--paper-100))",
+          200: "hsl(var(--paper-200))",
+          300: "hsl(var(--paper-300))",
+        },
+        ink: {
+          900: "hsl(var(--ink-900))",
+          800: "hsl(var(--ink-800))",
+          300: "hsl(var(--ink-300))",
+          100: "hsl(var(--ink-100))",
+        },
+        terracotta: {
+          DEFAULT: "hsl(var(--terracotta-500))",
+          500: "hsl(var(--terracotta-500))",
+          600: "hsl(var(--terracotta-600))",
+        },
+        clay: {
+          100: "hsl(var(--clay-100))",
+          200: "hsl(var(--clay-200))",
+        },
+        moss: {
+          100: "hsl(var(--moss-100))",
+          500: "hsl(var(--moss-500))",
+          700: "hsl(var(--moss-700))",
+        },
+        plum: {
+          100: "hsl(var(--plum-100))",
+          700: "hsl(var(--plum-700))",
+        },
+        hairline: "hsl(var(--border-hairline))",
+        "fg-secondary": "hsl(var(--fg-secondary))",
+        "fg-muted": "hsl(var(--fg-muted))",
       },
       borderRadius: {
         lg: "var(--radius)",

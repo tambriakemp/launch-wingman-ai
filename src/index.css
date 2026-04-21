@@ -2,6 +2,8 @@
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
+/* Editorial display + mono fonts for Launch Tasks design system */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "./components/landing/landing-theme.css";
 
 @tailwind base;
@@ -73,6 +75,52 @@
     --gradient-primary: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(40 6% 20%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(168 76% 42%) 0%, hsl(180 76% 50%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(47 96% 53%) 100%);
+
+    /* === Editorial palette (Launch Tasks design system) === */
+    /* Paper / canvas backgrounds */
+    --paper-50: 36 50% 97%;
+    --paper-100: 36 50% 96%;
+    --paper-200: 34 38% 92%;
+    --paper-300: 32 28% 86%;
+    --bg-canvas: 36 50% 96%;
+
+    /* Ink (deep warm-black text) */
+    --ink-900: 28 13% 12%;
+    --ink-800: 28 11% 22%;
+    --ink-300: 28 10% 70%;
+    --ink-100: 30 22% 92%;
+
+    /* Text greys on warm canvas */
+    --fg-secondary: 28 9% 38%;
+    --fg-muted: 28 8% 52%;
+
+    /* Hairline border on cream */
+    --border-hairline: 28 18% 86%;
+
+    /* Terracotta (primary editorial accent) */
+    --terracotta-500: 13 56% 51%;
+    --terracotta-600: 13 56% 44%;
+
+    /* Clay (terracotta tint chips) */
+    --clay-100: 28 45% 92%;
+    --clay-200: 26 42% 86%;
+
+    /* Moss (success / complete) */
+    --moss-100: 86 22% 88%;
+    --moss-500: 96 30% 38%;
+    --moss-700: 96 32% 26%;
+
+    /* Plum (membership / admin tag) */
+    --plum-100: 290 28% 92%;
+    --plum-700: 290 38% 36%;
+
+    /* Editorial typography stacks */
+    --font-display: "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, "Times New Roman", serif;
+    --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    /* Easings */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -224,6 +272,27 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* === Editorial typography utilities (Launch Tasks design system) === */
+  .font-display {
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 72;
+  }
+  .font-display-hero {
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 144;
+  }
+  .font-mono-editorial {
+    font-family: var(--font-mono);
+  }
+  .editorial-eyebrow {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: hsl(var(--fg-muted));
   }
 }
 
