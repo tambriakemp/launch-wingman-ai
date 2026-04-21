@@ -61,16 +61,11 @@ const LaunchTimelineEditorial = ({
   phaseStatuses,
   activePhase,
   activePct,
-  launchDate,
 }: {
   phaseStatuses: Record<Phase, PhaseStatus>;
   activePhase: Phase;
   activePct: number;
-  launchDate?: string | null;
 }) => {
-  let weekCursor = 1;
-  const totalWeeks = VISIBLE_PHASES.reduce((sum, p) => sum + (PHASE_WEEK_ESTIMATES[p] || 1), 0);
-
   return (
     <section
       style={{
@@ -78,50 +73,31 @@ const LaunchTimelineEditorial = ({
         borderTop: "1px solid hsl(var(--border-hairline))",
       }}
     >
-      <div className="flex justify-between items-baseline mb-4 flex-wrap gap-3">
-        <div>
-          <div
-            className="uppercase"
-            style={{
-              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              color: "hsl(var(--terracotta-500))",
-              fontWeight: 600,
-            }}
-          >
-            Launch timeline
-          </div>
-          <div
-            className="text-[hsl(var(--ink-900))] mt-1"
-            style={{
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontWeight: 500,
-              fontSize: 22,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {phaseStatuses[activePhase] === 'complete'
-              ? `${PHASE_LABELS[activePhase]} complete.`
-              : `Halfway through ${PHASE_LABELS[activePhase]}.`}
-          </div>
-        </div>
+      <div className="mb-4">
         <div
-          className="text-[hsl(var(--fg-muted))]"
+          className="uppercase"
           style={{
             fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-            fontSize: 12,
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            color: "hsl(var(--terracotta-500))",
+            fontWeight: 600,
           }}
         >
-          {totalWeeks - 1}–{totalWeeks} weeks total
-          {launchDate && (
-            <>
-              {" · "}ends{" "}
-              <strong className="text-[hsl(var(--ink-900))]">
-                {format(parseISO(launchDate), "MMM d")}
-              </strong>
-            </>
-          )}
+          Launch timeline
+        </div>
+        <div
+          className="text-[hsl(var(--ink-900))] mt-1"
+          style={{
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontWeight: 500,
+            fontSize: 22,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {phaseStatuses[activePhase] === 'complete'
+            ? `${PHASE_LABELS[activePhase]} complete.`
+            : `Halfway through ${PHASE_LABELS[activePhase]}.`}
         </div>
       </div>
       <div
@@ -129,14 +105,15 @@ const LaunchTimelineEditorial = ({
         style={{ gridTemplateColumns: `repeat(${VISIBLE_PHASES.length}, 1fr)` }}
       >
         {VISIBLE_PHASES.map((phase) => {
-          const weeks = PHASE_WEEK_ESTIMATES[phase] || 1;
-          const startWeek = weekCursor;
-          const endWeek = weekCursor + weeks - 1;
-          weekCursor += weeks;
           const status = phaseStatuses[phase];
           const isDone = status === 'complete';
           const isActive = phase === activePhase && !isDone;
-          const weekLabel = startWeek === endWeek ? `W ${startWeek}` : `W ${startWeek}–${endWeek}`;
+          const PhaseIcon = PHASE_ICONS[phase];
+          const iconColor = isActive
+            ? "hsl(var(--terracotta-500))"
+            : isDone
+            ? "hsl(var(--ink-900))"
+            : "hsl(var(--fg-muted))";
 
           return (
             <div
@@ -151,17 +128,10 @@ const LaunchTimelineEditorial = ({
               }}
             >
               <div className="flex justify-between items-center gap-1.5">
-                <span
-                  className="truncate"
-                  style={{
-                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: 10,
-                    letterSpacing: "0.06em",
-                    color: isActive ? "hsl(var(--terracotta-500))" : "hsl(var(--fg-muted))",
-                  }}
-                >
-                  {weekLabel}
-                </span>
+                <PhaseIcon
+                  className="shrink-0"
+                  style={{ width: 16, height: 16, color: iconColor }}
+                />
                 {isDone && (
                   <Check
                     className="shrink-0"
