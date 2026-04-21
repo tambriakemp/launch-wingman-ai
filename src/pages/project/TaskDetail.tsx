@@ -1750,7 +1750,7 @@ export default function TaskDetail() {
             </div>
           </aside>
         </div>
-
+      </div>
 
       {/* Stuck Help Dialog */}
       <StuckHelpDialog
