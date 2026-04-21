@@ -123,6 +123,7 @@ export default function OfferSnapshotTask() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const userId = user?.id;
   
   const [offers, setOffersRaw] = useState<OfferSlotData[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -235,7 +236,7 @@ export default function OfferSnapshotTask() {
           .from('funnels')
           .upsert({
             project_id: projectId,
-            user_id: user.id,
+            user_id: userId,
             funnel_type: selectedFunnelType,
             ...funnelData,
           }, { onConflict: 'project_id' });
@@ -248,7 +249,7 @@ export default function OfferSnapshotTask() {
     };
     
     backfillFunnel();
-  }, [user, projectId, selectedFunnelType, funnel, projectTasks, refetchFunnel]);
+  }, [userId, projectId, selectedFunnelType, funnel, projectTasks, refetchFunnel]);
 
   // Build audience data from funnel (memoized to avoid auto-save loops)
   const audienceData = useMemo<AudienceData | undefined>(() => {
@@ -337,7 +338,7 @@ export default function OfferSnapshotTask() {
         .from("offers")
         .delete()
         .eq("project_id", projectId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("funnel_type", selectedFunnelType);
 
       if (deleteError) {
@@ -349,7 +350,7 @@ export default function OfferSnapshotTask() {
       // Insert new offers with funnel_type tag
       const offersToInsert = offersToSave.map((offer, index) => ({
         project_id: projectId,
-        user_id: user.id,
+        user_id: userId,
         slot_type: offer.slotType,
         slot_position: index,
         title: offer.title?.trim() ? offer.title.trim() : null,

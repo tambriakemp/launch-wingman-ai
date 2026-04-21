@@ -194,6 +194,7 @@ const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [goal, setGoal] = useState<Goal | null>(null);
   const [targets, setTargets] = useState<GoalTarget[]>([]);
@@ -219,7 +220,7 @@ const GoalDetail = () => {
       .from("goals" as any)
       .select("*")
       .eq("id", goalId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
     const g = (data as unknown as Goal) || null;
     setGoal(g);
@@ -234,7 +235,7 @@ const GoalDetail = () => {
     } else {
       setFolder(null);
     }
-  }, [user, goalId]);
+  }, [userId, goalId]);
 
   const fetchTargets = useCallback(async () => {
     if (!user || !goalId) return;
@@ -242,10 +243,10 @@ const GoalDetail = () => {
       .from("goal_targets" as any)
       .select("*")
       .eq("goal_id", goalId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("position", { ascending: true });
     setTargets((data as unknown as GoalTarget[]) || []);
-  }, [user, goalId]);
+  }, [userId, goalId]);
 
   const fetchUpdates = useCallback(async () => {
     if (!user || !goalId) return;
@@ -253,7 +254,7 @@ const GoalDetail = () => {
       .from("goal_targets" as any)
       .select("id")
       .eq("goal_id", goalId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
     if (!targetData || targetData.length === 0) {
       setUpdates([]);
       return;
@@ -265,7 +266,7 @@ const GoalDetail = () => {
       .in("target_id", targetIds)
       .order("created_at", { ascending: false });
     setUpdates((data as unknown as GoalTargetUpdate[]) || []);
-  }, [user, goalId]);
+  }, [userId, goalId]);
 
   const fetchTaskProgress = useCallback(async () => {
     if (!user || targets.length === 0) return;
@@ -320,7 +321,7 @@ const GoalDetail = () => {
           .from("tasks")
           .select("id, title, column_id, space_id")
           .eq("space_id", spaceId)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("task_scope", "planner");
         if (sTaskData) {
           spaceTasks[spaceId] = (sTaskData as any[]).map((t: any) => ({
@@ -350,17 +351,17 @@ const GoalDetail = () => {
     }
 
     setTaskProgressMap(progressMap);
-  }, [user, targets]);
+  }, [userId, targets]);
 
   const fetchAllFolders = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("goal_folders" as any)
       .select("id, name")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("position", { ascending: true });
     setAllFolders((data as unknown as AllFolder[]) || []);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     const load = async () => {
@@ -394,13 +395,13 @@ const GoalDetail = () => {
     newTargetValue: number,
     note: string
   ) => {
-    if (!user) return;
+    if (!userId) return;
     const target = targets.find((t) => t.id === targetId);
     if (!target) return;
     const previousValue = Number(target.current_value);
     await supabase.from("goal_target_updates" as any).insert({
       target_id: targetId,
-      user_id: user.id,
+      user_id: userId,
       previous_value: previousValue,
       new_value: newCurrentValue,
       note: note || null,
@@ -476,7 +477,7 @@ const GoalDetail = () => {
     if (!user || !goalId || !quickTargetName.trim()) return;
     await supabase.from("goal_targets" as any).insert({
       goal_id: goalId,
-      user_id: user.id,
+      user_id: userId,
       name: quickTargetName.trim(),
       target_type: "true_false",
       unit: null,
@@ -1544,7 +1545,7 @@ const GoalDetail = () => {
             const isTF = t.target_type === "true_false";
             const { error } = await supabase.from("goal_targets" as any).insert({
               goal_id: goalId,
-              user_id: user.id,
+              user_id: userId,
               name: t.name,
               target_type: t.target_type,
               unit: isTF ? null : t.unit || null,

@@ -46,6 +46,7 @@ export const PhaseSection = ({
 }: PhaseSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?.id;
   const { isSubscribed, hasAdminAccess } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
@@ -61,7 +62,7 @@ export const PhaseSection = ({
         .from("project_tasks")
         .select("*")
         .eq("project_id", projectId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (error) {
         console.error("Error fetching project tasks:", error);
@@ -84,7 +85,7 @@ export const PhaseSection = ({
     };
 
     fetchProjectTasks();
-  }, [user, projectId]);
+  }, [userId, projectId]);
 
   const getTaskStatus = (taskId: string): TaskStatus => {
     const projectTask = projectTasks.find(pt => pt.taskId === taskId);

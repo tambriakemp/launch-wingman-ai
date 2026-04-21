@@ -34,6 +34,7 @@ export interface HabitCompletion {
 
 const HabitTracker = () => {
   const { user } = useAuth();
+  const userId = user?.id;
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,35 +43,35 @@ const HabitTracker = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const fetchHabits = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("habits" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_archived", false)
       .order("created_at", { ascending: true });
     setHabits((data as unknown as Habit[]) || []);
-  }, [user]);
+  }, [userId]);
 
   const fetchCompletions = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
     const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
     const { data } = await supabase
       .from("habit_completions" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("completed_date", monthStart)
       .lte("completed_date", monthEnd);
     setCompletions((data as unknown as HabitCompletion[]) || []);
     setIsLoading(false);
-  }, [user, currentMonth]);
+  }, [userId, currentMonth]);
 
   useEffect(() => { fetchHabits(); }, [fetchHabits]);
   useEffect(() => { fetchCompletions(); }, [fetchCompletions]);
 
   const toggleCompletion = async (habitId: string, date: string) => {
-    if (!user) return;
+    if (!userId) return;
     const existing = completions.find(c => c.habit_id === habitId && c.completed_date === date);
     if (existing) {
       await supabase.from("habit_completions" as any).delete().eq("id", existing.id);
@@ -78,7 +79,7 @@ const HabitTracker = () => {
     } else {
       const { data } = await supabase.from("habit_completions" as any).insert({
         habit_id: habitId,
-        user_id: user.id,
+        user_id: userId,
         completed_date: date,
       }).select().single();
       if (data) setCompletions(prev => [...prev, data as unknown as HabitCompletion]);
@@ -86,9 +87,9 @@ const HabitTracker = () => {
   };
 
   const handleCreateHabit = async (habitData: Partial<Habit>) => {
-    if (!user) return;
+    if (!userId) return;
     const { error } = await supabase.from("habits" as any).insert({
-      user_id: user.id,
+      user_id: userId,
       name: habitData.name!,
       description: habitData.description || null,
       category: habitData.category || "personal",

@@ -134,6 +134,7 @@ export const PlannerCalendarView = ({
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const userId = user?.id;
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const categories = propCategories;
@@ -141,25 +142,25 @@ export const PlannerCalendarView = ({
   // --- Today's Priorities ---
   const [dailyPage, setDailyPage] = useState<any>(null);
   const fetchDailyPage = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("daily_pages")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("page_date", todayStr)
       .maybeSingle();
     setDailyPage(data);
-  }, [user, todayStr]);
+  }, [userId, todayStr]);
 
   useEffect(() => { fetchDailyPage(); }, [fetchDailyPage]);
 
   const togglePriority = async (num: 1 | 2 | 3) => {
-    if (!user) return;
+    if (!userId) return;
     const key = `priority_${num}_done` as const;
     const currentVal = dailyPage?.[key] ?? false;
     setDailyPage((prev: any) => ({ ...prev, [key]: !currentVal }));
     await supabase.from("daily_pages").upsert(
-      { user_id: user.id, page_date: todayStr, [key]: !currentVal } as any,
+      { user_id: userId, page_date: todayStr, [key]: !currentVal } as any,
       { onConflict: "user_id,page_date" }
     );
   };
@@ -175,26 +176,26 @@ export const PlannerCalendarView = ({
   const [habitCompletions, setHabitCompletions] = useState<any[]>([]);
 
   const fetchHabitsData = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const [{ data: hData }, { data: cData }] = await Promise.all([
-      supabase.from("habits" as any).select("*").eq("user_id", user.id).eq("is_archived", false).order("created_at", { ascending: true }),
-      supabase.from("habit_completions" as any).select("*").eq("user_id", user.id).eq("completed_date", todayStr),
+      supabase.from("habits" as any).select("*").eq("user_id", userId).eq("is_archived", false).order("created_at", { ascending: true }),
+      supabase.from("habit_completions" as any).select("*").eq("user_id", userId).eq("completed_date", todayStr),
     ]);
     setSidebarHabits((hData as any[]) || []);
     setHabitCompletions((cData as any[]) || []);
-  }, [user, todayStr]);
+  }, [userId, todayStr]);
 
   useEffect(() => { fetchHabitsData(); }, [fetchHabitsData]);
 
   const toggleHabitCompletion = async (habitId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const existing = habitCompletions.find((c: any) => c.habit_id === habitId);
     if (existing) {
       setHabitCompletions(prev => prev.filter((c: any) => c.id !== existing.id));
       await supabase.from("habit_completions" as any).delete().eq("id", existing.id);
     } else {
       const tempId = crypto.randomUUID();
-      const newCompletion = { id: tempId, habit_id: habitId, user_id: user.id, completed_date: todayStr };
+      const newCompletion = { id: tempId, habit_id: habitId, user_id: userId, completed_date: todayStr };
       setHabitCompletions(prev => [...prev, newCompletion]);
       const { data } = await supabase.from("habit_completions" as any).insert(newCompletion).select().single();
       if (data) setHabitCompletions(prev => prev.map(c => c.id === tempId ? data as any : c));

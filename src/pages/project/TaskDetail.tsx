@@ -48,6 +48,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const userId = user?.id;
   const { tier, hasAdminAccess } = useFeatureAccess();
   const { isAdmin } = useAdmin();
   
@@ -540,7 +541,7 @@ export default function TaskDetail() {
       const { data: profile } = await supabase
         .from('profiles')
         .select('seen_intros')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       const seenIntros: Record<string, boolean> = (profile?.seen_intros as Record<string, boolean>) || {};
@@ -621,12 +622,12 @@ export default function TaskDetail() {
             input_data: JSON.parse(JSON.stringify(mergedData)),
           })
           .eq('id', existingTask.id)
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
       } else {
         // Create new task as in_progress with input_data
         await supabase.from('project_tasks').insert({
           project_id: projectId,
-          user_id: user.id,
+          user_id: userId,
           task_id: taskId,
           status: 'in_progress',
           started_at: new Date().toISOString(),
@@ -636,7 +637,7 @@ export default function TaskDetail() {
     } catch (error) {
       console.error('Auto-save error:', error);
     }
-  }, [user, projectId, taskId, taskTemplate, selectedOption, checklistItems, formData, projectTasks, completedCriteria]);
+  }, [userId, projectId, taskId, taskTemplate, selectedOption, checklistItems, formData, projectTasks, completedCriteria]);
 
   // Debounced auto-save effect
   useEffect(() => {
@@ -690,11 +691,11 @@ export default function TaskDetail() {
             .from('project_tasks')
             .update({ input_data: updatedData })
             .eq('id', existingTask.id)
-            .eq('user_id', user.id);
+            .eq('user_id', userId);
         } else {
           await supabase.from('project_tasks').insert({
             project_id: projectId,
-            user_id: user.id,
+            user_id: userId,
             task_id: taskId,
             status: 'in_progress',
             started_at: new Date().toISOString(),
@@ -851,7 +852,7 @@ export default function TaskDetail() {
     const { data: profile } = await supabase
       .from('profiles')
       .select('seen_intros')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     const seenIntros: Record<string, boolean> = (profile?.seen_intros as Record<string, boolean>) || {};
@@ -860,7 +861,7 @@ export default function TaskDetail() {
     await supabase
       .from('profiles')
       .update({ seen_intros: seenIntros })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
   };
 
   // Handle dismissing launch intro

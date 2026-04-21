@@ -50,6 +50,7 @@ const GoalFolderDetail = () => {
   const { folderId } = useParams<{ folderId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -78,42 +79,42 @@ const GoalFolderDetail = () => {
       .from("goal_folders" as any)
       .select("*")
       .eq("id", folderId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
     setFolder((data as unknown as GoalFolder) || null);
-  }, [user, folderId]);
+  }, [userId, folderId]);
 
   const fetchGoals = useCallback(async () => {
     if (!user || !folderId) return;
     const { data } = await supabase
       .from("goals" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("folder_id", folderId)
       .order("updated_at", { ascending: false });
     setGoals((data as unknown as Goal[]) || []);
     setIsLoading(false);
-  }, [user, folderId]);
+  }, [userId, folderId]);
 
   const fetchTargets = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("goal_targets" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("position", { ascending: true });
     setTargets((data as unknown as GoalTarget[]) || []);
-  }, [user]);
+  }, [userId]);
 
   const fetchAllFolders = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("goal_folders" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("position", { ascending: true });
     setAllFolders((data as unknown as GoalFolder[]) || []);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchFolder();
@@ -127,7 +128,7 @@ const GoalFolderDetail = () => {
     const { data: created, error } = await supabase
       .from("goals" as any)
       .insert({
-        user_id: user.id,
+        user_id: userId,
         title: data.title!,
         description: data.description || null,
         category: data.category || "business",
@@ -147,7 +148,7 @@ const GoalFolderDetail = () => {
       await supabase.from("goal_targets" as any).insert(
         newTargets.map((t, i) => ({
           goal_id: (created as any).id,
-          user_id: user.id,
+          user_id: userId,
           name: t.name!,
           target_type: t.target_type || "number",
           unit: t.unit || null,
@@ -185,7 +186,7 @@ const GoalFolderDetail = () => {
       await supabase.from("goal_targets" as any).insert(
         updatedTargets.map((t, i) => ({
           goal_id: editingGoal.id,
-          user_id: user.id,
+          user_id: userId,
           name: t.name!,
           target_type: t.target_type || "number",
           unit: t.unit || null,

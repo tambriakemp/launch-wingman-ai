@@ -71,6 +71,7 @@ function getDayPrompt(date: Date, list: string[]) {
 
 const DailyPage = () => {
   const { user } = useAuth();
+  const userId = user?.id;
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [page, setPage] = useState<DailyPageData>(EMPTY_PAGE);
@@ -86,14 +87,14 @@ const DailyPage = () => {
 
   // Load page data + habits for the selected date
   const loadPage = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setIsLoading(true);
 
     // Load daily page
     const { data: pageData } = await supabase
       .from("daily_pages" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("page_date", dateStr)
       .maybeSingle();
 
@@ -121,14 +122,14 @@ const DailyPage = () => {
     const { data: habitData } = await supabase
       .from("habits" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_archived", false)
       .order("created_at", { ascending: true });
 
     const { data: completionData } = await supabase
       .from("habit_completions" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("completed_date", dateStr);
 
     const completedIds = new Set((completionData || []).map((c: any) => c.habit_id));
@@ -142,7 +143,7 @@ const DailyPage = () => {
     );
 
     setIsLoading(false);
-  }, [user, dateStr]);
+  }, [userId, dateStr]);
 
   useEffect(() => { loadPage(); }, [loadPage]);
 
@@ -150,10 +151,10 @@ const DailyPage = () => {
   const savePageDebounced = useCallback((updatedPage: DailyPageData) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      if (!user) return;
+      if (!userId) return;
       setIsSaving(true);
       const payload = {
-        user_id: user.id,
+        user_id: userId,
         page_date: dateStr,
         intention: updatedPage.intention || null,
         priority_1: updatedPage.priority_1 || null,
@@ -171,7 +172,7 @@ const DailyPage = () => {
       await supabase.from("daily_pages" as any).upsert(payload, { onConflict: "user_id,page_date" });
       setIsSaving(false);
     }, 800);
-  }, [user, dateStr]);
+  }, [userId, dateStr]);
 
   const updatePage = (updates: Partial<DailyPageData>) => {
     const updated = { ...page, ...updates };
@@ -180,13 +181,13 @@ const DailyPage = () => {
   };
 
   const toggleHabit = async (habitId: string, completed: boolean) => {
-    if (!user) return;
+    if (!userId) return;
     if (completed) {
       await supabase.from("habit_completions" as any).delete()
-        .eq("habit_id", habitId).eq("completed_date", dateStr).eq("user_id", user.id);
+        .eq("habit_id", habitId).eq("completed_date", dateStr).eq("user_id", userId);
     } else {
       await supabase.from("habit_completions" as any).insert({
-        habit_id: habitId, user_id: user.id, completed_date: dateStr,
+        habit_id: habitId, user_id: userId, completed_date: dateStr,
       });
     }
     setHabits(prev => prev.map(h => h.id === habitId ? { ...h, completed: !completed } : h));

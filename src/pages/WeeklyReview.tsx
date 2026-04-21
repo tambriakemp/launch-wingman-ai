@@ -41,6 +41,7 @@ const RATING_LABELS = ["", "Rough", "Below avg", "Average", "Good", "Great week"
 
 const WeeklyReview = () => {
   const { user } = useAuth();
+  const userId = user?.id;
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -60,13 +61,13 @@ const WeeklyReview = () => {
   const weekDays = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
 
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setIsLoading(true);
 
     const { data: reviewData } = await supabase
       .from("weekly_reviews" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("week_start", weekStartStr)
       .maybeSingle();
 
@@ -88,7 +89,7 @@ const WeeklyReview = () => {
     const { data: doneTasks } = await supabase
       .from("tasks")
       .select("id, title, category")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("task_scope", "planner")
       .eq("column_id", "done")
       .gte("updated_at", currentWeekStart.toISOString())
@@ -98,7 +99,7 @@ const WeeklyReview = () => {
     const { data: overdue } = await supabase
       .from("tasks")
       .select("id, title, due_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("task_scope", "planner")
       .neq("column_id", "done")
       .lt("due_at", weekStartStr)
@@ -110,13 +111,13 @@ const WeeklyReview = () => {
     const { data: habits } = await supabase
       .from("habits" as any)
       .select("id, name, color")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_archived", false);
 
     const { data: completions } = await supabase
       .from("habit_completions" as any)
       .select("habit_id, completed_date")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("completed_date", weekStartStr)
       .lte("completed_date", weekEndStr);
 
@@ -136,13 +137,13 @@ const WeeklyReview = () => {
     const { data: goals } = await supabase
       .from("goals" as any)
       .select("id, title, color, category")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "active");
 
     const { data: milestones } = await supabase
       .from("goal_milestones" as any)
       .select("goal_id, is_done")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     const goalStatsList: GoalStat[] = ((goals || []) as any[]).map(g => {
       const gMilestones = (milestones || []).filter((m: any) => m.goal_id === g.id);
@@ -158,17 +159,17 @@ const WeeklyReview = () => {
     setGoalStats(goalStatsList);
 
     setIsLoading(false);
-  }, [user, weekStartStr]);
+  }, [userId, weekStartStr]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const saveReviewDebounced = useCallback((updated: WeeklyReviewData) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      if (!user) return;
+      if (!userId) return;
       setIsSaving(true);
       await supabase.from("weekly_reviews" as any).upsert({
-        user_id: user.id,
+        user_id: userId,
         week_start: weekStartStr,
         wins: updated.wins || null,
         lessons: updated.lessons || null,
@@ -181,7 +182,7 @@ const WeeklyReview = () => {
       }, { onConflict: "user_id,week_start" });
       setIsSaving(false);
     }, 800);
-  }, [user, weekStartStr]);
+  }, [userId, weekStartStr]);
 
   const updateReview = (updates: Partial<WeeklyReviewData>) => {
     const updated = { ...review, ...updates };
