@@ -1079,14 +1079,6 @@ export default function TaskDetail() {
 
         {/* Task Input Area */}
         <section className="mb-10">
-
-        {/* Video Instructions Section */}
-        <VideoInstructionsSection taskId={taskId || ''} isAdmin={isAdmin} />
-
-        <div className="h-px bg-border mb-10" />
-
-        {/* Task Input Area */}
-        <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
