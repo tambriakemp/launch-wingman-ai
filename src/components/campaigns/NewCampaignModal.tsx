@@ -437,7 +437,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           </div>
         )}
 
-        <div className="flex justify-between pt-4 border-t">
+        </div>
+        {/* /Body */}
+
+        <DialogFooter className="shrink-0 sm:justify-between">
           <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)} disabled={saving}>
             {step > 0 ? "Back" : "Cancel"}
           </Button>
@@ -454,7 +457,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           }} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...</> : step < 3 ? "Next" : "Create Campaign"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
