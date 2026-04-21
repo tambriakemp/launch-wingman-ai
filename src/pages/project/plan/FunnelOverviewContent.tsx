@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, format, addWeeks } from "date-fns";
+import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, format } from "date-fns";
 import {
   GreetingHeader,
   NextBestTaskCard,
@@ -27,297 +27,454 @@ interface Props {
   projectId: string;
 }
 
-// --- Inline Components ---
-
-const PHASE_WEEK_ESTIMATES: Partial<Record<Phase, { weeks: number; label: string }>> = {
-  planning: { weeks: 1, label: 'Planning' },
-  messaging: { weeks: 1, label: 'Messaging' },
-  build: { weeks: 2, label: 'Build' },
-  content: { weeks: 1, label: 'Content' },
-  'pre-launch': { weeks: 1, label: 'Pre-Launch' },
-  launch: { weeks: 1, label: 'Launch' },
-  'post-launch': { weeks: 1, label: 'Post-Launch' },
+// Visible phases for the editorial timeline (matches mockup)
+const VISIBLE_PHASES: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
+const PHASE_WEEK_ESTIMATES: Partial<Record<Phase, number>> = {
+  planning: 1,
+  messaging: 1,
+  build: 2,
+  content: 1,
+  'pre-launch': 1,
+  launch: 1,
 };
 
-const LaunchTimelineInline = ({
+// ── Editorial Launch Timeline ──
+const LaunchTimelineEditorial = ({
   phaseStatuses,
   activePhase,
-  funnelType,
+  activePct,
+  launchDate,
 }: {
   phaseStatuses: Record<Phase, PhaseStatus>;
   activePhase: Phase;
-  funnelType: string | null;
+  activePct: number;
+  launchDate?: string | null;
 }) => {
-  if (!funnelType) return null;
-
-  const visiblePhases: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
   let weekCursor = 1;
-
-  const funnelConfig = getFunnelConfig(funnelType);
+  const totalWeeks = VISIBLE_PHASES.reduce((sum, p) => sum + (PHASE_WEEK_ESTIMATES[p] || 1), 0);
 
   return (
-    <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <p className="eyebrow">Launch Timeline</p>
-        {funnelConfig?.typicalSetupTime && (
-          <span className="text-[10px] text-muted-foreground">
-            ~{funnelConfig.typicalSetupTime} total
-          </span>
-        )}
+    <section
+      style={{
+        padding: "32px 0",
+        borderTop: "1px solid hsl(var(--border-hairline))",
+      }}
+    >
+      <div className="flex justify-between items-baseline mb-4 flex-wrap gap-3">
+        <div>
+          <div
+            className="uppercase"
+            style={{
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              color: "hsl(var(--terracotta-500))",
+              fontWeight: 600,
+            }}
+          >
+            Launch timeline
+          </div>
+          <div
+            className="text-[hsl(var(--ink-900))] mt-1"
+            style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontWeight: 500,
+              fontSize: 22,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {phaseStatuses[activePhase] === 'complete'
+              ? `${PHASE_LABELS[activePhase]} complete.`
+              : `Halfway through ${PHASE_LABELS[activePhase]}.`}
+          </div>
+        </div>
+        <div
+          className="text-[hsl(var(--fg-muted))]"
+          style={{
+            fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+            fontSize: 12,
+          }}
+        >
+          {totalWeeks - 1}–{totalWeeks} weeks total
+          {launchDate && (
+            <>
+              {" · "}ends{" "}
+              <strong className="text-[hsl(var(--ink-900))]">
+                {format(parseISO(launchDate), "MMM d")}
+              </strong>
+            </>
+          )}
+        </div>
       </div>
-      <div className="flex items-start gap-1 overflow-x-auto">
-        {visiblePhases.map((phase) => {
-          const est = PHASE_WEEK_ESTIMATES[phase];
-          if (!est) return null;
-          const status = phaseStatuses[phase];
-          const isComplete = status === 'complete';
-          const isActive = phase === activePhase;
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${VISIBLE_PHASES.length}, 1fr)` }}
+      >
+        {VISIBLE_PHASES.map((phase) => {
+          const weeks = PHASE_WEEK_ESTIMATES[phase] || 1;
           const startWeek = weekCursor;
-          const endWeek = weekCursor + est.weeks - 1;
-          weekCursor += est.weeks;
-
-          return (
-            <div key={phase} className="flex-1 min-w-0 text-center">
-              <div className={`h-1.5 rounded-full mb-1 ${isComplete ? 'bg-[hsl(var(--terracotta))]' : isActive ? 'bg-[hsl(var(--terracotta))]/40' : 'bg-[hsl(var(--hairline))]'}`} />
-              <p className={`text-[10px] leading-tight truncate ${isActive ? 'text-[hsl(var(--terracotta))] font-semibold' : isComplete ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                {est.label}
-              </p>
-              <p className="text-[9px] text-muted-foreground/60">
-                {startWeek === endWeek ? `Wk ${startWeek}` : `Wk ${startWeek}–${endWeek}`}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const PhaseProgressRail = ({
-  phases,
-  phaseStatuses,
-  activePhase,
-  projectTasks,
-  getTaskTemplate,
-}: {
-  phases: readonly Phase[];
-  phaseStatuses: Record<Phase, PhaseStatus>;
-  activePhase: Phase;
-  projectTasks: { taskId: string; status: string }[];
-  getTaskTemplate: (taskId: string) => { phase: Phase; canSkip: boolean } | undefined;
-}) => {
-  const getPhaseCounts = (phase: Phase) => {
-    const phaseTasks = projectTasks.filter(pt => {
-      const template = getTaskTemplate(pt.taskId);
-      return template?.phase === phase && !template?.canSkip;
-    });
-    const completed = phaseTasks.filter(pt =>
-      pt.status === "completed" || pt.status === "skipped"
-    ).length;
-    return { completed, total: phaseTasks.length };
-  };
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between overflow-x-auto overflow-y-hidden gap-0">
-        {phases.map((phase, index) => {
+          const endWeek = weekCursor + weeks - 1;
+          weekCursor += weeks;
           const status = phaseStatuses[phase];
-          const isComplete = status === "complete";
-          const isActive = phase === activePhase;
-          const { completed, total } = getPhaseCounts(phase);
-          const showCount = total > 0 && !isComplete;
+          const isDone = status === 'complete';
+          const isActive = phase === activePhase && !isDone;
+          const weekLabel = startWeek === endWeek ? `W ${startWeek}` : `W ${startWeek}–${endWeek}`;
+
           return (
-            <div key={phase} className="flex items-center flex-1 min-w-0 last:flex-none">
-              <div className="flex flex-col items-center gap-1 min-w-0">
-                <div className="flex items-center justify-center w-6 h-6">
-                  {isComplete ? (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                  ) : (
-                    <Circle className={`w-5 h-5 ${isActive ? "text-primary fill-primary/20" : "text-muted-foreground/40"}`} />
-                  )}
-                </div>
-                <span className={`text-[10px] leading-tight text-center whitespace-nowrap hidden sm:block ${isActive ? "text-primary font-semibold" : isComplete ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                  {PHASE_LABELS[phase] || phase}
+            <div
+              key={phase}
+              className="relative min-w-0"
+              style={{
+                background: isActive ? "hsl(var(--ink-900))" : "#fff",
+                color: isActive ? "hsl(var(--paper-100))" : "hsl(var(--ink-900))",
+                border: isActive ? 0 : "1px solid hsl(var(--border-hairline))",
+                borderRadius: 12,
+                padding: "12px 12px 14px",
+              }}
+            >
+              <div className="flex justify-between items-center gap-1.5">
+                <span
+                  className="truncate"
+                  style={{
+                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                    fontSize: 10,
+                    letterSpacing: "0.06em",
+                    color: isActive ? "hsl(var(--terracotta-500))" : "hsl(var(--fg-muted))",
+                  }}
+                >
+                  {weekLabel}
                 </span>
-                <span className={`text-[9px] leading-tight text-center block sm:hidden truncate max-w-[32px] ${isComplete ? "text-primary font-semibold" : isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                  {(PHASE_LABELS[phase] || phase).split(" ")[0]}
-                </span>
-                {showCount && (
-                  <span className={`text-[9px] leading-none tabular-nums ${isActive ? "text-primary" : "text-muted-foreground/50"}`}>
-                    {completed}/{total}
-                  </span>
+                {isDone && (
+                  <Check
+                    className="shrink-0"
+                    style={{ color: "hsl(var(--moss-500))", width: 12, height: 12, strokeWidth: 2.5 }}
+                  />
+                )}
+                {isActive && (
+                  <span
+                    className="shrink-0"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 999,
+                      background: "hsl(var(--terracotta-500))",
+                    }}
+                  />
                 )}
               </div>
-              {index < phases.length - 1 && (
-                <div className={`flex-1 h-px mx-1.5 mt-[-12px] ${isComplete ? "bg-primary" : "bg-border"}`} />
-              )}
+              <div
+                className="truncate mt-2.5"
+                style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontWeight: 500,
+                  fontSize: 15,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {PHASE_LABELS[phase]}
+              </div>
+              <div
+                className="mt-2.5 overflow-hidden"
+                style={{
+                  height: 3,
+                  borderRadius: 999,
+                  background: isActive
+                    ? "rgba(251,247,241,0.15)"
+                    : isDone
+                    ? "hsl(var(--moss-500))"
+                    : "hsl(var(--paper-200))",
+                }}
+              >
+                {isActive && (
+                  <div
+                    style={{
+                      width: `${activePct}%`,
+                      height: "100%",
+                      background: "hsl(var(--terracotta-500))",
+                    }}
+                  />
+                )}
+              </div>
             </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 
-const LaunchSnapshotCard = ({ projectId }: { projectId: string }) => {
-  const { data: snapshotData } = useQuery({
-    queryKey: ["dashboard-snapshot", projectId],
-    queryFn: async () => {
-      const [offersRes, snapshotRes, tasksRes] = await Promise.all([
-        supabase
-          .from("offers")
-          .select("title, price, price_type")
-          .eq("project_id", projectId)
-          .order("slot_position")
-          .limit(1),
-        supabase
-          .from("launch_snapshots")
-          .select(
-            "email_list_size, instagram_followers, facebook_followers, tiktok_followers"
-          )
-          .eq("project_id", projectId)
-          .eq("snapshot_type", "starting")
-          .maybeSingle(),
-        supabase
-          .from("project_tasks")
-          .select("task_id, input_data")
-          .eq("project_id", projectId)
-          .eq("status", "completed")
-          .in("task_id", [
-            "planning_define_audience",
-            "messaging_transformation_statement",
-            "launch_set_dates",
-          ]),
-      ]);
+// ── Phase narrative card (left column small card) ──
+const PHASE_NARRATIVE: Partial<Record<Phase, { headline: string; copy: string }>> = {
+  setup: {
+    headline: "You've set the stage.",
+    copy: "Workspace ready. Time to start planning the launch.",
+  },
+  planning: {
+    headline: "You've laid the foundation.",
+    copy: "Audience, offer, and funnel are defined. Time to craft your message.",
+  },
+  messaging: {
+    headline: "Your voice is finding clarity.",
+    copy: "The story is in place. Now we build the assets to share it.",
+  },
+  build: {
+    headline: "The pieces are in place.",
+    copy: "Pages and emails are built. Let's create the content that fills them.",
+  },
+  content: {
+    headline: "You have what to say.",
+    copy: "Content is ready. Time to warm up the room before launch week.",
+  },
+  'pre-launch': {
+    headline: "The runway is lit.",
+    copy: "Anticipation built. Open the doors.",
+  },
+};
 
-      const offer = offersRes.data?.[0] || null;
-      const snapshot = snapshotRes.data || null;
-      const tasks = tasksRes.data || [];
-
-      const transformTask = tasks.find(
-        (t) => t.task_id === "messaging_transformation_statement"
-      );
-      const datesTask = tasks.find((t) => t.task_id === "launch_set_dates");
-
-      const transformation =
-        (transformTask?.input_data as any)?.transformation_statement || null;
-      const launchDate =
-        (datesTask?.input_data as any)?.launch_date || null;
-
-      const totalFollowers =
-        (snapshot?.instagram_followers || 0) +
-        (snapshot?.facebook_followers || 0) +
-        (snapshot?.tiktok_followers || 0);
-
-      return {
-        offer,
-        snapshot,
-        transformation,
-        launchDate,
-        totalFollowers,
-      };
-    },
-    enabled: !!projectId,
-  });
-
-  const items = [
-    snapshotData?.offer && {
-      label: "Offer",
-      value: snapshotData.offer.title || "Untitled Offer",
-      sub: snapshotData.offer.price
-        ? `$${snapshotData.offer.price.toLocaleString()}${
-            snapshotData.offer.price_type === "recurring" ? "/mo" : ""
-          }`
-        : null,
-    },
-    snapshotData?.launchDate && {
-      label: "Launch Date",
-      value: new Date(snapshotData.launchDate).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      sub: null,
-    },
-    snapshotData?.snapshot?.email_list_size && {
-      label: "Email List",
-      value: snapshotData.snapshot.email_list_size.toLocaleString(),
-      sub: "starting",
-    },
-    snapshotData?.totalFollowers &&
-      snapshotData.totalFollowers > 0 && {
-        label: "Social Followers",
-        value: snapshotData.totalFollowers.toLocaleString(),
-        sub: "starting",
-      },
-  ].filter(Boolean) as { label: string; value: string; sub: string | null }[];
-
-  if (items.length === 0 && !snapshotData?.transformation) return null;
-
+const PhaseCompleteCard = ({ phase }: { phase: Phase }) => {
+  const narrative = PHASE_NARRATIVE[phase];
+  if (!narrative) return null;
   return (
-    <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-5 space-y-3">
-      <p className="eyebrow">Your Launch</p>
-      {snapshotData?.transformation && (
-        <p
-          className="text-base text-foreground/80 italic leading-relaxed"
-          style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+    <div
+      className="bg-white"
+      style={{
+        border: "1px solid hsl(var(--border-hairline))",
+        borderRadius: 14,
+        padding: 24,
+      }}
+    >
+      <div
+        className="inline-flex items-center gap-1.5 whitespace-nowrap"
+        style={{
+          padding: "3px 10px",
+          background: "hsl(var(--moss-100))",
+          borderRadius: 999,
+        }}
+      >
+        <Check
+          className="shrink-0"
+          style={{ color: "hsl(var(--moss-700))", width: 12, height: 12, strokeWidth: 2.5 }}
+        />
+        <span
+          style={{
+            fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+            fontSize: 11,
+            color: "hsl(var(--moss-700))",
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+          }}
         >
-          "
-          {snapshotData.transformation.length > 100
-            ? snapshotData.transformation.slice(0, 100) + "..."
-            : snapshotData.transformation}
-          "
-        </p>
-      )}
-      {items.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          {items.map((item, i) => (
-            <div key={i} className="space-y-0.5">
-              <p className="text-[11px] text-muted-foreground">{item.label}</p>
-              <p className="text-sm font-medium text-foreground">
-                {item.value}
-              </p>
-              {item.sub && (
-                <p className="text-[10px] text-muted-foreground">{item.sub}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+          {PHASE_LABELS[phase]} complete
+        </span>
+      </div>
+      <div
+        className="text-[hsl(var(--ink-900))] mt-3"
+        style={{
+          fontFamily: '"Playfair Display", Georgia, serif',
+          fontWeight: 500,
+          fontSize: 20,
+          letterSpacing: "-0.01em",
+          lineHeight: 1.25,
+        }}
+      >
+        {narrative.headline}
+      </div>
+      <p
+        className="mt-2 text-[hsl(var(--fg-secondary))] m-0"
+        style={{
+          fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+          fontSize: 13.5,
+          lineHeight: 1.55,
+        }}
+      >
+        {narrative.copy}
+      </p>
     </div>
   );
 };
 
-// --- Helpers ---
+// ── Your Launch summary card ──
+const YourLaunchCard = ({
+  projectName,
+  offerTitle,
+  funnelLabel,
+  launchDate,
+}: {
+  projectName?: string;
+  offerTitle?: string | null;
+  funnelLabel?: string | null;
+  launchDate?: string | null;
+}) => (
+  <div
+    className="bg-white"
+    style={{
+      border: "1px solid hsl(var(--border-hairline))",
+      borderRadius: 14,
+      padding: 24,
+    }}
+  >
+    <div
+      className="uppercase text-[hsl(var(--fg-muted))]"
+      style={{
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+        fontSize: 11,
+        letterSpacing: "0.14em",
+        fontWeight: 600,
+      }}
+    >
+      Your launch
+    </div>
+    <div
+      className="text-[hsl(var(--ink-900))] mt-1.5"
+      style={{
+        fontFamily: '"Playfair Display", Georgia, serif',
+        fontWeight: 500,
+        fontSize: 22,
+        letterSpacing: "-0.01em",
+        lineHeight: 1.2,
+      }}
+    >
+      {projectName || "Your launch"}
+    </div>
+    <div
+      className="mt-3.5 grid gap-1.5"
+      style={{
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+        fontSize: 12.5,
+        color: "hsl(var(--fg-secondary))",
+      }}
+    >
+      <div className="flex justify-between gap-3 whitespace-nowrap">
+        <span>Offer</span>
+        <strong className="text-[hsl(var(--ink-900))] font-medium truncate">
+          {offerTitle || "—"}
+        </strong>
+      </div>
+      <div className="flex justify-between gap-3 whitespace-nowrap">
+        <span>Funnel</span>
+        <strong className="text-[hsl(var(--ink-900))] font-medium truncate">
+          {funnelLabel || "—"}
+        </strong>
+      </div>
+      <div className="flex justify-between gap-3 whitespace-nowrap">
+        <span>Launch</span>
+        <strong style={{ color: "hsl(var(--terracotta-500))", fontWeight: 500 }}>
+          {launchDate ? format(parseISO(launchDate), "MMM d") : "Not set"}
+        </strong>
+      </div>
+    </div>
+  </div>
+);
 
-const getReassuranceText = (
-  activePhase: string,
-  isComplete: boolean,
-  nextPhase?: string
-): string => {
-  if (!isComplete) {
-    const phaseMessages: Record<string, string> = {
-      planning:
-        "You're laying the groundwork. Take your time with each piece.",
-      messaging:
-        "Now you're crafting your message. This is where your offer starts to take shape.",
-      build: "You're building the assets for your launch. One step at a time.",
-      content:
-        "Content creation time. This is how you'll connect with your audience.",
-      launch: "Launch time! You've got this.",
-      "post-launch": "Keep the momentum going. Follow up and optimize.",
-    };
-    return phaseMessages[activePhase] || "You're making progress. Keep going!";
-  }
+// ── Today stats card ──
+const TodayStatsCard = ({
+  dueToday,
+  contentThisWeek,
+  projectId,
+}: {
+  dueToday: number;
+  contentThisWeek: number;
+  projectId: string;
+}) => (
+  <div
+    className="bg-white"
+    style={{
+      border: "1px solid hsl(var(--border-hairline))",
+      borderRadius: 14,
+      padding: 20,
+    }}
+  >
+    <div
+      className="uppercase"
+      style={{
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+        fontSize: 11,
+        letterSpacing: "0.14em",
+        color: "hsl(var(--terracotta-500))",
+        fontWeight: 600,
+      }}
+    >
+      Today
+    </div>
+    <div className="mt-3 grid gap-2.5">
+      <div
+        className="flex justify-between items-center gap-3"
+        style={{ padding: "10px 0", borderBottom: "1px solid hsl(var(--border-hairline))" }}
+      >
+        <div className="min-w-0">
+          <div
+            className="text-[hsl(var(--ink-800))] whitespace-nowrap"
+            style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 13 }}
+          >
+            Due today
+          </div>
+          <div
+            className="text-[hsl(var(--fg-muted))] mt-0.5"
+            style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 11 }}
+          >
+            {dueToday === 0 ? "Nothing overdue — breathe." : "Tap to see your list."}
+          </div>
+        </div>
+        <Link
+          to="/planner"
+          className="text-[hsl(var(--ink-900))] hover:opacity-80 transition-opacity"
+          style={{
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontWeight: 400,
+            fontSize: 34,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+          }}
+        >
+          {dueToday}
+        </Link>
+      </div>
+      <div className="flex justify-between items-center gap-3" style={{ padding: "10px 0 0" }}>
+        <div className="min-w-0 flex-1">
+          <div
+            className="text-[hsl(var(--ink-800))] whitespace-nowrap"
+            style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontSize: 13 }}
+          >
+            Content this week
+          </div>
+          <Link
+            to={`/projects/${projectId}/content`}
+            className="hover:opacity-80 transition-opacity whitespace-nowrap"
+            style={{
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: 11,
+              color: "hsl(var(--terracotta-500))",
+            }}
+          >
+            Go to Planner →
+          </Link>
+        </div>
+        <div
+          className="text-[hsl(var(--ink-900))] shrink-0"
+          style={{
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontWeight: 400,
+            fontSize: 34,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+          }}
+        >
+          {contentThisWeek}
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
-  if (nextPhase === "messaging") {
-    return "Amazing work! Your planning phase is complete. You're ready to move into messaging.";
-  }
-
-  if (nextPhase === "build") {
-    return "Great progress! Your messaging is ready. Time to build your assets.";
-  }
-
-  return "Amazing work! You're making great progress.";
+// ── Helper ──
+const FUNNEL_LABEL_SHORT: Record<string, string> = {
+  content_to_offer: "Content → Offer",
+  freebie_email_offer: "Freebie",
+  live_training_offer: "Live training",
+  application_call: "Application",
+  membership: "Membership",
+  challenge: "Challenge",
+  launch: "Launch",
 };
 
 // --- Main Component ---
@@ -328,7 +485,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
-
   const [dismissedPhases, setDismissedPhases] = useState<string[]>([]);
 
   useEffect(() => {
@@ -341,14 +497,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         .single();
 
       if (data?.dismissed_celebrations) {
-        const celebrations = data.dismissed_celebrations as Record<
-          string,
-          boolean
-        >;
+        const celebrations = data.dismissed_celebrations as Record<string, boolean>;
         const dismissed = Object.keys(celebrations)
-          .filter(
-            (key) => key.startsWith(projectId) && celebrations[key]
-          )
+          .filter((key) => key.startsWith(projectId) && celebrations[key])
           .map((key) => key.replace(`${projectId}_`, ""));
         setDismissedPhases(dismissed);
       }
@@ -367,8 +518,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       .eq("user_id", user.id)
       .single();
 
-    const existing =
-      (profileData?.dismissed_celebrations as Record<string, boolean>) || {};
+    const existing = (profileData?.dismissed_celebrations as Record<string, boolean>) || {};
     existing[`${projectId}_${phase}`] = true;
 
     await supabase
@@ -377,7 +527,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       .eq("user_id", user.id);
   };
 
-  // Use the project lifecycle hook
   const {
     projectState,
     isLoading: lifecycleLoading,
@@ -389,7 +538,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     transitionTo,
   } = useProjectLifecycle({ projectId });
 
-  // Use the task engine to get the next best task (only active when state allows)
   const {
     isLoading: taskEngineLoading,
     nextBestTask,
@@ -400,7 +548,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     selectedFunnelType,
   } = useTaskEngine({ projectId });
 
-  // Fetch user profile
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -416,15 +563,12 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!user?.id,
   });
 
-  // Fetch project
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select(
-          "*, parent_project:projects!projects_parent_project_id_fkey(id, name)"
-        )
+        .select("*, parent_project:projects!projects_parent_project_id_fkey(id, name)")
         .eq("id", projectId)
         .single();
       if (error) throw error;
@@ -433,7 +577,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
-  // Fetch upcoming content
   const { data: contentData } = useQuery({
     queryKey: ["upcoming-content", projectId],
     queryFn: async () => {
@@ -451,25 +594,38 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
-  // Fetch today's planner task count
+  const { data: snapshotData } = useQuery({
+    queryKey: ["dashboard-snapshot-mini", projectId],
+    queryFn: async () => {
+      const [offersRes, tasksRes] = await Promise.all([
+        supabase
+          .from("offers")
+          .select("title")
+          .eq("project_id", projectId)
+          .order("slot_position")
+          .limit(1),
+        supabase
+          .from("project_tasks")
+          .select("task_id, input_data")
+          .eq("project_id", projectId)
+          .eq("status", "completed")
+          .in("task_id", ["launch_set_dates"]),
+      ]);
+      const offer = offersRes.data?.[0] || null;
+      const datesTask = tasksRes.data?.find((t) => t.task_id === "launch_set_dates");
+      const launchDate = (datesTask?.input_data as any)?.launch_date || null;
+      return { offer, launchDate };
+    },
+    enabled: !!projectId,
+  });
+
   const { data: todayPlannerCount = 0 } = useQuery({
     queryKey: ["today-planner-count", user?.id],
     queryFn: async () => {
       if (!user?.id) return 0;
       const today = new Date();
-      const startOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      ).toISOString();
-      const endOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        23,
-        59,
-        59
-      ).toISOString();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
       const { count } = await supabase
         .from("tasks")
         .select("id", { count: "exact", head: true })
@@ -483,7 +639,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!user?.id,
   });
 
-  // Content this week count
   const contentCount = (() => {
     if (!contentData) return 0;
     const now = new Date();
@@ -496,6 +651,29 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     }).length;
   })();
 
+  // Active phase progress %
+  const activePhasePct = (() => {
+    if (!projectTasks || !getTaskTemplate) return 35;
+    const phaseTasks = projectTasks.filter((pt) => {
+      const t = getTaskTemplate(pt.taskId);
+      return t?.phase === activePhase && !t?.canSkip;
+    });
+    if (phaseTasks.length === 0) return 0;
+    const done = phaseTasks.filter((pt) => pt.status === "completed" || pt.status === "skipped").length;
+    return Math.round((done / phaseTasks.length) * 100);
+  })();
+
+  // Step index within phase
+  const { stepIndex, stepTotal } = (() => {
+    if (!projectTasks || !getTaskTemplate) return { stepIndex: 1, stepTotal: 1 };
+    const phaseTasks = projectTasks.filter((pt) => {
+      const t = getTaskTemplate(pt.taskId);
+      return t?.phase === activePhase && !t?.canSkip;
+    });
+    const completed = phaseTasks.filter((pt) => pt.status === "completed" || pt.status === "skipped").length;
+    return { stepIndex: Math.min(completed + 1, phaseTasks.length), stepTotal: phaseTasks.length || 1 };
+  })();
+
   const isLoading = taskEngineLoading || projectLoading || lifecycleLoading;
 
   if (isLoading) {
@@ -506,13 +684,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     );
   }
 
-  // Determine the view key for animation
   const viewKey =
-    dashboardViewType === "launched" && showPostLaunchTasks
-      ? "tasks"
-      : dashboardViewType;
+    dashboardViewType === "launched" && showPostLaunchTasks ? "tasks" : dashboardViewType;
 
-  // Handle different dashboard views based on project lifecycle state
   if (dashboardViewType === "paused") {
     return (
       <AnimatePresence mode="wait">
@@ -584,37 +758,31 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     );
   }
 
-  // Default tasks view for 'draft' and 'in_progress' states
-
-  // Organize content by day
-  const todayContent = (contentData || []).filter((item) => {
-    if (!item.scheduled_at) return false;
-    return isToday(parseISO(item.scheduled_at));
-  });
-
-  const tomorrowContent = (contentData || []).filter((item) => {
-    if (!item.scheduled_at) return false;
-    return isTomorrow(parseISO(item.scheduled_at));
-  });
-
-  const hasContent = todayContent.length > 0 || tomorrowContent.length > 0;
-
-  // Get phase display info
-  const isPhaseComplete = phaseStatuses[activePhase] === "complete";
-
-  // Find the most recently completed phase (for celebration)
-  const completedPhases = PHASES.filter(
-    (p) => phaseStatuses[p] === "complete"
+  const todayContent = (contentData || []).filter(
+    (item) => item.scheduled_at && isToday(parseISO(item.scheduled_at))
   );
+  const tomorrowContent = (contentData || []).filter(
+    (item) => item.scheduled_at && isTomorrow(parseISO(item.scheduled_at))
+  );
+  const upcomingContent = (contentData || []).filter(
+    (item) =>
+      item.scheduled_at &&
+      !isToday(parseISO(item.scheduled_at)) &&
+      !isTomorrow(parseISO(item.scheduled_at))
+  );
+
+  const completedPhases = PHASES.filter((p) => phaseStatuses[p] === "complete");
   const mostRecentlyCompletedPhase =
     completedPhases.length > 0 && completedPhases.length < PHASES.length
-      ? completedPhases.filter(p => p !== 'setup')[completedPhases.filter(p => p !== 'setup').length - 1] ?? null
+      ? completedPhases.filter((p) => p !== "setup")[
+          completedPhases.filter((p) => p !== "setup").length - 1
+        ] ?? null
       : null;
-
-  // Get next phase after the most recently completed phase
   const nextPhaseAfterCompleted = mostRecentlyCompletedPhase
     ? PHASES[PHASES.indexOf(mostRecentlyCompletedPhase) + 1]
     : undefined;
+
+  const showTimeline = phaseStatuses['setup'] === 'complete' && !!selectedFunnelType;
 
   return (
     <AnimatePresence mode="wait">
@@ -624,13 +792,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
-        className="max-w-2xl mx-auto space-y-5 py-6 px-4"
+        style={{ maxWidth: 1200, margin: "0 auto", padding: "8px 0 96px" }}
       >
-        {/* Memory Review Banner */}
         <MemoryReviewBanner projectId={projectId} />
-
-        {/* Check-in banner */}
-        <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
 
         <GreetingHeader
           firstName={profile?.first_name}
@@ -641,138 +805,161 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           parentProjectId={
             Array.isArray(project?.parent_project)
               ? project.parent_project[0]?.id
-              : (
-                  project?.parent_project as {
-                    id: string;
-                    name: string;
-                  } | null
-                )?.id
+              : (project?.parent_project as { id: string; name: string } | null)?.id
           }
           parentProjectName={
             Array.isArray(project?.parent_project)
               ? project.parent_project[0]?.name
-              : (
-                  project?.parent_project as {
-                    id: string;
-                    name: string;
-                  } | null
-                )?.name
+              : (project?.parent_project as { id: string; name: string } | null)?.name
           }
           onPause={pause}
           onResume={resume}
           onArchive={archive}
-          onMarkComplete={
-            projectState === "launched" ? markCompleted : undefined
-          }
+          onMarkComplete={projectState === "launched" ? markCompleted : undefined}
         />
 
-
-        {/* Launch Timeline */}
-        {phaseStatuses['setup'] === 'complete' && (
-          <LaunchTimelineInline
+        {showTimeline && (
+          <LaunchTimelineEditorial
             phaseStatuses={phaseStatuses}
             activePhase={activePhase}
-            funnelType={selectedFunnelType}
+            activePct={activePhasePct}
+            launchDate={snapshotData?.launchDate}
           />
         )}
 
-        {/* Phase celebration */}
-        {mostRecentlyCompletedPhase &&
-          !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
+        {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
+          <div className="mt-6">
             <PhaseCelebrationCard
               completedPhase={mostRecentlyCompletedPhase}
               nextPhase={nextPhaseAfterCompleted}
-              onDismiss={() =>
-                handleDismissCelebration(mostRecentlyCompletedPhase)
-              }
+              onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
             />
-          )}
-
-        {/* Check-in flow dialog */}
-        <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
-
-        {/* Next Best Task - hero card */}
-        {nextBestTask ? (
-          <NextBestTaskCard
-            title={nextBestTask.title}
-            whyItMatters={nextBestTask.whyItMatters}
-            estimatedMinutes={nextBestTask.estimatedTimeRange}
-            route={nextBestTask.route}
-          />
-        ) : (
-          <div className="p-6 rounded-xl border border-[hsl(var(--hairline))] bg-card text-center">
-            <p className="text-muted-foreground">
-              {isPhaseComplete
-                ? "All tasks in this phase are complete! You're ready to move forward."
-                : "No tasks available right now. Check back soon!"}
-            </p>
           </div>
         )}
 
-        {/* Today — slim 2-column grid */}
-        <div className="space-y-2">
-          <p className="eyebrow">Today</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4 flex flex-col gap-1">
-              <p className="text-[11px] text-muted-foreground">Due Today</p>
-              <p
-                className={`text-3xl font-medium leading-none ${
-                  todayPlannerCount > 0
-                    ? "text-foreground"
-                    : "text-muted-foreground"
-                }`}
-                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+        <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
+
+        {/* Two-column body */}
+        <div
+          className="grid gap-7 mt-2"
+          style={{ gridTemplateColumns: "minmax(0, 1.55fr) minmax(0, 1fr)" }}
+        >
+          {/* Primary column */}
+          <div className="grid gap-6 min-w-0">
+            {nextBestTask ? (
+              <NextBestTaskCard
+                title={nextBestTask.title}
+                whyItMatters={nextBestTask.whyItMatters}
+                estimatedMinutes={nextBestTask.estimatedTimeRange}
+                route={nextBestTask.route}
+                phaseLabel={PHASE_LABELS[activePhase]}
+                stepIndex={stepIndex}
+                stepTotal={stepTotal}
+              />
+            ) : (
+              <div
+                className="bg-white text-center"
+                style={{
+                  border: "1px solid hsl(var(--border-hairline))",
+                  borderRadius: 14,
+                  padding: 32,
+                }}
               >
-                {todayPlannerCount}
-              </p>
-              {todayPlannerCount > 0 && (
-                <Link
-                  to="/planner"
-                  className="text-xs text-[hsl(var(--terracotta))] hover:opacity-80 inline-flex items-center gap-1 mt-1"
+                <p className="text-muted-foreground">
+                  All tasks in this phase are complete. You're ready to move forward.
+                </p>
+              </div>
+            )}
+
+            <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              {mostRecentlyCompletedPhase ? (
+                <PhaseCompleteCard phase={mostRecentlyCompletedPhase} />
+              ) : (
+                <div
+                  className="bg-white"
+                  style={{
+                    border: "1px solid hsl(var(--border-hairline))",
+                    borderRadius: 14,
+                    padding: 24,
+                  }}
                 >
-                  View <ArrowRight className="w-3 h-3" />
-                </Link>
+                  <div
+                    className="uppercase text-[hsl(var(--fg-muted))]"
+                    style={{
+                      fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+                      fontSize: 11,
+                      letterSpacing: "0.14em",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {PHASE_LABELS[activePhase]} in progress
+                  </div>
+                  <div
+                    className="mt-3"
+                    style={{
+                      fontFamily: '"Playfair Display", Georgia, serif',
+                      fontWeight: 500,
+                      fontSize: 20,
+                      letterSpacing: "-0.01em",
+                      color: "hsl(var(--ink-900))",
+                    }}
+                  >
+                    One quiet step at a time.
+                  </div>
+                </div>
               )}
+              <YourLaunchCard
+                projectName={project?.name}
+                offerTitle={snapshotData?.offer?.title}
+                funnelLabel={
+                  selectedFunnelType ? FUNNEL_LABEL_SHORT[selectedFunnelType] || selectedFunnelType : null
+                }
+                launchDate={snapshotData?.launchDate}
+              />
             </div>
-            <div className="rounded-xl border border-[hsl(var(--hairline))] bg-card p-4 flex flex-col gap-1">
-              <p className="text-[11px] text-muted-foreground">
-                Content This Week
-              </p>
-              <p
-                className="text-3xl font-medium text-foreground leading-none"
-                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-              >
-                {contentCount}
-              </p>
-              <Link
-                to={`/projects/${projectId}/content`}
-                className="text-xs text-[hsl(var(--terracotta))] hover:opacity-80 inline-flex items-center gap-1 mt-1"
-              >
-                Planner <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
+
+            {(todayContent.length + tomorrowContent.length + upcomingContent.length) > 0 && (
+              <UpcomingContentCard
+                today={todayContent}
+                tomorrow={tomorrowContent}
+                upcoming={upcomingContent}
+                projectId={projectId}
+              />
+            )}
+          </div>
+
+          {/* Secondary column */}
+          <div className="grid gap-5 content-start min-w-0">
+            <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
+            <TodayStatsCard
+              dueToday={todayPlannerCount}
+              contentThisWeek={contentCount}
+              projectId={projectId}
+            />
+            <AINudgeCard />
           </div>
         </div>
 
-        {/* Launch Snapshot */}
-        <LaunchSnapshotCard projectId={projectId} />
-
-        {/* Upcoming content */}
-        {hasContent && (
-          <UpcomingContentCard
-            today={todayContent}
-            tomorrow={tomorrowContent}
-            projectId={projectId}
-          />
-        )}
-
-        {/* Subtle stuck help link */}
-        <div className="text-center py-2">
+        {/* Stuck footer */}
+        <div className="text-center mt-10">
           <button
             onClick={() => setStuckModalOpen(true)}
-            className="text-xs text-muted-foreground hover:text-[hsl(var(--terracotta))] transition-colors underline-offset-2 hover:underline"
+            className="text-[hsl(var(--fg-muted))] italic hover:text-[hsl(var(--terracotta-500))] transition-colors"
+            style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontSize: 16,
+            }}
           >
-            Feeling stuck? Get help with this step →
+            Feeling stuck?{" "}
+            <span
+              className="not-italic"
+              style={{
+                color: "hsl(var(--terracotta-500))",
+                borderBottom: "1px solid hsl(var(--terracotta-500))",
+              }}
+            >
+              Get help with this step →
+            </span>
           </button>
         </div>
 
@@ -782,8 +969,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           currentTask={{
             title: nextBestTask?.title || "Getting started",
             whyItMatters:
-              nextBestTask?.whyItMatters ||
-              "This helps you move forward with your launch.",
+              nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
           }}
           projectContext={project?.name}
         />
