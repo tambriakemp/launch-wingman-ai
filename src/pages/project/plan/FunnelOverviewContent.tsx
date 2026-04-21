@@ -741,8 +741,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         transition={{ duration: 0.2 }}
         style={{ maxWidth: 1200, margin: "0 auto", padding: "8px 0 96px" }}
       >
-        <MemoryReviewBanner projectId={projectId} />
-
         <GreetingHeader
           firstName={profile?.first_name}
           projectName={project?.name}
@@ -770,21 +768,12 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             phaseStatuses={phaseStatuses}
             activePhase={activePhase}
             activePct={activePhasePct}
-            launchDate={snapshotData?.launchDate}
           />
         )}
 
-        {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
-          <div className="mt-6">
-            <PhaseCelebrationCard
-              completedPhase={mostRecentlyCompletedPhase}
-              nextPhase={nextPhaseAfterCompleted}
-              onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
-            />
-          </div>
-        )}
-
-        <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
+        <Suspense fallback={null}>
+          {checkInOpen && <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />}
+        </Suspense>
 
         {/* Two-column body */}
         <div
