@@ -42,10 +42,17 @@ export const GreetingHeader = ({
   const displayName = firstName || "there";
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-foreground">
-          {greeting}, {displayName} 👋
+        <h1
+          className="text-3xl md:text-4xl font-medium text-foreground leading-tight"
+          style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+        >
+          {greeting},{" "}
+          <span className="italic text-[hsl(var(--terracotta))]">
+            {displayName}
+          </span>
+          .
         </h1>
         {projectState && onPause && onResume && onArchive && (
           <ProjectMenu
@@ -58,13 +65,17 @@ export const GreetingHeader = ({
         )}
       </div>
       {projectName && (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-muted-foreground">
-              You're building: <span className="text-foreground font-medium">{projectName}</span>
+              You're building:{" "}
+              <span className="text-foreground font-medium">{projectName}</span>
             </p>
             {projectState && (
-              <Badge variant="secondary" className="text-xs font-normal">
+              <Badge
+                variant="outline"
+                className="text-xs font-normal bg-[hsl(var(--paper-100))] border-[hsl(var(--hairline))] text-foreground"
+              >
                 {PROJECT_STATE_LABELS[projectState]}
               </Badge>
             )}
@@ -73,7 +84,7 @@ export const GreetingHeader = ({
             {projectId && (
               <Link
                 to={`/projects/${projectId}/summary`}
-                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-[hsl(var(--terracotta))] hover:opacity-80 transition-opacity border-b border-[hsl(var(--hairline))]"
               >
                 <FileText className="w-3.5 h-3.5" />
                 View Project Summary
@@ -82,7 +93,7 @@ export const GreetingHeader = ({
             {isRelaunch && parentProjectId && parentProjectName && (
               <Link
                 to={`/projects/${parentProjectId}`}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-[hsl(var(--terracotta))] transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 Relaunched from: {parentProjectName}
