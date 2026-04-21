@@ -1,71 +1,105 @@
 
 
-## Dashboard cleanup, perf, and timeline polish
+## Rebuild `/auth` to match the uploaded design + add Google sign-in
 
-Four small focused changes — no data-shape, route, or schema changes.
+Rebuild `src/pages/Auth.tsx` so it matches the uploaded `Launchely_Design_System_Auth.html` exactly (cream brand-side, pill tabs, social row, editorial inputs, terracotta CTA, Pro upsell). Add Google sign-in / sign-up via Lovable Cloud's managed OAuth. Apple is intentionally omitted. All existing functionality (email/password sign-in + sign-up, validation, password reset, checkout success toast, `?tab=signup` deep-link, post-auth redirect) is preserved.
 
-### 1. Remove MemoryReviewBanner & PhaseCelebrationCard
+---
 
-Both are dashboard-only — not tied to anything else functional.
-- `MemoryReviewBanner` is purely a "post-relaunch reminder" UI shown above the greeting. It reads from `project_memory` (used elsewhere — table stays). The `MemoryReviewSheet` it opens is **only** opened from this banner, so it goes too. The `useMemoryReview` hook isn't used anywhere else either.
-- `PhaseCelebrationCard` is purely a celebration card shown when a phase completes. The `dismissed_celebrations` profile field, the load/dismiss effects, and the `mostRecentlyCompletedPhase` calculation also become dead code on the dashboard. The "Planning complete" / `PhaseCompleteCard` (the small left-column card with the moss check pill) **stays** — it's a different component and still gives a sense of progress.
+### 1. Visual rebuild — exact match to the mockup
 
-**Files removed:**
-- `src/components/relaunch/MemoryReviewBanner.tsx`
-- `src/components/relaunch/MemoryReviewSheet.tsx`
-- `src/hooks/useMemoryReview.ts`
-- `src/components/dashboard/PhaseCelebrationCard.tsx`
+Replace the current two-panel auth screen with this layout, using the existing `--paper-50/100/200`, `--ink-800/900`, `--terracotta-500`, `--border-hairline`, `--font-display`, `--font-body` tokens (already defined in `landing-theme.css`). The page is wrapped in `<div className="app-cream">` so the tokens apply.
 
-**Files updated:**
-- `src/components/relaunch/index.ts` — drop the two exports
-- `src/components/dashboard/index.ts` — drop `PhaseCelebrationCard`
-- `src/pages/project/plan/FunnelOverviewContent.tsx` — remove imports, JSX, the `dismissedPhases` state, the load `useEffect`, the `handleDismissCelebration` callback, and the dismissed-celebrations profile read/write
+**Left brand side** (`.brand-side`, `1fr` column, hidden under 920px)
+- Cream `--paper-100` background, hairline right border.
+- Decorative terracotta radial-gradient blob bottom-right.
+- Top row: `Launchely.` wordmark (Playfair italic 22px, terracotta period) + `← Back to home` link → `/`.
+- Body:
+  - Eyebrow (terracotta uppercase tracked): `New here` (signup mode) / `Welcome back` (signin mode).
+  - Headline (Playfair 56px, line-height 1.02, `-0.025em`):
+    - signup: `Your next launch starts here.` (`here.` italic, terracotta).
+    - signin: `Ready to keep going, friend?` (`friend?` italic, terracotta).
+  - Sub copy (16px, 1.6, max-width 400px) — mode-aware copy from the mockup.
+  - Pull-quote card: white, hairline border, 14px radius, terracotta 3px left bar, Playfair italic 17px quote + 12px attribution.
+- Footer: 4 gradient avatar dots + `Already helping 1,200+ coaches, creators, and small teams launch.`
 
-### 2. Dashboard performance cleanup
+**Right form side** (`.form-side`, `1.1fr` column, full width on mobile)
+- `--paper-50` background, padding `56px 72px` desktop / `40px 24px` mobile, centered card max-width 460px.
+- **Pill tab switcher**: 1fr/1fr grid in a 999px `--paper-200` capsule, active tab = white pill with subtle shadow + `--ink-900` text.
+- **Form title** (Playfair 28px, weight 500): `Create your free account.` / `Welcome back.`
+- **Sub** (14px muted): `No credit card. Five minutes to your first launch brief.` / `Sign in to continue your launch.`
+- **Social row** (1fr/1fr grid): single `Continue with Google` button (Apple removed → Google button spans full width via `grid-template-columns: 1fr`). White bg, hairline border, 10px radius, hover border `--ink-900`. Multicolor Google `<svg>` from the mockup.
+- **`OR USE EMAIL` divider**: hairline lines + tracked uppercase label.
+- **Sign-up form** (when active):
+  - Two-column row: First name + Last name (User icon left).
+  - Email (Mail icon).
+  - Password (Lock icon, "At least 8 characters").
+  - Confirm password (Lock icon, "Repeat password").
+  - All inputs: 11×14 padding, 40px left padding for icon, 10px radius, hairline border, focus = terracotta border + 3px terracotta-12% ring.
+  - **CTA**: full-width terracotta pill button `Create free account →` (14.5px, 999px radius, terracotta hover `#B24F36`).
+  - **Pro upsell**: amber gradient card (`#F8E9C5 → #F2D9A8`), `Want Pro — AI Studio + unlimited projects? Upgrade at checkout.` + ink-900 pill `Subscribe` link → `/checkout`.
+- **Sign-in form** (when active):
+  - Email + Password fields (same input style).
+  - Helper row: `Keep me signed in` checkbox (terracotta accent) + `Forgot password?` terracotta link → toggles existing reset flow.
+  - **CTA**: full-width terracotta pill `Sign in →`.
+- **Legal**: 12px muted centered: `By continuing, you agree to our Terms of Service and Privacy Policy.` (existing copy).
 
-The dashboard is slow because it runs many serial Supabase queries on first paint and imports a lot of unused code. Plan:
+**Reset password view**
+- Stays in the form-side column (hides tabs/social/forms when active).
+- Same input styling, terracotta CTA `Send reset link`, `Back to sign in` ghost link. Functionality unchanged (uses `supabase.auth.resetPasswordForEmail`).
 
-- **Parallelize the 5 dashboard queries** by giving them all `staleTime: 60_000` (so navigation back doesn't refetch) and `refetchOnWindowFocus: false`. They already start in parallel; this fixes the "every tab-back is a refetch" stall.
-- **Remove the eager profile-load `useEffect`** (replaced by deletion above) — one fewer round-trip on mount.
-- **Delete unused dashboard components** that are exported but never imported anywhere (confirmed via project search):
-  - `src/components/dashboard/StuckHelpCard.tsx` (only `StuckHelpDialog` is used)
-  - `src/components/dashboard/DailyMotivationCard.tsx`
-  - `src/components/dashboard/ProgressSnapshotCard.tsx`
-  - `src/components/dashboard/LaunchSnapshotCard.tsx` (replaced by inline `YourLaunchCard`)
-  - `src/components/dashboard/index.ts` — drop their exports
-- **Lazy-load the `CheckInFlow` dialog** (`React.lazy` + `Suspense`) so the heavy check-in modal isn't in the dashboard's first JS chunk; only loads when the user clicks "Start check-in".
-- **Lazy-load the `StuckHelpDialog`** the same way.
-- **Trim the snapshot query**: the `dashboard-snapshot-mini` query already only fetches what it needs; keep as-is but limit `upcoming-content` query select to fewer columns (`title, content_type, scheduled_at` only — drop `scheduled_platforms` since it isn't displayed).
+---
 
-Result: smaller dashboard JS chunk, fewer mounted-but-hidden subtrees, no refetch flicker on tab-focus.
+### 2. Google sign-in / sign-up
 
-### 3. "Today" card — add Planner link to Due today
+Add managed Google OAuth via Lovable Cloud. This requires the `@/integrations/lovable` module — it is not currently in the project, so we'll generate it via the Configure Social Login tool when implementation begins (no manual edits to that folder).
 
-In `TodayStatsCard` (inside `FunnelOverviewContent.tsx`), under the "Due today" row, add a small terracotta `View Planner →` link styled identically to the existing `Go to Planner →` link in the Content row. Routes to `/planner`. The huge numeral stays linked too.
+**On the `Continue with Google` button click:**
+```ts
+const result = await lovable.auth.signInWithOAuth("google", {
+  redirect_uri: `${window.location.origin}/projects`,
+});
+if (result.error) { toast.error(result.error.message); return; }
+if (result.redirected) return; // browser navigates to Google
+// tokens received → AuthContext's onAuthStateChange picks it up and redirects
+```
 
-### 4. Launch Timeline — drop total + swap week labels for phase icons
+- Same button is used for sign-in and sign-up (Google handles both — new accounts auto-create).
+- The existing `AuthContext` `onAuthStateChange` listener will receive the `SIGNED_IN` event and trigger the standard post-auth flow (subscription check, navigate to most-recent project). No `AuthContext` changes required.
+- Welcome email + SureContact sync on first Google signup: handled out-of-band by the existing `handle_new_user` DB trigger (creates the profile). To match the email/password signup path, add a one-shot effect in `Auth.tsx` that — when a brand-new user lands back on `/auth` after OAuth — fires `surecontact-webhook` `sync_new_signup` once. (Detected by checking `created_at === last_sign_in_at` on the user.)
 
-In `LaunchTimelineEditorial`:
-- Remove the right-side meta block ("`6–7 weeks total · ends May 28`") entirely. Keep the left-side eyebrow + `Halfway through {Phase}.` headline.
-- Drop the `weekCursor` / `PHASE_WEEK_ESTIMATES` / `totalWeeks` logic.
-- Replace the mono `W 1` / `W 1–2` label in each phase card with a small phase icon (16×16, terracotta when active, muted when upcoming, ink-900 when done). Mapping:
-  - planning → `Compass`
-  - messaging → `MessageCircle`
-  - build → `Hammer`
-  - content → `PenTool`
-  - pre-launch → `Megaphone`
-  - launch → `Rocket`
-- Card layout otherwise unchanged: icon left, status indicator (check / dot) right, phase name below, progress bar at the bottom.
+**Apple**: not added. The single Google button takes the full social-row width.
 
-### Files to change
+---
 
-- `src/pages/project/plan/FunnelOverviewContent.tsx` — banner removal, celebration removal, dead-state cleanup, lazy-loaded dialogs, query stale-time, TodayStatsCard link, LaunchTimelineEditorial icon swap
-- `src/components/dashboard/index.ts` — remove dead exports
-- `src/components/relaunch/index.ts` — remove memory-review exports
-- **Deleted:** `MemoryReviewBanner.tsx`, `MemoryReviewSheet.tsx`, `useMemoryReview.ts`, `PhaseCelebrationCard.tsx`, `StuckHelpCard.tsx`, `DailyMotivationCard.tsx`, `ProgressSnapshotCard.tsx`, `LaunchSnapshotCard.tsx`
+### 3. State, validation, behavior
+
+- Tab state: `useState<"signin" | "signup">(defaultTab)`. Driven by `?tab=signup` URL param (existing behavior).
+- Mode-aware brand copy (eyebrow, headline, sub) reads from `mode`.
+- Existing zod schemas (`signInSchema`, `signUpSchema`) reused exactly — same validation + error rendering under each field.
+- Existing handlers (`handleSignIn`, `handleSignUp`, `handleResetPassword`) unchanged in logic; only re-themed.
+- Existing `checkout=success` toast preserved.
+- Existing `if (user) navigate("/app")` redirect preserved.
+- "Keep me signed in" checkbox is cosmetic for parity with the mockup (Supabase JS already persists the session via `localStorage` — toggling this off is not wired since it would require swapping client storage at runtime; we keep it visually present, default-checked, no-op).
+
+---
+
+### 4. Files
+
+**Modified**
+- `src/pages/Auth.tsx` — full visual rewrite, Google button wired via `lovable.auth.signInWithOAuth`, post-OAuth SureContact one-shot. All existing email/password handlers, validation, reset flow, redirect, and `?tab=signup` deep-link preserved.
+
+**Generated (by Configure Social Login tool, do not hand-edit)**
+- `src/integrations/lovable/` module + `@lovable.dev/cloud-auth-js` package.
+
+**Unchanged**
+- `src/contexts/AuthContext.tsx` — `onAuthStateChange` handles the OAuth return automatically.
+- `src/components/landing/landing-theme.css` — all required tokens already exist.
+- All other routes, AuthContext methods, post-auth navigation, subscription checks.
 
 ### Out of scope
 
-- The `project_memory` table and the rest of the relaunch flow (`RelaunchSelectionScreen`, `RelaunchSummaryScreen`, `ProjectLineageView`) stay intact.
-- No changes to other pages or to the sidebar.
+- Apple sign-in (explicitly skipped).
+- Sidebar / topbar / dashboard (already redone).
+- "Keep me signed in" runtime behavior — checkbox is cosmetic.
 
