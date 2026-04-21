@@ -1543,15 +1543,15 @@ export default function TaskDetail() {
 
         {!hasCustomCompletionUI && (
           <>
-            <div className="h-px bg-border mb-10" />
+            <div className="h-px bg-hairline mb-10" />
 
             {/* "This Is Enough" Reinforcement Callout for Launch task */}
             {taskId === 'launch_share_offer_once' && (
-              <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm text-foreground font-medium mb-1">
+              <div className="mb-6 p-4 rounded-2xl bg-clay-100 border border-terracotta/20">
+                <p className="font-display text-[16px] text-ink-900 mb-1 tracking-[-0.01em]">
                   This counts as a launch.
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[14px] text-fg-secondary">
                   One clear share is enough for this step.
                 </p>
               </div>
@@ -1559,7 +1559,7 @@ export default function TaskDetail() {
 
             {/* What Done Looks Like Section */}
             <section className="mb-10">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+              <h2 className="editorial-eyebrow mb-4">
                 This step is complete when:
               </h2>
               
@@ -1573,15 +1573,16 @@ export default function TaskDetail() {
                       id={`criteria-${index}`}
                       checked={completedCriteria.includes(criteria)}
                       onCheckedChange={() => handleCriteriaToggle(criteria)}
-                      className="cursor-pointer"
+                      className="cursor-pointer h-4 w-4 rounded-full border-ink-300 data-[state=checked]:bg-terracotta data-[state=checked]:border-terracotta data-[state=checked]:text-paper-100"
                     />
                     <Label
                       htmlFor={`criteria-${index}`}
-                      className={`flex-1 text-sm cursor-pointer transition-colors ${
+                      className={cn(
+                        "flex-1 text-[15px] cursor-pointer transition-colors",
                         completedCriteria.includes(criteria)
-                          ? "text-muted-foreground line-through"
-                          : "text-foreground"
-                      }`}
+                          ? "text-fg-muted line-through decoration-fg-muted/40"
+                          : "text-ink-800"
+                      )}
                     >
                       {criteria}
                     </Label>
@@ -1591,15 +1592,15 @@ export default function TaskDetail() {
               
               {/* Note about requirement */}
               {!allCriteriaComplete && (
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-3 text-[12px] text-fg-muted">
                   Check off all items above before saving and marking complete.
                 </p>
               )}
 
               {isTaskComplete && (
-                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                <div className="mt-4 p-3 rounded-2xl bg-moss-100 border border-moss-500/20 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-moss-700 shrink-0" />
+                  <p className="text-[14px] text-moss-700">
                     You're ready to save and continue!
                   </p>
                 </div>
@@ -1618,21 +1619,26 @@ export default function TaskDetail() {
 
             {/* Completion Action */}
             <section className="mb-12">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto"
+              <button
+                type="button"
                 onClick={handleSaveAndComplete}
                 disabled={!isTaskComplete || isSaving}
+                className={cn(
+                  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-medium font-sans transition-colors",
+                  !isTaskComplete || isSaving
+                    ? "bg-ink-100 text-fg-muted cursor-not-allowed"
+                    : "bg-ink-900 text-paper-100 hover:bg-ink-800"
+                )}
               >
                 {isSaving ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
-                  "Save & mark complete →"
+                  <>Save & mark complete <span aria-hidden>→</span></>
                 )}
-              </Button>
+              </button>
             </section>
           </>
         )}
