@@ -90,7 +90,7 @@ export const NextBestTaskCard = ({
         </div>
         {projectId && (
           <Link
-            to={`/projects/${projectId}/library?article=${APP_LEVEL_LEARN_MORE.dashboard}`}
+            to={`/help?article=${APP_LEVEL_LEARN_MORE.dashboard}`}
             className="text-xs text-[hsl(var(--fg-muted))] underline hover:text-[hsl(var(--ink-900))]"
           >
             What's this?

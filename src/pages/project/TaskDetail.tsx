@@ -1075,7 +1075,7 @@ export default function TaskDetail() {
             </span>
             {getLearnMoreArticleId(taskTemplate.taskId) && (
               <Link
-                to={`/projects/${projectId}/library?article=${getLearnMoreArticleId(taskTemplate.taskId)}&returnTo=${encodeURIComponent(location.pathname)}`}
+                to={`/help?article=${getLearnMoreArticleId(taskTemplate.taskId)}&returnTo=${encodeURIComponent(location.pathname)}`}
                 className="text-[12px] text-fg-muted hover:text-ink-800 transition-colors underline-offset-2 hover:underline"
               >
                 Learn more
