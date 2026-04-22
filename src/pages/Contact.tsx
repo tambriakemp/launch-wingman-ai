@@ -69,6 +69,15 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Contact Launchely — We're Here to Help"
+        description="Questions, feedback, or support? Reach the Launchely team. We respond within 24-48 hours."
+        path="/contact"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Contact", path: "/contact" },
+        ]}
+      />
       <LandingHeader />
       
       {/* Hero Section */}

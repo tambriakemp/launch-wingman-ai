@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO } from "@/components/seo/SEO";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,36 @@ const BlogPost = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {post && (
+        <SEO
+          title={`${post.title} — Launchely Blog`}
+          description={post.excerpt || `Read "${post.title}" on the Launchely blog.`}
+          path={`/blog/${post.slug}`}
+          image={post.cover_image_url || undefined}
+          type="article"
+          jsonLd={{
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: post.title,
+            description: post.excerpt,
+            image: post.cover_image_url,
+            datePublished: post.published_at,
+            dateModified: post.updated_at || post.published_at,
+            author: { "@type": "Person", name: post.author || "Launchely" },
+            publisher: {
+              "@type": "Organization",
+              name: "Launchely",
+              logo: { "@type": "ImageObject", url: "https://launchely.com/favicon.png" },
+            },
+            mainEntityOfPage: `https://launchely.com/blog/${post.slug}`,
+          }}
+          breadcrumbs={[
+            { name: "Home", path: "/" },
+            { name: "Blog", path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]}
+        />
+      )}
       <LandingHeader />
       
       <article className="pt-32 pb-16 px-4">
