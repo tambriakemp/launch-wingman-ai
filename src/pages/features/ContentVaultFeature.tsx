@@ -87,6 +87,11 @@ const ContentVaultFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<ContentVaultMockup />}
+      seo={{
+        title: "Content Vault — Templates, Posts & Design Assets | Launchely",
+        description: "Browse a library of ready-made templates, social posts, ebooks, Canva presets, and design assets to accelerate every launch.",
+        path: "/features/content-vault",
+      }}
     >
       {/* FAQ Section */}
       <section className="py-20 px-6">

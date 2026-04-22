@@ -55,6 +55,11 @@ const ExecuteFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<TasksMockup />}
+      seo={{
+        title: "Execute Your Launch — Tasks, Calendar & Social | Launchely",
+        description: "Manage your launch with a tailored task checklist, calendar timeline, and integrated social scheduling — all in one workflow.",
+        path: "/features/execute",
+      }}
     >
       {/* Additional Screenshot */}
       <section className="py-16 bg-background">

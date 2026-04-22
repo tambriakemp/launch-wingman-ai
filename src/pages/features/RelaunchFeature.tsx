@@ -83,6 +83,11 @@ const RelaunchFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<RelaunchMockup />}
+      seo={{
+        title: "Relaunch — Reuse What Worked, Iterate Smarter | Launchely",
+        description: "Analyze previous launches, keep winning assets, and roll insights into your next launch with the Relaunch workflow.",
+        path: "/features/relaunch",
+      }}
     >
       {/* How It Works Section */}
       <section className="py-16 bg-muted/30">

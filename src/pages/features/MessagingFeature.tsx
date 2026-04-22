@@ -53,6 +53,11 @@ const MessagingFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<MessagingMockup />}
+      seo={{
+        title: "AI Messaging — Sales Copy, Bios & Email Sequences | Launchely",
+        description: "Generate sales pages, social bios with proven formulas, and complete email sequences with AI tuned to your audience and offer.",
+        path: "/features/messaging",
+      }}
     />
   );
 };

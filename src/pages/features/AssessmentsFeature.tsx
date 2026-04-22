@@ -53,6 +53,11 @@ const AssessmentsFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<AssessmentMockup />}
+      seo={{
+        title: "Launch Assessments — Know Where You Stand | Launchely",
+        description: "Take launch readiness, coaching style, and why-statement assessments to identify gaps and create a personalized roadmap to launch.",
+        path: "/features/assessments",
+      }}
     />
   );
 };

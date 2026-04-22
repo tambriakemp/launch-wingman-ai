@@ -53,6 +53,11 @@ const BrandingFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<BrandingMockup />}
+      seo={{
+        title: "Brand Kit — Logos, Colors & Fonts in One Place | Launchely",
+        description: "Organize your brand assets — logos, color palettes, fonts, and photos — and apply them across every generated launch asset.",
+        path: "/features/branding",
+      }}
     />
   );
 };
