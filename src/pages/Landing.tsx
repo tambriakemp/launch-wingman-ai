@@ -183,7 +183,7 @@ const plans = [
       "Everything in Pro",
       "Campaigns manager",
       "Social planner",
-      "Ideas bank",
+      
       "AI Studio",
       "Marketing analytics",
       "Priority support",

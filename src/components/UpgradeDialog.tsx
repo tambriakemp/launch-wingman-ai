@@ -35,7 +35,7 @@ const advancedFeatures = [
   "Everything in Pro",
   "Campaigns manager",
   "Social Planner",
-  "Ideas Bank",
+  
   "AI Studio",
   "Marketing Analytics",
   "Advanced marketing tools",

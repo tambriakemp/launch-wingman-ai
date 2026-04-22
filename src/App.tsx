@@ -51,7 +51,7 @@ const CampaignAnalytics = lazy(() => import("./pages/CampaignAnalytics"));
 const CampaignPlanner = lazy(() => import("./pages/CampaignPlanner"));
 const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
 const SocialPlanner = lazy(() => import("./pages/SocialPlanner"));
-const ContentIdeasBank = lazy(() => import("./pages/ContentIdeasBank"));
+
 const HookGenerator = lazy(() => import("./pages/HookGenerator"));
 const SalesPageWriter = lazy(() => import("./pages/SalesPageWriter"));
 const EmailSequenceGenerator = lazy(() => import("./pages/EmailSequenceGenerator"));
@@ -626,14 +626,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SocialPlanner />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ideas"
-              element={
-                <ProtectedRoute>
-                  <ContentIdeasBank />
                 </ProtectedRoute>
               }
             />
