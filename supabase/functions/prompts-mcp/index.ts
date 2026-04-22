@@ -44,6 +44,96 @@ async function authenticate(authHeader: string | null) {
   return { userId: data.claims.sub as string, serviceClient };
 }
 
+const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
+
+async function requireAdmin(serviceClient: any, userId: string) {
+  const { data, error } = await serviceClient.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(`Admin check failed: ${error.message}`);
+  if (!data) throw new Error("Forbidden: admin role required");
+}
+
+async function resolveSubcategoryId(
+  serviceClient: any,
+  subcategorySlug: string = "general"
+): Promise<string> {
+  const { data, error } = await serviceClient
+    .from("content_vault_subcategories")
+    .select("id, content_vault_categories!inner(slug)")
+    .eq("slug", subcategorySlug)
+    .eq("content_vault_categories.slug", "ai-prompts")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Subcategory '${subcategorySlug}' not found under ai-prompts`);
+  return data.id;
+}
+
+async function generateCoverImage(
+  serviceClient: any,
+  promptText: string,
+  referenceImageUrl?: string
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const contentParts: any[] = [];
+  if (referenceImageUrl) {
+    contentParts.push({
+      type: "text",
+      text: `CRITICAL INSTRUCTION — IDENTITY PRESERVATION:
+You are given a reference photo of a real person. Use the EXACT same face, features, skin tone, hair, and body type.
+COMPOSITION: Frame as a wide or medium shot. Full body visible. 16:9 or 3:2 landscape.
+Generate a high-quality image for this scene:\n\n${promptText}`,
+    });
+    contentParts.push({ type: "image_url", image_url: { url: referenceImageUrl } });
+  } else {
+    contentParts.push({
+      type: "text",
+      text: `Generate a high-quality image. Frame as wide/medium shot. 16:9 or 3:2 landscape:\n\n${promptText}`,
+    });
+  }
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [{ role: "user", content: contentParts }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!aiResponse.ok) throw new Error(`AI gateway error: ${aiResponse.status}`);
+
+  const aiData = await aiResponse.json();
+  const message = aiData.choices?.[0]?.message;
+  let imageUrl =
+    message?.images?.[0]?.image_url?.url || message?.content?.[0]?.image_url?.url || null;
+  if (!imageUrl && Array.isArray(message?.content)) {
+    const imgPart = message.content.find((p: any) => p.type === "image_url" || p.image_url);
+    if (imgPart) imageUrl = imgPart.image_url?.url || imgPart.url;
+  }
+  if (!imageUrl && message?.content?.[0]?.inline_data) {
+    const inline = message.content[0].inline_data;
+    imageUrl = `data:${inline.mime_type};base64,${inline.data}`;
+  }
+  if (!imageUrl) throw new Error("No image generated");
+
+  const raw = imageUrl.includes(",") ? imageUrl.split(",")[1] : imageUrl;
+  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  const fileName = `covers/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+  const { error: uploadErr } = await serviceClient.storage
+    .from("content-media")
+    .upload(fileName, bytes, { contentType: "image/jpeg", upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const { data: urlData } = serviceClient.storage.from("content-media").getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
+
 function mapPrompt(r: any) {
   return {
     id: r.id,
