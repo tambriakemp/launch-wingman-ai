@@ -1,3 +1,5 @@
+# Marketing routes are open to all crawlers; app/admin areas are blocked.
+
 User-agent: Googlebot
 Allow: /
 Disallow: /app
@@ -27,6 +29,67 @@ Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# AI / LLM crawlers — allow brand discovery on marketing pages
+User-agent: GPTBot
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+Disallow: /onboarding
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
+
+User-agent: Applebot
+Allow: /
+Disallow: /app
+Disallow: /projects/
+Disallow: /settings
+Disallow: /admin
 
 User-agent: *
 Allow: /
