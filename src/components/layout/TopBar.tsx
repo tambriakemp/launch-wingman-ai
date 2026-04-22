@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell } from "lucide-react";
+import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -143,9 +143,9 @@ export const TopBar = () => {
               </>
             )}
             <DropdownMenuItem asChild>
-              <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                <Settings className="w-4 h-4" />
-                Settings
+              <Link to="/help" className="flex items-center gap-2 cursor-pointer">
+                <HelpCircle className="w-4 h-4" />
+                Help & Support
               </Link>
             </DropdownMenuItem>
             {hasAdminAccess && !isImpersonating && (
