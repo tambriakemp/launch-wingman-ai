@@ -1,69 +1,80 @@
 
 
-## SEO & Meta Tag Upgrades for Landing Page
+## Add `create_prompt` to the Prompt Vault MCP (and matching REST action)
 
-Goal: improve search ranking, social previews, and AI/LLM crawlability for `/` (and a few other public pages) without touching app architecture or auth flows.
+Goal: extend the `prompts-mcp` (and `prompts-api`) Edge Functions so authorized users can **create new AI prompts** in the Content Vault directly from Claude/ChatGPT/etc., with all metadata needed to render them in the vault — title, prompt text, type, tags, and an optional cover image (uploaded URL **or** AI-generated on the fly).
 
-### What changes the user will see
-- Richer Google search snippet (organization sitelinks, breadcrumbs, FAQ rich result eligibility).
-- Better Twitter/LinkedIn/Facebook link previews with proper image, title, and description.
-- Per-route `<title>` and `<meta description>` instead of the single hardcoded one in `index.html`.
-- Faster discovery by AI crawlers (GPTBot, ClaudeBot, Perplexity) via expanded `robots.txt`.
+### What the user will see
 
-### Implementation
+In Claude Desktop (or any MCP client), two new tools appear on the `launchely-prompts` server:
 
-**1. Add `<Helmet>` to `src/pages/Landing.tsx`** (uses already-installed `react-helmet-async` + `HelmetProvider` already in `main.tsx`):
-- `<title>`: "Launchely — AI-Powered Launch Planning for Coaches & Digital Marketers"
-- `<meta name="description">`: keyword-rich, ~155 chars, mentions funnels/AI/coaches.
-- Open Graph: `og:title`, `og:description`, `og:image` (absolute URL), `og:url`, `og:type=website`, `og:site_name=Launchely`, `og:locale=en_US`.
-- Twitter: `twitter:card=summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`, `twitter:site=@launchely`.
-- `<link rel="canonical" href="https://launchely.com/">`.
-- JSON-LD scripts (3 blocks):
-  - **Organization** schema (name, url, logo, sameAs).
-  - **WebSite** schema with `SearchAction` (enables Google sitelinks search box).
-  - **FAQPage** schema generated from the existing FAQ accordion items already in `Landing.tsx` (rich-result eligible).
-  - **SoftwareApplication** schema (category, offers/pricing, aggregateRating placeholder if appropriate — will omit ratings to avoid policy violations).
+1. **`create_prompt`** — creates a new image or video prompt in the AI Prompts vault.
+2. **`delete_prompt`** *(bonus, low cost to add alongside)* — removes a prompt by ID. Skip if you'd rather not.
 
-**2. Add `<Helmet>` blocks to other public pages** with unique titles/descriptions/canonicals + OG tags:
-- `src/pages/HowItWorks.tsx`
-- `src/pages/About.tsx` (if present)
-- `src/pages/Pricing.tsx` (if present, otherwise it's a section on Landing)
-- `src/pages/Contact.tsx`
-- `src/pages/Blog.tsx` and individual blog post pages
-- `src/pages/Privacy.tsx`, `src/pages/Terms.tsx`
-- Each gets a `BreadcrumbList` JSON-LD pointing back to `/`.
+A successful `create_prompt` call returns the new prompt's ID, slug, public URL (vault deep link), and cover image URL — so the assistant can immediately confirm and link to it.
 
-**3. Clean up `index.html`**:
-- Remove the now-redundant `<title>` and meta tags (Helmet will overwrite them at runtime, but keeping defaults as a fallback for crawlers without JS execution is fine — will keep generic defaults and let Helmet overwrite for JS-capable crawlers).
-- Add `<meta name="robots" content="index,follow,max-image-preview:large">` for richer Google previews.
-- Add `<meta name="theme-color">` for mobile browser chrome.
-- Add `<link rel="alternate" hreflang="en" href="https://launchely.com/">`.
+The new prompt instantly shows up in **Content Vault → AI Prompts → General** at `/app/content-vault/ai-prompts/general`, identical to prompts created via the admin Bulk Importer.
 
-**4. Expand `public/robots.txt`**:
-- Add explicit `Allow:` rules for marketing routes (/, /how-it-works, /pricing, /about, /blog, /go, /features/*).
-- Add bot-specific blocks for `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended` — set to `Allow: /` for marketing pages so the brand surfaces in AI answers.
-- Keep existing disallows for `/app`, `/projects/`, `/admin`, etc.
+### Inputs accepted by `create_prompt`
 
-**5. Verify `public/sitemap.xml`** — already exists and is good; will add `<lastmod>` dates to each URL and ensure all newly meta-tagged routes are present.
+| Field | Required | Notes |
+|---|---|---|
+| `title` | yes | Used as the prompt card heading |
+| `prompt` | yes | The actual prompt text (stored in `description`) |
+| `type` | no | `image_prompt` (default) or `video_prompt` |
+| `tags` | no | Array of strings, e.g. `["Portraits","Golden Hour"]` |
+| `subcategorySlug` | no | Defaults to `general` under category `ai-prompts` |
+| `coverImageUrl` | no | If provided, used as-is |
+| `generateCover` | no | Boolean — if `true` and no `coverImageUrl`, generates one via Lovable AI (Gemini 3 Pro Image) using the prompt text |
+| `referenceImageUrl` | no | Optional reference photo for identity preservation when `generateCover=true` (same logic as `regenerate_cover`) |
 
-**6. Add `public/og-image.png` reference check** — the file is already referenced in `index.html` at `https://launchely.com/og-image.png`. Will verify it exists in `/public`; if missing, will note that the user needs to upload one (1200×630 PNG recommended).
+### Server-side rules
 
-### What stays the same
-- No changes to `src/main.tsx`, `App.tsx`, routing, auth, or any `/app` route.
-- No new dependencies — `react-helmet-async` is already installed and `HelmetProvider` is already wrapping the app.
-- No build pipeline changes. No SSG. No hydration changes.
+- **Admin gate**: only callers whose `user_id` has `app_role = 'admin'` (checked via the existing `has_role` SQL function) can create prompts. Mirrors the `Admins can insert resources` RLS policy. Non-admins get `403 Forbidden`.
+- **Subcategory resolution**: if `subcategorySlug` is omitted, look up `subcategory_id` for `ai-prompts/general` (the same default the bulk importer uses, ID `e867d3a7-...`).
+- **Position**: query `MAX(position)` in that subcategory and insert at `max + 1` so new prompts append to the end.
+- **Duplicate guard**: case-insensitive check against existing `title` and normalized `description` in the same subcategory; reject with a clear `"Duplicate prompt: an existing prompt has the same title or text"` error so the assistant can adjust and retry.
+- **Required DB defaults handled**: `resource_url` set to `"#"` (vault convention for prompts), `resource_type` from the `type` arg, `tags` defaulting to `null` if empty.
+- **Cover generation** (when `generateCover=true`): reuses the exact pipeline already in `regenerate_cover` — calls Lovable AI gateway with optional reference photo, uploads to `content-media/covers/`, and stores the public URL on the new row. Synchronous — the call returns once the cover is saved.
 
-### Risks
-- **Near zero.** Helmet writes to `<head>` after mount; even if it fails, `index.html` defaults remain. Worst case: meta tags don't update → no regression vs. today.
-- Google may take 1–4 weeks to recrawl and surface improvements.
+### Response shape
+
+```json
+{
+  "success": true,
+  "prompt": {
+    "id": "uuid",
+    "title": "Golden Hour Portrait",
+    "prompt": "...full text...",
+    "type": "image_prompt",
+    "tags": ["Portraits"],
+    "cover_image_url": "https://.../covers/...jpg",
+    "vault_url": "https://launchely.com/app/content-vault/ai-prompts/general"
+  }
+}
+```
+
+### REST parity (`prompts-api`)
+
+Add `create_prompt` (and `delete_prompt` if approved) to the `VALID_ACTIONS` list and switch case in `supabase/functions/prompts-api/index.ts`, with identical behavior. Keeps the personal-API-key REST flow and the MCP flow in sync — both already share the same auth/key system.
 
 ### Files to change
-- `src/pages/Landing.tsx` (add `<Helmet>` block + 3 JSON-LD scripts)
-- `src/pages/HowItWorks.tsx`, `About.tsx`, `Contact.tsx`, `Blog.tsx`, `Privacy.tsx`, `Terms.tsx`, plus `/features/*` pages (add `<Helmet>` per page)
-- `index.html` (add robots/theme-color/hreflang meta; keep title/description as fallback)
-- `public/robots.txt` (add AI bot allowances + marketing route allow rules)
-- `public/sitemap.xml` (add `<lastmod>`)
 
-### Deliverable
-After approval, I'll apply the changes and include a copy of the exact JSON-LD blocks added so you can validate them in [Google's Rich Results Test](https://search.google.com/test/rich-results).
+- `supabase/functions/prompts-mcp/index.ts` — add `create_prompt` (and optionally `delete_prompt`) tool definitions; add a small `requireAdmin(serviceClient, userId)` helper that calls `has_role`.
+- `supabase/functions/prompts-api/index.ts` — add the matching REST action(s) and the same `requireAdmin` helper.
+- *(No DB migration, no new secrets, no client-side changes — the new prompts surface automatically in the existing vault UI.)*
+
+### Memory updates
+
+- Update `mem://integrations/claude-mcp-and-rest-api` to list the new `create_prompt` (and `delete_prompt`) tools alongside the existing read/update tools, and note the admin-only gate.
+
+### Risks & non-goals
+
+- **Admin-only by design** — non-admin personal API keys can already *read* prompts but won't be able to write. If you want regular users to create prompts under their own private namespace later, that's a separate, larger change (per-user vault scoping doesn't exist yet).
+- **Cover generation cost & latency** — `generateCover=true` calls the Lovable AI image model and typically takes 8–20s. Default is `false` so simple text-only creates stay fast and free.
+- **No bulk variant** — single-prompt create only. The admin Bulk Importer remains the right tool for CSV/PDF batches.
+
+### Open question
+
+Want **`delete_prompt`** included in the same change (admin-only, by ID, also exposed in MCP + REST)? It's ~15 lines and rounds out the CRUD surface, but happy to skip if you'd rather keep the MCP read/create-only.
 
