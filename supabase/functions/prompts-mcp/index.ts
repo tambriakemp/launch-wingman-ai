@@ -403,6 +403,125 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
   },
 });
 
+
+mcpServer.tool("create_prompt", {
+  description: "Create a new AI prompt in the Content Vault (admin only). Optionally generate a cover image with AI.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      title: { type: "string", description: "Prompt title (heading)" },
+      prompt: { type: "string", description: "The prompt text" },
+      type: { type: "string", description: "image_prompt (default) or video_prompt" },
+      tags: { type: "array", items: { type: "string" }, description: "Optional tags" },
+      subcategorySlug: { type: "string", description: "Subcategory slug under ai-prompts (default: general)" },
+      coverImageUrl: { type: "string", description: "Optional pre-existing cover image URL" },
+      generateCover: { type: "boolean", description: "If true and no coverImageUrl, generates one via AI (8-20s)" },
+      referenceImageUrl: { type: "string", description: "Optional reference photo URL for identity preservation when generating" },
+      authHeader: { type: "string", description: "Authorization header value" },
+    },
+    required: ["title", "prompt"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    await requireAdmin(serviceClient, userId);
+
+    const title = String(params.title).trim();
+    const promptText = String(params.prompt).trim();
+    if (!title || !promptText) throw new Error("title and prompt are required");
+
+    const resourceType = params.type === "video_prompt" ? "video_prompt" : "image_prompt";
+    const subcategoryId = await resolveSubcategoryId(serviceClient, params.subcategorySlug);
+
+    // Duplicate guard (case-insensitive title or description match in same subcategory)
+    const { data: dupes } = await serviceClient
+      .from("content_vault_resources")
+      .select("id")
+      .eq("subcategory_id", subcategoryId)
+      .or(`title.ilike.${title},description.ilike.${promptText}`)
+      .limit(1);
+    if (dupes && dupes.length > 0) {
+      throw new Error("Duplicate prompt: an existing prompt has the same title or text");
+    }
+
+    // Compute next position
+    const { data: maxRow } = await serviceClient
+      .from("content_vault_resources")
+      .select("position")
+      .eq("subcategory_id", subcategoryId)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextPosition = (maxRow?.position ?? 0) + 1;
+
+    // Resolve cover
+    let coverUrl: string | null = params.coverImageUrl || null;
+    if (!coverUrl && params.generateCover) {
+      coverUrl = await generateCoverImage(serviceClient, promptText, params.referenceImageUrl);
+    }
+
+    const { data: inserted, error: insertErr } = await serviceClient
+      .from("content_vault_resources")
+      .insert({
+        title,
+        description: promptText,
+        resource_type: resourceType,
+        resource_url: "#",
+        subcategory_id: subcategoryId,
+        tags: Array.isArray(params.tags) && params.tags.length > 0 ? params.tags : null,
+        cover_image_url: coverUrl,
+        position: nextPosition,
+      })
+      .select("id, title, description, tags, resource_type, cover_image_url")
+      .maybeSingle();
+
+    if (insertErr) throw insertErr;
+    if (!inserted) throw new Error("Failed to create prompt");
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            success: true,
+            prompt: { ...mapPrompt(inserted), vault_url: VAULT_URL },
+          }),
+        },
+      ],
+    };
+  },
+});
+
+mcpServer.tool("delete_prompt", {
+  description: "Delete an AI prompt by ID (admin only).",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      promptId: { type: "string", description: "Prompt UUID" },
+      authHeader: { type: "string", description: "Authorization header value" },
+    },
+    required: ["promptId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    await requireAdmin(serviceClient, userId);
+
+    const { data, error } = await serviceClient
+      .from("content_vault_resources")
+      .delete()
+      .eq("id", params.promptId)
+      .in("resource_type", ["image_prompt", "video_prompt"])
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Prompt not found");
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, deleted_id: data.id }) }],
+    };
+  },
+});
+
 mcpServer.tool("list_characters", {
   description: "List saved characters with their reference photo URLs. Use these URLs as referenceImageUrl when calling regenerate_cover for identity preservation.",
   inputSchema: {
