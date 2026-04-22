@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { SEO } from "@/components/seo/SEO";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
@@ -235,8 +236,64 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => (
 );
 
 const Landing = () => {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Launchely",
+    url: "https://launchely.com",
+    logo: "https://launchely.com/favicon.png",
+    sameAs: [
+      "https://twitter.com/launchely",
+      "https://www.instagram.com/launchely",
+    ],
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Launchely",
+    url: "https://launchely.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://launchely.com/blog?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Launchely",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description:
+      "AI-powered launch planning platform for coaches and digital marketers. Plan funnels, generate copy, and execute launches in one workflow.",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Content Vault", price: "7", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Pro", price: "25", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Advanced", price: "49", priceCurrency: "USD" },
+    ],
+  };
+
   return (
     <div className="landing-theme font-sans min-h-screen scroll-smooth">
+      <SEO
+        title="Launchely — AI-Powered Launch Planning for Coaches & Digital Marketers"
+        description="Stop buying courses. Plan funnels, generate sales copy, and execute launches with AI-powered tools built for coaches, creators, and digital marketers."
+        path="/"
+        jsonLd={[organizationSchema, websiteSchema, faqSchema, softwareSchema]}
+      />
       <LandingHeader />
 
       {/* ===== HERO ===== */}

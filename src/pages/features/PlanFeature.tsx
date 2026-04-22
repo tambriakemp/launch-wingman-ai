@@ -55,6 +55,11 @@ const PlanFeature = () => {
       features={features}
       benefits={benefits}
       screenshot={<FunnelBuilderMockup />}
+      seo={{
+        title: "Plan Your Launch — Funnels, Audience & Offers | Launchely",
+        description: "Choose from 8+ funnel types, define your audience with the Value Equation, and build your offer stack with AI suggestions.",
+        path: "/features/plan",
+      }}
     >
       {/* Additional Screenshot */}
       <section className="py-16 bg-background">

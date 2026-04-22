@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SEO } from "@/components/seo/SEO";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,15 @@ const values = [
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="About Launchely — Helping Coaches Launch Without the Overwhelm"
+        description="Launchely was built to replace expensive launch courses with a guided, AI-powered platform. Learn our mission, values, and why we exist."
+        path="/about"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "About", path: "/about" },
+        ]}
+      />
       <LandingHeader />
       
       {/* Hero Section */}
