@@ -465,6 +465,113 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
         break;
       }
 
+      case "create_prompt": {
+        await requireAdmin(serviceClient, userId);
+
+        const title = String(body.title || "").trim();
+        const promptText = String(body.prompt || "").trim();
+        if (!title || !promptText) {
+          return new Response(JSON.stringify({ error: "title and prompt are required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const resourceType = body.type === "video_prompt" ? "video_prompt" : "image_prompt";
+        const subcategoryId = await resolveSubcategoryId(serviceClient, body.subcategorySlug);
+
+        const { data: dupes } = await serviceClient
+          .from("content_vault_resources")
+          .select("id")
+          .eq("subcategory_id", subcategoryId)
+          .or(`title.ilike.${title},description.ilike.${promptText}`)
+          .limit(1);
+        if (dupes && dupes.length > 0) {
+          return new Response(
+            JSON.stringify({ error: "Duplicate prompt: an existing prompt has the same title or text" }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: maxRow } = await serviceClient
+          .from("content_vault_resources")
+          .select("position")
+          .eq("subcategory_id", subcategoryId)
+          .order("position", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextPosition = ((maxRow as any)?.position ?? 0) + 1;
+
+        let coverUrl: string | null = body.coverImageUrl || null;
+        if (!coverUrl && body.generateCover) {
+          coverUrl = await generateCoverImage(serviceClient, promptText, body.referenceImageUrl);
+        }
+
+        const { data: inserted, error: insertErr } = await serviceClient
+          .from("content_vault_resources")
+          .insert({
+            title,
+            description: promptText,
+            resource_type: resourceType,
+            resource_url: "#",
+            subcategory_id: subcategoryId,
+            tags: Array.isArray(body.tags) && body.tags.length > 0 ? body.tags : null,
+            cover_image_url: coverUrl,
+            position: nextPosition,
+          })
+          .select("id, title, description, tags, resource_type, cover_image_url")
+          .maybeSingle();
+
+        if (insertErr) throw insertErr;
+        if (!inserted) throw new Error("Failed to create prompt");
+
+        const ins = inserted as any;
+        result = {
+          success: true,
+          prompt: {
+            id: ins.id,
+            title: ins.title,
+            prompt: ins.description,
+            tags: ins.tags || [],
+            type: ins.resource_type,
+            cover_image_url: ins.cover_image_url,
+            vault_url: VAULT_URL,
+          },
+        };
+        break;
+      }
+
+      case "delete_prompt": {
+        await requireAdmin(serviceClient, userId);
+
+        const promptId = body.promptId as string;
+        if (!promptId) {
+          return new Response(JSON.stringify({ error: "promptId is required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data, error } = await serviceClient
+          .from("content_vault_resources")
+          .delete()
+          .eq("id", promptId)
+          .in("resource_type", ["image_prompt", "video_prompt"])
+          .select("id")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+          return new Response(JSON.stringify({ error: "Prompt not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        result = { success: true, deleted_id: (data as any).id };
+        break;
+      }
+
       case "list_characters": {
         const limit = Math.min(body.limit || 20, 50);
 
