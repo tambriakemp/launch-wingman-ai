@@ -44,6 +44,96 @@ async function authenticate(authHeader: string | null) {
   return { userId: data.claims.sub as string, serviceClient };
 }
 
+const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
+
+async function requireAdmin(serviceClient: any, userId: string) {
+  const { data, error } = await serviceClient.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(`Admin check failed: ${error.message}`);
+  if (!data) throw new Error("Forbidden: admin role required");
+}
+
+async function resolveSubcategoryId(
+  serviceClient: any,
+  subcategorySlug: string = "general"
+): Promise<string> {
+  const { data, error } = await serviceClient
+    .from("content_vault_subcategories")
+    .select("id, content_vault_categories!inner(slug)")
+    .eq("slug", subcategorySlug)
+    .eq("content_vault_categories.slug", "ai-prompts")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Subcategory '${subcategorySlug}' not found under ai-prompts`);
+  return data.id;
+}
+
+async function generateCoverImage(
+  serviceClient: any,
+  promptText: string,
+  referenceImageUrl?: string
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const contentParts: any[] = [];
+  if (referenceImageUrl) {
+    contentParts.push({
+      type: "text",
+      text: `CRITICAL INSTRUCTION — IDENTITY PRESERVATION:
+You are given a reference photo of a real person. Use the EXACT same face, features, skin tone, hair, and body type.
+COMPOSITION: Frame as a wide or medium shot. Full body visible. 16:9 or 3:2 landscape.
+Generate a high-quality image for this scene:\n\n${promptText}`,
+    });
+    contentParts.push({ type: "image_url", image_url: { url: referenceImageUrl } });
+  } else {
+    contentParts.push({
+      type: "text",
+      text: `Generate a high-quality image. Frame as wide/medium shot. 16:9 or 3:2 landscape:\n\n${promptText}`,
+    });
+  }
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [{ role: "user", content: contentParts }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!aiResponse.ok) throw new Error(`AI gateway error: ${aiResponse.status}`);
+
+  const aiData = await aiResponse.json();
+  const message = aiData.choices?.[0]?.message;
+  let imageUrl =
+    message?.images?.[0]?.image_url?.url || message?.content?.[0]?.image_url?.url || null;
+  if (!imageUrl && Array.isArray(message?.content)) {
+    const imgPart = message.content.find((p: any) => p.type === "image_url" || p.image_url);
+    if (imgPart) imageUrl = imgPart.image_url?.url || imgPart.url;
+  }
+  if (!imageUrl && message?.content?.[0]?.inline_data) {
+    const inline = message.content[0].inline_data;
+    imageUrl = `data:${inline.mime_type};base64,${inline.data}`;
+  }
+  if (!imageUrl) throw new Error("No image generated");
+
+  const raw = imageUrl.includes(",") ? imageUrl.split(",")[1] : imageUrl;
+  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  const fileName = `covers/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+  const { error: uploadErr } = await serviceClient.storage
+    .from("content-media")
+    .upload(fileName, bytes, { contentType: "image/jpeg", upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const { data: urlData } = serviceClient.storage.from("content-media").getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
+
 function mapPrompt(r: any) {
   return {
     id: r.id,
@@ -309,6 +399,125 @@ Generate a high-quality image for this scene:\n\n${prompt.description}`,
       content: [
         { type: "text" as const, text: JSON.stringify({ success: true, cover_image_url: urlData.publicUrl }) },
       ],
+    };
+  },
+});
+
+
+mcpServer.tool("create_prompt", {
+  description: "Create a new AI prompt in the Content Vault (admin only). Optionally generate a cover image with AI.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      title: { type: "string", description: "Prompt title (heading)" },
+      prompt: { type: "string", description: "The prompt text" },
+      type: { type: "string", description: "image_prompt (default) or video_prompt" },
+      tags: { type: "array", items: { type: "string" }, description: "Optional tags" },
+      subcategorySlug: { type: "string", description: "Subcategory slug under ai-prompts (default: general)" },
+      coverImageUrl: { type: "string", description: "Optional pre-existing cover image URL" },
+      generateCover: { type: "boolean", description: "If true and no coverImageUrl, generates one via AI (8-20s)" },
+      referenceImageUrl: { type: "string", description: "Optional reference photo URL for identity preservation when generating" },
+      authHeader: { type: "string", description: "Authorization header value" },
+    },
+    required: ["title", "prompt"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    await requireAdmin(serviceClient, userId);
+
+    const title = String(params.title).trim();
+    const promptText = String(params.prompt).trim();
+    if (!title || !promptText) throw new Error("title and prompt are required");
+
+    const resourceType = params.type === "video_prompt" ? "video_prompt" : "image_prompt";
+    const subcategoryId = await resolveSubcategoryId(serviceClient, params.subcategorySlug);
+
+    // Duplicate guard (case-insensitive title or description match in same subcategory)
+    const { data: dupes } = await serviceClient
+      .from("content_vault_resources")
+      .select("id")
+      .eq("subcategory_id", subcategoryId)
+      .or(`title.ilike.${title},description.ilike.${promptText}`)
+      .limit(1);
+    if (dupes && dupes.length > 0) {
+      throw new Error("Duplicate prompt: an existing prompt has the same title or text");
+    }
+
+    // Compute next position
+    const { data: maxRow } = await serviceClient
+      .from("content_vault_resources")
+      .select("position")
+      .eq("subcategory_id", subcategoryId)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextPosition = (maxRow?.position ?? 0) + 1;
+
+    // Resolve cover
+    let coverUrl: string | null = params.coverImageUrl || null;
+    if (!coverUrl && params.generateCover) {
+      coverUrl = await generateCoverImage(serviceClient, promptText, params.referenceImageUrl);
+    }
+
+    const { data: inserted, error: insertErr } = await serviceClient
+      .from("content_vault_resources")
+      .insert({
+        title,
+        description: promptText,
+        resource_type: resourceType,
+        resource_url: "#",
+        subcategory_id: subcategoryId,
+        tags: Array.isArray(params.tags) && params.tags.length > 0 ? params.tags : null,
+        cover_image_url: coverUrl,
+        position: nextPosition,
+      })
+      .select("id, title, description, tags, resource_type, cover_image_url")
+      .maybeSingle();
+
+    if (insertErr) throw insertErr;
+    if (!inserted) throw new Error("Failed to create prompt");
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            success: true,
+            prompt: { ...mapPrompt(inserted), vault_url: VAULT_URL },
+          }),
+        },
+      ],
+    };
+  },
+});
+
+mcpServer.tool("delete_prompt", {
+  description: "Delete an AI prompt by ID (admin only).",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      promptId: { type: "string", description: "Prompt UUID" },
+      authHeader: { type: "string", description: "Authorization header value" },
+    },
+    required: ["promptId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    await requireAdmin(serviceClient, userId);
+
+    const { data, error } = await serviceClient
+      .from("content_vault_resources")
+      .delete()
+      .eq("id", params.promptId)
+      .in("resource_type", ["image_prompt", "video_prompt"])
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Prompt not found");
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, deleted_id: data.id }) }],
     };
   },
 });

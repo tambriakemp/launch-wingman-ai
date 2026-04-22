@@ -14,9 +14,101 @@ const VALID_ACTIONS = [
   "update_prompt",
   "regenerate_cover",
   "list_characters",
+  "create_prompt",
+  "delete_prompt",
 ] as const;
 
 type Action = (typeof VALID_ACTIONS)[number];
+
+const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
+
+async function requireAdmin(serviceClient: any, userId: string) {
+  const { data, error } = await serviceClient.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(`Admin check failed: ${error.message}`);
+  if (!data) throw new Error("Forbidden: admin role required");
+}
+
+async function resolveSubcategoryId(
+  serviceClient: any,
+  subcategorySlug: string = "general"
+): Promise<string> {
+  const { data, error } = await serviceClient
+    .from("content_vault_subcategories")
+    .select("id, content_vault_categories!inner(slug)")
+    .eq("slug", subcategorySlug)
+    .eq("content_vault_categories.slug", "ai-prompts")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`Subcategory '${subcategorySlug}' not found under ai-prompts`);
+  return data.id;
+}
+
+async function generateCoverImage(
+  serviceClient: any,
+  promptText: string,
+  referenceImageUrl?: string
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+  const contentParts: any[] = [];
+  if (referenceImageUrl) {
+    contentParts.push({
+      type: "text",
+      text: `CRITICAL INSTRUCTION — IDENTITY PRESERVATION:
+Use the EXACT same face, features, skin tone, hair, and body type from the reference photo.
+COMPOSITION: wide/medium shot, full body visible, 16:9 or 3:2 landscape.
+Generate a high-quality image for this scene:\n\n${promptText}`,
+    });
+    contentParts.push({ type: "image_url", image_url: { url: referenceImageUrl } });
+  } else {
+    contentParts.push({
+      type: "text",
+      text: `Generate a high-quality image. Wide/medium shot, 16:9 or 3:2 landscape:\n\n${promptText}`,
+    });
+  }
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [{ role: "user", content: contentParts }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!aiResponse.ok) throw new Error(`AI gateway error: ${aiResponse.status}`);
+
+  const aiData = await aiResponse.json();
+  const message = aiData.choices?.[0]?.message;
+  let imageUrl =
+    message?.images?.[0]?.image_url?.url || message?.content?.[0]?.image_url?.url || null;
+  if (!imageUrl && Array.isArray(message?.content)) {
+    const imgPart = message.content.find((p: any) => p.type === "image_url" || p.image_url);
+    if (imgPart) imageUrl = imgPart.image_url?.url || imgPart.url;
+  }
+  if (!imageUrl && message?.content?.[0]?.inline_data) {
+    const inline = message.content[0].inline_data;
+    imageUrl = `data:${inline.mime_type};base64,${inline.data}`;
+  }
+  if (!imageUrl) throw new Error("No image generated");
+
+  const raw = imageUrl.includes(",") ? imageUrl.split(",")[1] : imageUrl;
+  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  const fileName = `covers/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+  const { error: uploadErr } = await serviceClient.storage
+    .from("content-media")
+    .upload(fileName, bytes, { contentType: "image/jpeg", upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const { data: urlData } = serviceClient.storage.from("content-media").getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
 
 async function authenticate(
   req: Request,
@@ -373,6 +465,113 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
         break;
       }
 
+      case "create_prompt": {
+        await requireAdmin(serviceClient, userId);
+
+        const title = String(body.title || "").trim();
+        const promptText = String(body.prompt || "").trim();
+        if (!title || !promptText) {
+          return new Response(JSON.stringify({ error: "title and prompt are required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const resourceType = body.type === "video_prompt" ? "video_prompt" : "image_prompt";
+        const subcategoryId = await resolveSubcategoryId(serviceClient, body.subcategorySlug);
+
+        const { data: dupes } = await serviceClient
+          .from("content_vault_resources")
+          .select("id")
+          .eq("subcategory_id", subcategoryId)
+          .or(`title.ilike.${title},description.ilike.${promptText}`)
+          .limit(1);
+        if (dupes && dupes.length > 0) {
+          return new Response(
+            JSON.stringify({ error: "Duplicate prompt: an existing prompt has the same title or text" }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { data: maxRow } = await serviceClient
+          .from("content_vault_resources")
+          .select("position")
+          .eq("subcategory_id", subcategoryId)
+          .order("position", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextPosition = ((maxRow as any)?.position ?? 0) + 1;
+
+        let coverUrl: string | null = body.coverImageUrl || null;
+        if (!coverUrl && body.generateCover) {
+          coverUrl = await generateCoverImage(serviceClient, promptText, body.referenceImageUrl);
+        }
+
+        const { data: inserted, error: insertErr } = await serviceClient
+          .from("content_vault_resources")
+          .insert({
+            title,
+            description: promptText,
+            resource_type: resourceType,
+            resource_url: "#",
+            subcategory_id: subcategoryId,
+            tags: Array.isArray(body.tags) && body.tags.length > 0 ? body.tags : null,
+            cover_image_url: coverUrl,
+            position: nextPosition,
+          })
+          .select("id, title, description, tags, resource_type, cover_image_url")
+          .maybeSingle();
+
+        if (insertErr) throw insertErr;
+        if (!inserted) throw new Error("Failed to create prompt");
+
+        const ins = inserted as any;
+        result = {
+          success: true,
+          prompt: {
+            id: ins.id,
+            title: ins.title,
+            prompt: ins.description,
+            tags: ins.tags || [],
+            type: ins.resource_type,
+            cover_image_url: ins.cover_image_url,
+            vault_url: VAULT_URL,
+          },
+        };
+        break;
+      }
+
+      case "delete_prompt": {
+        await requireAdmin(serviceClient, userId);
+
+        const promptId = body.promptId as string;
+        if (!promptId) {
+          return new Response(JSON.stringify({ error: "promptId is required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data, error } = await serviceClient
+          .from("content_vault_resources")
+          .delete()
+          .eq("id", promptId)
+          .in("resource_type", ["image_prompt", "video_prompt"])
+          .select("id")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+          return new Response(JSON.stringify({ error: "Prompt not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        result = { success: true, deleted_id: (data as any).id };
+        break;
+      }
+
       case "list_characters": {
         const limit = Math.min(body.limit || 20, 50);
 
@@ -403,7 +602,9 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[prompts-api]", message);
-    const status = message === "Unauthorized" || message === "Invalid API key" || message === "Invalid token" ? 401 : 500;
+    const isAuthErr = message === "Unauthorized" || message === "Invalid API key" || message === "Invalid token";
+    const isForbidden = message.startsWith("Forbidden");
+    const status = isAuthErr ? 401 : isForbidden ? 403 : 500;
     return new Response(JSON.stringify({ error: message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
