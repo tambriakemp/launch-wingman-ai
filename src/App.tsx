@@ -78,7 +78,6 @@ const SalesCopyTask = lazy(() => import("./pages/project/SalesCopyTask"));
 const StartingPointTask = lazy(() => import("./pages/project/StartingPointTask"));
 const VisualDirectionTask = lazy(() => import("./pages/project/VisualDirectionTask"));
 const PhaseSnapshot = lazy(() => import("./pages/project/PhaseSnapshot"));
-const Library = lazy(() => import("./pages/project/Library"));
 const Relaunch = lazy(() => import("./pages/project/Relaunch"));
 const Playbook = lazy(() => import("./pages/project/Playbook"));
 const ProjectContent = lazy(() => import("./pages/project/ProjectContent"));
@@ -283,15 +282,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <TaskDetail />
-                </ProtectedRoute>
-              }
-            />
-            {/* Library route */}
-            <Route
-              path="/projects/:id/library"
-              element={
-                <ProtectedRoute>
-                  <Library />
                 </ProtectedRoute>
               }
             />

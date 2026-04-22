@@ -88,6 +88,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId },
       { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" },
+      { id: "assessments", label: "Assessments", icon: ClipboardCheck, href: "/assessments" },
     ],
   },
   {
@@ -103,6 +104,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isAdvancedOnly: true },
       { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
       { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
+      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault" },
     ],
   },
   {
@@ -117,16 +119,6 @@ const createSections = (projectId?: string): Section[] => [
       { id: "goals", label: "Goals", icon: Target, href: "/goals", isProOnly: true },
       { id: "brain-dump", label: "Brain Dump", icon: Brain, href: "/brain-dump", isProOnly: true },
       { id: "weekly", label: "Weekly Review", icon: BarChart2, href: "/weekly", isProOnly: true },
-    ],
-  },
-  {
-    id: "resources",
-    label: "Resources",
-    icon: Package,
-    items: [
-      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault" },
-      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
-      { id: "assessments", label: "Assessments", icon: ClipboardCheck, href: "/assessments" },
     ],
   },
 ];

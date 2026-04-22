@@ -15,7 +15,6 @@ const matchCrumb = (pathname: string, projectId?: string): Crumb => {
     if (p.startsWith(`${base}/tasks`)) return { section: "Launch", page: "Launch Tasks" };
     if (p.startsWith(`${base}/offer`)) return { section: "Launch", page: "Offer" };
     if (p.startsWith(`${base}/summary`)) return { section: "Launch", page: "Launch Brief" };
-    if (p.startsWith(`${base}/library`)) return { section: "Resources", page: "Library" };
     if (p.startsWith(`${base}/content`)) return { section: "Marketing", page: "Social Planner" };
     if (p === base) return { section: "Launch", page: "Offer" };
   }
