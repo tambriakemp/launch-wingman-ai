@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { LucideIcon, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/seo/SEO";
 import { LandingHeader } from "./LandingHeader";
 import { LandingFooter } from "./LandingFooter";
 
@@ -22,6 +23,11 @@ interface FeaturePageLayoutProps {
   benefits: string[];
   children?: ReactNode;
   screenshot?: ReactNode;
+  seo?: {
+    title: string;
+    description: string;
+    path: string;
+  };
 }
 
 export const FeaturePageLayout = ({
@@ -34,9 +40,22 @@ export const FeaturePageLayout = ({
   benefits,
   children,
   screenshot,
+  seo,
 }: FeaturePageLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
+      {seo && (
+        <SEO
+          title={seo.title}
+          description={seo.description}
+          path={seo.path}
+          breadcrumbs={[
+            { name: "Home", path: "/" },
+            { name: "Features", path: "/#features" },
+            { name: seo.title.split(" — ")[0], path: seo.path },
+          ]}
+        />
+      )}
       <LandingHeader />
       
       {/* Hero Section */}
