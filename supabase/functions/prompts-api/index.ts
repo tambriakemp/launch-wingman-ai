@@ -602,7 +602,9 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[prompts-api]", message);
-    const status = message === "Unauthorized" || message === "Invalid API key" || message === "Invalid token" ? 401 : 500;
+    const isAuthErr = message === "Unauthorized" || message === "Invalid API key" || message === "Invalid token";
+    const isForbidden = message.startsWith("Forbidden");
+    const status = isAuthErr ? 401 : isForbidden ? 403 : 500;
     return new Response(JSON.stringify({ error: message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
