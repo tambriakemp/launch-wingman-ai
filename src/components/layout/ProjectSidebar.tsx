@@ -518,29 +518,6 @@ export const ProjectSidebar = () => {
           />
         ))}
 
-        {/* Help & Settings cluster */}
-        <div className={cn("mt-2 pt-2 border-t border-[hsl(var(--border-hairline))]", effectiveCollapsed ? "mx-2" : "mx-3")}>
-          <NavRow
-            item={{ id: "help", label: "Help & Support", icon: HelpCircle, href: "/help" }}
-            isActive={isActiveRoute("/help")}
-            isPro={isPro}
-            isAdvanced={isAdvanced}
-            hasAdminAccess={hasAdminAccess}
-            collapsed={effectiveCollapsed}
-            onNavigate={handleNavigate}
-            onUpgradeClick={handleUpgradeClick}
-          />
-          <NavRow
-            item={{ id: "settings", label: "Settings", icon: Settings, href: "/settings" }}
-            isActive={isActiveRoute("/settings")}
-            isPro={isPro}
-            isAdvanced={isAdvanced}
-            hasAdminAccess={hasAdminAccess}
-            collapsed={effectiveCollapsed}
-            onNavigate={handleNavigate}
-            onUpgradeClick={handleUpgradeClick}
-          />
-        </div>
       </nav>
 
       {/* Footer: user */}
@@ -620,8 +597,8 @@ export const ProjectSidebar = () => {
               </>
             )}
             <DropdownMenuItem asChild>
-              <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                <Settings className="w-4 h-4" /> Settings
+              <Link to="/help" className="flex items-center gap-2 cursor-pointer">
+                <HelpCircle className="w-4 h-4" /> Help & Support
               </Link>
             </DropdownMenuItem>
             {hasAdminAccess && !isImpersonating && (
