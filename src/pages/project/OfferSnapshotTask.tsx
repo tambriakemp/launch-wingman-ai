@@ -1,19 +1,28 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Info, Loader2, Check, Sparkles, Eye } from "lucide-react";
+import {
+  ArrowLeft,
+  Info,
+  Loader2,
+  Check,
+  Sparkles,
+  Eye,
+  ArrowRight,
+  ShoppingBag,
+  ChevronRight,
+  GripVertical,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
-import { FUNNEL_CONFIGS, OfferSlotConfig } from "@/data/funnelConfigs";
-import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
-import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
-import { AudienceData } from "@/types/audience";
+import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { toast } from "sonner";
-import { PHASE_LABELS } from "@/types/tasks";
-import { getFunnelConfigKey, FUNNEL_TYPE_TO_CONFIG } from "@/lib/funnelUtils";
+import { getFunnelConfigKey } from "@/lib/funnelUtils";
 import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
 import { getOfferStackVoiceScript } from "@/data/offerSlotEducation";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
@@ -24,123 +33,57 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProjectTask } from "@/types/tasks";
 import { EditorialTaskShell } from "@/components/task/EditorialTaskShell";
+import { OFFER_TYPES, normalizeOfferType } from "@/components/offers/offerTypes";
 
-// Niche options map for label lookup (same as useTaskEngine)
-const NICHE_OPTIONS_MAP: Record<string, string> = {
-  'business_entrepreneurship': 'Business / Entrepreneurship',
-  'money_finance': 'Money / Finance',
-  'investing': 'Investing / Wealth Building',
-  'health_wellness': 'Health / Wellness',
-  'fitness': 'Fitness / Exercise',
-  'personal_growth': 'Personal Growth / Self-Improvement',
-  'relationships': 'Relationships / Love',
-  'coaching_mentorship': 'Coaching / Mentorship',
-  'marketing': 'Marketing / Advertising',
-  'content_creation': 'Content Creation',
-  // Add more as needed, or just use raw value as fallback
+const FUNNEL_DESCRIPTIONS: Record<string, string> = {
+  content_to_offer: "Content → Offer: Direct content that leads to your offer",
+  freebie_email_offer: "Freebie → Email → Offer: Build your list with a lead magnet",
+  live_training_offer: "Live Training → Offer: Teach something valuable, then invite to join",
+  application_call: "Application → Call: Qualify leads through applications",
+  membership: "Membership: Ongoing subscription with continuous value",
+  challenge: "Challenge: Short, time-bound experience with focused action",
+  launch: "Launch: Time-bound cart open/close with urgency",
 };
 
-// Helper: Build funnel data from completed planning tasks
-function buildFunnelDataFromProjectTasks(
-  projectTasks: ProjectTask[]
-): Record<string, unknown> {
-  const funnelData: Record<string, unknown> = {};
-  
-  for (const task of projectTasks) {
-    const data = task.inputData as Record<string, unknown> | undefined;
-    if (!data || task.status !== 'completed') continue;
-    
-    switch (task.taskId) {
-      case 'planning_define_audience':
-        if (data.audience_description) {
-          funnelData.target_audience = data.audience_description;
-        }
-        if (data.niche_context) {
-          funnelData.niche = NICHE_OPTIONS_MAP[data.niche_context as string] || data.niche_context;
-        }
-        break;
-        
-      case 'planning_define_problem':
-        if (data.primary_problem) {
-          funnelData.primary_pain_point = data.primary_problem;
-        }
-        break;
-        
-      case 'planning_define_dream_outcome':
-        if (data.dream_outcome) {
-          funnelData.desired_outcome = data.dream_outcome;
-        }
-        break;
-        
-      case 'planning_time_effort_perception':
-        const timeEffortElements: Array<{ type: string; content: string }> = [];
-        if (data.quick_wins) {
-          timeEffortElements.push({ type: 'quick_win', content: String(data.quick_wins) });
-        }
-        if (data.friction_reducers) {
-          timeEffortElements.push({ type: 'friction_reducer', content: String(data.friction_reducers) });
-        }
-        if (timeEffortElements.length > 0) {
-          funnelData.time_effort_elements = timeEffortElements;
-        }
-        break;
-        
-      case 'planning_perceived_likelihood':
-        if (data.belief_blockers) {
-          funnelData.main_objections = data.belief_blockers;
-        }
-        const likelihoodElements: Array<{ type: string; content: string }> = [];
-        if (data.past_attempts) {
-          likelihoodElements.push({ type: 'past_attempts', content: String(data.past_attempts) });
-        }
-        if (data.belief_builders) {
-          likelihoodElements.push({ type: 'belief_builders', content: String(data.belief_builders) });
-        }
-        if (likelihoodElements.length > 0) {
-          funnelData.likelihood_elements = likelihoodElements;
-        }
-        break;
-    }
-  }
-  
-  return funnelData;
+interface DbOffer {
+  id: string;
+  slot_type: string | null;
+  title: string | null;
+  offer_type: string | null;
+  price: number | null;
+  price_type: string | null;
 }
 
-// Funnel type to friendly description mapping
-const FUNNEL_DESCRIPTIONS: Record<string, string> = {
-  'content_to_offer': 'Content → Offer: Direct content that leads to your offer',
-  'freebie_email_offer': 'Freebie → Email → Offer: Build your list with a lead magnet',
-  'live_training_offer': 'Live Training → Offer: Teach something valuable, then invite to join',
-  'application_call': 'Application → Call: Qualify leads through applications',
-  'membership': 'Membership: Ongoing subscription with continuous value',
-  'challenge': 'Challenge: Short, time-bound experience with focused action',
-  'launch': 'Launch: Time-bound cart open/close with urgency',
+const formatPrice = (price: number | null, priceType: string | null) => {
+  if (!price || price === 0) return "Free";
+  const suffix =
+    priceType === "monthly" || priceType === "/month"
+      ? "/mo"
+      : priceType === "yearly" || priceType === "/year"
+        ? "/yr"
+        : "";
+  return `$${price}${suffix}`;
+};
+
+const humanizeFormat = (value: string | null | undefined) => {
+  if (!value) return "";
+  return value
+    .split(/[-_]+/)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
 };
 
 export default function OfferSnapshotTask() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id;
-  
-  const [offers, setOffersRaw] = useState<OfferSlotData[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [isSaving, setIsSaving] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const taskId = "planning_offer_stack";
 
-  // Wrapper that auto-computes isConfigured based on offerType (not title)
-  const setOffers = useCallback((newOffers: OfferSlotData[]) => {
-    const offersWithAutoConfig = newOffers.map(offer => ({
-      ...offer,
-      // Auto-compute: configured if has offerType (and not skipped) - title is optional
-      isConfigured: !!(offer.offerType?.trim()) && !offer.isSkipped,
-    }));
-    setOffersRaw(offersWithAutoConfig);
-  }, []);
+  const [completedCriteria, setCompletedCriteria] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     isLoading: engineLoading,
@@ -149,14 +92,16 @@ export default function OfferSnapshotTask() {
     projectTasks,
   } = useTaskEngine({ projectId: projectId || "" });
 
-  const taskTemplate = useMemo(() => getTaskTemplate('planning_offer_stack'), [getTaskTemplate]);
-  const projectTask = useMemo(() => 
-    projectTasks.find(pt => pt.taskId === 'planning_offer_stack'), 
-    [projectTasks]
+  const taskTemplate = useMemo(
+    () => getTaskTemplate(taskId),
+    [getTaskTemplate],
+  );
+  const projectTask = useMemo(
+    () => projectTasks.find((pt) => pt.taskId === taskId),
+    [projectTasks],
   );
 
-  // Fetch project with selected funnel type - always refetch to get latest funnel type
-  const { data: project, isLoading: projectLoading, refetch: refetchProject } = useQuery({
+  const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -168,256 +113,111 @@ export default function OfferSnapshotTask() {
       return data;
     },
     enabled: !!projectId,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     staleTime: 0,
-    refetchOnWindowFocus: true,
   });
 
-  // Force refetch project data on mount to get latest funnel type
-  useEffect(() => {
-    if (projectId) {
-      refetchProject();
-    }
-  }, [projectId, refetchProject]);
-
-  // Fetch funnel data for audience context
-  const { data: funnel, refetch: refetchFunnel } = useQuery({
-    queryKey: ["funnel", projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("funnels")
-        .select("*")
-        .eq("project_id", projectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId,
-  });
-
-  // Get the funnel config based on selected funnel type
   const selectedFunnelType = project?.selected_funnel_type;
   const funnelConfigKey = getFunnelConfigKey(selectedFunnelType);
   const funnelConfig = funnelConfigKey ? FUNNEL_CONFIGS[funnelConfigKey] : null;
 
-  // Fetch existing offers - scoped to current funnel type
-  const { data: existingOffers, isLoading: offersLoading } = useQuery({
+  // Read-only fetch of offers, scoped to this project + funnel
+  const { data: existingOffers = [], isLoading: offersLoading } = useQuery<
+    DbOffer[]
+  >({
     queryKey: ["offers", projectId, selectedFunnelType],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("offers")
-        .select("*")
+        .select("id, slot_type, title, offer_type, price, price_type")
         .eq("project_id", projectId)
         .eq("funnel_type", selectedFunnelType)
         .order("slot_position", { ascending: true });
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!projectId && !!selectedFunnelType,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     staleTime: 0,
   });
 
-  // Reset initialization when funnel type changes
+  // Initialize criteria state from saved input_data
   useEffect(() => {
-    setIsInitialized(false);
-  }, [selectedFunnelType]);
+    if (projectTask && !isInitialized) {
+      const inputData = projectTask.inputData as
+        | { completedCriteria?: string[] }
+        | null;
+      if (inputData?.completedCriteria) {
+        setCompletedCriteria(inputData.completedCriteria);
+      }
+      setIsInitialized(true);
+    }
+  }, [projectTask, isInitialized]);
 
-  // Backfill funnel row if missing but funnel type exists
+  const hasOffers = existingOffers.length > 0;
+  const firstCriteria = taskTemplate?.completionCriteria?.[0];
+
+  // Auto-check the first criteria when at least one offer exists
   useEffect(() => {
-    const backfillFunnel = async () => {
-      if (!user || !projectId || !selectedFunnelType) return;
-      if (funnel) return; // Already exists
-      
-      // Build funnel data from planning tasks
-      const funnelData = buildFunnelDataFromProjectTasks(projectTasks);
-      
+    if (!firstCriteria || !hasOffers) return;
+    setCompletedCriteria((prev) =>
+      prev.includes(firstCriteria) ? prev : [...prev, firstCriteria],
+    );
+  }, [hasOffers, firstCriteria]);
+
+  const saveCriteriaToTask = useCallback(
+    async (criteria: string[]) => {
+      if (!projectId || !userId) return;
       try {
         await supabase
-          .from('funnels')
-          .upsert({
-            project_id: projectId,
-            user_id: userId,
-            funnel_type: selectedFunnelType,
-            ...funnelData,
-          }, { onConflict: 'project_id' });
-        
-        // Refetch to update audienceData
-        refetchFunnel();
+          .from("project_tasks")
+          .update({
+            input_data: {
+              completedCriteria: criteria,
+              offerCount: existingOffers.length,
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq("project_id", projectId)
+          .eq("task_id", taskId);
       } catch (error) {
-        console.error('Failed to backfill funnel:', error);
+        console.error("Failed to auto-save criteria:", error);
       }
-    };
-    
-    backfillFunnel();
-  }, [userId, projectId, selectedFunnelType, funnel, projectTasks, refetchFunnel]);
+    },
+    [projectId, userId, existingOffers.length],
+  );
 
-  // Build audience data from funnel (memoized to avoid auto-save loops)
-  const audienceData = useMemo<AudienceData | undefined>(() => {
-    if (!funnel) return undefined;
+  const handleCriteriaToggle = (criteriaText: string) => {
+    setCompletedCriteria((prev) => {
+      const next = prev.includes(criteriaText)
+        ? prev.filter((c) => c !== criteriaText)
+        : [...prev, criteriaText];
+      saveCriteriaToTask(next);
+      return next;
+    });
+  };
 
-    return {
-      niche: funnel.niche || "",
-      targetAudience: funnel.target_audience || "",
-      primaryPainPoint: funnel.primary_pain_point || "",
-      desiredOutcome: funnel.desired_outcome || "",
-      problemStatement: funnel.problem_statement || "",
-      painSymptoms: Array.isArray(funnel.pain_symptoms)
-        ? (funnel.pain_symptoms as unknown as string[])
-        : [],
-      mainObjections: funnel.main_objections || "",
-      likelihoodElements: Array.isArray(funnel.likelihood_elements)
-        ? (funnel.likelihood_elements as Array<{ type: string; content: string }>)
-        : [],
-      timeEffortElements: Array.isArray(funnel.time_effort_elements)
-        ? (funnel.time_effort_elements as Array<{ type: string; content: string }>)
-        : [],
-    };
-  }, [funnel]);
-
-  // Initialize offers from existing data or funnel defaults
-  useEffect(() => {
-    if (isInitialized) return;
-    if (!funnelConfig || !selectedFunnelType) return;
-    // Wait for offers query to complete before deciding to use defaults
-    if (offersLoading) return;
-
-    console.log('[OfferStack] LOAD - selectedFunnelType:', selectedFunnelType);
-    console.log('[OfferStack] LOAD - existingOffers from DB:', existingOffers);
-
-    // Trust saved offers if any exist - don't require exact slot structure match
-    // This allows users to remove/add slots and have those changes persist
-    if (existingOffers && existingOffers.length > 0) {
-      // Load whatever was saved - trust the user's modifications
-      const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
-        id: o.id,
-        slotType: o.slot_type || "core", // Defensive: ensure slotType is never undefined
-        title: o.title || '',
-        description: o.description || '',
-        offerType: o.offer_type || '',
-        price: o.price?.toString() || '',
-        priceType: o.price_type || 'one-time',
-        // Configured if offerType exists (title is optional)
-        isConfigured: !!(o.offer_type?.trim()),
-        isSkipped: false,
-      }));
-      console.log('[OfferStack] LOAD - loadedOffers (mapped):', loadedOffers);
-      setOffers(loadedOffers);
-    } else {
-      // No saved offers at all - create defaults for this funnel type
-      const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
-        slotType: slot.type,
-        title: '',
-        description: '',
-        offerType: '',
-        price: '',
-        priceType: slot.priceRange === 'Free' ? 'free' : 'one-time',
-        isConfigured: false,
-        isSkipped: false,
-      }));
-      console.log('[OfferStack] LOAD - creating default offers:', defaultOffers);
-      setOffers(defaultOffers);
-    }
-    setIsInitialized(true);
-  }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType, offersLoading]);
-
-  // Save offers to database (scoped to current funnel type)
-  const saveOffersToDb = useCallback(async (offersToSave: OfferSlotData[]) => {
-    if (!projectId || !user || offersToSave.length === 0 || !selectedFunnelType) {
-      console.log('[OfferStack] SAVE - skipping, missing required data:', { projectId, user: !!user, offersCount: offersToSave.length, selectedFunnelType });
-      return;
-    }
-
-    console.log('[OfferStack] SAVE - starting save for funnel:', selectedFunnelType);
-    console.log('[OfferStack] SAVE - offersToSave:', offersToSave);
-
-    setAutoSaveStatus('saving');
-
-    try {
-      // Delete only offers for the current funnel type (preserve other funnel's offers)
-      const { error: deleteError } = await supabase
-        .from("offers")
-        .delete()
-        .eq("project_id", projectId)
-        .eq("user_id", userId)
-        .eq("funnel_type", selectedFunnelType);
-
-      if (deleteError) {
-        console.error('[OfferStack] SAVE - delete error:', deleteError);
-        throw deleteError;
-      }
-      console.log('[OfferStack] SAVE - deleted old offers for funnel:', selectedFunnelType);
-
-      // Insert new offers with funnel_type tag
-      const offersToInsert = offersToSave.map((offer, index) => ({
-        project_id: projectId,
-        user_id: userId,
-        slot_type: offer.slotType,
-        slot_position: index,
-        title: offer.title?.trim() ? offer.title.trim() : null,
-        description: offer.description?.trim() ? offer.description.trim() : null,
-        // Keep required column non-null, but don't force a fake configured value
-        offer_type: offer.offerType?.trim() ? offer.offerType.trim() : "",
-        offer_category: offer.slotType,
-        niche: audienceData?.niche || 'General',
-        price: offer.price ? parseFloat(offer.price) : null,
-        price_type: offer.priceType || 'one-time',
-        is_required: funnelConfig?.offerSlots.find(s => s.type === offer.slotType)?.isRequired ?? true,
-        funnel_id: funnel?.id || null,
-        funnel_type: selectedFunnelType, // Tag with current funnel type
-        target_audience: audienceData?.targetAudience || null,
-        primary_pain_point: audienceData?.primaryPainPoint || null,
-        desired_outcome: audienceData?.desiredOutcome || null,
-      }));
-
-      console.log('[OfferStack] SAVE - offersToInsert:', offersToInsert);
-
-      const { data: insertedData, error: insertError } = await supabase.from("offers").insert(offersToInsert).select();
-      if (insertError) {
-        console.error('[OfferStack] SAVE - insert error:', insertError);
-        throw insertError;
-      }
-      console.log('[OfferStack] SAVE - insert SUCCESS, inserted:', insertedData);
-
-      setAutoSaveStatus('saved');
-      setTimeout(() => setAutoSaveStatus('idle'), 2000);
-    } catch (error) {
-      console.error("[OfferStack] SAVE - error:", error);
-      setAutoSaveStatus('idle');
-      throw error;
-    }
-  }, [projectId, user, audienceData, funnelConfig, funnel, selectedFunnelType]);
-
-  // Auto-save wrapper
-  const performSave = useCallback(async () => {
-    try {
-      await saveOffersToDb(offers);
-    } catch {
-      // keep autosave silent
-    }
-  }, [offers, saveOffersToDb]);
-
-  // Note: Auto-save removed to prevent overwriting configured offers on initial load.
-  // Saving now happens explicitly via: Save & Continue button, Save for Later button, 
-  // and onSaveNow callback when closing the offer sheet.
+  const totalCriteria = taskTemplate?.completionCriteria?.length || 0;
+  const allCriteriaComplete =
+    totalCriteria > 0 && completedCriteria.length === totalCriteria;
 
   const handleComplete = async () => {
-    // Check if at least one offer has offerType (title is optional)
-    const configuredOffers = offers.filter(o => o.offerType?.trim() && !o.isSkipped);
-    
-    if (configuredOffers.length === 0) {
-      toast.error("Please configure at least one offer before continuing");
+    if (!hasOffers) {
+      toast.error("Add at least one offer in the Offer Library first.");
+      return;
+    }
+    if (!allCriteriaComplete) {
+      toast.error("Please check off every item before completing.");
       return;
     }
 
     setIsSaving(true);
     try {
-      await saveOffersToDb(offers);
-      // Invalidate cache to ensure fresh data on next load
-      queryClient.invalidateQueries({ queryKey: ["offers", projectId, selectedFunnelType] });
-      await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
-      
-      toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
+      await completeTask(taskId, {
+        completedCriteria,
+        offerCount: existingOffers.length,
+      });
+      toast.success("Offer stack mapped! Onward to the next step.");
       navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error("Complete error:", error);
@@ -430,7 +230,7 @@ export default function OfferSnapshotTask() {
   const handleSaveForLater = async () => {
     setIsSaving(true);
     try {
-      await saveOffersToDb(offers);
+      await saveCriteriaToTask(completedCriteria);
       toast.success("Progress saved!");
       navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
@@ -452,7 +252,6 @@ export default function OfferSnapshotTask() {
     );
   }
 
-  // If no funnel type selected, redirect back
   if (!selectedFunnelType) {
     return (
       <div className="min-h-screen bg-background">
@@ -464,7 +263,6 @@ export default function OfferSnapshotTask() {
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
-          
           <div className="p-6 rounded-xl bg-muted/50 border border-border text-center">
             <Info className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
             <h2 className="text-lg font-medium mb-2">No Launch Path Selected</h2>
@@ -481,36 +279,19 @@ export default function OfferSnapshotTask() {
   }
 
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
-  const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
-  const activeOffers = offers.filter(o => !o.isSkipped);
+  const expectedSlotCount = funnelConfig?.offerSlots?.length ?? existingOffers.length;
+  const configuredCount = existingOffers.length;
+  const goToLibrary = () => navigate(`/projects/${projectId}/offer`);
 
   return (
     <EditorialTaskShell
       projectId={projectId!}
-      taskId="planning_offer_stack"
+      taskId={taskId}
       phase={taskTemplate.phase}
       title={taskTemplate.title}
       whyItMatters={taskTemplate.whyItMatters}
       instructions={taskTemplate.instructions}
       estimatedTimeRange={timeRange}
-      headerActions={
-        autoSaveStatus !== 'idle' ? (
-          <span className="ml-auto text-xs flex items-center gap-1 text-fg-muted">
-            {autoSaveStatus === 'saving' && (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Saving...
-              </>
-            )}
-            {autoSaveStatus === 'saved' && (
-              <>
-                <Check className="w-3 h-3 text-emerald-500" />
-                Saved
-              </>
-            )}
-          </span>
-        ) : undefined
-      }
       voiceButton={
         <VoiceSnippetButton
           taskId={`offer_stack_${selectedFunnelType}`}
@@ -519,18 +300,48 @@ export default function OfferSnapshotTask() {
       }
       footer={
         <>
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-fg-muted">
-              <span className="font-medium text-ink-900">{configuredCount}</span>
-              /{activeOffers.length} offers configured
-            </div>
+          <h2 className="editorial-eyebrow mb-4">This step is complete when:</h2>
+          <div className="space-y-3 mb-5">
+            {taskTemplate.completionCriteria.map((criteria, index) => {
+              const checked = completedCriteria.includes(criteria);
+              return (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 rounded-lg border border-hairline bg-white"
+                >
+                  <Checkbox
+                    id={`criteria-${index}`}
+                    checked={checked}
+                    onCheckedChange={() => handleCriteriaToggle(criteria)}
+                    className="mt-0.5"
+                  />
+                  <Label
+                    htmlFor={`criteria-${index}`}
+                    className="text-sm text-ink-800 cursor-pointer leading-relaxed"
+                  >
+                    {criteria}
+                  </Label>
+                </div>
+              );
+            })}
           </div>
+
+          {allCriteriaComplete ? (
+            <div className="mb-5 p-3 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-sm text-emerald-800">
+              <Check className="w-4 h-4" />
+              You're ready to save and continue!
+            </div>
+          ) : (
+            <p className="mb-5 text-xs text-fg-muted">
+              Check off all items above before saving and marking complete.
+            </p>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               onClick={handleComplete}
               className="flex-1"
-              disabled={configuredCount === 0 || isSaving}
+              disabled={!allCriteriaComplete || !hasOffers || isSaving}
             >
               {isSaving ? (
                 <>
@@ -562,67 +373,170 @@ export default function OfferSnapshotTask() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8 p-4 rounded-xl bg-primary/5 border border-primary/20"
       >
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground mb-1">
-                Your selected path: {FUNNEL_DESCRIPTIONS[selectedFunnelType] || selectedFunnelType}
-              </p>
-              <p className="text-sm text-muted-foreground mb-3">
-                We've suggested offer slots based on this path. These are patterns, not requirements — 
-                customize them to fit your strategy.
-              </p>
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Funnel diagram popup */}
-                
-                {/* Funnel diagram popup */}
-                {funnelConfig && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                        <Eye className="w-4 h-4" />
-                        View funnel diagram
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <span className={funnelConfig.color}>{funnelConfig.name}</span>
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          {funnelConfig.description}
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground mb-1">
+              Your selected path:{" "}
+              {FUNNEL_DESCRIPTIONS[selectedFunnelType] || selectedFunnelType}
+            </p>
+            <p className="text-sm text-muted-foreground mb-3">
+              We've suggested offer slots based on this path. These are patterns,
+              not requirements — customize them to fit your strategy.
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              {funnelConfig && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View funnel diagram
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <span className={funnelConfig.color}>
+                          {funnelConfig.name}
+                        </span>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {funnelConfig.description}
+                      </p>
+                      <FunnelDiagram
+                        steps={funnelConfig.steps}
+                        color={funnelConfig.color}
+                        bgColor={funnelConfig.bgColor}
+                      />
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <p className="text-xs text-muted-foreground text-center">
+                          Your offer slots map to key stages in this funnel
                         </p>
-                        <FunnelDiagram
-                          steps={funnelConfig.steps}
-                          color={funnelConfig.color}
-                          bgColor={funnelConfig.bgColor}
-                        />
-                        <div className="mt-4 pt-4 border-t border-border">
-                          <p className="text-xs text-muted-foreground text-center">
-                            Your offer slots map to key stages in this funnel
-                          </p>
-                        </div>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
 
-      {/* Offer Stack Builder */}
-      {funnelConfig && (
-        <OfferStackBuilder
-          funnelType={funnelConfigKey!}
-          offers={offers}
-          onChange={setOffers}
-          audienceData={audienceData}
-          onSaveNow={saveOffersToDb}
-        />
-      )}
+      {/* Primary CTA — open the standalone Offer Library */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="mb-10 rounded-2xl border border-hairline bg-white p-6 sm:p-7"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(198,90,62,0.12)" }}
+          >
+            <ShoppingBag className="w-5 h-5 text-terracotta" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-[20px] sm:text-[22px] leading-snug text-ink-900 tracking-[-0.01em] mb-1">
+              Build your offers in the Offer Library
+            </h3>
+            <p className="text-[14px] leading-relaxed text-ink-800/80 m-0">
+              Your offers live in one place across this project. Open the library
+              to add, edit, or reorder them — they'll appear here automatically.
+            </p>
+          </div>
+          <Button onClick={goToLibrary} className="shrink-0 gap-2">
+            Open Offer Library
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Offers in your stack */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="editorial-eyebrow">Offers in your stack</h2>
+          <span className="font-mono text-[12px] text-fg-muted">
+            {configuredCount} / {Math.max(expectedSlotCount, configuredCount)}{" "}
+            configured
+          </span>
+        </div>
+
+        {offersLoading ? (
+          <div className="rounded-xl border border-hairline bg-white p-8 flex items-center justify-center text-fg-muted text-sm">
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Loading your offers…
+          </div>
+        ) : existingOffers.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-hairline bg-paper-50 p-8 text-center">
+            <ShoppingBag className="w-7 h-7 text-fg-muted mx-auto mb-3" />
+            <p className="text-[15px] text-ink-900 font-medium mb-1">
+              No offers yet.
+            </p>
+            <p className="text-[13.5px] text-fg-muted mb-5">
+              Open the library to add your first one.
+            </p>
+            <Button onClick={goToLibrary} variant="outline" className="gap-2">
+              Open Offer Library
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {existingOffers.map((offer) => {
+              const typeKey = normalizeOfferType(offer.slot_type);
+              const meta = OFFER_TYPES[typeKey];
+              const isConfigured = !!(offer.title?.trim() || offer.offer_type);
+              const subtitle = [
+                humanizeFormat(offer.offer_type),
+                formatPrice(offer.price, offer.price_type),
+              ]
+                .filter(Boolean)
+                .join(" · ");
+
+              return (
+                <li key={offer.id}>
+                  <button
+                    type="button"
+                    onClick={goToLibrary}
+                    className="w-full text-left flex items-center gap-3 p-3.5 rounded-xl border border-hairline bg-white hover:border-ink-300 hover:bg-paper-50 transition-colors"
+                  >
+                    <GripVertical className="w-4 h-4 text-ink-300 shrink-0" />
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-[0.04em] uppercase shrink-0"
+                      style={{ background: meta.bg, color: meta.color }}
+                    >
+                      {meta.label}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14.5px] text-ink-900 font-medium truncate">
+                        {offer.title?.trim() || "Untitled offer"}
+                      </div>
+                      {subtitle && (
+                        <div className="text-[12.5px] text-fg-muted truncate mt-0.5">
+                          {subtitle}
+                        </div>
+                      )}
+                    </div>
+                    {isConfigured && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 shrink-0">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-fg-muted shrink-0" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </EditorialTaskShell>
   );
 }

@@ -110,7 +110,22 @@ const VALID_TYPES = new Set<OfferTypeKey>([
 ]);
 
 export function normalizeOfferType(value: string | null | undefined): OfferTypeKey {
-  if (value && VALID_TYPES.has(value as OfferTypeKey)) return value as OfferTypeKey;
+  if (!value) return "core";
+  // Map legacy / DB slot_type values to the editorial keys.
+  const aliases: Record<string, OfferTypeKey> = {
+    "lead-magnet": "lead",
+    "lead_magnet": "lead",
+    "leadmagnet": "lead",
+    "order-bump": "bump",
+    "order_bump": "bump",
+    "down-sell": "downsell",
+    "down_sell": "downsell",
+    "up-sell": "upsell",
+    "up_sell": "upsell",
+  };
+  const lower = value.toLowerCase();
+  if (aliases[lower]) return aliases[lower];
+  if (VALID_TYPES.has(lower as OfferTypeKey)) return lower as OfferTypeKey;
   return "core";
 }
 
