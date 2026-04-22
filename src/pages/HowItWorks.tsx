@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/seo/SEO";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { AssessmentMockup } from "@/components/landing/screenshots/AssessmentMockup";
@@ -144,6 +145,15 @@ const steps = [
 const HowItWorks = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="How Launchely Works — From Idea to Launch in 8 Steps"
+        description="See exactly how Launchely guides you from assessment to launch: pick a funnel, define your audience, generate copy, organize branding, and execute."
+        path="/how-it-works"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "How It Works", path: "/how-it-works" },
+        ]}
+      />
       <LandingHeader />
 
       {/* Hero Section */}
