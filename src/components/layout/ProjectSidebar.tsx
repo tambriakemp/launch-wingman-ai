@@ -25,7 +25,6 @@ import {
   Flame,
   Brain,
   BarChart2,
-  FolderOpen,
   Zap,
   FileText,
   Mail,
