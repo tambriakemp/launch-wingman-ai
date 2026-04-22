@@ -70,7 +70,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ProjectPlan = lazy(() => import("./pages/project/ProjectPlan"));
 const ProjectExecute = lazy(() => import("./pages/project/ProjectExecute"));
-const OfferGate = lazy(() => import("./pages/project/OfferGate"));
+const OffersLibrary = lazy(() => import("./pages/project/OffersLibrary"));
 const TaskDetail = lazy(() => import("./pages/project/TaskDetail"));
 const OfferSnapshotTask = lazy(() => import("./pages/project/OfferSnapshotTask"));
 const SocialBioTask = lazy(() => import("./pages/project/SocialBioTask"));
@@ -214,12 +214,12 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Offer gate — checks deps before showing offer stack */}
+            {/* Standalone Offers library */}
             <Route
               path="/projects/:id/offer"
               element={
                 <ProtectedRoute>
-                  <OfferGate />
+                  <OffersLibrary />
                 </ProtectedRoute>
               }
             />
