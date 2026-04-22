@@ -520,120 +520,18 @@ export const ProjectSidebar = () => {
 
       </nav>
 
-      {/* Footer: user */}
-      <div
-        className={cn(
-          "border-t border-[hsl(var(--border-hairline))]",
-          effectiveCollapsed ? "px-2 py-3" : "px-3 py-3"
-        )}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                "w-full flex items-center gap-2.5 rounded-lg hover:bg-[hsl(var(--ink-900)/0.04)] transition-colors",
-                effectiveCollapsed ? "justify-center p-1.5" : "p-2"
-              )}
-            >
-              <span
-                className="w-7 h-7 rounded-full shrink-0 inline-flex items-center justify-center text-white text-xs font-semibold"
-                style={{
-                  background: "linear-gradient(135deg, #E8D9C6, #C65A3E)",
-                  fontFamily: '"Playfair Display", Georgia, serif',
-                }}
-              >
-                {userInitial}
-              </span>
-              {!effectiveCollapsed && (
-                <>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div
-                      className="truncate text-[hsl(var(--ink-900))]"
-                      style={{ fontSize: 13, fontWeight: 600 }}
-                    >
-                      {displayName}
-                    </div>
-                    <div
-                      className="text-[hsl(var(--fg-muted))]"
-                      style={{ fontSize: 11 }}
-                    >
-                      {tierLabel}
-                    </div>
-                  </div>
-                  <MoreHorizontal className="w-4 h-4 text-[hsl(var(--fg-muted))]" />
-                </>
-              )}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top" className="w-52">
-            {user && (
-              <>
-                {isImpersonating ? (
-                  <div className="px-2 py-1.5 bg-amber-500/10 border-b border-amber-500/20">
-                    <p className="text-xs text-amber-600 font-medium">Viewing as:</p>
-                    <p className="text-sm text-amber-700 truncate">{impersonatedUserEmail}</p>
-                  </div>
-                ) : (
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">
-                      {profile?.first_name} {profile?.last_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </div>
-                )}
-                <DropdownMenuSeparator />
-              </>
-            )}
-            {isImpersonating && (
-              <>
-                <DropdownMenuItem
-                  onClick={stopImpersonation}
-                  className="flex items-center gap-2 cursor-pointer text-amber-600"
-                >
-                  <ArrowLeftCircle className="w-4 h-4" />
-                  Return to Admin
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem asChild>
-              <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                <Settings className="w-4 h-4" /> Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/help" className="flex items-center gap-2 cursor-pointer">
-                <HelpCircle className="w-4 h-4" /> Help & Support
-              </Link>
-            </DropdownMenuItem>
-            {hasAdminAccess && !isImpersonating && (
-              <DropdownMenuItem asChild>
-                <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                  <Shield className="w-4 h-4" /> Admin
-                </Link>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={signOut}
-              className="flex items-center gap-2 cursor-pointer text-destructive"
-            >
-              <LogOut className="w-4 h-4" /> Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Collapsed: show expand button below user */}
-        {!isMobile && effectiveCollapsed && (
+      {/* Collapsed: show expand button at bottom */}
+      {!isMobile && effectiveCollapsed && (
+        <div className="border-t border-[hsl(var(--border-hairline))] px-2 py-3">
           <button
             onClick={toggle}
-            className="mt-2 w-full h-7 rounded-md flex items-center justify-center text-[hsl(var(--fg-muted))] hover:bg-[hsl(var(--ink-900)/0.05)] transition-colors"
+            className="w-full h-7 rounded-md flex items-center justify-center text-[hsl(var(--fg-muted))] hover:bg-[hsl(var(--ink-900)/0.05)] transition-colors"
             aria-label="Expand sidebar"
           >
             <ChevronsRight className="w-4 h-4" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 
