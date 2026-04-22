@@ -257,11 +257,11 @@ export default function EmailSequenceGenerator() {
               {/* Header */}
               <div className="mb-8">
                 <button
-                  onClick={() => navigate("/ideas")}
+                  onClick={() => navigate(-1)}
                   className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Marketing
+                  Back
                 </button>
                 <div className="flex items-center gap-3 mb-2">
                   <Mail className="w-7 h-7 text-teal-500" />

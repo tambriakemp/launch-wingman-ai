@@ -70,11 +70,11 @@ const HookGenerator = () => {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => navigate("/ideas")}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Marketing
+            Back
           </button>
           <div className="flex items-center gap-3">
             <Zap className="w-6 h-6 text-amber-500" />

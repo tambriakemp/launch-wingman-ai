@@ -28,7 +28,7 @@ const matchCrumb = (pathname: string, projectId?: string): Crumb => {
   if (p.startsWith("/app/ai-studio/environments")) return { section: "Marketing", page: "Environments" };
   if (p.startsWith("/app/ai-studio")) return { section: "Marketing", page: "AI Avatar Studio" };
   if (p.startsWith("/carousel-builder")) return { section: "Marketing", page: "Carousel Builder" };
-  if (p.startsWith("/ideas")) return { section: "Marketing", page: "Ideas Bank" };
+  
   if (p.startsWith("/social-planner")) return { section: "Marketing", page: "Social Planner" };
 
   // Planner
