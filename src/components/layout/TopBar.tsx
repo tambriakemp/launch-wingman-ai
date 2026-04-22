@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell } from "lucide-react";
+import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
