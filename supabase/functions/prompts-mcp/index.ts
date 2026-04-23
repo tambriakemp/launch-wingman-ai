@@ -45,6 +45,129 @@ async function authenticate(authHeader: string | null) {
 }
 
 const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
+const PLANNER_URL = "https://launchely.com/app/planner";
+
+const VALID_STATUSES = ["todo", "in-progress", "in-review", "done", "blocked", "abandoned"];
+const VALID_PRIORITIES = ["urgent", "high", "normal", "low"];
+
+async function resolveProjectId(serviceClient: any, userId: string): Promise<string> {
+  const { data, error } = await serviceClient
+    .from("projects")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Create a project in Launchely before adding planner tasks via MCP");
+  return data.id;
+}
+
+async function resolveSpaceId(
+  serviceClient: any,
+  userId: string,
+  spaceId?: string,
+  spaceName?: string
+): Promise<string | null> {
+  if (spaceId) {
+    const { data } = await serviceClient
+      .from("planner_spaces")
+      .select("id")
+      .eq("id", spaceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data) throw new Error(`Space '${spaceId}' not found`);
+    return data.id;
+  }
+  if (spaceName) {
+    const { data } = await serviceClient
+      .from("planner_spaces")
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("name", spaceName)
+      .maybeSingle();
+    if (!data) throw new Error(`Space named '${spaceName}' not found`);
+    return data.id;
+  }
+  // Default: oldest space
+  const { data } = await serviceClient
+    .from("planner_spaces")
+    .select("id")
+    .eq("user_id", userId)
+    .order("position", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data?.id || null;
+}
+
+function buildDateFields(params: {
+  dueDate?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+}): { due_at: string | null; start_at: string | null; end_at: string | null; due_date: string | null } {
+  const { dueDate, startAt, endAt } = params;
+  if (startAt && endAt) {
+    if (new Date(endAt) < new Date(startAt)) throw new Error("endAt must be >= startAt");
+    return {
+      start_at: startAt,
+      end_at: endAt,
+      due_at: endAt,
+      due_date: endAt.slice(0, 10),
+    };
+  }
+  if (startAt && !endAt) {
+    return {
+      start_at: startAt,
+      end_at: startAt,
+      due_at: startAt,
+      due_date: startAt.slice(0, 10),
+    };
+  }
+  if (dueDate) {
+    return {
+      start_at: null,
+      end_at: null,
+      due_at: dueDate,
+      due_date: dueDate.slice(0, 10),
+    };
+  }
+  return { start_at: null, end_at: null, due_at: null, due_date: null };
+}
+
+function triggerCalendarSync(taskId: string, action: "create" | "update" | "delete", authHeader: string | null) {
+  if (!authHeader) return;
+  try {
+    fetch(`${SUPABASE_URL}/functions/v1/sync-calendar-event`, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ task_id: taskId, action }),
+    }).catch(() => {});
+  } catch {
+    // fire-and-forget
+  }
+}
+
+function mapTask(t: any, spaceName?: string | null) {
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    status: t.column_id,
+    priority: t.priority,
+    space: t.space_id ? { id: t.space_id, name: spaceName || null } : null,
+    category: t.category,
+    due_at: t.due_at,
+    start_at: t.start_at,
+    end_at: t.end_at,
+    location: t.location,
+    recurrence: t.recurrence_rule,
+    planner_url: PLANNER_URL,
+  };
+}
 
 async function requireAdmin(serviceClient: any, userId: string) {
   const { data, error } = await serviceClient.rpc("has_role", {
@@ -562,7 +685,338 @@ mcpServer.tool("list_characters", {
   },
 });
 
-// MCP transport
+// ============================================================
+// PLANNER TASK TOOLS
+// ============================================================
+
+mcpServer.tool("list_spaces", {
+  description: "List your planner spaces (top-level task organizers like Personal, Work).",
+  inputSchema: {
+    type: "object" as const,
+    properties: { authHeader: { type: "string" } },
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const { data, error } = await serviceClient
+      .from("planner_spaces")
+      .select("id, name, color, position")
+      .eq("user_id", userId)
+      .order("position", { ascending: true });
+    if (error) throw error;
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ spaces: data || [] }) }],
+    };
+  },
+});
+
+mcpServer.tool("list_space_categories", {
+  description: "List categories in a planner space (or all categories across all spaces).",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      spaceId: { type: "string", description: "Optional space UUID to filter by" },
+      authHeader: { type: "string" },
+    },
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    let query = serviceClient
+      .from("space_categories")
+      .select("id, space_id, name, color, position")
+      .eq("user_id", userId)
+      .order("position", { ascending: true });
+    if (params.spaceId) query = query.eq("space_id", params.spaceId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ categories: data || [] }) }],
+    };
+  },
+});
+
+mcpServer.tool("list_planner_tasks", {
+  description: "List planner tasks. Filter by space, status, due-date range, or search keyword.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      spaceId: { type: "string" },
+      status: { type: "string", description: "todo, in-progress, in-review, done, blocked, abandoned" },
+      dueAfter: { type: "string", description: "ISO datetime — only tasks due after this" },
+      dueBefore: { type: "string", description: "ISO datetime — only tasks due before this" },
+      search: { type: "string", description: "Keyword search in title/description" },
+      limit: { type: "number", description: "Max results (default 50, max 200)" },
+      authHeader: { type: "string" },
+    },
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const limit = Math.min(params.limit || 50, 200);
+
+    let query = serviceClient
+      .from("tasks")
+      .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+      .eq("user_id", userId)
+      .eq("task_scope", "planner")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (params.spaceId) query = query.eq("space_id", params.spaceId);
+    if (params.status) query = query.eq("column_id", params.status);
+    if (params.dueAfter) query = query.gte("due_at", params.dueAfter);
+    if (params.dueBefore) query = query.lte("due_at", params.dueBefore);
+    if (params.search) query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Enrich with space names
+    const spaceIds = [...new Set((data || []).map((t: any) => t.space_id).filter(Boolean))];
+    const spaceMap: Record<string, string> = {};
+    if (spaceIds.length > 0) {
+      const { data: spaces } = await serviceClient
+        .from("planner_spaces")
+        .select("id, name")
+        .in("id", spaceIds);
+      (spaces || []).forEach((s: any) => { spaceMap[s.id] = s.name; });
+    }
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: JSON.stringify({
+          tasks: (data || []).map((t: any) => mapTask(t, spaceMap[t.space_id])),
+        }),
+      }],
+    };
+  },
+});
+
+mcpServer.tool("create_planner_task", {
+  description: "Create a new planner task with full field support (status, priority, dates, recurrence, space, category).",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      title: { type: "string" },
+      description: { type: "string" },
+      spaceId: { type: "string" },
+      spaceName: { type: "string" },
+      category: { type: "string" },
+      status: { type: "string", description: "todo (default), in-progress, in-review, done, blocked, abandoned" },
+      priority: { type: "string", description: "urgent, high, normal (default), low" },
+      dueDate: { type: "string", description: "ISO datetime for due-only tasks (no calendar block)" },
+      startAt: { type: "string", description: "ISO datetime — combine with endAt for scheduled tasks" },
+      endAt: { type: "string", description: "ISO datetime" },
+      recurrence: { type: "object", description: "{frequency, interval?, byDay?, until?}" },
+      location: { type: "string" },
+      authHeader: { type: "string" },
+    },
+    required: ["title"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const title = String(params.title).trim();
+    if (!title) throw new Error("title is required");
+
+    const status = params.status || "todo";
+    if (!VALID_STATUSES.includes(status)) {
+      throw new Error(`Invalid status. Valid: ${VALID_STATUSES.join(", ")}`);
+    }
+    const priority = params.priority || "normal";
+    if (!VALID_PRIORITIES.includes(priority)) {
+      throw new Error(`Invalid priority. Valid: ${VALID_PRIORITIES.join(", ")}`);
+    }
+
+    const projectId = await resolveProjectId(serviceClient, userId);
+    const spaceId = await resolveSpaceId(serviceClient, userId, params.spaceId, params.spaceName);
+    const dates = buildDateFields({
+      dueDate: params.dueDate,
+      startAt: params.startAt,
+      endAt: params.endAt,
+    });
+
+    const { data, error } = await serviceClient
+      .from("tasks")
+      .insert({
+        user_id: userId,
+        project_id: projectId,
+        title,
+        description: params.description || null,
+        column_id: status,
+        priority,
+        space_id: spaceId,
+        category: params.category || null,
+        location: params.location || null,
+        recurrence_rule: params.recurrence || null,
+        task_scope: "planner",
+        task_origin: "user",
+        task_type: "task",
+        position: 0,
+        ...dates,
+      })
+      .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Failed to create task");
+
+    let spaceName: string | null = null;
+    if (data.space_id) {
+      const { data: s } = await serviceClient
+        .from("planner_spaces")
+        .select("name")
+        .eq("id", data.space_id)
+        .maybeSingle();
+      spaceName = s?.name || null;
+    }
+
+    triggerCalendarSync(data.id, "create", params.authHeader);
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: JSON.stringify({ success: true, task: mapTask(data, spaceName) }),
+      }],
+    };
+  },
+});
+
+mcpServer.tool("update_planner_task", {
+  description: "Update any field of an existing planner task. Pass null to clear an optional field.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      taskId: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      spaceId: { type: "string" },
+      spaceName: { type: "string" },
+      category: { type: "string" },
+      status: { type: "string" },
+      priority: { type: "string" },
+      dueDate: { type: "string" },
+      startAt: { type: "string" },
+      endAt: { type: "string" },
+      recurrence: { type: "object" },
+      location: { type: "string" },
+      authHeader: { type: "string" },
+    },
+    required: ["taskId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+
+    // Verify ownership
+    const { data: existing } = await serviceClient
+      .from("tasks")
+      .select("id, start_at, end_at, due_at")
+      .eq("id", params.taskId)
+      .eq("user_id", userId)
+      .eq("task_scope", "planner")
+      .maybeSingle();
+    if (!existing) throw new Error("Task not found");
+
+    const updates: Record<string, unknown> = {};
+    if (params.title !== undefined) updates.title = params.title;
+    if (params.description !== undefined) updates.description = params.description;
+    if (params.category !== undefined) updates.category = params.category;
+    if (params.location !== undefined) updates.location = params.location;
+    if (params.recurrence !== undefined) updates.recurrence_rule = params.recurrence;
+
+    if (params.status !== undefined) {
+      if (!VALID_STATUSES.includes(params.status)) {
+        throw new Error(`Invalid status. Valid: ${VALID_STATUSES.join(", ")}`);
+      }
+      updates.column_id = params.status;
+    }
+    if (params.priority !== undefined) {
+      if (!VALID_PRIORITIES.includes(params.priority)) {
+        throw new Error(`Invalid priority. Valid: ${VALID_PRIORITIES.join(", ")}`);
+      }
+      updates.priority = params.priority;
+    }
+
+    if (params.spaceId !== undefined || params.spaceName !== undefined) {
+      const spaceId = await resolveSpaceId(serviceClient, userId, params.spaceId, params.spaceName);
+      updates.space_id = spaceId;
+    }
+
+    // Date fields — only rebuild if any date param was provided
+    if (params.dueDate !== undefined || params.startAt !== undefined || params.endAt !== undefined) {
+      const dates = buildDateFields({
+        dueDate: params.dueDate !== undefined ? params.dueDate : null,
+        startAt: params.startAt !== undefined ? params.startAt : null,
+        endAt: params.endAt !== undefined ? params.endAt : null,
+      });
+      Object.assign(updates, dates);
+    }
+
+    if (Object.keys(updates).length === 0) throw new Error("Provide at least one field to update");
+
+    const { data, error } = await serviceClient
+      .from("tasks")
+      .update(updates)
+      .eq("id", params.taskId)
+      .eq("user_id", userId)
+      .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Update failed");
+
+    let spaceName: string | null = null;
+    if (data.space_id) {
+      const { data: s } = await serviceClient
+        .from("planner_spaces")
+        .select("name")
+        .eq("id", data.space_id)
+        .maybeSingle();
+      spaceName = s?.name || null;
+    }
+
+    triggerCalendarSync(data.id, "update", params.authHeader);
+
+    return {
+      content: [{
+        type: "text" as const,
+        text: JSON.stringify({ success: true, task: mapTask(data, spaceName) }),
+      }],
+    };
+  },
+});
+
+mcpServer.tool("delete_planner_task", {
+  description: "Delete a planner task by ID.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      taskId: { type: "string" },
+      authHeader: { type: "string" },
+    },
+    required: ["taskId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+
+    // Fire calendar sync BEFORE delete (needs the row to still exist for lookup)
+    triggerCalendarSync(params.taskId, "delete", params.authHeader);
+
+    const { data, error } = await serviceClient
+      .from("tasks")
+      .delete()
+      .eq("id", params.taskId)
+      .eq("user_id", userId)
+      .eq("task_scope", "planner")
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Task not found");
+
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, deleted_id: data.id }) }],
+    };
+  },
+});
 const transport = new StreamableHttpTransport();
 transport.bind(mcpServer);
 
