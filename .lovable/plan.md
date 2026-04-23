@@ -1,80 +1,100 @@
 
+## Add Planner Task tools to the Launchely MCP
 
-## Add `create_prompt` to the Prompt Vault MCP (and matching REST action)
+Goal: extend the `launchely-prompts` MCP server (and matching REST API) so any user with their personal API key can **create, update, and delete planner tasks** from Claude/ChatGPT, including all calendar fields (dates, times, status, priority, recurrence) and assignment to a Space + Category.
 
-Goal: extend the `prompts-mcp` (and `prompts-api`) Edge Functions so authorized users can **create new AI prompts** in the Content Vault directly from Claude/ChatGPT/etc., with all metadata needed to render them in the vault — title, prompt text, type, tags, and an optional cover image (uploaded URL **or** AI-generated on the fly).
+### What you'll see in Claude
 
-### What the user will see
+Six new tools added to the existing server (no admin gate — every user manages their own planner):
 
-In Claude Desktop (or any MCP client), two new tools appear on the `launchely-prompts` server:
+| Tool | Purpose |
+|---|---|
+| `list_spaces` | List your planner spaces (id, name, color) |
+| `list_space_categories` | List categories in a space (or all of them) |
+| `list_planner_tasks` | List tasks, filterable by space, status, due-date range, or search |
+| `create_planner_task` | Create a new planner task with full field support |
+| `update_planner_task` | Edit any field of an existing task |
+| `delete_planner_task` | Delete a task by ID |
 
-1. **`create_prompt`** — creates a new image or video prompt in the AI Prompts vault.
-2. **`delete_prompt`** *(bonus, low cost to add alongside)* — removes a prompt by ID. Skip if you'd rather not.
-
-A successful `create_prompt` call returns the new prompt's ID, slug, public URL (vault deep link), and cover image URL — so the assistant can immediately confirm and link to it.
-
-The new prompt instantly shows up in **Content Vault → AI Prompts → General** at `/app/content-vault/ai-prompts/general`, identical to prompts created via the admin Bulk Importer.
-
-### Inputs accepted by `create_prompt`
+### Inputs for `create_planner_task`
 
 | Field | Required | Notes |
 |---|---|---|
-| `title` | yes | Used as the prompt card heading |
-| `prompt` | yes | The actual prompt text (stored in `description`) |
-| `type` | no | `image_prompt` (default) or `video_prompt` |
-| `tags` | no | Array of strings, e.g. `["Portraits","Golden Hour"]` |
-| `subcategorySlug` | no | Defaults to `general` under category `ai-prompts` |
-| `coverImageUrl` | no | If provided, used as-is |
-| `generateCover` | no | Boolean — if `true` and no `coverImageUrl`, generates one via Lovable AI (Gemini 3 Pro Image) using the prompt text |
-| `referenceImageUrl` | no | Optional reference photo for identity preservation when `generateCover=true` (same logic as `regenerate_cover`) |
+| `title` | yes | Task title |
+| `description` | no | Long-form notes |
+| `spaceId` **or** `spaceName` | no | Resolved to `space_id`. Defaults to your first space |
+| `category` | no | Category name (free text — matches `space_categories.name`) |
+| `status` | no | One of `todo` (default), `in-progress`, `in-review`, `done`, `blocked`, `abandoned` |
+| `priority` | no | One of `urgent`, `high`, `normal` (default), `low` |
+| `dueDate` | no | ISO datetime — for due-only tasks (no calendar block) |
+| `startAt` + `endAt` | no | ISO datetimes for scheduled tasks |
+| `recurrence` | no | Object: `{ frequency: 'daily'|'weekly'|'monthly'|'yearly', interval?, byDay?, until? }` — stored verbatim in `recurrence_rule` JSONB |
+| `location` | no | Free-text location |
 
-### Server-side rules
+`update_planner_task` takes the same fields plus `taskId`. Only provided fields are updated; pass `null` to clear an optional field.
 
-- **Admin gate**: only callers whose `user_id` has `app_role = 'admin'` (checked via the existing `has_role` SQL function) can create prompts. Mirrors the `Admins can insert resources` RLS policy. Non-admins get `403 Forbidden`.
-- **Subcategory resolution**: if `subcategorySlug` is omitted, look up `subcategory_id` for `ai-prompts/general` (the same default the bulk importer uses, ID `e867d3a7-...`).
-- **Position**: query `MAX(position)` in that subcategory and insert at `max + 1` so new prompts append to the end.
-- **Duplicate guard**: case-insensitive check against existing `title` and normalized `description` in the same subcategory; reject with a clear `"Duplicate prompt: an existing prompt has the same title or text"` error so the assistant can adjust and retry.
-- **Required DB defaults handled**: `resource_url` set to `"#"` (vault convention for prompts), `resource_type` from the `type` arg, `tags` defaulting to `null` if empty.
-- **Cover generation** (when `generateCover=true`): reuses the exact pipeline already in `regenerate_cover` — calls Lovable AI gateway with optional reference photo, uploads to `content-media/covers/`, and stores the public URL on the new row. Synchronous — the call returns once the cover is saved.
+`list_planner_tasks` accepts: `spaceId`, `status`, `dueAfter`, `dueBefore`, `search`, `limit` (default 50, max 200). Returns id, title, status, priority, space, category, dates, recurrence, plus a `planner_url` deep link.
 
-### Response shape
+### Server-side behavior
+
+- **Auth**: reuses the existing `authenticate()` helper (personal API key `lw_sk_...` or session JWT). All queries scoped to the caller's `user_id`.
+- **Required field defaults** (matches `Planner.tsx` insert path):
+  - `task_scope = "planner"`, `task_origin = "user"`, `task_type = "task"`
+  - `column_id` defaults to `"todo"`; validated against the 6 status values
+  - `priority` defaults to `"normal"`; validated against the 4 values
+  - `position = 0`
+- **Date semantics** mirror `PlannerTaskDialog`:
+  - `startAt + endAt` → scheduled timed task
+  - `startAt` only → all-day scheduled (end = start, due = start)
+  - `dueDate` only → due-only (no calendar block)
+- **`project_id`**: NOT NULL on the table, but planner tasks aren't conceptually tied to a project. Resolved the same way the in-app UI does — pick the user's first project. If the user has no project, return: `"Create a project in Launchely before adding planner tasks via MCP"`.
+- **Calendar sync**: after create/update/delete, fires `sync-calendar-event` (background, fire-and-forget) so Google/Outlook/Apple feeds stay in sync — same as the in-app UI.
+- **Errors**: friendly messages for invalid status/priority, bad date ranges, unknown space, etc.
+
+### Response shape (create/update)
 
 ```json
 {
   "success": true,
-  "prompt": {
+  "task": {
     "id": "uuid",
-    "title": "Golden Hour Portrait",
-    "prompt": "...full text...",
-    "type": "image_prompt",
-    "tags": ["Portraits"],
-    "cover_image_url": "https://.../covers/...jpg",
-    "vault_url": "https://launchely.com/app/content-vault/ai-prompts/general"
+    "title": "Record podcast intro",
+    "status": "todo",
+    "priority": "high",
+    "space": { "id": "uuid", "name": "Work" },
+    "category": "Content",
+    "due_at": "2026-04-25T15:00:00Z",
+    "start_at": "2026-04-25T15:00:00Z",
+    "end_at": "2026-04-25T16:00:00Z",
+    "recurrence": null,
+    "planner_url": "https://launchely.com/app/planner"
   }
 }
 ```
 
-### REST parity (`prompts-api`)
+### REST parity
 
-Add `create_prompt` (and `delete_prompt` if approved) to the `VALID_ACTIONS` list and switch case in `supabase/functions/prompts-api/index.ts`, with identical behavior. Keeps the personal-API-key REST flow and the MCP flow in sync — both already share the same auth/key system.
+Same six actions added to `prompts-api/index.ts` so personal-API-key REST clients have identical capabilities.
 
 ### Files to change
 
-- `supabase/functions/prompts-mcp/index.ts` — add `create_prompt` (and optionally `delete_prompt`) tool definitions; add a small `requireAdmin(serviceClient, userId)` helper that calls `has_role`.
-- `supabase/functions/prompts-api/index.ts` — add the matching REST action(s) and the same `requireAdmin` helper.
-- *(No DB migration, no new secrets, no client-side changes — the new prompts surface automatically in the existing vault UI.)*
+- `supabase/functions/prompts-mcp/index.ts` — add 6 tool definitions + shared helpers (`resolveSpaceId`, `resolveProjectId`, `validateStatus`, `validatePriority`, `buildDateFields`, `triggerCalendarSync`)
+- `supabase/functions/prompts-api/index.ts` — mirror the 6 actions
+- `mem://integrations/claude-mcp-and-rest-api` — document new tools
 
-### Memory updates
+*(No DB migration, no new secrets, no client/UI changes — tasks created via MCP appear instantly in the existing Planner views.)*
 
-- Update `mem://integrations/claude-mcp-and-rest-api` to list the new `create_prompt` (and `delete_prompt`) tools alongside the existing read/update tools, and note the admin-only gate.
+### Reconnecting Claude
 
-### Risks & non-goals
+After deploy: quit + reopen Claude Desktop (or start a fresh chat on claude.ai) and the new tools appear under `launchely-prompts`. Same `lw_sk_...` key, same endpoint — no config change.
 
-- **Admin-only by design** — non-admin personal API keys can already *read* prompts but won't be able to write. If you want regular users to create prompts under their own private namespace later, that's a separate, larger change (per-user vault scoping doesn't exist yet).
-- **Cover generation cost & latency** — `generateCover=true` calls the Lovable AI image model and typically takes 8–20s. Default is `false` so simple text-only creates stay fast and free.
-- **No bulk variant** — single-prompt create only. The admin Bulk Importer remains the right tool for CSV/PDF batches.
+### Non-goals (v1)
 
-### Open question
+- **Subtasks** — table exists; happy to add `add_subtask` / `toggle_subtask` later
+- **Event-type tasks** — `start_at + end_at` covers calendar blocks; pure events skipped
+- **Bulk operations** — single-task only
 
-Want **`delete_prompt`** included in the same change (admin-only, by ID, also exposed in MCP + REST)? It's ~15 lines and rounds out the CRUD surface, but happy to skip if you'd rather keep the MCP read/create-only.
+### Open questions
 
+1. **Subtasks**: include `add_subtask` / `toggle_subtask` now (~40 extra lines), or save for later?
+2. **Server name**: keep `launchely-prompts` (no Claude config change) or rename to `launchely` since it's no longer prompts-only?
