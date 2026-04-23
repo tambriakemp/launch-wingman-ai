@@ -691,6 +691,181 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
         };
         break;
       }
+
+      case "list_spaces": {
+        const { data, error } = await serviceClient
+          .from("planner_spaces")
+          .select("id, name, color, position")
+          .eq("user_id", userId)
+          .order("position", { ascending: true });
+        if (error) throw error;
+        result = { spaces: data || [] };
+        break;
+      }
+
+      case "list_space_categories": {
+        let q = serviceClient
+          .from("space_categories")
+          .select("id, space_id, name, color, position")
+          .eq("user_id", userId)
+          .order("position", { ascending: true });
+        if (body.spaceId) q = q.eq("space_id", body.spaceId);
+        const { data, error } = await q;
+        if (error) throw error;
+        result = { categories: data || [] };
+        break;
+      }
+
+      case "list_planner_tasks": {
+        const limit = Math.min(body.limit || 50, 200);
+        let q = serviceClient
+          .from("tasks")
+          .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+          .eq("user_id", userId)
+          .eq("task_scope", "planner")
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (body.spaceId) q = q.eq("space_id", body.spaceId);
+        if (body.status) q = q.eq("column_id", body.status);
+        if (body.dueAfter) q = q.gte("due_at", body.dueAfter);
+        if (body.dueBefore) q = q.lte("due_at", body.dueBefore);
+        if (body.search) q = q.or(`title.ilike.%${body.search}%,description.ilike.%${body.search}%`);
+        const { data, error } = await q;
+        if (error) throw error;
+
+        const spaceIds = [...new Set((data || []).map((t: any) => t.space_id).filter(Boolean))];
+        const spaceMap: Record<string, string> = {};
+        if (spaceIds.length > 0) {
+          const { data: spaces } = await serviceClient
+            .from("planner_spaces").select("id, name").in("id", spaceIds);
+          (spaces || []).forEach((s: any) => { spaceMap[s.id] = s.name; });
+        }
+        result = { tasks: (data || []).map((t: any) => mapTask(t, spaceMap[t.space_id])) };
+        break;
+      }
+
+      case "create_planner_task": {
+        const title = String(body.title || "").trim();
+        if (!title) {
+          return new Response(JSON.stringify({ error: "title is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const status = body.status || "todo";
+        if (!VALID_STATUSES.includes(status)) throw new Error(`Invalid status. Valid: ${VALID_STATUSES.join(", ")}`);
+        const priority = body.priority || "normal";
+        if (!VALID_PRIORITIES.includes(priority)) throw new Error(`Invalid priority. Valid: ${VALID_PRIORITIES.join(", ")}`);
+
+        const projectId = await resolveProjectId(serviceClient, userId);
+        const spaceId = await resolveSpaceId(serviceClient, userId, body.spaceId, body.spaceName);
+        const dates = buildDateFields({ dueDate: body.dueDate, startAt: body.startAt, endAt: body.endAt });
+
+        const { data, error } = await serviceClient
+          .from("tasks")
+          .insert({
+            user_id: userId,
+            project_id: projectId,
+            title,
+            description: body.description || null,
+            column_id: status,
+            priority,
+            space_id: spaceId,
+            category: body.category || null,
+            location: body.location || null,
+            recurrence_rule: body.recurrence || null,
+            task_scope: "planner",
+            task_origin: "user",
+            task_type: "task",
+            position: 0,
+            ...dates,
+          })
+          .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error("Failed to create task");
+
+        let spaceName: string | null = null;
+        if (data.space_id) {
+          const { data: s } = await serviceClient
+            .from("planner_spaces").select("name").eq("id", data.space_id).maybeSingle();
+          spaceName = s?.name || null;
+        }
+        triggerCalendarSync(data.id, "create", req.headers.get("Authorization"));
+        result = { success: true, task: mapTask(data, spaceName) };
+        break;
+      }
+
+      case "update_planner_task": {
+        if (!body.taskId) {
+          return new Response(JSON.stringify({ error: "taskId is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: existing } = await serviceClient
+          .from("tasks").select("id").eq("id", body.taskId).eq("user_id", userId).eq("task_scope", "planner").maybeSingle();
+        if (!existing) throw new Error("Task not found");
+
+        const updates: Record<string, unknown> = {};
+        if (body.title !== undefined) updates.title = body.title;
+        if (body.description !== undefined) updates.description = body.description;
+        if (body.category !== undefined) updates.category = body.category;
+        if (body.location !== undefined) updates.location = body.location;
+        if (body.recurrence !== undefined) updates.recurrence_rule = body.recurrence;
+        if (body.status !== undefined) {
+          if (!VALID_STATUSES.includes(body.status)) throw new Error(`Invalid status. Valid: ${VALID_STATUSES.join(", ")}`);
+          updates.column_id = body.status;
+        }
+        if (body.priority !== undefined) {
+          if (!VALID_PRIORITIES.includes(body.priority)) throw new Error(`Invalid priority. Valid: ${VALID_PRIORITIES.join(", ")}`);
+          updates.priority = body.priority;
+        }
+        if (body.spaceId !== undefined || body.spaceName !== undefined) {
+          updates.space_id = await resolveSpaceId(serviceClient, userId, body.spaceId, body.spaceName);
+        }
+        if (body.dueDate !== undefined || body.startAt !== undefined || body.endAt !== undefined) {
+          Object.assign(updates, buildDateFields({
+            dueDate: body.dueDate !== undefined ? body.dueDate : null,
+            startAt: body.startAt !== undefined ? body.startAt : null,
+            endAt: body.endAt !== undefined ? body.endAt : null,
+          }));
+        }
+        if (Object.keys(updates).length === 0) throw new Error("Provide at least one field to update");
+
+        const { data, error } = await serviceClient
+          .from("tasks").update(updates).eq("id", body.taskId).eq("user_id", userId)
+          .select("id, title, description, column_id, priority, space_id, category, due_at, start_at, end_at, location, recurrence_rule")
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Update failed");
+
+        let spaceName: string | null = null;
+        if (data.space_id) {
+          const { data: s } = await serviceClient
+            .from("planner_spaces").select("name").eq("id", data.space_id).maybeSingle();
+          spaceName = s?.name || null;
+        }
+        triggerCalendarSync(data.id, "update", req.headers.get("Authorization"));
+        result = { success: true, task: mapTask(data, spaceName) };
+        break;
+      }
+
+      case "delete_planner_task": {
+        if (!body.taskId) {
+          return new Response(JSON.stringify({ error: "taskId is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        triggerCalendarSync(body.taskId, "delete", req.headers.get("Authorization"));
+        const { data, error } = await serviceClient
+          .from("tasks").delete()
+          .eq("id", body.taskId).eq("user_id", userId).eq("task_scope", "planner")
+          .select("id").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Task not found");
+        result = { success: true, deleted_id: data.id };
+        break;
+      }
     }
 
     return new Response(JSON.stringify(result), {
