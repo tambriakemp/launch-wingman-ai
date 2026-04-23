@@ -16,11 +16,108 @@ const VALID_ACTIONS = [
   "list_characters",
   "create_prompt",
   "delete_prompt",
+  "list_spaces",
+  "list_space_categories",
+  "list_planner_tasks",
+  "create_planner_task",
+  "update_planner_task",
+  "delete_planner_task",
 ] as const;
 
 type Action = (typeof VALID_ACTIONS)[number];
 
 const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
+const PLANNER_URL = "https://launchely.com/app/planner";
+
+const VALID_STATUSES = ["todo", "in-progress", "in-review", "done", "blocked", "abandoned"];
+const VALID_PRIORITIES = ["urgent", "high", "normal", "low"];
+
+async function resolveProjectId(serviceClient: any, userId: string): Promise<string> {
+  const { data, error } = await serviceClient
+    .from("projects")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Create a project in Launchely before adding planner tasks via MCP");
+  return data.id;
+}
+
+async function resolveSpaceId(
+  serviceClient: any,
+  userId: string,
+  spaceId?: string,
+  spaceName?: string
+): Promise<string | null> {
+  if (spaceId) {
+    const { data } = await serviceClient
+      .from("planner_spaces").select("id").eq("id", spaceId).eq("user_id", userId).maybeSingle();
+    if (!data) throw new Error(`Space '${spaceId}' not found`);
+    return data.id;
+  }
+  if (spaceName) {
+    const { data } = await serviceClient
+      .from("planner_spaces").select("id").eq("user_id", userId).ilike("name", spaceName).maybeSingle();
+    if (!data) throw new Error(`Space named '${spaceName}' not found`);
+    return data.id;
+  }
+  const { data } = await serviceClient
+    .from("planner_spaces").select("id").eq("user_id", userId)
+    .order("position", { ascending: true }).limit(1).maybeSingle();
+  return data?.id || null;
+}
+
+function buildDateFields(p: { dueDate?: string | null; startAt?: string | null; endAt?: string | null }) {
+  const { dueDate, startAt, endAt } = p;
+  if (startAt && endAt) {
+    if (new Date(endAt) < new Date(startAt)) throw new Error("endAt must be >= startAt");
+    return { start_at: startAt, end_at: endAt, due_at: endAt, due_date: endAt.slice(0, 10) };
+  }
+  if (startAt && !endAt) {
+    return { start_at: startAt, end_at: startAt, due_at: startAt, due_date: startAt.slice(0, 10) };
+  }
+  if (dueDate) {
+    return { start_at: null, end_at: null, due_at: dueDate, due_date: dueDate.slice(0, 10) };
+  }
+  return { start_at: null, end_at: null, due_at: null, due_date: null };
+}
+
+function triggerCalendarSync(taskId: string, action: "create" | "update" | "delete", authHeader: string | null) {
+  if (!authHeader) return;
+  try {
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-calendar-event`, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      },
+      body: JSON.stringify({ task_id: taskId, action }),
+    }).catch(() => {});
+  } catch {
+    // fire-and-forget
+  }
+}
+
+function mapTask(t: any, spaceName?: string | null) {
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    status: t.column_id,
+    priority: t.priority,
+    space: t.space_id ? { id: t.space_id, name: spaceName || null } : null,
+    category: t.category,
+    due_at: t.due_at,
+    start_at: t.start_at,
+    end_at: t.end_at,
+    location: t.location,
+    recurrence: t.recurrence_rule,
+    planner_url: PLANNER_URL,
+  };
+}
 
 async function requireAdmin(serviceClient: any, userId: string) {
   const { data, error } = await serviceClient.rpc("has_role", {
