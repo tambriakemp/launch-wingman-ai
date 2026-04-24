@@ -156,7 +156,7 @@ export const PlannerListView = ({
   const activeSpace = selectedSpaceId ? spaces.find(s => s.id === selectedSpaceId) : null;
 
   return (
-    <div className="px-4 pb-4 relative">
+    <div className="h-full overflow-y-auto px-4 pb-4 relative">
       {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
