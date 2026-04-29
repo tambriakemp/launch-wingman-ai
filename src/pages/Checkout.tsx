@@ -198,12 +198,34 @@ const Checkout = () => {
         const { data, error } = await supabase.functions.invoke(
           "create-payment-intent-only",
           {
-            body: { couponCode, tier },
+            // Pass email + isUpgrade so the server can run pre-charge guards
+            // (block existing accounts, block duplicate orphan PIs).
+            body: {
+              couponCode,
+              tier,
+              email: isUpgrade ? user?.email : email,
+              isUpgrade,
+            },
           }
         );
 
         if (error) throw new Error(error.message);
         if (!data?.success || !data?.clientSecret) {
+          // Surface specific blocked-checkout codes with friendlier copy.
+          if (data?.code === "account_exists") {
+            setEmailExists(true);
+            throw new Error(
+              "An account with this email already exists. Please log in to upgrade."
+            );
+          }
+          if (data?.code === "already_subscribed") {
+            throw new Error("You already have an active subscription. Please log in.");
+          }
+          if (data?.code === "orphan_payment_pending") {
+            throw new Error(
+              "We found a recent payment from you that didn't finish setting up your subscription. Please contact support — do not pay again."
+            );
+          }
           throw new Error(data?.error || "Failed to initialize payment");
         }
 
@@ -223,7 +245,7 @@ const Checkout = () => {
         setIsCreatingIntent(false);
       }
     },
-    [selectedTier]
+    [selectedTier, isUpgrade, user?.email, email]
   );
 
   // Create payment intent on initial mount
