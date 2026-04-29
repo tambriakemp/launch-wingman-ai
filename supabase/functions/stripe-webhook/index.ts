@@ -326,6 +326,13 @@ serve(async (req) => {
           eventType = "subscription_cancelled";
         }
         logStep("Subscription updated", { customerEmail, status: subscription.status });
+
+        // SAFETY NET: If a subscription becomes incomplete_expired, the customer
+        // was likely charged via our 2-step checkout but the subscription never
+        // activated. Auto-refund the most recent unlinked subscription_checkout PI.
+        if (subscription.status === "incomplete_expired") {
+          EdgeRuntime.waitUntil(refundOrphanCheckoutPI(stripe, subscription.customer as string, "subscription_incomplete_expired"));
+        }
         break;
       }
 
