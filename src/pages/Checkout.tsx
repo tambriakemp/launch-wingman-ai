@@ -397,17 +397,30 @@ const Checkout = () => {
 
         if (errorMessage.toLowerCase().includes("already exists")) {
           setIntentError("account_exists");
-          toast.error("An account with this email already exists. Please log in instead.");
+          toast.error(
+            data?.refund_id
+              ? "Account already exists — your payment was automatically refunded. Please log in."
+              : "An account with this email already exists. Please log in instead."
+          );
           return;
         }
 
+        // If the server auto-refunded, make that crystal clear to the user.
+        if (data?.refund_id) {
+          toast.error(`${errorMessage} (Refund ID: ${data.refund_id})`);
+        } else {
+          toast.error(errorMessage);
+        }
         throw new Error(errorMessage);
       }
 
       navigate("/checkout/success");
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to complete subscription";
-      toast.error(errorMsg);
+      // Avoid double-toasting if we already toasted above.
+      if (!errorMsg.toLowerCase().includes("failed to complete subscription") && !errorMsg.toLowerCase().includes("already exists")) {
+        toast.error(errorMsg);
+      }
     }
   };
 
