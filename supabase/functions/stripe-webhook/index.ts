@@ -171,6 +171,56 @@ async function notifyAdmins(type: 'pro_signup' | 'pro_cancellation', email: stri
   }
 }
 
+/**
+ * SAFETY NET: refund the most recent succeeded "subscription_checkout" PI for
+ * a customer if it isn't linked to any invoice. Called when a subscription
+ * enters a terminal-failure state (incomplete_expired) shortly after creation,
+ * which means the customer was charged in step 1 of the 2-step checkout but
+ * step 2 never produced an active subscription.
+ */
+async function refundOrphanCheckoutPI(
+  stripe: Stripe,
+  customerId: string,
+  reason: string,
+): Promise<void> {
+  try {
+    const cutoff = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // last 24h
+    const recent = await stripe.paymentIntents.list({
+      customer: customerId,
+      limit: 10,
+      created: { gte: cutoff },
+    });
+    const orphan = recent.data.find((pi) =>
+      pi.status === "succeeded" &&
+      pi.metadata?.type === "subscription_checkout" &&
+      !pi.invoice
+    );
+    if (!orphan) {
+      logStep("Webhook safety net: no orphan PI found", { customerId, reason });
+      return;
+    }
+    const refund = await stripe.refunds.create({
+      payment_intent: orphan.id,
+      reason: "requested_by_customer",
+      metadata: {
+        auto_refund: "true",
+        auto_refund_reason: `webhook_${reason}`,
+      },
+    });
+    logStep("Webhook safety net: orphan PI refunded", {
+      customerId,
+      paymentIntentId: orphan.id,
+      refundId: refund.id,
+      reason,
+    });
+  } catch (err) {
+    logStep("Webhook safety net: refund attempt failed", {
+      customerId,
+      reason,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -326,6 +376,13 @@ serve(async (req) => {
           eventType = "subscription_cancelled";
         }
         logStep("Subscription updated", { customerEmail, status: subscription.status });
+
+        // SAFETY NET: If a subscription becomes incomplete_expired, the customer
+        // was likely charged via our 2-step checkout but the subscription never
+        // activated. Auto-refund the most recent unlinked subscription_checkout PI.
+        if (subscription.status === "incomplete_expired") {
+          EdgeRuntime.waitUntil(refundOrphanCheckoutPI(stripe, subscription.customer as string, "subscription_incomplete_expired"));
+        }
         break;
       }
 
