@@ -338,18 +338,20 @@ const Planner = () => {
           </div>
         </div>
         <div className="flex-1 overflow-hidden flex">
-          <SpacesSidebar
-            spaces={spaces}
-            categories={categories}
-            tasks={tasks}
-            selectedSpaceId={selectedSpaceId}
-            onSelectSpace={setSelectedSpaceId}
-            onCreateSpace={createSpace}
-            onUpdateSpace={updateSpace}
-            onDeleteSpace={deleteSpace}
-            onCreateCategory={createCategory}
-            onDeleteCategory={deleteCategory}
-          />
+          {view !== "calendar" && (
+            <SpacesSidebar
+              spaces={spaces}
+              categories={categories}
+              tasks={tasks}
+              selectedSpaceId={selectedSpaceId}
+              onSelectSpace={setSelectedSpaceId}
+              onCreateSpace={createSpace}
+              onUpdateSpace={updateSpace}
+              onDeleteSpace={deleteSpace}
+              onCreateCategory={createCategory}
+              onDeleteCategory={deleteCategory}
+            />
+          )}
           <div className="flex-1 overflow-hidden">
             {view === "calendar" && (
               <PlannerCalendarView
@@ -363,6 +365,21 @@ const Planner = () => {
                 categories={activeCategories}
                 spaces={spaces}
                 allTasks={tasks}
+                sidebarTopSlot={
+                  <SpacesSidebar
+                    embedded
+                    spaces={spaces}
+                    categories={categories}
+                    tasks={tasks}
+                    selectedSpaceId={selectedSpaceId}
+                    onSelectSpace={setSelectedSpaceId}
+                    onCreateSpace={createSpace}
+                    onUpdateSpace={updateSpace}
+                    onDeleteSpace={deleteSpace}
+                    onCreateCategory={createCategory}
+                    onDeleteCategory={deleteCategory}
+                  />
+                }
               />
             )}
             {view === "list" && (
