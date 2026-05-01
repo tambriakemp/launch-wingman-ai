@@ -51,6 +51,8 @@ interface PlannerCalendarViewProps {
   categories?: SpaceCategory[];
   spaces?: PlannerSpace[];
   allTasks?: PlannerTask[];
+  /** Optional content rendered at the top of the left sidebar (e.g. embedded Spaces section). */
+  sidebarTopSlot?: React.ReactNode;
 }
 
 const HOUR_HEIGHT = 72;
@@ -129,6 +131,7 @@ export const PlannerCalendarView = ({
   categories: propCategories = [],
   spaces = [],
   allTasks = [],
+  sidebarTopSlot,
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
@@ -290,6 +293,12 @@ export const PlannerCalendarView = ({
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
       <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
+        {/* Embedded Spaces (collapsible) */}
+        {sidebarTopSlot && (
+          <div className="border-b border-border bg-muted/20">
+            {sidebarTopSlot}
+          </div>
+        )}
         {/* Upcoming tasks list */}
         <div className="p-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>

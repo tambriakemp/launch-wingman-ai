@@ -6,6 +6,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Layers,
   FolderOpen,
   Palette,
@@ -13,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +42,8 @@ interface SpacesSidebarProps {
   onDeleteSpace: (id: string) => Promise<void>;
   onCreateCategory: (spaceId: string, name: string, color: string) => Promise<SpaceCategory | null>;
   onDeleteCategory: (id: string) => Promise<void>;
+  /** When true, render inline (no fixed width/border) for embedding inside another sidebar. Uses a Collapsible disclosure. */
+  embedded?: boolean;
 }
 
 export const SpacesSidebar = ({
@@ -53,8 +57,10 @@ export const SpacesSidebar = ({
   onDeleteSpace,
   onCreateCategory,
   onDeleteCategory,
+  embedded = false,
 }: SpacesSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
@@ -91,6 +97,27 @@ export const SpacesSidebar = ({
     setNewCatColor(PRESET_COLORS[1]);
   };
 
+  if (embedded) {
+    return (
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="flex items-center justify-between px-2 py-2">
+          <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !expanded && "-rotate-90")} />
+            Spaces
+          </CollapsibleTrigger>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setExpanded(true); setIsAdding(true); }}>
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+        <CollapsibleContent>
+          <div className="px-2 pb-2 space-y-0.5 max-h-[40vh] overflow-y-auto">
+            {renderSpacesList()}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
   if (collapsed) {
     return (
       <div className="w-10 shrink-0 border-r border-border bg-muted/20 flex flex-col items-center py-3 gap-2">
@@ -104,22 +131,9 @@ export const SpacesSidebar = ({
     );
   }
 
-  return (
-    <div className="w-[220px] shrink-0 border-r border-border bg-muted/20 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-border">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Spaces</span>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsAdding(true)}>
-            <Plus className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCollapsed(true)}>
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+  function renderSpacesList() {
+    return (
+      <>
         {/* All Spaces */}
         <button
           className={cn(
@@ -271,6 +285,27 @@ export const SpacesSidebar = ({
             </div>
           </div>
         )}
+      </>
+    );
+  }
+
+  return (
+    <div className="w-[220px] shrink-0 border-r border-border bg-muted/20 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-3 border-b border-border">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Spaces</span>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsAdding(true)}>
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCollapsed(true)}>
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        {renderSpacesList()}
       </div>
     </div>
   );
