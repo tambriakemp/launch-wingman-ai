@@ -131,6 +131,7 @@ export const PlannerCalendarView = ({
   categories: propCategories = [],
   spaces = [],
   allTasks = [],
+  sidebarTopSlot,
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
