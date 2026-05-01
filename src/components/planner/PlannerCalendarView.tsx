@@ -51,6 +51,8 @@ interface PlannerCalendarViewProps {
   categories?: SpaceCategory[];
   spaces?: PlannerSpace[];
   allTasks?: PlannerTask[];
+  /** Optional content rendered at the top of the left sidebar (e.g. embedded Spaces section). */
+  sidebarTopSlot?: React.ReactNode;
 }
 
 const HOUR_HEIGHT = 72;
