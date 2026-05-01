@@ -42,6 +42,8 @@ interface SpacesSidebarProps {
   onDeleteSpace: (id: string) => Promise<void>;
   onCreateCategory: (spaceId: string, name: string, color: string) => Promise<SpaceCategory | null>;
   onDeleteCategory: (id: string) => Promise<void>;
+  /** When true, render inline (no fixed width/border) for embedding inside another sidebar. Uses a Collapsible disclosure. */
+  embedded?: boolean;
 }
 
 export const SpacesSidebar = ({
