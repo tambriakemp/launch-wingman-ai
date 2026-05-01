@@ -57,8 +57,10 @@ export const SpacesSidebar = ({
   onDeleteSpace,
   onCreateCategory,
   onDeleteCategory,
+  embedded = false,
 }: SpacesSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
