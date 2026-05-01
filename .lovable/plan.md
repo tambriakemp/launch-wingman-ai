@@ -1,92 +1,34 @@
-# Ghost Recurring Charges — Root Cause & Fix
+## Habit Tracker Layout Fixes
 
-## What's actually happening to bree33@cre8visions.com
+Two visual issues on `/habits` (HabitGrid component).
 
-Stripe customer `cus_TqHAXATzr9eIqR` has been charged **$25 every month** (Sept, Oct, Nov 2026) via standalone PaymentIntents — but there is **no active subscription** in Stripe driving them. The only subscription on file (`sub_1StbnQF2gaEq7adwL2u9ufkr`) is `incomplete_expired` and only generated one invoice (`in_1StbnQF…`) in early September. The subsequent monthly charges are **not linked to any invoice or subscription**.
+### 1. Move % and actions menu to the front (left) of each row
 
-## Root cause
+Today the row order is:
+`[Habit name + streak] [31 day cells] [% + ⋯ menu]`
 
-The bug is in our **two-step checkout flow** (`create-payment-intent-only` → `complete-subscription-checkout`).
+The trailing `% + ⋯` column gets pushed off-screen on narrow viewports and feels disconnected from the habit it describes.
 
-```text
-Step 1: create-payment-intent-only
-   → Creates a standalone $25 PaymentIntent (NOT attached to any subscription)
-   → User confirms card → PI succeeds → $25 charged immediately
+**Change:** Move the completion `%` and the `⋯` actions dropdown into the left "title" column, next to the habit name and streak. New row order:
 
-Step 2: complete-subscription-checkout
-   → Attaches PM to customer
-   → Calls stripe.subscriptions.create(...)
-   → If this call fails OR the subscription enters `incomplete_expired`,
-     the $25 from Step 1 is NEVER REFUNDED and NEVER LINKED to a sub.
-```
+`[● Habit name / category · 🔥streak · 0% · ⋯] [31 day cells]`
 
-Bree's first PI succeeded but the subscription Stripe created went `incomplete_expired` (likely 3DS / SCA failure on the off-session attempt right after creation). The frontend caught the failure and showed her an error — but the $25 stayed charged.
+- Widen the title column from `w-[200px]` to `w-[260px]` to fit the extra content.
+- Remove the trailing `w-[70px]` cell from both the header row and each habit row.
+- Header spacer column also widens to `w-[260px]`.
+- Layout inside the title cell: colored dot, name + category (flex-1, truncate), streak chip, `%` text, `⋯` menu button.
 
-**Then the smoking gun:** there are **two more identical $25 PaymentIntents** one month and two months later. The only way that happens with no subscription on file is:
+### 2. Card background doesn't stretch to the end
 
-1. **She retried checkout each month** — opening `/checkout`, completing card entry, Step 1 succeeded ($25 charged), Step 2 failed again. The UI never warned her she was about to be double/triple-charged because it has no idea past PIs exist for her email until *after* it tries to create the user/subscription.
-2. Step 2's "user already exists" check throws an error *after* the money is taken, rather than blocking the PaymentIntent from being created in the first place.
+The grid is wrapped in `<div className="min-w-[600px] rounded-xl border border-border bg-card">`. `min-w` only enforces a floor — on wide viewports the inner content (title col + 31 × 32px day cells + rate col ≈ 1262px) defines the width, but on narrower-but-still-wide viewports (e.g. 1008px preview shown in screenshot 2) the card stops at content width while the page area extends further, leaving cream background visible on the right.
 
-So the design flaw is: **we charge the card before we validate that the subscription can actually be created.** Any failure in Step 2 = orphaned charge with no automatic refund.
+**Change:** Make the card stretch to the full width of its overflow container so the white surface reaches the right edge of the scroll area:
 
-## What to fix
+- Add `w-max` (or equivalently `inline-block min-w-full`) so the card's bordered surface always covers at least the available width AND the content width. With horizontal overflow, the card will extend to whichever is larger.
+- Concretely: change wrapper to `min-w-full w-max rounded-xl border border-border bg-card`. This guarantees the white background spans either the full visible area (when content is narrow) or the full content (when scrolling horizontally).
 
-### 1. Refund Bree's three orphan charges
-Issue refunds for the 3 succeeded $25 PaymentIntents on `cus_TqHAXATzr9eIqR` (`pi_3TPvL0…`, `pi_3TEgZ0…`, and the September one). Reason: `requested_by_customer`.
+### Files touched
 
-### 2. Make `complete-subscription-checkout` self-healing
-Wrap the subscription-creation block in try/catch. If subscription creation fails OR the resulting subscription is not `active`/`trialing` after retry, **automatically refund the PaymentIntent** before returning the error to the client. No more orphan charges, ever.
+- `src/components/habits/HabitGrid.tsx` — only file changed. Reorder columns in the header and each row, drop the trailing rate/menu column, widen the title column, and update the wrapper width classes.
 
-```text
-try { create subscription }
-catch / not-active:
-   stripe.refunds.create({ payment_intent: paymentIntentId,
-                            reason: "requested_by_customer",
-                            metadata: { auto_refund: "subscription_creation_failed" } })
-   throw error
-```
-
-### 3. Block double-charging on retry
-In `create-payment-intent-only`, accept an optional `email` parameter and:
-- Look up the Stripe customer by email
-- Check for `succeeded` PaymentIntents in the last 35 days with metadata `type: "subscription_checkout"` and **no linked active subscription**
-- If found → return `409 already_paid_pending_subscription` instead of creating a new PI
-
-The frontend should surface this as: "We found a recent payment that didn't finish setting up your subscription. Contact support — do not pay again."
-
-### 4. Move the "user already exists" check to BEFORE charging
-`complete-subscription-checkout` currently checks `existingUser` *after* the PaymentIntent succeeded. Move that check into `create-payment-intent-only` (it already calls `check-email-exists` from the client, but server-side enforcement is missing). If email exists and `isUpgrade=false`, refuse to create the PI.
-
-### 5. Audit other affected users
-Run a one-off script to find every Stripe customer with succeeded PaymentIntents in the last 90 days where:
-- `metadata.type = "subscription_checkout"` AND
-- The customer has **no active/trialing subscription** AND
-- The PI is **not linked to any invoice**
-
-Output a CSV at `/mnt/documents/orphan-charges-audit.csv` with: email, customer_id, payment_intent_id, amount, created_at. Review with you before issuing bulk refunds.
-
-### 6. Add a Stripe webhook safety net
-Subscribe `stripe-webhook` to `customer.subscription.deleted` and `customer.subscription.updated` (status → `incomplete_expired`). When fired, look up the most recent succeeded PI for that customer in the past hour with `metadata.type=subscription_checkout` and auto-refund if it has no invoice link. (Belt-and-suspenders for case #2 above.)
-
-## Technical details
-
-**Files to modify:**
-- `supabase/functions/complete-subscription-checkout/index.ts` — add refund-on-failure, return refund_id in error response
-- `supabase/functions/create-payment-intent-only/index.ts` — add email param, server-side existing-user check, duplicate-recent-PI guard
-- `supabase/functions/stripe-webhook/index.ts` — handle `customer.subscription.updated` → `incomplete_expired` status with auto-refund of the most recent unlinked PI
-- `src/pages/Checkout.tsx` — pass `email` (and `isUpgrade`/`userId`) to `create-payment-intent-only`; handle new `409 already_paid_pending_subscription` response with a clear support-contact message
-
-**One-off scripts (not deployed):**
-- Audit script using Stripe API to find orphan PIs (writes CSV to `/mnt/documents/`)
-- Refund script for Bree's 3 PIs (run once, with confirmation)
-
-**No DB schema changes required.**
-
-## Order of operations
-
-1. Refund Bree's 3 charges immediately
-2. Deploy fix to `complete-subscription-checkout` (auto-refund on subscription failure) — closes the bleed
-3. Deploy fix to `create-payment-intent-only` (block duplicates + existing-user check) — closes the door
-4. Run audit script, share CSV with you
-5. Process bulk refunds for any other affected users you approve
-6. Deploy webhook safety net
+No other components, data, or styles need changes.

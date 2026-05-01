@@ -65,10 +65,10 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
 
   return (
     <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-      <div className="min-w-[600px] rounded-xl border border-border bg-card">
+      <div className="min-w-full w-max rounded-xl border border-border bg-card">
       {/* Day header row */}
       <div className="flex items-center border-b border-border bg-muted/30">
-        <div className="w-[200px] shrink-0" />
+        <div className="w-[260px] shrink-0" />
         {monthDays.map(day => {
           const dateStr = format(day, "yyyy-MM-dd");
           const isTodayDay = dateStr === today;
@@ -83,7 +83,6 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
             </div>
           );
         })}
-        <div className="w-[70px] shrink-0" />
       </div>
 
       {/* Habit rows */}
@@ -94,8 +93,8 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
 
           return (
             <div key={habit.id} className="flex items-center hover:bg-accent/30 transition-colors">
-              {/* Habit name + streak */}
-              <div className="w-[200px] shrink-0 flex items-center gap-2.5 px-4 py-3">
+              {/* Habit name + streak + rate + actions */}
+              <div className="w-[260px] shrink-0 flex items-center gap-2 px-4 py-3">
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: habit.color }} />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{habit.name}</p>
@@ -107,6 +106,22 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
                     {streak}
                   </div>
                 )}
+                <span className="text-[10px] font-medium text-muted-foreground shrink-0 tabular-nums">{rate}%</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-1 rounded hover:bg-accent transition-colors shrink-0">
+                      <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(habit)} className="gap-2 text-xs">
+                      <Pencil className="w-3 h-3" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onArchive(habit.id)} className="gap-2 text-xs text-muted-foreground">
+                      <Archive className="w-3 h-3" /> Archive
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Day cells */}
@@ -139,26 +154,6 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
                   </div>
                 );
               })}
-
-              {/* Rate + actions */}
-              <div className="w-[70px] shrink-0 flex items-center gap-1 px-2">
-                <span className="text-[10px] font-medium text-muted-foreground">{rate}%</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1 rounded hover:bg-accent transition-colors">
-                      <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(habit)} className="gap-2 text-xs">
-                      <Pencil className="w-3 h-3" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onArchive(habit.id)} className="gap-2 text-xs text-muted-foreground">
-                      <Archive className="w-3 h-3" /> Archive
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
           );
         })}
