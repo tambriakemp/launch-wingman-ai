@@ -97,6 +97,27 @@ export const SpacesSidebar = ({
     setNewCatColor(PRESET_COLORS[1]);
   };
 
+  if (embedded) {
+    return (
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="flex items-center justify-between px-2 py-2">
+          <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !expanded && "-rotate-90")} />
+            Spaces
+          </CollapsibleTrigger>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setExpanded(true); setIsAdding(true); }}>
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+        <CollapsibleContent>
+          <div className="px-2 pb-2 space-y-0.5 max-h-[40vh] overflow-y-auto">
+            {renderSpacesList()}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
   if (collapsed) {
     return (
       <div className="w-10 shrink-0 border-r border-border bg-muted/20 flex flex-col items-center py-3 gap-2">
