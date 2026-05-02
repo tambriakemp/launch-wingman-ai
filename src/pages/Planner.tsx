@@ -48,17 +48,15 @@ const Planner = () => {
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   // Unified calendar views: "board" | "month" | "list"
   const [sunsamaView, setSunsamaView] = useState<"board" | "month" | "list">(isTodoUrl ? "list" : "board");
-  // Board window: 15 days back from today, 30 days forward (46 columns).
-  const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
-  const BOARD_DAY_COUNT = 46;
-  const [scrollToTodayNonce, setScrollToTodayNonce] = useState(0);
+  // Anchor date for the visible week — shifts in 7-day increments via prev/next.
+  const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const { syncTask } = useCalendarSync();
+  const { syncTask, hasConnections } = useCalendarSync();
   const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
   const {
