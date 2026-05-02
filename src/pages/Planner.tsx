@@ -535,11 +535,13 @@ const Planner = () => {
               </div>
               <aside className="hidden lg:block w-[300px] shrink-0 border-l border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))] overflow-y-auto">
                 <PlannerWeekRail
-                  tasks={filteredTasks}
+                  tasks={tasks}
                   weekStart={weekStart}
                   weekEnd={weekEnd}
                   spaces={spaces}
                   categories={activeCategories}
+                  selectedSpaceId={selectedSpaceId}
+                  onSelectSpace={setSelectedSpaceId}
                 />
               </aside>
             </>

@@ -97,12 +97,17 @@ export const PlannerWeekBoardView = ({
 
   useLayoutEffect(() => {
     if (!anchorKey) return;
-    const el = dayRefs.current[anchorKey];
-    const container = scrollContainerRef.current;
-    if (!el || !container) return;
-    // Snap anchor day to the left edge of the scroll container
-    const offset = el.offsetLeft - container.offsetLeft;
-    container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
+    const snap = (behavior: ScrollBehavior) => {
+      const el = dayRefs.current[anchorKey];
+      const container = scrollContainerRef.current;
+      if (!el || !container) return;
+      const offset = el.offsetLeft - container.offsetLeft;
+      container.scrollTo({ left: Math.max(0, offset), behavior });
+    };
+    // Initial layout pass + a follow-up RAF to handle async layout (fonts, images, flex sizing)
+    snap(scrollToAnchorNonce ? "smooth" : "auto");
+    const raf = requestAnimationFrame(() => snap(scrollToAnchorNonce ? "smooth" : "auto"));
+    return () => cancelAnimationFrame(raf);
   }, [anchorKey, scrollToAnchorNonce]);
 
   const rangeStart = days[0];
@@ -279,8 +284,8 @@ export const PlannerWeekBoardView = ({
                               {...dragProvided.draggableProps}
                               {...dragProvided.dragHandleProps}
                               className={cn(
-                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid px-2.5 cursor-pointer transition-all hover:-translate-y-px",
-                                isAll ? "gap-0.5 py-1.5" : "gap-1.5 py-2",
+                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card flex flex-col px-2.5 cursor-pointer transition-all hover:-translate-y-px",
+                                isAll ? "gap-2 py-2" : "gap-2.5 py-2.5",
                                 "hover:shadow-[0_4px_14px_-8px_rgba(31,27,23,0.18)]",
                                 dragSnapshot.isDragging && "shadow-lg"
                               )}
@@ -303,13 +308,20 @@ export const PlannerWeekBoardView = ({
                                 )}
                                 <button
                                   type="button"
-                                  className="shrink-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px]"
+                                  className="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-[4px]"
                                   style={{
                                     border: `1.5px solid ${isDone ? spaceColor : "hsl(var(--border-hairline))"}`,
                                     background: isDone ? spaceColor : "transparent",
                                   }}
+                                  onMouseDown={(e) => { e.stopPropagation(); }}
+                                  onPointerDown={(e) => { e.stopPropagation(); }}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    e.preventDefault();
+                                    if ((task as any)._isVirtualRecurrence) {
+                                      toast.error("Can't complete a recurring instance — edit the series instead");
+                                      return;
+                                    }
                                     onToggleComplete?.(task);
                                   }}
                                   aria-label={isDone ? "Mark as not done" : "Mark as done"}
