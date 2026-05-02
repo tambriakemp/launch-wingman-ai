@@ -1,28 +1,26 @@
-import { useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import { useMemo } from "react";
 import {
   format,
   parseISO,
-  addDays,
   isSameDay,
   setHours,
   setMinutes,
   differenceInMilliseconds,
 } from "date-fns";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { CheckCircle2, Circle, Plus, Repeat } from "lucide-react";
+import { Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { expandAllRecurring } from "./recurrenceUtils";
+import { SOURCE_HUES, getTaskSource } from "./taskSource";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface Props {
   tasks: PlannerTask[];
-  /** First day shown in the board (leftmost column) */
-  startDate: Date;
-  /** Total number of day columns to render */
-  dayCount: number;
+  /** The 7 days to render (Mon..Sun typically) */
+  days: Date[];
   isLoading: boolean;
   spaces?: PlannerSpace[];
   categories?: SpaceCategory[];
@@ -30,8 +28,6 @@ interface Props {
   onCreateTask?: (defaults: { due_at?: string }) => void;
   onToggleComplete?: (task: PlannerTask) => void;
   onTasksChanged?: () => void;
-  /** Bumped by parent to trigger a scroll-to-today */
-  scrollToTodayNonce?: number;
 }
 
 function getTaskDateKey(task: PlannerTask): string | null {
@@ -40,19 +36,28 @@ function getTaskDateKey(task: PlannerTask): string | null {
   return dateStr.slice(0, 10);
 }
 
-function formatTime(iso?: string | null): string | null {
-  if (!iso) return null;
-  const d = parseISO(iso);
-  const h = d.getHours();
-  const m = d.getMinutes();
-  if (h === 0 && m === 0) return null;
-  return format(d, "h:mm a").toLowerCase();
+function isAllDay(task: PlannerTask): boolean {
+  if (!task.start_at) return true;
+  const d = parseISO(task.start_at);
+  return d.getHours() === 0 && d.getMinutes() === 0;
+}
+
+function formatTimeRange(task: PlannerTask): string | null {
+  if (!task.start_at) return null;
+  const start = parseISO(task.start_at);
+  if (start.getHours() === 0 && start.getMinutes() === 0) return null;
+  const timeStr = format(start, "h:mm a");
+  if (task.end_at) {
+    const end = parseISO(task.end_at);
+    const minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+    if (minutes > 0) return `${timeStr} · ${minutes}m`;
+  }
+  return timeStr;
 }
 
 export const PlannerWeekBoardView = ({
   tasks,
-  startDate,
-  dayCount,
+  days,
   isLoading,
   spaces = [],
   categories = [],
@@ -60,13 +65,7 @@ export const PlannerWeekBoardView = ({
   onCreateTask,
   onToggleComplete,
   onTasksChanged,
-  scrollToTodayNonce,
 }: Props) => {
-  const days = useMemo(
-    () => Array.from({ length: dayCount }, (_, i) => addDays(startDate, i)),
-    [startDate, dayCount]
-  );
-
   const rangeStart = days[0];
   const rangeEnd = days[days.length - 1];
 
@@ -134,31 +133,7 @@ export const PlannerWeekBoardView = ({
     onTasksChanged?.();
   };
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const todayColRef = useRef<HTMLDivElement | null>(null);
-
-  // Scroll today's column into the leftmost visible position when nonce changes
-  useEffect(() => {
-    if (!scrollerRef.current || !todayColRef.current) return;
-    const scroller = scrollerRef.current;
-    const col = todayColRef.current;
-    scroller.scrollTo({ left: col.offsetLeft - scroller.offsetLeft, behavior: "smooth" });
-  }, [scrollToTodayNonce]);
-
-  // Auto-snap today to leftmost on first render after data is ready.
-  // Uses a ref guard so we only do this once per mount, but waits until
-  // the scroller + today column actually exist (after isLoading flips false).
-  const didInitialScrollRef = useRef(false);
-  useLayoutEffect(() => {
-    if (didInitialScrollRef.current) return;
-    if (isLoading) return;
-    if (!scrollerRef.current || !todayColRef.current) return;
-    const scroller = scrollerRef.current;
-    const col = todayColRef.current;
-    scroller.scrollLeft = col.offsetLeft - scroller.offsetLeft;
-    didInitialScrollRef.current = true;
-  }, [isLoading, dayCount]);
+  const today = new Date();
 
   if (isLoading) {
     return (
@@ -170,37 +145,38 @@ export const PlannerWeekBoardView = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div ref={scrollerRef} className="flex gap-3 p-4 h-full overflow-x-auto bg-muted/20">
+      <div className="grid grid-cols-7 gap-3 p-6 md:p-8 pt-6 w-full overflow-y-auto">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
-          const isToday = key === todayStr;
+          const isToday = isSameDay(day, today);
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+          const allDayTasks = dayTasks.filter(isAllDay);
+          const scheduledTasks = dayTasks.filter((t) => !isAllDay(t));
 
           return (
             <div
               key={key}
-              ref={isToday ? todayColRef : undefined}
               className={cn(
-                "flex flex-col w-[280px] min-w-[260px] shrink-0 rounded-xl border p-3",
+                "flex flex-col min-w-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4",
                 isToday
-                  ? "bg-primary/5 border-primary/30"
+                  ? "bg-[hsl(var(--terracotta-500)/0.04)]"
                   : isWeekend
-                  ? "bg-muted/40 border-border"
-                  : "bg-card border-border"
+                  ? "bg-[hsl(var(--ink-900)/0.015)]"
+                  : "bg-[hsl(var(--paper-100))]"
               )}
             >
-              {/* Editorial day header */}
+              {/* Day header */}
               <div
                 className={cn(
                   "flex items-baseline gap-2 pb-2.5 mb-3 border-b",
-                  isToday ? "border-b-2 border-primary" : "border-border"
+                  isToday ? "border-b-2 border-[hsl(var(--terracotta-500))]" : "border-[hsl(var(--border-hairline))]"
                 )}
               >
                 <div
                   className={cn(
-                    "font-serif italic font-medium text-3xl leading-none tracking-tight",
-                    isToday ? "text-primary" : "text-foreground"
+                    "font-serif italic font-medium text-[28px] leading-none tracking-tight",
+                    isToday ? "text-[hsl(var(--terracotta-500))]" : "text-foreground"
                   )}
                 >
                   {format(day, "d")}
@@ -209,7 +185,11 @@ export const PlannerWeekBoardView = ({
                   <div
                     className={cn(
                       "text-[11px] font-semibold uppercase tracking-[0.1em]",
-                      isToday ? "text-primary" : isWeekend ? "text-muted-foreground" : "text-foreground/80"
+                      isToday
+                        ? "text-[hsl(var(--terracotta-500))]"
+                        : isWeekend
+                        ? "text-muted-foreground"
+                        : "text-foreground/80"
                     )}
                   >
                     {format(day, "EEE")}
@@ -226,23 +206,23 @@ export const PlannerWeekBoardView = ({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 overflow-y-auto space-y-2 rounded-lg transition-colors min-h-[80px]",
-                      snapshot.isDraggingOver && "bg-accent/40 ring-2 ring-primary/20"
+                      "flex-1 grid gap-2 rounded-lg transition-colors min-h-[60px]",
+                      snapshot.isDraggingOver && "ring-2 ring-[hsl(var(--terracotta-500))/0.3] bg-[hsl(var(--terracotta-500))/0.04]"
                     )}
                   >
                     {dayTasks.length === 0 && !snapshot.isDraggingOver && (
-                      <div className="text-center py-6 px-2 font-serif italic text-sm text-muted-foreground">
+                      <div className="text-center py-6 px-2 font-serif italic text-[13px] text-muted-foreground">
                         A clear page.
                       </div>
                     )}
-                    {dayTasks.map((task, idx) => {
-                      const space = spaces.find((s) => s.id === (task as any).space_id);
-                      const cat = categories.find((c) => c.id === task.category);
+                    {[...allDayTasks, ...scheduledTasks].map((task, idx) => {
+                      const source = getTaskSource(task, spaces, categories);
+                      const h = SOURCE_HUES[source];
                       const isDone = task.column_id === "done";
-                      const time = formatTime(task.start_at);
+                      const timeLabel = formatTimeRange(task);
+                      const isAll = !timeLabel;
                       const isRecurring = !!(task as any)._isVirtualRecurrence || !!task.recurrence_rule;
                       const draggableId = task.id;
-                      const accent = space?.color || cat?.color || "hsl(var(--primary))";
 
                       return (
                         <Draggable key={draggableId} draggableId={draggableId} index={idx}>
@@ -252,66 +232,68 @@ export const PlannerWeekBoardView = ({
                               {...dragProvided.draggableProps}
                               {...dragProvided.dragHandleProps}
                               className={cn(
-                                "rounded-lg border border-border bg-background p-2.5 hover:shadow-sm transition-all cursor-pointer group",
-                                isDone && "opacity-60",
-                                dragSnapshot.isDragging && "shadow-lg ring-2 ring-primary/30"
+                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid gap-1.5 px-2.5 py-2 cursor-pointer transition-all hover:-translate-y-px",
+                                "hover:shadow-[0_4px_14px_-8px_rgba(31,27,23,0.18)]",
+                                dragSnapshot.isDragging && "shadow-lg"
                               )}
-                              style={{ borderLeft: `3px solid ${accent}` }}
+                              style={{
+                                borderLeft: `3px solid ${h.dot}`,
+                                opacity: isDone ? 0.55 : 1,
+                              }}
                               onClick={() => onEditTask(task)}
                             >
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                {time ? (
-                                  <span className="font-mono text-[10.5px] font-semibold tracking-wide text-foreground/70">
-                                    {time}
-                                  </span>
-                                ) : (
+                              {/* Top row: time + checkbox */}
+                              <div className="flex items-center justify-between gap-2">
+                                {isAll ? (
                                   <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     All day
                                   </span>
+                                ) : (
+                                  <span className="font-mono text-[10.5px] font-semibold tracking-wide text-foreground/70">
+                                    {timeLabel}
+                                  </span>
                                 )}
                                 <button
-                                  className="shrink-0"
+                                  type="button"
+                                  className="shrink-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px]"
+                                  style={{
+                                    border: `1.5px solid ${isDone ? h.dot : "hsl(var(--border-hairline))"}`,
+                                    background: isDone ? h.dot : "transparent",
+                                  }}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onToggleComplete?.(task);
                                   }}
+                                  aria-label={isDone ? "Mark as not done" : "Mark as done"}
                                 >
-                                  {isDone ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                                  ) : (
-                                    <Circle className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                  {isDone && (
+                                    <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                                      <path d="M2 6.5L4.5 9L10 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
                                   )}
                                 </button>
                               </div>
-                              <p
+
+                              {/* Title */}
+                              <div
                                 className={cn(
                                   "text-[12.5px] font-medium leading-snug text-foreground",
-                                  isDone && "line-through text-muted-foreground"
+                                  isDone && "line-through decoration-foreground/40"
                                 )}
                               >
                                 {task.title}
-                              </p>
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                {space && (
-                                  <span
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide"
-                                    style={{ background: `${space.color}1a`, color: space.color }}
-                                  >
-                                    <span className="w-1 h-1 rounded-full" style={{ background: space.color }} />
-                                    {space.name}
-                                  </span>
-                                )}
-                                {cat && (
-                                  <span
-                                    className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
-                                    style={{ background: `${cat.color}1a`, color: cat.color }}
-                                  >
-                                    {cat.name}
-                                  </span>
-                                )}
-                                {isRecurring && (
-                                  <Repeat className="w-3 h-3 text-muted-foreground" />
-                                )}
+                              </div>
+
+                              {/* Source pill */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
+                                  style={{ background: h.bg, color: h.fg }}
+                                >
+                                  <span className="w-[5px] h-[5px] rounded-full" style={{ background: h.dot }} />
+                                  {source}
+                                </span>
+                                {isRecurring && <Repeat className="w-3 h-3 text-muted-foreground" />}
                               </div>
                             </div>
                           )}
@@ -324,7 +306,8 @@ export const PlannerWeekBoardView = ({
               </Droppable>
 
               <button
-                className="mt-2 w-full px-2 py-1.5 rounded-lg border border-dashed border-border text-[11.5px] font-medium text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
+                type="button"
+                className="mt-2.5 w-full px-2 py-2 rounded-lg border border-dashed border-[hsl(var(--border-hairline))] text-[11.5px] font-medium text-muted-foreground hover:border-[hsl(var(--terracotta-500))] hover:text-[hsl(var(--terracotta-500))] hover:bg-[hsl(var(--terracotta-500)/0.06)] transition-colors"
                 onClick={() => {
                   const d = setMinutes(setHours(new Date(day), 9), 0);
                   onCreateTask?.({ due_at: d.toISOString() });

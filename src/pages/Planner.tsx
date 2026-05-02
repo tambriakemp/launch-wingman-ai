@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   addDays,
-  subDays,
+  
   format,
   startOfDay,
   startOfWeek,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { SpacesFilterDropdown } from "@/components/planner/SpacesFilterDropdown";
+import { PlannerWeekRail } from "@/components/planner/PlannerWeekRail";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
@@ -47,17 +48,15 @@ const Planner = () => {
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   // Unified calendar views: "board" | "month" | "list"
   const [sunsamaView, setSunsamaView] = useState<"board" | "month" | "list">(isTodoUrl ? "list" : "board");
-  // Board window: 15 days back from today, 30 days forward (46 columns).
-  const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
-  const BOARD_DAY_COUNT = 46;
-  const [scrollToTodayNonce, setScrollToTodayNonce] = useState(0);
+  // Anchor date for the visible week — shifts in 7-day increments via prev/next.
+  const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const { syncTask } = useCalendarSync();
+  const { syncTask, hasConnections } = useCalendarSync();
   const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
   const {
@@ -339,21 +338,15 @@ const Planner = () => {
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
 
   // ===== Editorial calendar header =====
-  const handleTodayClick = () => {
-    setBoardStartDate(startOfDay(subDays(new Date(), 15)));
-    setScrollToTodayNonce((n) => n + 1);
-  };
+  const handleTodayClick = () => setAnchorDate(startOfDay(new Date()));
+  const shiftWeek = (deltaDays: number) =>
+    setAnchorDate((prev) => startOfDay(addDays(prev, deltaDays)));
 
-  const shiftWeek = (deltaDays: number) => {
-    setBoardStartDate((prev) => startOfDay(addDays(prev, deltaDays)));
-  };
-
-  // Visible week derived from boardStartDate + 15 days (anchor "today" position).
-  const anchorDate = addDays(boardStartDate, 15);
   const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekNumber = getISOWeek(anchorDate);
   const monthLabel = format(anchorDate, "MMMM yyyy");
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const rangeLabel =
     format(weekStart, "MMM") === format(weekEnd, "MMM")
       ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
@@ -361,13 +354,32 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-background">
-        <div className="px-6 md:px-8 pt-6 pb-5 border-b border-border">
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-[hsl(var(--paper-200))]">
+        {/* Top breadcrumb + sync strip */}
+        <div className="flex items-center gap-3.5 px-6 md:px-8 py-3.5 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+            <span className="text-foreground/70 font-medium">Planner</span>
+            <span>/</span>
+            <span className="text-foreground font-semibold">Calendar</span>
+          </div>
+          <div className="flex-1" />
+          {hasConnections && (
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold tracking-wide"
+              style={{ background: "rgba(126,144,110,0.12)", color: "#475838" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#7E906E" }} />
+              Synced with Google Calendar
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 md:px-8 pt-7 pb-6 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
           <div className="flex items-end justify-between gap-6 flex-wrap">
             {/* Editorial title block */}
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">
-                Week {weekNumber} · {monthLabel}
+                Week {weekNumber} · {monthLabel.toUpperCase()}
               </div>
               <h1 className="font-serif italic font-normal text-4xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0">
                 {rangeLabel}
@@ -505,19 +517,26 @@ const Planner = () => {
               />
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden">
-              <PlannerWeekBoardView
+            <div className="flex-1 overflow-hidden flex">
+              <div className="flex-1 min-w-0 overflow-y-auto">
+                <PlannerWeekBoardView
+                  tasks={filteredTasks}
+                  days={weekDays}
+                  isLoading={isLoading}
+                  spaces={spaces}
+                  categories={activeCategories}
+                  onEditTask={handleEditTask}
+                  onCreateTask={handleQuickCreate}
+                  onToggleComplete={handleToggleComplete}
+                  onTasksChanged={fetchTasks}
+                />
+              </div>
+              <PlannerWeekRail
                 tasks={filteredTasks}
-                startDate={boardStartDate}
-                dayCount={BOARD_DAY_COUNT}
-                isLoading={isLoading}
+                weekStart={weekStart}
+                weekEnd={weekEnd}
                 spaces={spaces}
                 categories={activeCategories}
-                onEditTask={handleEditTask}
-                onCreateTask={handleQuickCreate}
-                onToggleComplete={handleToggleComplete}
-                onTasksChanged={fetchTasks}
-                scrollToTodayNonce={scrollToTodayNonce}
               />
             </div>
           )}
