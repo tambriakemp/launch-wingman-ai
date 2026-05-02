@@ -538,15 +538,7 @@ const Planner = () => {
                 onToggleComplete={handleToggleComplete}
                 onTasksChanged={fetchTasks}
               />
-            </div>
-              <PlannerWeekRail
-                tasks={filteredTasks}
-                weekStart={weekStart}
-                weekEnd={weekEnd}
-                spaces={spaces}
-                categories={activeCategories}
-              />
-            </div>
+          )}
           )}
         </div>
       </div>
