@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
-  addWeeks,
-  subWeeks,
+  addDays,
+  subDays,
   format,
-  startOfWeek,
-  endOfWeek,
+  startOfDay,
 } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import { CalendarDays, Plus, ListTodo, ChevronLeft, ChevronRight, LayoutGrid, Calendar as CalendarIcon, Check } from "lucide-react";
+import { CalendarDays, Plus, ListTodo, ChevronLeft, ChevronRight, LayoutGrid, Calendar as CalendarIcon, Check, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,7 +42,10 @@ const Planner = () => {
   // Sunsama mode: "board" | "month". Tasks mode: list | kanban
   const [sunsamaView, setSunsamaView] = useState<"board" | "month">("board");
   const [tasksView, setTasksView] = useState<"list" | "kanban">("list");
-  const [boardWeekDate, setBoardWeekDate] = useState<Date>(new Date());
+  // Board window: 15 days back from today, 30 days forward (46 columns).
+  const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
+  const BOARD_DAY_COUNT = 46;
+  const [scrollToTodayNonce, setScrollToTodayNonce] = useState(0);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -433,9 +435,11 @@ const Planner = () => {
   }
 
   // ===== SUNSAMA-STYLE CALENDAR MODE =====
-  const weekStart = startOfWeek(boardWeekDate, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(boardWeekDate, { weekStartsOn: 0 });
-  const weekLabel = `${format(weekStart, "MMM d")} – ${format(weekEnd, "MMM d, yyyy")}`;
+  const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
+  const handleTodayClick = () => {
+    setBoardStartDate(startOfDay(subDays(new Date(), 15)));
+    setScrollToTodayNonce((n) => n + 1);
+  };
 
   return (
     <ProjectLayout>
@@ -453,18 +457,33 @@ const Planner = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {sunsamaView === "board" && (
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBoardWeekDate(subWeeks(boardWeekDate, 1))}>
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setBoardWeekDate(new Date())}>
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                            <Hash className="w-3.5 h-3.5" style={{ color: selectedSpace?.color }} />
+                            {selectedSpace ? selectedSpace.name : "All spaces"}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filter by space</div>
+                          <DropdownMenuItem onClick={() => setSelectedSpaceId(null)} className="gap-2">
+                            <span className="flex-1">All spaces</span>
+                            {selectedSpaceId === null && <Check className="w-3.5 h-3.5" />}
+                          </DropdownMenuItem>
+                          {spaces.map((s) => (
+                            <DropdownMenuItem key={s.id} onClick={() => setSelectedSpaceId(s.id)} className="gap-2">
+                              <Hash className="w-3.5 h-3.5" style={{ color: s.color }} />
+                              <span className="flex-1">{s.name}</span>
+                              {selectedSpaceId === s.id && <Check className="w-3.5 h-3.5" />}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
                         Today
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBoardWeekDate(addWeeks(boardWeekDate, 1))}>
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                      <span className="text-xs text-muted-foreground ml-2 hidden md:inline">{weekLabel}</span>
-                    </div>
+                    </>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -524,36 +543,21 @@ const Planner = () => {
               }
             />
           ) : (
-            <>
-              <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
-                <SpacesSidebar
-                  embedded
-                  spaces={spaces}
-                  categories={categories}
-                  tasks={tasks}
-                  selectedSpaceId={selectedSpaceId}
-                  onSelectSpace={setSelectedSpaceId}
-                  onCreateSpace={createSpace}
-                  onUpdateSpace={updateSpace}
-                  onDeleteSpace={deleteSpace}
-                  onCreateCategory={createCategory}
-                  onDeleteCategory={deleteCategory}
-                />
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <PlannerWeekBoardView
-                  tasks={filteredTasks}
-                  weekStartDate={boardWeekDate}
-                  isLoading={isLoading}
-                  spaces={spaces}
-                  categories={activeCategories}
-                  onEditTask={handleEditTask}
-                  onCreateTask={handleQuickCreate}
-                  onToggleComplete={handleToggleComplete}
-                  onTasksChanged={fetchTasks}
-                />
-              </div>
-            </>
+            <div className="flex-1 overflow-hidden">
+              <PlannerWeekBoardView
+                tasks={filteredTasks}
+                startDate={boardStartDate}
+                dayCount={BOARD_DAY_COUNT}
+                isLoading={isLoading}
+                spaces={spaces}
+                categories={activeCategories}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onTasksChanged={fetchTasks}
+                scrollToTodayNonce={scrollToTodayNonce}
+              />
+            </div>
           )}
         </div>
       </div>

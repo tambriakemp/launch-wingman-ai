@@ -1,10 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import {
   format,
   parseISO,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
+  addDays,
   isSameDay,
   setHours,
   setMinutes,
@@ -13,7 +11,6 @@ import {
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { CheckCircle2, Circle, Plus, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { expandAllRecurring } from "./recurrenceUtils";
@@ -22,7 +19,10 @@ import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface Props {
   tasks: PlannerTask[];
-  weekStartDate: Date;
+  /** First day shown in the board (leftmost column) */
+  startDate: Date;
+  /** Total number of day columns to render */
+  dayCount: number;
   isLoading: boolean;
   spaces?: PlannerSpace[];
   categories?: SpaceCategory[];
@@ -30,6 +30,8 @@ interface Props {
   onCreateTask?: (defaults: { due_at?: string }) => void;
   onToggleComplete?: (task: PlannerTask) => void;
   onTasksChanged?: () => void;
+  /** Bumped by parent to trigger a scroll-to-today */
+  scrollToTodayNonce?: number;
 }
 
 function getTaskDateKey(task: PlannerTask): string | null {
@@ -49,7 +51,8 @@ function formatTime(iso?: string | null): string | null {
 
 export const PlannerWeekBoardView = ({
   tasks,
-  weekStartDate,
+  startDate,
+  dayCount,
   isLoading,
   spaces = [],
   categories = [],
@@ -57,14 +60,19 @@ export const PlannerWeekBoardView = ({
   onCreateTask,
   onToggleComplete,
   onTasksChanged,
+  scrollToTodayNonce,
 }: Props) => {
-  const weekStart = startOfWeek(weekStartDate, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(weekStartDate, { weekStartsOn: 0 });
-  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const days = useMemo(
+    () => Array.from({ length: dayCount }, (_, i) => addDays(startDate, i)),
+    [startDate, dayCount]
+  );
+
+  const rangeStart = days[0];
+  const rangeEnd = days[days.length - 1];
 
   const expanded = useMemo(
-    () => expandAllRecurring(tasks, weekStart, weekEnd),
-    [tasks, weekStart, weekEnd]
+    () => expandAllRecurring(tasks, rangeStart, rangeEnd),
+    [tasks, rangeStart, rangeEnd]
   );
 
   const tasksByDay = useMemo(() => {
@@ -74,7 +82,6 @@ export const PlannerWeekBoardView = ({
       const key = getTaskDateKey(t);
       if (key && map[key]) map[key].push(t);
     }
-    // Sort: timed tasks by start, all-day first
     Object.keys(map).forEach((k) => {
       map[k].sort((a, b) => {
         const aT = a.start_at ? parseISO(a.start_at).getTime() : 0;
@@ -97,7 +104,7 @@ export const PlannerWeekBoardView = ({
       return;
     }
 
-    const targetDay = destination.droppableId; // yyyy-MM-dd
+    const targetDay = destination.droppableId;
     const [y, mo, d] = targetDay.split("-").map(Number);
     const updates: Record<string, any> = {};
 
@@ -128,6 +135,26 @@ export const PlannerWeekBoardView = ({
   };
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const todayColRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll today's column into the leftmost visible position when nonce changes
+  useEffect(() => {
+    if (!scrollerRef.current || !todayColRef.current) return;
+    const scroller = scrollerRef.current;
+    const col = todayColRef.current;
+    // Snap so the today column aligns with the scroller's left edge
+    scroller.scrollTo({ left: col.offsetLeft - scroller.offsetLeft, behavior: "smooth" });
+  }, [scrollToTodayNonce, dayCount]);
+
+  // Auto-scroll on first render so today is the leftmost column
+  useEffect(() => {
+    if (!scrollerRef.current || !todayColRef.current) return;
+    const scroller = scrollerRef.current;
+    const col = todayColRef.current;
+    scroller.scrollLeft = col.offsetLeft - scroller.offsetLeft;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return (
@@ -139,7 +166,7 @@ export const PlannerWeekBoardView = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 p-4 h-full overflow-x-auto">
+      <div ref={scrollerRef} className="flex gap-3 p-4 h-full overflow-x-auto">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
@@ -151,9 +178,9 @@ export const PlannerWeekBoardView = ({
           return (
             <div
               key={key}
+              ref={isToday ? todayColRef : undefined}
               className="flex flex-col w-[280px] min-w-[260px] shrink-0"
             >
-              {/* Column header */}
               <div className="px-1 mb-3">
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-base font-bold", isToday ? "text-primary" : "text-foreground")}>
@@ -169,7 +196,6 @@ export const PlannerWeekBoardView = ({
                 </div>
               </div>
 
-              {/* Add task button */}
               <button
                 className="flex items-center justify-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                 onClick={() => {
