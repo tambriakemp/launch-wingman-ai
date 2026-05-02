@@ -38,12 +38,12 @@ import { PageLoader } from "@/components/ui/page-loader";
 const Planner = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const isTodoMode = location.pathname.endsWith("/tasks");
+  // Both /planner and /planner/tasks land here. Default the legacy /planner/tasks URL into List view.
+  const isTodoUrl = location.pathname.endsWith("/tasks");
 
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
-  // Sunsama mode: "board" | "month". Tasks mode: list | kanban
-  const [sunsamaView, setSunsamaView] = useState<"board" | "month">("board");
-  const [tasksView, setTasksView] = useState<"list" | "kanban">("list");
+  // Unified calendar views: "board" | "month" | "list"
+  const [sunsamaView, setSunsamaView] = useState<"board" | "month" | "list">(isTodoUrl ? "list" : "board");
   // Board window: 15 days back from today, 30 days forward (46 columns).
   const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
   const BOARD_DAY_COUNT = 46;
