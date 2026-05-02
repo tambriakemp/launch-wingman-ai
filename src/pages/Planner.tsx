@@ -448,13 +448,6 @@ const Planner = () => {
                 })}
               </div>
 
-              {/* Spaces filter (compact) */}
-              <SpacesFilterDropdown
-                spaces={spaces}
-                selectedSpaceId={selectedSpaceId}
-                onSelectSpace={setSelectedSpaceId}
-                onCreateSpace={createSpace}
-              />
 
               {sunsamaView === "list" && (
                 <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
