@@ -187,6 +187,7 @@ const NavRow = ({
       className={cn(
         "group relative flex items-center gap-2.5 w-full rounded-lg text-left transition-colors",
         collapsed ? "justify-center px-0 py-2 h-9" : "px-3 py-[7px]",
+        !collapsed && item.nested && "pl-8",
         isActive
           ? "bg-[hsl(var(--clay-200))] text-[hsl(var(--ink-900))]"
           : "text-[hsl(var(--ink-800))] hover:bg-[hsl(var(--ink-900)/0.04)]",
