@@ -53,6 +53,10 @@ interface PlannerCalendarViewProps {
   allTasks?: PlannerTask[];
   /** Optional content rendered at the top of the left sidebar (e.g. embedded Spaces section). */
   sidebarTopSlot?: React.ReactNode;
+  /** When set, locks the view to a single mode and hides the month/week/day pill row. */
+  lockedView?: "month" | "week" | "day";
+  /** Hide the entire left sidebar (Upcoming/Priorities/Habits). */
+  hideSidebar?: boolean;
 }
 
 const HOUR_HEIGHT = 72;
@@ -132,9 +136,13 @@ export const PlannerCalendarView = ({
   spaces = [],
   allTasks = [],
   sidebarTopSlot,
+  lockedView,
+  hideSidebar,
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
+  const [internalViewMode, setInternalViewMode] = useState<"month" | "week" | "day">("week");
+  const viewMode = lockedView ?? internalViewMode;
+  const setViewMode = setInternalViewMode;
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const userId = user?.id;
