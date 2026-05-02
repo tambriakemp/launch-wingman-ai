@@ -192,6 +192,7 @@ export const PlannerWeekBoardView = ({
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
           const isToday = isSameDay(day, today);
+          const isPast = isBefore(startOfDay(day), startOfDay(today));
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
           const allDayTasks = dayTasks.filter(isAllDay);
           const scheduledTasks = dayTasks.filter((t) => !isAllDay(t));
@@ -201,41 +202,42 @@ export const PlannerWeekBoardView = ({
               key={key}
               ref={(el) => { dayRefs.current[key] = el; }}
               className={cn(
-                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto",
+                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto transition-opacity",
                 isToday
                   ? "bg-[hsl(var(--terracotta-500)/0.04)]"
                   : isWeekend
                   ? "bg-[hsl(var(--ink-900)/0.015)]"
-                  : "bg-[hsl(var(--paper-100))]"
+                  : "bg-[hsl(var(--paper-100))]",
+                isPast && "opacity-55"
               )}
             >
-              {/* Day header */}
+              {/* Day header — Day on top, Month + Date underneath */}
               <div
                 className={cn(
-                  "flex items-baseline gap-2 pb-2.5 mb-3 border-b",
+                  "pb-2.5 mb-3 border-b",
                   isToday ? "border-b-2 border-[hsl(var(--terracotta-500))]" : "border-[hsl(var(--border-hairline))]"
                 )}
               >
                 <div
                   className={cn(
-                    "font-serif italic font-medium text-[28px] leading-none tracking-tight",
-                    isToday ? "text-[hsl(var(--terracotta-500))]" : "text-foreground"
+                    "text-[15px] font-semibold leading-tight",
+                    isToday
+                      ? "text-[hsl(var(--terracotta-500))]"
+                      : isPast
+                      ? "text-muted-foreground"
+                      : "text-foreground"
                   )}
                 >
-                  {format(day, "d")}
+                  {format(day, "EEEE")}
                 </div>
-                <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                <div className="mt-0.5 flex items-baseline gap-2">
                   <div
                     className={cn(
-                      "text-[11px] font-semibold uppercase tracking-[0.1em]",
-                      isToday
-                        ? "text-[hsl(var(--terracotta-500))]"
-                        : isWeekend
-                        ? "text-muted-foreground"
-                        : "text-foreground/80"
+                      "text-[12px]",
+                      isToday ? "text-[hsl(var(--terracotta-500))]" : "text-muted-foreground"
                     )}
                   >
-                    {format(day, "EEE")}
+                    {format(day, "MMM d")}
                   </div>
                   {isToday && (
                     <div className="font-serif italic text-[11px] text-muted-foreground">today</div>
