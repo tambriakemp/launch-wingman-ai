@@ -447,15 +447,15 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
   return (
     <div
       className={cn(
-        "gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50 grid",
+        "gap-2 items-center px-4 h-11 hover:bg-accent/30 transition-colors cursor-pointer group border-b border-border/50 last:border-b-0 grid",
         showSpaceColumn
-          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
-          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]",
+          ? "grid-cols-[minmax(0,1fr)_100px_120px_120px_110px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_120px_110px_36px]",
         isSelected && "bg-primary/5"
       )}
       onClick={() => onEdit(task)}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <button
           type="button"
           className={cn(
@@ -478,21 +478,26 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
           {isDone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />}
         </button>
 
-        <span className={cn("text-sm truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
+        <span className={cn("text-[13px] font-medium leading-snug truncate text-foreground", isDone && "line-through text-muted-foreground font-normal")}>{task.title}</span>
       </div>
 
-      <span className={cn("text-xs truncate", task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone ? "text-destructive" : "text-muted-foreground")}>
-        {task.due_at ? format(parseISO(task.due_at), "MMM d") : "—"}
+      <span className={cn(
+        "font-mono text-[11px] tracking-wide truncate",
+        task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone
+          ? "text-destructive"
+          : "text-muted-foreground"
+      )}>
+        {task.due_at ? format(parseISO(task.due_at), "MMM d").toLowerCase() : "—"}
       </span>
 
       {showSpaceColumn && (
-        <span className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
-          {getSpaceColor() && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getSpaceColor() }} />}
+        <span className="text-[12px] text-foreground/80 truncate flex items-center gap-1.5">
+          {getSpaceColor() && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: getSpaceColor() }} />}
           {getSpaceName()}
         </span>
       )}
 
-      <span className="text-xs text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
+      <span className="text-[12px] text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
 
       {getStatusBadge(task.column_id)}
 
