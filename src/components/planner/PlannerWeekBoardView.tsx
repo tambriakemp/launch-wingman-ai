@@ -6,6 +6,8 @@ import {
   setHours,
   setMinutes,
   differenceInMilliseconds,
+  startOfDay,
+  isBefore,
 } from "date-fns";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Repeat } from "lucide-react";
@@ -13,9 +15,25 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { expandAllRecurring } from "./recurrenceUtils";
-import { SOURCE_HUES, getTaskSource } from "./taskSource";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+
+const DEFAULT_SPACE_COLOR = "#94a3b8";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getSpaceForTask(task: PlannerTask, spaces: PlannerSpace[]): PlannerSpace | null {
+  const sid = (task as any).space_id;
+  if (!sid) return null;
+  return spaces.find((s) => s.id === sid) || null;
+}
 
 interface Props {
   tasks: PlannerTask[];
@@ -174,6 +192,7 @@ export const PlannerWeekBoardView = ({
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
           const isToday = isSameDay(day, today);
+          const isPast = isBefore(startOfDay(day), startOfDay(today));
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
           const allDayTasks = dayTasks.filter(isAllDay);
           const scheduledTasks = dayTasks.filter((t) => !isAllDay(t));
@@ -183,41 +202,42 @@ export const PlannerWeekBoardView = ({
               key={key}
               ref={(el) => { dayRefs.current[key] = el; }}
               className={cn(
-                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto",
+                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto transition-opacity",
                 isToday
                   ? "bg-[hsl(var(--terracotta-500)/0.04)]"
                   : isWeekend
                   ? "bg-[hsl(var(--ink-900)/0.015)]"
-                  : "bg-[hsl(var(--paper-100))]"
+                  : "bg-[hsl(var(--paper-100))]",
+                isPast && "opacity-55"
               )}
             >
-              {/* Day header */}
+              {/* Day header — Day on top, Month + Date underneath */}
               <div
                 className={cn(
-                  "flex items-baseline gap-2 pb-2.5 mb-3 border-b",
+                  "pb-2.5 mb-3 border-b",
                   isToday ? "border-b-2 border-[hsl(var(--terracotta-500))]" : "border-[hsl(var(--border-hairline))]"
                 )}
               >
                 <div
                   className={cn(
-                    "font-serif italic font-medium text-[28px] leading-none tracking-tight",
-                    isToday ? "text-[hsl(var(--terracotta-500))]" : "text-foreground"
+                    "text-[15px] font-semibold leading-tight",
+                    isToday
+                      ? "text-[hsl(var(--terracotta-500))]"
+                      : isPast
+                      ? "text-muted-foreground"
+                      : "text-foreground"
                   )}
                 >
-                  {format(day, "d")}
+                  {format(day, "EEEE")}
                 </div>
-                <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                <div className="mt-0.5 flex items-baseline gap-2">
                   <div
                     className={cn(
-                      "text-[11px] font-semibold uppercase tracking-[0.1em]",
-                      isToday
-                        ? "text-[hsl(var(--terracotta-500))]"
-                        : isWeekend
-                        ? "text-muted-foreground"
-                        : "text-foreground/80"
+                      "text-[12px]",
+                      isToday ? "text-[hsl(var(--terracotta-500))]" : "text-muted-foreground"
                     )}
                   >
-                    {format(day, "EEE")}
+                    {format(day, "MMM d")}
                   </div>
                   {isToday && (
                     <div className="font-serif italic text-[11px] text-muted-foreground">today</div>
@@ -241,8 +261,10 @@ export const PlannerWeekBoardView = ({
                       </div>
                     )}
                     {[...allDayTasks, ...scheduledTasks].map((task, idx) => {
-                      const source = getTaskSource(task, spaces, categories);
-                      const h = SOURCE_HUES[source];
+                      const space = getSpaceForTask(task, spaces);
+                      const spaceColor = space?.color || DEFAULT_SPACE_COLOR;
+                      const spaceName = space?.name || "Unassigned";
+                      const pillBg = hexToRgba(spaceColor, 0.12);
                       const isDone = task.column_id === "done";
                       const timeLabel = formatTimeRange(task);
                       const isAll = !timeLabel;
@@ -263,7 +285,7 @@ export const PlannerWeekBoardView = ({
                                 dragSnapshot.isDragging && "shadow-lg"
                               )}
                               style={{
-                                borderLeft: `3px solid ${h.dot}`,
+                                borderLeft: `3px solid ${spaceColor}`,
                                 opacity: isDone ? 0.55 : 1,
                               }}
                               onClick={() => onEditTask(task)}
@@ -283,8 +305,8 @@ export const PlannerWeekBoardView = ({
                                   type="button"
                                   className="shrink-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px]"
                                   style={{
-                                    border: `1.5px solid ${isDone ? h.dot : "hsl(var(--border-hairline))"}`,
-                                    background: isDone ? h.dot : "transparent",
+                                    border: `1.5px solid ${isDone ? spaceColor : "hsl(var(--border-hairline))"}`,
+                                    background: isDone ? spaceColor : "transparent",
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -310,14 +332,14 @@ export const PlannerWeekBoardView = ({
                                 {task.title}
                               </div>
 
-                              {/* Source pill */}
+                              {/* Space pill */}
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span
                                   className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
-                                  style={{ background: h.bg, color: h.fg }}
+                                  style={{ background: pillBg, color: "hsl(var(--ink-900))" }}
                                 >
-                                  <span className="w-[5px] h-[5px] rounded-full" style={{ background: h.dot }} />
-                                  {source}
+                                  <span className="w-[5px] h-[5px] rounded-full" style={{ background: spaceColor }} />
+                                  {spaceName}
                                 </span>
                                 {isRecurring && <Repeat className="w-3 h-3 text-muted-foreground" />}
                               </div>
