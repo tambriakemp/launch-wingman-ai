@@ -706,10 +706,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-                </ProtectedRoute>
-              }
-            />
-
             {/* Weekly Review */}
             <Route
               path="/weekly"
