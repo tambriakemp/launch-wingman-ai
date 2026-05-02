@@ -428,7 +428,6 @@ const Planner = () => {
   }
 
   // ===== SUNSAMA-STYLE CALENDAR MODE =====
-  const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
   const handleTodayClick = () => {
     setBoardStartDate(startOfDay(subDays(new Date(), 15)));
     setScrollToTodayNonce((n) => n + 1);
