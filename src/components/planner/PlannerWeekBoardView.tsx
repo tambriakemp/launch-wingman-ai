@@ -143,18 +143,22 @@ export const PlannerWeekBoardView = ({
     if (!scrollerRef.current || !todayColRef.current) return;
     const scroller = scrollerRef.current;
     const col = todayColRef.current;
-    // Snap so the today column aligns with the scroller's left edge
     scroller.scrollTo({ left: col.offsetLeft - scroller.offsetLeft, behavior: "smooth" });
-  }, [scrollToTodayNonce, dayCount]);
+  }, [scrollToTodayNonce]);
 
-  // Auto-scroll on first render so today is the leftmost column
-  useEffect(() => {
+  // Auto-snap today to leftmost on first render after data is ready.
+  // Uses a ref guard so we only do this once per mount, but waits until
+  // the scroller + today column actually exist (after isLoading flips false).
+  const didInitialScrollRef = useRef(false);
+  useLayoutEffect(() => {
+    if (didInitialScrollRef.current) return;
+    if (isLoading) return;
     if (!scrollerRef.current || !todayColRef.current) return;
     const scroller = scrollerRef.current;
     const col = todayColRef.current;
     scroller.scrollLeft = col.offsetLeft - scroller.offsetLeft;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    didInitialScrollRef.current = true;
+  }, [isLoading, dayCount]);
 
   if (isLoading) {
     return (
