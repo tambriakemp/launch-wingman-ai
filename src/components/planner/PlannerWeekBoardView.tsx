@@ -231,7 +231,7 @@ export const PlannerWeekBoardView = ({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 grid gap-2 rounded-lg transition-colors min-h-[60px]",
+                      "flex-1 flex flex-col gap-2 rounded-lg transition-colors min-h-[60px] content-start",
                       snapshot.isDraggingOver && "ring-2 ring-[hsl(var(--terracotta-500))/0.3] bg-[hsl(var(--terracotta-500))/0.04]"
                     )}
                   >
