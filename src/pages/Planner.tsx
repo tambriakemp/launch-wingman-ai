@@ -538,7 +538,7 @@ const Planner = () => {
                 onToggleComplete={handleToggleComplete}
                 onTasksChanged={fetchTasks}
               />
-          )}
+            </div>
           )}
         </div>
       </div>
