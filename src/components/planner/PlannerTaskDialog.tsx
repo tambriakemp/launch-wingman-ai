@@ -18,7 +18,7 @@ import {
   Clock,
   FolderOpen,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -301,7 +301,7 @@ export const PlannerTaskDialog = ({
       // else: no dates at all — all null
 
       await onSubmit({
-        title: title.trim(),
+        title: toTitleCase(title),
         description: description.trim(),
         task_type: "task",
         column_id: columnId,
@@ -351,7 +351,7 @@ export const PlannerTaskDialog = ({
     const { error } = await supabase.from("subtasks").insert({
       task_id: editTask.id,
       user_id: userData.user.id,
-      title: newSubtaskTitle.trim(),
+      title: toTitleCase(newSubtaskTitle),
       position: subtasks.length,
     });
     if (error) { toast.error("Failed to add subtask"); return; }
@@ -379,7 +379,7 @@ export const PlannerTaskDialog = ({
     if (!activeSubtask) return;
     setSubtaskSaving(true);
     await supabase.from("subtasks").update({
-      title: subtaskTitle.trim(),
+      title: toTitleCase(subtaskTitle),
       description: subtaskDescription.trim() || null,
     } as any).eq("id", activeSubtask.id);
     setSubtaskSaving(false);
