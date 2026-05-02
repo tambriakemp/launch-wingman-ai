@@ -524,20 +524,21 @@ const Planner = () => {
               />
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden flex">
-              <div className="flex-1 min-w-0 overflow-y-auto">
-                <PlannerWeekBoardView
-                  tasks={filteredTasks}
-                  days={weekDays}
-                  isLoading={isLoading}
-                  spaces={spaces}
-                  categories={activeCategories}
-                  onEditTask={handleEditTask}
-                  onCreateTask={handleQuickCreate}
-                  onToggleComplete={handleToggleComplete}
-                  onTasksChanged={fetchTasks}
-                />
-              </div>
+            <div className="flex-1 overflow-hidden">
+              <PlannerWeekBoardView
+                tasks={filteredTasks}
+                days={weekDays}
+                anchorDate={anchorDate}
+                scrollToAnchorNonce={scrollNonce}
+                isLoading={isLoading}
+                spaces={spaces}
+                categories={activeCategories}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onTasksChanged={fetchTasks}
+              />
+            </div>
               <PlannerWeekRail
                 tasks={filteredTasks}
                 weekStart={weekStart}
