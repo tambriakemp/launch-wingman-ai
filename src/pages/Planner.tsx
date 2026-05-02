@@ -359,61 +359,52 @@ const Planner = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Tabs value={tasksView} onValueChange={(v) => setTasksView(v as "list" | "kanban")}>
-                <TabsList>
-                  <TabsTrigger value="list">List</TabsTrigger>
-                  <TabsTrigger value="kanban">Board</TabsTrigger>
-                </TabsList>
-              </Tabs>
+            <div className="flex items-center gap-2 flex-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                    <Hash className="w-3.5 h-3.5" style={{ color: selectedSpace?.color }} />
+                    {selectedSpace ? selectedSpace.name : "All spaces"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-52">
+                  <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filter by space</div>
+                  <DropdownMenuItem onClick={() => setSelectedSpaceId(null)} className="gap-2">
+                    <span className="flex-1">All spaces</span>
+                    {selectedSpaceId === null && <Check className="w-3.5 h-3.5" />}
+                  </DropdownMenuItem>
+                  {spaces.map((s) => (
+                    <DropdownMenuItem key={s.id} onClick={() => setSelectedSpaceId(s.id)} className="gap-2">
+                      <Hash className="w-3.5 h-3.5" style={{ color: s.color }} />
+                      <span className="flex-1">{s.name}</span>
+                      {selectedSpaceId === s.id && <Check className="w-3.5 h-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
             </div>
           </div>
           <div className="flex-1 overflow-hidden flex">
-            <SpacesSidebar
-              spaces={spaces}
-              categories={categories}
-              tasks={tasks}
-              selectedSpaceId={selectedSpaceId}
-              onSelectSpace={setSelectedSpaceId}
-              onCreateSpace={createSpace}
-              onUpdateSpace={updateSpace}
-              onDeleteSpace={deleteSpace}
-              onCreateCategory={createCategory}
-              onDeleteCategory={deleteCategory}
-            />
             <div className="flex-1 overflow-hidden">
-              {tasksView === "list" ? (
-                <PlannerListView
-                  tasks={filteredTasks}
-                  isLoading={isLoading}
-                  onEditTask={handleEditTask}
-                  onToggleComplete={handleToggleComplete}
-                  onDeleteTask={handleDeleteTask}
-                  onAddTask={handleAddTask}
-                  categories={activeCategories}
-                  spaces={spaces}
-                  onBulkMoveSpace={handleBulkMoveSpace}
-                  onBulkDelete={handleBulkDelete}
-                  onBulkUpdateCategory={handleBulkUpdateCategory}
-                  onBulkUpdateStatus={handleBulkUpdateStatus}
-                  onCreateCategory={createCategory}
-                  selectedSpaceId={selectedSpaceId}
-                  allCategories={categories}
-                  onUpdateSpace={updateSpace}
-                />
-              ) : (
-                <PlannerKanbanView
-                  tasks={filteredTasks}
-                  isLoading={isLoading}
-                  onEditTask={handleEditTask}
-                  onToggleComplete={handleToggleComplete}
-                  onAddTask={handleAddTask}
-                  onMoveTask={handleMoveTask}
-                  categories={activeCategories}
-                  spaces={spaces}
-                />
-              )}
+              <PlannerListView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+                onBulkMoveSpace={handleBulkMoveSpace}
+                onBulkDelete={handleBulkDelete}
+                onBulkUpdateCategory={handleBulkUpdateCategory}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onCreateCategory={createCategory}
+                selectedSpaceId={selectedSpaceId}
+                allCategories={categories}
+                onUpdateSpace={updateSpace}
+              />
             </div>
           </div>
         </div>
