@@ -32,18 +32,18 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
 
   const spaceCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const t of weekTasks) {
+    for (const t of tasks) {
       const sid = (t as any).space_id || "__none__";
       counts[sid] = (counts[sid] || 0) + 1;
     }
-    const list = spaces
-      .map((s) => ({ space: s, count: counts[s.id] || 0 }))
-      .filter((x) => x.count > 0);
+    const list = spaces.map((s) => ({ space: s, count: counts[s.id] || 0 }));
     if (counts["__none__"]) {
       list.push({ space: { id: "__none__", name: "Unassigned", color: "#94a3b8" } as any, count: counts["__none__"] });
     }
     return list;
-  }, [weekTasks, spaces]);
+  }, [tasks, spaces]);
+
+  const maxSpaceCount = Math.max(1, ...spaceCounts.map((x) => x.count));
 
   return (
     <aside className="hidden lg:flex flex-col gap-7 w-[280px] shrink-0 px-7 py-8">
