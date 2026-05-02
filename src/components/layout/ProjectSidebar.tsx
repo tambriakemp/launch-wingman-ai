@@ -115,6 +115,7 @@ const createSections = (projectId?: string): Section[] => [
     items: [
       { id: "planner-hub", label: "My Planner", icon: LayoutDashboard, href: "/planner-hub" },
       { id: "calendar", label: "Calendar", icon: CalendarCheck, href: "/planner", isProOnly: true },
+      { id: "todo", label: "To do", icon: ListTodo, href: "/planner/tasks", isProOnly: true, nested: true },
       { id: "daily", label: "Daily Page", icon: BookOpen, href: "/daily", isProOnly: true },
       { id: "habits", label: "Habits", icon: Flame, href: "/habits", isProOnly: true },
       { id: "goals", label: "Goals", icon: Target, href: "/goals", isProOnly: true },
