@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
@@ -10,11 +11,13 @@ interface Props {
   spaces?: PlannerSpace[];
   categories?: SpaceCategory[];
   intent?: string;
+  selectedSpaceId?: string | null;
+  onSelectSpace?: (id: string | null) => void;
 }
 
 
 
-export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], categories = [], intent }: Props) => {
+export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], categories = [], intent, selectedSpaceId, onSelectSpace }: Props) => {
   const weekTasks = useMemo(() => {
     const startKey = format(weekStart, "yyyy-MM-dd");
     const endKey = format(weekEnd, "yyyy-MM-dd");
@@ -88,8 +91,20 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
           <div className="grid gap-2.5">
             {spaceCounts.map(({ space, count }) => {
               const color = space.color || "#94a3b8";
+              const sid = space.id === "__none__" ? null : space.id;
+              const isActive = selectedSpaceId === sid || (selectedSpaceId == null && sid == null && false);
+              const isSelected = selectedSpaceId != null && selectedSpaceId === sid;
               return (
-                <div key={space.id} className="flex items-center gap-2.5">
+                <button
+                  key={space.id}
+                  type="button"
+                  onClick={() => onSelectSpace?.(isSelected ? null : sid)}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full text-left rounded-md px-1.5 py-1 -mx-1.5 transition-colors",
+                    isSelected ? "bg-foreground/[0.04]" : "hover:bg-foreground/[0.03]"
+                  )}
+                  aria-pressed={isSelected}
+                >
                   <span
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
                     style={{ background: `${color}1f`, color: "hsl(var(--ink-900))" }}
@@ -104,21 +119,30 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
                     />
                   </div>
                   <span className="font-mono text-[11px] text-muted-foreground min-w-[18px] text-right">{count}</span>
-                </div>
+                </button>
               );
             })}
+            {selectedSpaceId && (
+              <button
+                type="button"
+                onClick={() => onSelectSpace?.(null)}
+                className="text-[11px] text-muted-foreground hover:text-foreground text-left mt-1"
+              >
+                Clear filter
+              </button>
+            )}
           </div>
         </section>
       )}
 
-      {/* Tambra suggests (placeholder) */}
+      {/* Launchely suggests (placeholder) */}
       <section className="relative overflow-hidden rounded-2xl px-5 pt-[18px] pb-5" style={{ background: "#1F1B17", color: "hsl(var(--paper-100))" }}>
         <div
           className="absolute -top-5 -right-5 w-20 h-20 rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(198,90,62,0.4), transparent 70%)" }}
         />
         <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] mb-2 relative" style={{ color: "hsl(var(--terracotta-500))" }}>
-          Tambra suggests
+          Launchely suggests
         </div>
         <div className="font-serif italic text-[16px] leading-snug mb-3.5 relative" style={{ color: "hsl(var(--paper-100))" }}>
           You've got two writing days back-to-back. Want me to batch the welcome emails into Tuesday?
