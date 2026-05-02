@@ -100,14 +100,25 @@ export const PlannerWeekBoardView = ({
     const snap = (behavior: ScrollBehavior) => {
       const el = dayRefs.current[anchorKey];
       const container = scrollContainerRef.current;
-      if (!el || !container) return;
-      const offset = el.offsetLeft - container.offsetLeft;
-      container.scrollTo({ left: Math.max(0, offset), behavior });
+      if (!el || !container) return false;
+      // el.offsetLeft is relative to the scroll container (its offset parent), so use it directly.
+      const target = Math.max(0, el.offsetLeft);
+      container.scrollTo({ left: target, behavior });
+      return true;
     };
-    // Initial layout pass + a follow-up RAF to handle async layout (fonts, images, flex sizing)
-    snap(scrollToAnchorNonce ? "smooth" : "auto");
-    const raf = requestAnimationFrame(() => snap(scrollToAnchorNonce ? "smooth" : "auto"));
-    return () => cancelAnimationFrame(raf);
+    // Try immediately, then on next frame, then after a short delay to catch async layout.
+    snap("auto");
+    const raf1 = requestAnimationFrame(() => {
+      snap("auto");
+      const raf2 = requestAnimationFrame(() => snap(scrollToAnchorNonce ? "smooth" : "auto"));
+      (snap as any)._raf2 = raf2;
+    });
+    const t = window.setTimeout(() => snap(scrollToAnchorNonce ? "smooth" : "auto"), 120);
+    return () => {
+      cancelAnimationFrame(raf1);
+      if ((snap as any)._raf2) cancelAnimationFrame((snap as any)._raf2);
+      window.clearTimeout(t);
+    };
   }, [anchorKey, scrollToAnchorNonce]);
 
   const rangeStart = days[0];
