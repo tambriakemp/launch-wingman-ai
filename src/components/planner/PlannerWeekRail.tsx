@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { format, parseISO } from "date-fns";
-import { SOURCE_HUES, getTaskSource, type TaskSource } from "./taskSource";
+import { format } from "date-fns";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
