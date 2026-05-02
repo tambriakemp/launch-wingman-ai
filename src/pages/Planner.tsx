@@ -356,25 +356,32 @@ const Planner = () => {
                   <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {sunsamaView === "list" && (
+                    <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+                  )}
+                  <SpacesFilterDropdown
+                    spaces={spaces}
+                    selectedSpaceId={selectedSpaceId}
+                    onSelectSpace={setSelectedSpaceId}
+                    onCreateSpace={createSpace}
+                  />
                   {sunsamaView === "board" && (
-                    <>
-                      <SpacesFilterDropdown
-                        spaces={spaces}
-                        selectedSpaceId={selectedSpaceId}
-                        onSelectSpace={setSelectedSpaceId}
-                        onCreateSpace={createSpace}
-                      />
-                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
-                        Today
-                      </Button>
-                    </>
+                    <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
+                      Today
+                    </Button>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5 h-8">
-                        {sunsamaView === "board" ? <LayoutGrid className="w-3.5 h-3.5" /> : <CalendarIcon className="w-3.5 h-3.5" />}
-                        {sunsamaView === "board" ? "Board" : "Calendar · Month"}
+                        {sunsamaView === "board" ? (
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        ) : sunsamaView === "month" ? (
+                          <CalendarIcon className="w-3.5 h-3.5" />
+                        ) : (
+                          <ListTodo className="w-3.5 h-3.5" />
+                        )}
+                        {sunsamaView === "board" ? "Board" : sunsamaView === "month" ? "Calendar · Month" : "List"}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
@@ -389,8 +396,16 @@ const Planner = () => {
                         <span className="flex-1">Calendar · Month</span>
                         {sunsamaView === "month" && <Check className="w-3.5 h-3.5" />}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSunsamaView("list")} className="gap-2">
+                        <ListTodo className="w-4 h-4" />
+                        <span className="flex-1">List</span>
+                        {sunsamaView === "list" && <Check className="w-3.5 h-3.5" />}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  <Button size="sm" className="gap-1.5 h-8" onClick={handleAddTask}>
+                    <Plus className="w-4 h-4" /> Task
+                  </Button>
                 </div>
               </div>
             </div>
@@ -427,6 +442,27 @@ const Planner = () => {
                 />
               }
             />
+          ) : sunsamaView === "list" ? (
+            <div className="flex-1 overflow-hidden">
+              <PlannerListView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+                onBulkMoveSpace={handleBulkMoveSpace}
+                onBulkDelete={handleBulkDelete}
+                onBulkUpdateCategory={handleBulkUpdateCategory}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onCreateCategory={createCategory}
+                selectedSpaceId={selectedSpaceId}
+                allCategories={categories}
+                onUpdateSpace={updateSpace}
+              />
+            </div>
           ) : (
             <div className="flex-1 overflow-hidden">
               <PlannerWeekBoardView
