@@ -435,9 +435,11 @@ const Planner = () => {
   }
 
   // ===== SUNSAMA-STYLE CALENDAR MODE =====
-  const weekStart = startOfWeek(boardWeekDate, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(boardWeekDate, { weekStartsOn: 0 });
-  const weekLabel = `${format(weekStart, "MMM d")} – ${format(weekEnd, "MMM d, yyyy")}`;
+  const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
+  const handleTodayClick = () => {
+    setBoardStartDate(startOfDay(subDays(new Date(), 15)));
+    setScrollToTodayNonce((n) => n + 1);
+  };
 
   return (
     <ProjectLayout>
