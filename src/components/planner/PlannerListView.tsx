@@ -158,18 +158,18 @@ export const PlannerListView = ({
   const activeSpace = selectedSpaceId ? spaces.find(s => s.id === selectedSpaceId) : null;
 
   return (
-    <div className="h-full overflow-y-auto px-4 pb-4 relative">
+    <div className="h-full overflow-y-auto px-4 md:px-6 pb-8 relative bg-background">
       {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
       <div className={cn(
-        "gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
+        "gap-2 items-center px-4 py-2 border-b border-border text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
         !selectedSpaceId
-          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
-          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]"
+          ? "grid-cols-[minmax(0,1fr)_100px_120px_120px_110px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_120px_110px_36px]"
       )}>
-        <span className="pl-8">Name</span>
-        <span>Due Date</span>
+        <span className="pl-8">Task</span>
+        <span>Due</span>
         {!selectedSpaceId && <span>Space</span>}
         <span>Category</span>
         <span>Status</span>
@@ -200,26 +200,29 @@ export const PlannerListView = ({
         </span>
       </div>
 
-      {GROUP_CONFIG.map(({ key, label, color }) => {
+      {GROUP_CONFIG.map(({ key, label, color, sub }) => {
         const items = grouped[key];
         if (items.length === 0) return null;
         const isOpen = expandedGroups[key];
 
         return (
-          <div key={key} className="mt-1">
+          <section key={key} className="mt-6 first:mt-4">
             <button
               type="button"
-              className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 transition-colors text-left rounded-sm"
+              className="w-full flex items-baseline gap-3 px-2 py-2 text-left rounded-sm hover:bg-muted/30 transition-colors"
               onClick={() => toggleGroup(key)}
             >
-              {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
-              <span className={cn("w-2 h-2 rounded-full shrink-0", color)} />
-              <span className="text-xs font-semibold tracking-wide text-foreground">{label}</span>
-              <span className="text-[10px] text-muted-foreground ml-1">{items.length}</span>
+              {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground self-center" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground self-center" />}
+              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 self-center", color)} />
+              <span className="font-serif italic text-2xl tracking-tight text-foreground leading-none">{label}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{items.length}</span>
+              {sub && (
+                <span className="hidden sm:inline text-[11px] text-muted-foreground/80 ml-1">— {sub}</span>
+              )}
             </button>
 
             {isOpen && (
-              <div>
+              <div className="mt-1 rounded-lg overflow-hidden border border-border/60 bg-card">
                 {items.map((task) => (
                   <TaskRow
                     key={task.id}
@@ -239,26 +242,30 @@ export const PlannerListView = ({
                 {onAddTask && (
                   <button
                     type="button"
-                    className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors pl-12"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[11.5px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors pl-12 border-t border-dashed border-border"
                     onClick={onAddTask}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add Task</span>
+                    <span>Add task</span>
                   </button>
                 )}
               </div>
             )}
-          </div>
+          </section>
         );
       })}
 
       {tasks.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm font-medium">No tasks yet</p>
-          <p className="text-xs mt-1 mb-4">Get started by adding your first task.</p>
+        <div className="flex flex-col items-center justify-center text-center py-24 px-6">
+          <p className="font-serif italic text-3xl text-foreground/90 leading-tight">
+            A clear page.
+          </p>
+          <p className="text-sm text-muted-foreground mt-3 max-w-sm">
+            Nothing scheduled, nothing overdue. Add a task when you're ready to commit.
+          </p>
           {onAddTask && (
-            <Button size="sm" className="gap-1.5" onClick={onAddTask}>
-              <Plus className="w-4 h-4" /> Add Task
+            <Button size="sm" className="gap-1.5 mt-6 rounded-full px-4" onClick={onAddTask}>
+              <Plus className="w-4 h-4" /> Add a task
             </Button>
           )}
         </div>
