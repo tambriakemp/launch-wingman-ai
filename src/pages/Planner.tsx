@@ -436,28 +436,12 @@ const Planner = () => {
                 <div className="flex items-center gap-2">
                   {sunsamaView === "board" && (
                     <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-1.5 h-8">
-                            <Hash className="w-3.5 h-3.5" style={{ color: selectedSpace?.color }} />
-                            {selectedSpace ? selectedSpace.name : "All spaces"}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filter by space</div>
-                          <DropdownMenuItem onClick={() => setSelectedSpaceId(null)} className="gap-2">
-                            <span className="flex-1">All spaces</span>
-                            {selectedSpaceId === null && <Check className="w-3.5 h-3.5" />}
-                          </DropdownMenuItem>
-                          {spaces.map((s) => (
-                            <DropdownMenuItem key={s.id} onClick={() => setSelectedSpaceId(s.id)} className="gap-2">
-                              <Hash className="w-3.5 h-3.5" style={{ color: s.color }} />
-                              <span className="flex-1">{s.name}</span>
-                              {selectedSpaceId === s.id && <Check className="w-3.5 h-3.5" />}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <SpacesFilterDropdown
+                        spaces={spaces}
+                        selectedSpaceId={selectedSpaceId}
+                        onSelectSpace={setSelectedSpaceId}
+                        onCreateSpace={createSpace}
+                      />
                       <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
                         Today
                       </Button>
