@@ -12,7 +12,7 @@ interface Props {
   intent?: string;
 }
 
-const SOURCE_ORDER: TaskSource[] = ["Launch", "Social", "Personal", "Habit", "AI", "Goal"];
+
 
 export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], categories = [], intent }: Props) => {
   const weekTasks = useMemo(() => {
