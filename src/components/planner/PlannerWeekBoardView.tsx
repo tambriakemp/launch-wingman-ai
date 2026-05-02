@@ -62,6 +62,8 @@ function formatTimeRange(task: PlannerTask): string | null {
 export const PlannerWeekBoardView = ({
   tasks,
   days,
+  anchorDate,
+  scrollToAnchorNonce,
   isLoading,
   spaces = [],
   categories = [],
@@ -70,6 +72,22 @@ export const PlannerWeekBoardView = ({
   onToggleComplete,
   onTasksChanged,
 }: Props) => {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const anchorKey = anchorDate ? format(anchorDate, "yyyy-MM-dd") : null;
+
+  useLayoutEffect(() => {
+    if (!anchorKey) return;
+    const el = dayRefs.current[anchorKey];
+    const container = scrollContainerRef.current;
+    if (!el || !container) return;
+    const elRect = el.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    const offset = el.offsetLeft - container.offsetLeft - (cRect.width - elRect.width) / 2;
+    container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
+  }, [anchorKey, scrollToAnchorNonce]);
+
   const rangeStart = days[0];
   const rangeEnd = days[days.length - 1];
 
