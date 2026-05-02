@@ -79,28 +79,28 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
         </div>
       </section>
 
-      {/* Focus mix */}
-      {sourceCounts.length > 0 && (
+      {/* Spaces */}
+      {spaceCounts.length > 0 && (
         <section>
           <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">
-            Where your week is going
+            Spaces
           </div>
           <div className="grid gap-2.5">
-            {sourceCounts.map(([src, count]) => {
-              const h = SOURCE_HUES[src];
+            {spaceCounts.map(({ space, count }) => {
+              const color = space.color || "#94a3b8";
               return (
-                <div key={src} className="flex items-center gap-2.5">
+                <div key={space.id} className="flex items-center gap-2.5">
                   <span
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
-                    style={{ background: h.bg, color: h.fg }}
+                    style={{ background: `${color}1f`, color: "hsl(var(--ink-900))" }}
                   >
-                    <span className="w-[5px] h-[5px] rounded-full" style={{ background: h.dot }} />
-                    {src}
+                    <span className="w-[5px] h-[5px] rounded-full" style={{ background: color }} />
+                    {space.name}
                   </span>
                   <div className="flex-1 h-1 bg-foreground/[0.06] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${(count / total) * 100}%`, background: h.dot }}
+                      style={{ width: `${(count / total) * 100}%`, background: color }}
                     />
                   </div>
                   <span className="font-mono text-[11px] text-muted-foreground min-w-[18px] text-right">{count}</span>
