@@ -348,11 +348,10 @@ const Planner = () => {
     setBoardStartDate((prev) => startOfDay(addDays(prev, deltaDays)));
   };
 
-  // Visible week: derive from boardStartDate + 15 days (the "anchor" today position),
-  // then snap to that week's Mon–Sun for header labels.
-  const anchorDate = useMemo(() => addDays(boardStartDate, 15), [boardStartDate]);
-  const weekStart = useMemo(() => startOfWeek(anchorDate, { weekStartsOn: 1 }), [anchorDate]);
-  const weekEnd = useMemo(() => endOfWeek(anchorDate, { weekStartsOn: 1 }), [anchorDate]);
+  // Visible week derived from boardStartDate + 15 days (anchor "today" position).
+  const anchorDate = addDays(boardStartDate, 15);
+  const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekNumber = getISOWeek(anchorDate);
   const monthLabel = format(anchorDate, "MMMM yyyy");
   const rangeLabel =
