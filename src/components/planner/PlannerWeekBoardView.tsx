@@ -82,9 +82,8 @@ export const PlannerWeekBoardView = ({
     const el = dayRefs.current[anchorKey];
     const container = scrollContainerRef.current;
     if (!el || !container) return;
-    const elRect = el.getBoundingClientRect();
-    const cRect = container.getBoundingClientRect();
-    const offset = el.offsetLeft - container.offsetLeft - (cRect.width - elRect.width) / 2;
+    // Snap anchor day to the left edge of the scroll container
+    const offset = el.offsetLeft - container.offsetLeft;
     container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
   }, [anchorKey, scrollToAnchorNonce]);
 

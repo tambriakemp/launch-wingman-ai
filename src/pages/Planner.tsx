@@ -361,7 +361,7 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-[hsl(var(--paper-200))]">
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col bg-[hsl(var(--paper-200))]">
         {/* Top breadcrumb + sync strip */}
         <div className="flex items-center gap-3.5 px-6 md:px-8 py-3.5 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
           <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
@@ -524,21 +524,32 @@ const Planner = () => {
               />
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden">
-              <PlannerWeekBoardView
-                tasks={filteredTasks}
-                days={weekDays}
-                anchorDate={anchorDate}
-                scrollToAnchorNonce={scrollNonce}
-                isLoading={isLoading}
-                spaces={spaces}
-                categories={activeCategories}
-                onEditTask={handleEditTask}
-                onCreateTask={handleQuickCreate}
-                onToggleComplete={handleToggleComplete}
-                onTasksChanged={fetchTasks}
-              />
-            </div>
+            <>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <PlannerWeekBoardView
+                  tasks={filteredTasks}
+                  days={weekDays}
+                  anchorDate={anchorDate}
+                  scrollToAnchorNonce={scrollNonce}
+                  isLoading={isLoading}
+                  spaces={spaces}
+                  categories={activeCategories}
+                  onEditTask={handleEditTask}
+                  onCreateTask={handleQuickCreate}
+                  onToggleComplete={handleToggleComplete}
+                  onTasksChanged={fetchTasks}
+                />
+              </div>
+              <aside className="hidden lg:block w-[300px] shrink-0 border-l border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))] overflow-y-auto">
+                <PlannerWeekRail
+                  tasks={filteredTasks}
+                  weekStart={weekStart}
+                  weekEnd={weekEnd}
+                  spaces={spaces}
+                  categories={activeCategories}
+                />
+              </aside>
+            </>
           )}
         </div>
       </div>
