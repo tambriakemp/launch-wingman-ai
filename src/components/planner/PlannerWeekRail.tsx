@@ -30,16 +30,20 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
   const completed = weekTasks.filter((t) => t.column_id === "done").length;
   const pct = total ? Math.round((completed / total) * 100) : 0;
 
-  const sourceCounts = useMemo(() => {
+  const spaceCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const t of weekTasks) {
-      const src = getTaskSource(t, spaces, categories);
-      counts[src] = (counts[src] || 0) + 1;
+      const sid = (t as any).space_id || "__none__";
+      counts[sid] = (counts[sid] || 0) + 1;
     }
-    return SOURCE_ORDER
-      .map((s) => [s, counts[s] || 0] as const)
-      .filter(([, c]) => c > 0);
-  }, [weekTasks, spaces, categories]);
+    const list = spaces
+      .map((s) => ({ space: s, count: counts[s.id] || 0 }))
+      .filter((x) => x.count > 0);
+    if (counts["__none__"]) {
+      list.push({ space: { id: "__none__", name: "Unassigned", color: "#94a3b8" } as any, count: counts["__none__"] });
+    }
+    return list;
+  }, [weekTasks, spaces]);
 
   return (
     <aside className="hidden lg:flex flex-col gap-7 w-[280px] shrink-0 px-7 py-8">
