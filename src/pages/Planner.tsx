@@ -354,13 +354,32 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-background">
-        <div className="px-6 md:px-8 pt-6 pb-5 border-b border-border">
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-[hsl(var(--paper-200))]">
+        {/* Top breadcrumb + sync strip */}
+        <div className="flex items-center gap-3.5 px-6 md:px-8 py-3.5 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+            <span className="text-foreground/70 font-medium">Planner</span>
+            <span>/</span>
+            <span className="text-foreground font-semibold">Calendar</span>
+          </div>
+          <div className="flex-1" />
+          {hasConnections && (
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold tracking-wide"
+              style={{ background: "rgba(126,144,110,0.12)", color: "#475838" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#7E906E" }} />
+              Synced with Google Calendar
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 md:px-8 pt-7 pb-6 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
           <div className="flex items-end justify-between gap-6 flex-wrap">
             {/* Editorial title block */}
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">
-                Week {weekNumber} · {monthLabel}
+                Week {weekNumber} · {monthLabel.toUpperCase()}
               </div>
               <h1 className="font-serif italic font-normal text-4xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0">
                 {rangeLabel}
