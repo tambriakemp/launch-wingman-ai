@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { toTitleCase } from "@/lib/utils";
+import { toTitleCase, cn } from "@/lib/utils";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
