@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X, Plus, Trash2, CheckCircle2, Circle, ListTodo } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -178,7 +178,7 @@ export const TaskDialog = ({
     const { error } = await supabase.from("subtasks").insert({
       task_id: editTask.id,
       user_id: user.id,
-      title: newSubtaskTitle.trim(),
+      title: toTitleCase(newSubtaskTitle),
       position: subtasks.length,
     });
 
@@ -211,7 +211,7 @@ export const TaskDialog = ({
 
     const { error } = await supabase
       .from("subtasks")
-      .update({ title: editingSubtaskTitle.trim() })
+      .update({ title: toTitleCase(editingSubtaskTitle) })
       .eq("id", subtaskId);
 
     if (error) {
@@ -250,7 +250,7 @@ export const TaskDialog = ({
     setIsSubmitting(true);
     try {
       await onSubmit({
-        title: titleState.trim(),
+        title: toTitleCase(titleState),
         description: descriptionState.trim(),
         due_date: dueDate || null,
         column_id: columnId,

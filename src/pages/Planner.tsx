@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { toTitleCase } from "@/lib/utils";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
@@ -132,7 +133,7 @@ const Planner = () => {
     const { error } = await supabase.from("tasks").insert({
       project_id: projectId,
       user_id: user.id,
-      title: data.title!,
+      title: toTitleCase(data.title!),
       description: data.description || null,
       column_id: data.column_id || "todo",
       task_origin: "user",
