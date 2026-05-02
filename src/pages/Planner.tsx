@@ -338,21 +338,15 @@ const Planner = () => {
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
 
   // ===== Editorial calendar header =====
-  const handleTodayClick = () => {
-    setBoardStartDate(startOfDay(subDays(new Date(), 15)));
-    setScrollToTodayNonce((n) => n + 1);
-  };
+  const handleTodayClick = () => setAnchorDate(startOfDay(new Date()));
+  const shiftWeek = (deltaDays: number) =>
+    setAnchorDate((prev) => startOfDay(addDays(prev, deltaDays)));
 
-  const shiftWeek = (deltaDays: number) => {
-    setBoardStartDate((prev) => startOfDay(addDays(prev, deltaDays)));
-  };
-
-  // Visible week derived from boardStartDate + 15 days (anchor "today" position).
-  const anchorDate = addDays(boardStartDate, 15);
   const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekNumber = getISOWeek(anchorDate);
   const monthLabel = format(anchorDate, "MMMM yyyy");
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const rangeLabel =
     format(weekStart, "MMM") === format(weekEnd, "MMM")
       ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
