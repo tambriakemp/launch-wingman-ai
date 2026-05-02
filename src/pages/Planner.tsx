@@ -361,7 +361,7 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-[hsl(var(--paper-200))]">
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col bg-[hsl(var(--paper-200))]">
         {/* Top breadcrumb + sync strip */}
         <div className="flex items-center gap-3.5 px-6 md:px-8 py-3.5 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
           <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
