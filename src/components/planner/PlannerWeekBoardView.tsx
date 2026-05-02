@@ -206,7 +206,7 @@ export const PlannerWeekBoardView = ({
                 >
                   {format(day, "d")}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-baseline gap-2">
                   <div
                     className={cn(
                       "text-[11px] font-semibold uppercase tracking-[0.1em]",
@@ -220,7 +220,7 @@ export const PlannerWeekBoardView = ({
                     {format(day, "EEE")}
                   </div>
                   {isToday && (
-                    <div className="font-serif italic text-[11px] text-muted-foreground mt-0.5">today</div>
+                    <div className="font-serif italic text-[11px] text-muted-foreground">today</div>
                   )}
                 </div>
               </div>
@@ -231,7 +231,7 @@ export const PlannerWeekBoardView = ({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 grid gap-2 rounded-lg transition-colors min-h-[60px]",
+                      "flex-1 flex flex-col gap-2 rounded-lg transition-colors min-h-[60px] content-start",
                       snapshot.isDraggingOver && "ring-2 ring-[hsl(var(--terracotta-500))/0.3] bg-[hsl(var(--terracotta-500))/0.04]"
                     )}
                   >
