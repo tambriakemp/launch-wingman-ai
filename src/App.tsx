@@ -706,13 +706,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-
-            {/* Brain Dump */}
-            <Route
-              path="/brain-dump"
-              element={
-                <ProtectedRoute>
-                  <BrainDump />
                 </ProtectedRoute>
               }
             />

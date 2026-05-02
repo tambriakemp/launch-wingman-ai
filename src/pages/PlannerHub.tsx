@@ -257,20 +257,6 @@ const PlannerHub = () => {
               <p className="text-xs text-muted-foreground">No active goals yet</p>
             )}
           </HubCard>
-
-          {/* 5 — Brain Dump */}
-          <HubCard title="Brain Dump" href="/brain-dump" icon={Brain} iconColor="bg-purple-500/10 text-purple-500">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-foreground">{inboxCount}</span>
-              <span className="text-xs text-muted-foreground">
-                {inboxCount === 0 ? "Inbox clear" : `item${inboxCount === 1 ? "" : "s"} to process`}
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {inboxCount > 0 ? "Tap to process your thoughts" : "Nothing waiting"}
-            </p>
-          </HubCard>
-
           {/* 6 — Weekly Review */}
           <HubCard title="Weekly Review" href="/weekly" icon={BarChart2} iconColor="bg-indigo-500/10 text-indigo-500">
             <p className="text-xs text-muted-foreground mb-1.5">
