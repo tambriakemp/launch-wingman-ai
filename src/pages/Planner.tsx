@@ -344,47 +344,47 @@ const Planner = () => {
     return (
       <ProjectLayout>
         <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6">
-          <div className="px-4 pt-6 pb-2">
-            <div className="flex items-start gap-4 mb-4">
+          <div className="px-4 pt-6 pb-3 border-b border-border">
+            <div className="flex items-start gap-4 mb-3">
               <div className={`p-3 ${iconBg} rounded-xl shrink-0`}>
                 <PageIcon className={`w-6 h-6 ${iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
                     <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
                     <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
                   </div>
-                  <Button size="sm" className="gap-1.5" onClick={handleAddTask}>
-                    <Plus className="w-4 h-4" /> Task
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                          <Hash className="w-3.5 h-3.5" style={{ color: selectedSpace?.color }} />
+                          {selectedSpace ? selectedSpace.name : "All spaces"}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filter by space</div>
+                        <DropdownMenuItem onClick={() => setSelectedSpaceId(null)} className="gap-2">
+                          <span className="flex-1">All spaces</span>
+                          {selectedSpaceId === null && <Check className="w-3.5 h-3.5" />}
+                        </DropdownMenuItem>
+                        {spaces.map((s) => (
+                          <DropdownMenuItem key={s.id} onClick={() => setSelectedSpaceId(s.id)} className="gap-2">
+                            <Hash className="w-3.5 h-3.5" style={{ color: s.color }} />
+                            <span className="flex-1">{s.name}</span>
+                            {selectedSpaceId === s.id && <Check className="w-3.5 h-3.5" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button size="sm" className="gap-1.5 h-8" onClick={handleAddTask}>
+                      <Plus className="w-4 h-4" /> Task
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5 h-8">
-                    <Hash className="w-3.5 h-3.5" style={{ color: selectedSpace?.color }} />
-                    {selectedSpace ? selectedSpace.name : "All spaces"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52">
-                  <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filter by space</div>
-                  <DropdownMenuItem onClick={() => setSelectedSpaceId(null)} className="gap-2">
-                    <span className="flex-1">All spaces</span>
-                    {selectedSpaceId === null && <Check className="w-3.5 h-3.5" />}
-                  </DropdownMenuItem>
-                  {spaces.map((s) => (
-                    <DropdownMenuItem key={s.id} onClick={() => setSelectedSpaceId(s.id)} className="gap-2">
-                      <Hash className="w-3.5 h-3.5" style={{ color: s.color }} />
-                      <span className="flex-1">{s.name}</span>
-                      {selectedSpaceId === s.id && <Check className="w-3.5 h-3.5" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
             </div>
           </div>
           <div className="flex-1 overflow-hidden flex">
