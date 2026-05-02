@@ -42,7 +42,10 @@ const Planner = () => {
   // Sunsama mode: "board" | "month". Tasks mode: list | kanban
   const [sunsamaView, setSunsamaView] = useState<"board" | "month">("board");
   const [tasksView, setTasksView] = useState<"list" | "kanban">("list");
-  const [boardWeekDate, setBoardWeekDate] = useState<Date>(new Date());
+  // Board window: 15 days back from today, 30 days forward (46 columns).
+  const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
+  const BOARD_DAY_COUNT = 46;
+  const [scrollToTodayNonce, setScrollToTodayNonce] = useState(0);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
