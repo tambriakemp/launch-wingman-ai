@@ -19,8 +19,12 @@ import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface Props {
   tasks: PlannerTask[];
-  /** The 7 days to render (Mon..Sun typically) */
+  /** The days to render */
   days: Date[];
+  /** Date to scroll into view (centered) */
+  anchorDate?: Date;
+  /** Bump to re-trigger scroll-to-anchor */
+  scrollToAnchorNonce?: number;
   isLoading: boolean;
   spaces?: PlannerSpace[];
   categories?: SpaceCategory[];
