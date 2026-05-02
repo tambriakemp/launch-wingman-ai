@@ -452,8 +452,6 @@ const Planner = () => {
               </Button>
             </div>
           </div>
-            </div>
-          </div>
         </div>
 
         <div className="flex-1 overflow-hidden flex">
