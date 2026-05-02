@@ -1,78 +1,69 @@
-## Goal
+# Match Calendar to Editorial Design
 
-Mimic Sunsama's "Board + Calendar in one" experience on `/planner`. The default view becomes a horizontal **Board** (one column per day of the week), with a `Board` ↔ `Calendar · Month` toggle in the top-right (matches the second screenshot). The standalone Week/Day calendar grid and the existing multi-status Kanban are removed from this page. Status only appears on the dedicated Tasks (To do) page.
+The current Planner page already has the right header structure but diverges from the mockup in five concrete ways: the page background is grey (not warm cream), there's no top breadcrumb / "Synced with Google Calendar" strip, the week view is a 46-column horizontal scroller instead of a clean 7-column grid for the visible week, task cards use space colors rather than the source-based palette (Launch/Social/Goal/Habit/Personal/AI), and the right-hand rail (week intent, progress, focus mix, "Tambra suggests") is missing entirely.
 
-## Sidebar changes (`src/components/layout/ProjectSidebar.tsx`)
+This plan brings the `/planner` Week view into 1:1 alignment with the uploaded mockup. Month and List views stay as they are.
 
-Reorder the **Planner** section so Calendar comes first and Tasks (renamed) sits underneath it:
+## What changes
 
-```text
-Planner
-  My Planner
-  Calendar          → /planner
-    To do           → /planner/tasks   (renamed from “Tasks”, nested visually under Calendar)
-  Daily Page
-  Habits
-  Goals
-  Weekly Review
-```
+### 1. Page chrome — `src/pages/Planner.tsx`
+- Switch the outer container background to the editorial paper tone (`bg-[hsl(var(--paper-200))]`) so the cards float on cream.
+- Add a sticky top strip above the editorial header containing:
+  - Left: `Planner / Calendar` breadcrumb (muted → bold).
+  - Right: "Synced with Google Calendar" moss-tinted pill (only when `useCalendarSync().hasConnections === true`).
+- Keep the existing `WEEK 18 · MAY 2026` eyebrow + large italic `May 2 — 8` heading and the right-side `Today` pill / `Week · Month · List` toggle / `+ New event` button — adjust spacing only to match the mockup (header on `paper-100`, hairline border underneath).
 
-Implementation notes:
-- Add a new item `{ id: "todo", label: "To do", icon: ListTodo, href: "/planner/tasks", isProOnly: true }` directly after the `calendar` item.
-- Slight left indent for the To do row (e.g. `pl-6` when not collapsed) to visually nest it under Calendar.
-- The current `/planner` route already exists; add a new `/planner/tasks` route in `src/App.tsx` pointing to the existing `Planner` page but forced into list/tasks mode (see below).
+### 2. Week board — replace 46-column scroller with 7-column grid
+- New behaviour: Week view always renders the 7 days of the currently anchored week (Mon–Sun via `startOfWeek`/`endOfWeek`). Prev/Next shifts by 7 days; "Today" jumps to today's week.
+- Edit `src/components/planner/PlannerWeekBoardView.tsx`:
+  - Accept `days: Date[]` (length 7) instead of `startDate` + `dayCount`.
+  - Render a `grid-cols-7 gap-3` layout (no horizontal scroller, no scroll-to-today logic).
+  - Day column styling:
+    - Card: `bg-[hsl(var(--paper-100))]`, hairline border, `rounded-xl`, `p-3`.
+    - Today column: `bg-[hsl(var(--terracotta-500)/0.04)]` + terracotta bottom border on the header.
+    - Weekend column: very faint warm tint.
+  - Day header: large italic Fraunces date number (`font-serif italic text-3xl`), uppercase `SAT/SUN/...` next to it, italic "today" sub-label only on today.
+  - Group tasks into `All-day` block then timed block. Empty state: italic serif "A clear page."
+  - Bottom "+ Add" button: full-width dashed hairline border, muted text → terracotta on hover.
 
-## `/planner` becomes Sunsama-style (Board + Month only)
+### 3. Source-based task cards
+The mockup colors cards by **source** (Launch/Social/Goal/Habit/Personal/AI), not by Space.
+- Add a small `getSourceFromTask(task)` helper in `PlannerWeekBoardView.tsx` that maps:
+  - `task_type === "habit"` or column `habit` → **Habit** (moss)
+  - `space_id` matches a "Launch" / project space → **Launch** (plum) — fallback rule: any task tied to the active project space
+  - Category name containing "social"/"post"/"carousel" → **Social** (terracotta)
+  - Category/space "goal" → **Goal** (clay)
+  - Category/space "ai" → **AI** (terracotta-soft)
+  - Default → **Personal** (ink)
+- Build a `SOURCE_HUES` map mirroring the mockup (bg / fg / dot tokens off `--terracotta-500`, `--moss-500`, `--plum-700`, `--clay-200`, `--ink-800`).
+- Card layout per the mockup:
+  - White (`bg-card`) with hairline border + 3px left border in source dot color.
+  - Top row: mono `9:00 AM · 45m` (or uppercase tracked "ALL DAY") on the left, square checkbox on the right (filled with dot color when complete).
+  - Title in body font, line-through + 0.55 opacity when complete.
+  - Footer: source pill `• Launch` style (dot + label, soft tinted bg).
+- Remove the current space/category chip cluster from the card; the source pill replaces it.
 
-In `src/pages/Planner.tsx`:
-- Remove the `Tabs` ("Tasks / Calendar / Board") and the `StatusVisibilitySettings` button from this page.
-- Replace with a single top-right view toggle: **Board** | **Calendar · Month** (dropdown styled like screenshot 2, default = Board).
-- Keep `SpacesSidebar` as the embedded collapsible left panel above "Upcoming" (already in place).
-- Always render the new `PlannerWeekBoardView` for "Board", and a trimmed `PlannerCalendarView` (month-only) for "Calendar · Month".
-- Drop the `kanban` view path entirely from this page.
+### 4. Right-hand week rail (new)
+Create `src/components/planner/PlannerWeekRail.tsx`:
+- Width 280, sits to the right of the 7-column grid (hidden under `lg`).
+- Sections, all derived from the visible week's filtered tasks:
+  1. **THIS WEEK IS FOR** eyebrow + italic Fraunces sentence. Source = the current project's `weekly_intent` field if present, else a graceful fallback ("Plan your week, schedule your day.").
+  2. **Done this week** card on `paper-100`: `completed/total`, terracotta progress bar, large italic `XX%` + "into the week".
+  3. **Where your week is going**: one row per source, source pill + thin progress bar (count / total) + count.
+  4. **Tambra suggests** dark card (`bg-[#1F1B17]`, terracotta radial glow, `Yes, do it` / `Not now` buttons). For now this is a static placeholder identical to the mockup; wiring to a real suggestion engine is out of scope.
 
-### New component: `src/components/planner/PlannerWeekBoardView.tsx`
+### 5. Planner page wiring
+- In `Planner.tsx`, compute `weekStart` (already exists) and pass `days = [0..6].map(i => addDays(weekStart, i))` to `PlannerWeekBoardView`.
+- Mount `PlannerWeekRail` to the right of the board only when `sunsamaView === "board"`.
+- Drop the unused `BOARD_DAY_COUNT` / `scrollToTodayNonce` plumbing.
 
-A horizontal day-board mimicking Sunsama:
-- Columns: 7 days starting from today (Sat May 2 … Fri May 8 in screenshot 1). `Today` button + prev/next week navigation in the existing header row.
-- Each column header: weekday name (bold) + date (muted), thin progress bar showing % of that day's tasks completed.
-- Each card shows: time (e.g. "6:00 am") if scheduled, title, space color dot/tag, completion checkbox, recurring icon if applicable. **No status pills** — completion is a single checkbox (done vs not done), matching Sunsama.
-- Empty state per column: `+ Add task` button that calls `onCreateTask({ due_at: <that day at 9am> })`.
-- Drag-and-drop a card between day columns updates `due_at` (and `start_at`/`end_at` preserving duration if scheduled). Reuse `@hello-pangea/dnd` already used in the kanban.
-- Pull tasks from `filteredTasks` for the visible 7-day window (use `expandAllRecurring` like the calendar view does for recurring tasks).
+## Out of scope
+- Month and List views are not redesigned in this pass (they were polished in a prior round).
+- No DB schema changes; "source" is derived client-side from existing fields.
+- The `Tambra suggests` card is presentational only.
 
-### Trimmed Calendar view
-
-`PlannerCalendarView` already supports `month | week | day`. For the merged page, render it with `viewMode` locked to `month` and hide its internal mode switcher when used here. Add an optional prop `lockedView?: "month"` to suppress the `month/week/day` pill row.
-
-## Status visibility scoping
-
-`StatusVisibilitySettings` and the "in-progress / in-review / blocked / abandoned" status pills currently bleed into the calendar/board. Remove them from `/planner` entirely. They remain on the new `/planner/tasks` page (existing `PlannerListView` + Kanban behaviour stays intact there).
-
-In `Planner.tsx`, branch on the route:
-- `/planner` → render Sunsama header (Board / Calendar · Month toggle), no status filter, no Tabs.
-- `/planner/tasks` → render the existing Tasks UI: `PlannerListView` with `StatusVisibilitySettings`, the Kanban "Board" tab if you want to keep it here, page title becomes **"To do"**.
-
-Simplest implementation: keep one `Planner.tsx` and read `useLocation()` — if pathname ends with `/tasks` use the To-do mode, otherwise the Sunsama mode. Page heading and icon switch accordingly (`CalendarDays` → "Calendar" vs `ListTodo` → "To do").
-
-## Routing (`src/App.tsx`)
-
-Add a new lazy route alongside the existing `/planner`:
-```tsx
-<Route path="/planner/tasks" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
-```
-(Reuses the same `Planner` component, which switches mode based on pathname.)
-
-## Out of scope (per request)
-
-- Week / Three-day / Weekdays / One-day calendar variants from the screenshot dropdown — only **Board** and **Calendar · Month** for now.
-- Sunsama's left-side "Daily rituals / Weekly rituals / Backlog" rail — not requested.
-- Time-tracking pills (`0:20`, `2:00`) on cards.
-
-## Files touched
-
-- `src/components/layout/ProjectSidebar.tsx` — reorder Planner items, add nested "To do" row.
-- `src/App.tsx` — add `/planner/tasks` route.
-- `src/pages/Planner.tsx` — remove Tabs, add Board/Month toggle, branch on pathname for Tasks vs Sunsama mode, drop status filter from `/planner`.
-- `src/components/planner/PlannerCalendarView.tsx` — accept `lockedView` prop, hide mode switcher when locked.
-- `src/components/planner/PlannerWeekBoardView.tsx` — **new** Sunsama-style day-column board with DnD between days.
+## Technical notes
+- All new colors come from existing CSS vars in `src/index.css` (`--terracotta-500`, `--moss-500`, `--plum-700`, `--clay-200`, `--ink-800/900`, `--paper-100/200`, `--border-hairline`). No tailwind config changes required — use arbitrary `hsl(var(--...))` classes.
+- `PlannerWeekBoardView` loses `startDate`, `dayCount`, `scrollToTodayNonce`, `useLayoutEffect` scroll logic, and `expandAllRecurring` window math (still expand, but bound to `days[0]`–`days[6]`).
+- Keep drag-and-drop intact; droppable IDs remain `yyyy-MM-dd`.
+- The "Synced with Google Calendar" pill reuses `useCalendarSync().hasConnections`.
