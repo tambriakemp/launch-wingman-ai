@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useLayoutEffect, useRef } from "react";
 import {
   format,
   parseISO,
@@ -19,8 +19,12 @@ import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface Props {
   tasks: PlannerTask[];
-  /** The 7 days to render (Mon..Sun typically) */
+  /** The days to render */
   days: Date[];
+  /** Date to scroll into view (centered) */
+  anchorDate?: Date;
+  /** Bump to re-trigger scroll-to-anchor */
+  scrollToAnchorNonce?: number;
   isLoading: boolean;
   spaces?: PlannerSpace[];
   categories?: SpaceCategory[];
@@ -58,6 +62,8 @@ function formatTimeRange(task: PlannerTask): string | null {
 export const PlannerWeekBoardView = ({
   tasks,
   days,
+  anchorDate,
+  scrollToAnchorNonce,
   isLoading,
   spaces = [],
   categories = [],
@@ -66,6 +72,22 @@ export const PlannerWeekBoardView = ({
   onToggleComplete,
   onTasksChanged,
 }: Props) => {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const anchorKey = anchorDate ? format(anchorDate, "yyyy-MM-dd") : null;
+
+  useLayoutEffect(() => {
+    if (!anchorKey) return;
+    const el = dayRefs.current[anchorKey];
+    const container = scrollContainerRef.current;
+    if (!el || !container) return;
+    const elRect = el.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    const offset = el.offsetLeft - container.offsetLeft - (cRect.width - elRect.width) / 2;
+    container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
+  }, [anchorKey, scrollToAnchorNonce]);
+
   const rangeStart = days[0];
   const rangeEnd = days[days.length - 1];
 
@@ -145,7 +167,10 @@ export const PlannerWeekBoardView = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-7 gap-3 p-6 md:p-8 pt-6 w-full overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-3 p-6 md:p-8 pt-6 w-full h-full overflow-x-auto overflow-y-hidden"
+      >
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
@@ -157,8 +182,9 @@ export const PlannerWeekBoardView = ({
           return (
             <div
               key={key}
+              ref={(el) => { dayRefs.current[key] = el; }}
               className={cn(
-                "flex flex-col min-w-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4",
+                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto",
                 isToday
                   ? "bg-[hsl(var(--terracotta-500)/0.04)]"
                   : isWeekend
@@ -232,7 +258,8 @@ export const PlannerWeekBoardView = ({
                               {...dragProvided.draggableProps}
                               {...dragProvided.dragHandleProps}
                               className={cn(
-                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid gap-1.5 px-2.5 py-2 cursor-pointer transition-all hover:-translate-y-px",
+                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid px-2.5 cursor-pointer transition-all hover:-translate-y-px",
+                                isAll ? "gap-0.5 py-1.5" : "gap-1.5 py-2",
                                 "hover:shadow-[0_4px_14px_-8px_rgba(31,27,23,0.18)]",
                                 dragSnapshot.isDragging && "shadow-lg"
                               )}
