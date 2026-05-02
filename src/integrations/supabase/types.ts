@@ -262,36 +262,6 @@ export type Database = {
         }
         Relationships: []
       }
-      brain_dump_items: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          processed_as: string | null
-          processed_id: string | null
-          status: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          processed_as?: string | null
-          processed_id?: string | null
-          status?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          processed_as?: string | null
-          processed_id?: string | null
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       brand_colors: {
         Row: {
           created_at: string
