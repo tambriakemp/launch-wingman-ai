@@ -7,7 +7,7 @@ import {
   format, startOfWeek, endOfWeek, addDays, isToday, isSameDay, parseISO,
 } from "date-fns";
 import {
-  CalendarCheck, BookOpen, Flame, Target, Brain, BarChart2,
+  CalendarCheck, BookOpen, Flame, Target, BarChart2,
   ChevronRight, CheckCircle2, TrendingUp,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -127,20 +127,6 @@ const PlannerHub = () => {
         .order("target_date", { ascending: true })
         .limit(3);
       return (data || []) as any[];
-    },
-    enabled: !!uid,
-  });
-
-  /* 6 — Inbox count */
-  const { data: inboxCount = 0 } = useQuery({
-    queryKey: ["hub-inbox", uid],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("brain_dump_items" as any)
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", uid!)
-        .eq("status", "inbox");
-      return count || 0;
     },
     enabled: !!uid,
   });

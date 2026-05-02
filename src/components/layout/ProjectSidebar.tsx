@@ -23,7 +23,7 @@ import {
   Wand2,
   CalendarCheck,
   Flame,
-  Brain,
+  
   BarChart2,
   Zap,
   FileText,
@@ -116,7 +116,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "daily", label: "Daily Page", icon: BookOpen, href: "/daily", isProOnly: true },
       { id: "habits", label: "Habits", icon: Flame, href: "/habits", isProOnly: true },
       { id: "goals", label: "Goals", icon: Target, href: "/goals", isProOnly: true },
-      { id: "brain-dump", label: "Brain Dump", icon: Brain, href: "/brain-dump", isProOnly: true },
+      
       { id: "weekly", label: "Weekly Review", icon: BarChart2, href: "/weekly", isProOnly: true },
     ],
   },

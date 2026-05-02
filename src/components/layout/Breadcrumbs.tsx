@@ -37,7 +37,7 @@ const matchCrumb = (pathname: string, projectId?: string): Crumb => {
   if (p.startsWith("/daily")) return { section: "Planner", page: "Daily Page" };
   if (p.startsWith("/habits")) return { section: "Planner", page: "Habits" };
   if (p.startsWith("/goals")) return { section: "Planner", page: "Goals" };
-  if (p.startsWith("/brain-dump")) return { section: "Planner", page: "Brain Dump" };
+  
   if (p.startsWith("/weekly")) return { section: "Planner", page: "Weekly Review" };
 
   // Resources
