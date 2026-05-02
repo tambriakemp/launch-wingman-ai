@@ -50,6 +50,7 @@ const Planner = () => {
   const [sunsamaView, setSunsamaView] = useState<"board" | "month" | "list">(isTodoUrl ? "list" : "board");
   // Anchor date for the visible week — shifts in 7-day increments via prev/next.
   const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
+  const [scrollNonce, setScrollNonce] = useState(0);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
