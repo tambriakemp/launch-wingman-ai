@@ -92,17 +92,17 @@ const Planner = () => {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Filter tasks by selected space — status visibility ONLY applies in Tasks (To do) mode
+  // Filter tasks by selected space — status visibility ONLY applies in List view
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (selectedSpaceId) {
       result = result.filter(t => (t as any).space_id === selectedSpaceId);
     }
-    if (isTodoMode) {
+    if (sunsamaView === "list") {
       result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
     }
     return result;
-  }, [tasks, selectedSpaceId, isVisible, isTodoMode]);
+  }, [tasks, selectedSpaceId, isVisible, sunsamaView]);
 
   const activeCategories = useMemo(() => {
     return getCategoriesForSpace(selectedSpaceId);
@@ -298,17 +298,11 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
-  const PageIcon = isTodoMode ? ListTodo : CalendarDays;
-  const pageTitle = isTodoMode ? "To do" : "Calendar";
-  const pageSubtitle = isTodoMode
-    ? "All your tasks in one place. Filter by status, space, or category."
-    : "Plan your week, schedule your day.";
-  const iconBg = isTodoMode
-    ? "bg-blue-100/50 dark:bg-blue-900/20"
-    : "bg-amber-100/50 dark:bg-amber-900/20";
-  const iconColor = isTodoMode
-    ? "text-blue-600 dark:text-blue-400"
-    : "text-amber-600 dark:text-amber-400";
+  const PageIcon = CalendarDays;
+  const pageTitle = "Calendar";
+  const pageSubtitle = "Plan your week, schedule your day.";
+  const iconBg = "bg-amber-100/50 dark:bg-amber-900/20";
+  const iconColor = "text-amber-600 dark:text-amber-400";
 
   if (accessLoading || spacesLoading) {
     return (
