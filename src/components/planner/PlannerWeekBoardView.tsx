@@ -261,8 +261,10 @@ export const PlannerWeekBoardView = ({
                       </div>
                     )}
                     {[...allDayTasks, ...scheduledTasks].map((task, idx) => {
-                      const source = getTaskSource(task, spaces, categories);
-                      const h = SOURCE_HUES[source];
+                      const space = getSpaceForTask(task, spaces);
+                      const spaceColor = space?.color || DEFAULT_SPACE_COLOR;
+                      const spaceName = space?.name || "Unassigned";
+                      const pillBg = hexToRgba(spaceColor, 0.12);
                       const isDone = task.column_id === "done";
                       const timeLabel = formatTimeRange(task);
                       const isAll = !timeLabel;
@@ -283,7 +285,7 @@ export const PlannerWeekBoardView = ({
                                 dragSnapshot.isDragging && "shadow-lg"
                               )}
                               style={{
-                                borderLeft: `3px solid ${h.dot}`,
+                                borderLeft: `3px solid ${spaceColor}`,
                                 opacity: isDone ? 0.55 : 1,
                               }}
                               onClick={() => onEditTask(task)}
@@ -303,8 +305,8 @@ export const PlannerWeekBoardView = ({
                                   type="button"
                                   className="shrink-0 inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px]"
                                   style={{
-                                    border: `1.5px solid ${isDone ? h.dot : "hsl(var(--border-hairline))"}`,
-                                    background: isDone ? h.dot : "transparent",
+                                    border: `1.5px solid ${isDone ? spaceColor : "hsl(var(--border-hairline))"}`,
+                                    background: isDone ? spaceColor : "transparent",
                                   }}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -330,14 +332,14 @@ export const PlannerWeekBoardView = ({
                                 {task.title}
                               </div>
 
-                              {/* Source pill */}
+                              {/* Space pill */}
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span
                                   className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
-                                  style={{ background: h.bg, color: h.fg }}
+                                  style={{ background: pillBg, color: "hsl(var(--ink-900))" }}
                                 >
-                                  <span className="w-[5px] h-[5px] rounded-full" style={{ background: h.dot }} />
-                                  {source}
+                                  <span className="w-[5px] h-[5px] rounded-full" style={{ background: spaceColor }} />
+                                  {spaceName}
                                 </span>
                                 {isRecurring && <Repeat className="w-3 h-3 text-muted-foreground" />}
                               </div>
