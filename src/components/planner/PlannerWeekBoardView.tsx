@@ -167,7 +167,10 @@ export const PlannerWeekBoardView = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-7 gap-3 p-6 md:p-8 pt-6 w-full overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="flex gap-3 p-6 md:p-8 pt-6 w-full h-full overflow-x-auto overflow-y-hidden"
+      >
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
@@ -179,8 +182,9 @@ export const PlannerWeekBoardView = ({
           return (
             <div
               key={key}
+              ref={(el) => { dayRefs.current[key] = el; }}
               className={cn(
-                "flex flex-col min-w-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4",
+                "flex flex-col w-[260px] shrink-0 rounded-xl border border-[hsl(var(--border-hairline))] p-3.5 pb-4 overflow-y-auto",
                 isToday
                   ? "bg-[hsl(var(--terracotta-500)/0.04)]"
                   : isWeekend
