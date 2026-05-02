@@ -418,6 +418,7 @@ export const PlannerCalendarView = ({
             {format(currentDate, "MMMM, yyyy")}
           </h2>
 
+          {!lockedView && (
           <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1">
             {(["month", "week", "day"] as const).map((mode) => (
               <button
@@ -434,6 +435,7 @@ export const PlannerCalendarView = ({
               </button>
             ))}
           </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
