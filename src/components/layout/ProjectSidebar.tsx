@@ -33,6 +33,7 @@ import {
   LogOut,
   Shield,
   ArrowLeftCircle,
+  ListTodo,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,7 @@ interface SectionItem {
   isProOnly?: boolean;
   isAdvancedOnly?: boolean;
   requiresProject?: boolean;
+  nested?: boolean;
 }
 
 interface Section {
@@ -113,6 +115,7 @@ const createSections = (projectId?: string): Section[] => [
     items: [
       { id: "planner-hub", label: "My Planner", icon: LayoutDashboard, href: "/planner-hub" },
       { id: "calendar", label: "Calendar", icon: CalendarCheck, href: "/planner", isProOnly: true },
+      { id: "todo", label: "To do", icon: ListTodo, href: "/planner/tasks", isProOnly: true, nested: true },
       { id: "daily", label: "Daily Page", icon: BookOpen, href: "/daily", isProOnly: true },
       { id: "habits", label: "Habits", icon: Flame, href: "/habits", isProOnly: true },
       { id: "goals", label: "Goals", icon: Target, href: "/goals", isProOnly: true },
@@ -184,6 +187,7 @@ const NavRow = ({
       className={cn(
         "group relative flex items-center gap-2.5 w-full rounded-lg text-left transition-colors",
         collapsed ? "justify-center px-0 py-2 h-9" : "px-3 py-[7px]",
+        !collapsed && item.nested && "pl-8",
         isActive
           ? "bg-[hsl(var(--clay-200))] text-[hsl(var(--ink-900))]"
           : "text-[hsl(var(--ink-800))] hover:bg-[hsl(var(--ink-900)/0.04)]",

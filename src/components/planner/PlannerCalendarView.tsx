@@ -53,6 +53,10 @@ interface PlannerCalendarViewProps {
   allTasks?: PlannerTask[];
   /** Optional content rendered at the top of the left sidebar (e.g. embedded Spaces section). */
   sidebarTopSlot?: React.ReactNode;
+  /** When set, locks the view to a single mode and hides the month/week/day pill row. */
+  lockedView?: "month" | "week" | "day";
+  /** Hide the entire left sidebar (Upcoming/Priorities/Habits). */
+  hideSidebar?: boolean;
 }
 
 const HOUR_HEIGHT = 72;
@@ -132,9 +136,13 @@ export const PlannerCalendarView = ({
   spaces = [],
   allTasks = [],
   sidebarTopSlot,
+  lockedView,
+  hideSidebar,
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
+  const [internalViewMode, setInternalViewMode] = useState<"month" | "week" | "day">("week");
+  const viewMode = lockedView ?? internalViewMode;
+  const setViewMode = setInternalViewMode;
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const userId = user?.id;
@@ -292,6 +300,7 @@ export const PlannerCalendarView = ({
   return (
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
+      {!hideSidebar && (
       <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
         {/* Embedded Spaces (collapsible) */}
         {sidebarTopSlot && (
@@ -400,6 +409,7 @@ export const PlannerCalendarView = ({
         </div>
 
       </div>
+      )}
 
       {/* ===== MAIN CALENDAR AREA ===== */}
       <div className="flex-1 flex flex-col min-w-0 bg-background">
@@ -409,6 +419,7 @@ export const PlannerCalendarView = ({
             {format(currentDate, "MMMM, yyyy")}
           </h2>
 
+          {!lockedView && (
           <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1">
             {(["month", "week", "day"] as const).map((mode) => (
               <button
@@ -425,6 +436,7 @@ export const PlannerCalendarView = ({
               </button>
             ))}
           </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
