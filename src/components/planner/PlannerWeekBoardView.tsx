@@ -258,7 +258,8 @@ export const PlannerWeekBoardView = ({
                               {...dragProvided.draggableProps}
                               {...dragProvided.dragHandleProps}
                               className={cn(
-                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid gap-1.5 px-2.5 py-2 cursor-pointer transition-all hover:-translate-y-px",
+                                "rounded-lg border border-[hsl(var(--border-hairline))] bg-card grid px-2.5 cursor-pointer transition-all hover:-translate-y-px",
+                                isAll ? "gap-0.5 py-1.5" : "gap-1.5 py-2",
                                 "hover:shadow-[0_4px_14px_-8px_rgba(31,27,23,0.18)]",
                                 dragSnapshot.isDragging && "shadow-lg"
                               )}
