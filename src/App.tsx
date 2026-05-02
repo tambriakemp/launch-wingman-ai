@@ -622,6 +622,14 @@ const App = () => (
               }
             />
             <Route
+              path="/planner/tasks"
+              element={
+                <ProtectedRoute>
+                  <Planner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/social-planner"
               element={
                 <ProtectedRoute>

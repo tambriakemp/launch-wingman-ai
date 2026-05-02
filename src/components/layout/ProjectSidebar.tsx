@@ -33,6 +33,7 @@ import {
   LogOut,
   Shield,
   ArrowLeftCircle,
+  ListTodo,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,7 @@ interface SectionItem {
   isProOnly?: boolean;
   isAdvancedOnly?: boolean;
   requiresProject?: boolean;
+  nested?: boolean;
 }
 
 interface Section {
