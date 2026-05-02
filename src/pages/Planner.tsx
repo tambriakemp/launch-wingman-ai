@@ -5,11 +5,14 @@ import {
   subDays,
   format,
   startOfDay,
+  startOfWeek,
+  endOfWeek,
+  getISOWeek,
 } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { toTitleCase } from "@/lib/utils";
+import { toTitleCase, cn } from "@/lib/utils";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
@@ -335,79 +338,117 @@ const Planner = () => {
 
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
 
-
-  // ===== SUNSAMA-STYLE CALENDAR MODE =====
+  // ===== Editorial calendar header =====
   const handleTodayClick = () => {
     setBoardStartDate(startOfDay(subDays(new Date(), 15)));
     setScrollToTodayNonce((n) => n + 1);
   };
 
+  const shiftWeek = (deltaDays: number) => {
+    setBoardStartDate((prev) => startOfDay(addDays(prev, deltaDays)));
+  };
+
+  // Visible week derived from boardStartDate + 15 days (anchor "today" position).
+  const anchorDate = addDays(boardStartDate, 15);
+  const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(anchorDate, { weekStartsOn: 1 });
+  const weekNumber = getISOWeek(anchorDate);
+  const monthLabel = format(anchorDate, "MMMM yyyy");
+  const rangeLabel =
+    format(weekStart, "MMM") === format(weekEnd, "MMM")
+      ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
+      : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
+
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6">
-        <div className="px-4 pt-6 pb-3 border-b border-border">
-          <div className="flex items-start gap-4 mb-3">
-            <div className={`p-3 ${iconBg} rounded-xl shrink-0`}>
-              <PageIcon className={`w-6 h-6 ${iconColor}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-                  <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {sunsamaView === "list" && (
-                    <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
-                  )}
-                  <SpacesFilterDropdown
-                    spaces={spaces}
-                    selectedSpaceId={selectedSpaceId}
-                    onSelectSpace={setSelectedSpaceId}
-                    onCreateSpace={createSpace}
-                  />
-                  {sunsamaView === "board" && (
-                    <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
-                      Today
-                    </Button>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 h-8">
-                        {sunsamaView === "board" ? (
-                          <LayoutGrid className="w-3.5 h-3.5" />
-                        ) : sunsamaView === "month" ? (
-                          <CalendarIcon className="w-3.5 h-3.5" />
-                        ) : (
-                          <ListTodo className="w-3.5 h-3.5" />
-                        )}
-                        {sunsamaView === "board" ? "Board" : sunsamaView === "month" ? "Calendar · Month" : "List"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Views</div>
-                      <DropdownMenuItem onClick={() => setSunsamaView("board")} className="gap-2">
-                        <LayoutGrid className="w-4 h-4" />
-                        <span className="flex-1">Board</span>
-                        {sunsamaView === "board" && <Check className="w-3.5 h-3.5" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSunsamaView("month")} className="gap-2">
-                        <CalendarIcon className="w-4 h-4" />
-                        <span className="flex-1">Calendar · Month</span>
-                        {sunsamaView === "month" && <Check className="w-3.5 h-3.5" />}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSunsamaView("list")} className="gap-2">
-                        <ListTodo className="w-4 h-4" />
-                        <span className="flex-1">List</span>
-                        {sunsamaView === "list" && <Check className="w-3.5 h-3.5" />}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button size="sm" className="gap-1.5 h-8" onClick={handleAddTask}>
-                    <Plus className="w-4 h-4" /> Task
-                  </Button>
-                </div>
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6 bg-background">
+        <div className="px-6 md:px-8 pt-6 pb-5 border-b border-border">
+          <div className="flex items-end justify-between gap-6 flex-wrap">
+            {/* Editorial title block */}
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2.5">
+                Week {weekNumber} · {monthLabel}
               </div>
+              <h1 className="font-serif italic font-normal text-4xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0">
+                {rangeLabel}
+              </h1>
+            </div>
+
+            {/* Right cluster: prev/today/next pill, view toggle, action */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Date nav pill */}
+              <div className="inline-flex items-center bg-card border border-border rounded-full p-0.5">
+                <button
+                  type="button"
+                  onClick={() => shiftWeek(-7)}
+                  className="w-8 h-8 inline-flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
+                  aria-label="Previous week"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTodayClick}
+                  className="px-3.5 h-7 rounded-full text-[12px] font-semibold text-foreground hover:bg-muted transition-colors"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shiftWeek(7)}
+                  className="w-8 h-8 inline-flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
+                  aria-label="Next week"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Segmented Week / Month / List toggle */}
+              <div className="inline-flex items-center bg-muted/60 border border-border rounded-full p-[3px]">
+                {([
+                  { key: "board", label: "Week" },
+                  { key: "month", label: "Month" },
+                  { key: "list", label: "List" },
+                ] as const).map((opt) => {
+                  const isActive = sunsamaView === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSunsamaView(opt.key)}
+                      className={cn(
+                        "px-3.5 py-1.5 rounded-full text-[12px] font-semibold tracking-tight transition-colors",
+                        isActive
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Spaces filter (compact) */}
+              <SpacesFilterDropdown
+                spaces={spaces}
+                selectedSpaceId={selectedSpaceId}
+                onSelectSpace={setSelectedSpaceId}
+                onCreateSpace={createSpace}
+              />
+
+              {sunsamaView === "list" && (
+                <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+              )}
+
+              {/* Primary action — terracotta-like rounded pill */}
+              <Button
+                size="sm"
+                className="gap-1.5 h-8 rounded-full px-4 text-[12.5px] font-semibold shadow-sm"
+                onClick={handleAddTask}
+              >
+                <Plus className="w-3.5 h-3.5" /> New task
+              </Button>
             </div>
           </div>
         </div>
