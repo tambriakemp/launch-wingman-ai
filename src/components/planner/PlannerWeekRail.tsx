@@ -100,7 +100,7 @@ export const PlannerWeekRail = ({ tasks, weekStart, weekEnd, spaces = [], catego
                   <div className="flex-1 h-1 bg-foreground/[0.06] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${(count / total) * 100}%`, background: color }}
+                      style={{ width: `${(count / maxSpaceCount) * 100}%`, background: color }}
                     />
                   </div>
                   <span className="font-mono text-[11px] text-muted-foreground min-w-[18px] text-right">{count}</span>
