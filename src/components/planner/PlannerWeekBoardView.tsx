@@ -6,6 +6,8 @@ import {
   setHours,
   setMinutes,
   differenceInMilliseconds,
+  startOfDay,
+  isBefore,
 } from "date-fns";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Repeat } from "lucide-react";
@@ -13,9 +15,25 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { expandAllRecurring } from "./recurrenceUtils";
-import { SOURCE_HUES, getTaskSource } from "./taskSource";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+
+const DEFAULT_SPACE_COLOR = "#94a3b8";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getSpaceForTask(task: PlannerTask, spaces: PlannerSpace[]): PlannerSpace | null {
+  const sid = (task as any).space_id;
+  if (!sid) return null;
+  return spaces.find((s) => s.id === sid) || null;
+}
 
 interface Props {
   tasks: PlannerTask[];
