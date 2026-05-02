@@ -543,36 +543,21 @@ const Planner = () => {
               }
             />
           ) : (
-            <>
-              <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
-                <SpacesSidebar
-                  embedded
-                  spaces={spaces}
-                  categories={categories}
-                  tasks={tasks}
-                  selectedSpaceId={selectedSpaceId}
-                  onSelectSpace={setSelectedSpaceId}
-                  onCreateSpace={createSpace}
-                  onUpdateSpace={updateSpace}
-                  onDeleteSpace={deleteSpace}
-                  onCreateCategory={createCategory}
-                  onDeleteCategory={deleteCategory}
-                />
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <PlannerWeekBoardView
-                  tasks={filteredTasks}
-                  weekStartDate={boardWeekDate}
-                  isLoading={isLoading}
-                  spaces={spaces}
-                  categories={activeCategories}
-                  onEditTask={handleEditTask}
-                  onCreateTask={handleQuickCreate}
-                  onToggleComplete={handleToggleComplete}
-                  onTasksChanged={fetchTasks}
-                />
-              </div>
-            </>
+            <div className="flex-1 overflow-hidden">
+              <PlannerWeekBoardView
+                tasks={filteredTasks}
+                startDate={boardStartDate}
+                dayCount={BOARD_DAY_COUNT}
+                isLoading={isLoading}
+                spaces={spaces}
+                categories={activeCategories}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onTasksChanged={fetchTasks}
+                scrollToTodayNonce={scrollToTodayNonce}
+              />
+            </div>
           )}
         </div>
       </div>
