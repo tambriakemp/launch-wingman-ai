@@ -98,7 +98,7 @@ const DailyPage = lazy(() => import("./pages/DailyPage"));
 const Goals = lazy(() => import("./pages/Goals"));
 const GoalDetail = lazy(() => import("./pages/GoalDetail"));
 const GoalFolderDetail = lazy(() => import("./pages/GoalFolderDetail"));
-const BrainDump = lazy(() => import("./pages/BrainDump"));
+
 const WeeklyReview = lazy(() => import("./pages/WeeklyReview"));
 const LinkInBio = lazy(() => import("./pages/LinkInBio"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -706,17 +706,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-
-            {/* Brain Dump */}
-            <Route
-              path="/brain-dump"
-              element={
-                <ProtectedRoute>
-                  <BrainDump />
-                </ProtectedRoute>
-              }
-            />
-
             {/* Weekly Review */}
             <Route
               path="/weekly"

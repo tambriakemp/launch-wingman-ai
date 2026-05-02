@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.brain_dump_items CASCADE;

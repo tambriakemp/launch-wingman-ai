@@ -72,7 +72,7 @@ const planningFeatures = [
   "Set measurable goals with quantifiable targets you can track over time",
   "Daily priorities and to-do lists to keep every day focused",
   "Habit tracker with streaks — build routines that stick",
-  "Brain dump — capture ideas on the fly and promote them to tasks",
+  
 ];
 
 const aiFeatures = [
