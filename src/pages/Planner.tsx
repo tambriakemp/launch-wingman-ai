@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
-  addWeeks,
-  subWeeks,
+  addDays,
+  subDays,
   format,
-  startOfWeek,
-  endOfWeek,
+  startOfDay,
 } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
