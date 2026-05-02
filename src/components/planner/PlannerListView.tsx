@@ -49,15 +49,15 @@ interface PlannerListViewProps {
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
 
-const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string }[] = [
-  { key: "overdue", label: "OVERDUE", defaultOpen: true, color: "bg-destructive" },
-  { key: "today", label: "TODAY", defaultOpen: true, color: "bg-blue-500" },
-  { key: "this_week", label: "THIS WEEK", defaultOpen: true, color: "bg-amber-500" },
-  { key: "anytime", label: "ANYTIME", defaultOpen: true, color: "bg-muted-foreground" },
-  { key: "in_review", label: "IN REVIEW", defaultOpen: true, color: "bg-purple-500" },
-  { key: "completed", label: "DONE", defaultOpen: false, color: "bg-emerald-500" },
-  { key: "blocked", label: "BLOCKED", defaultOpen: false, color: "bg-red-500" },
-  { key: "abandoned", label: "ABANDONED", defaultOpen: false, color: "bg-zinc-400" },
+const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string; sub?: string }[] = [
+  { key: "overdue", label: "Overdue", defaultOpen: true, color: "bg-destructive", sub: "needs your attention" },
+  { key: "today", label: "Today", defaultOpen: true, color: "bg-primary", sub: "what you said yes to" },
+  { key: "this_week", label: "This week", defaultOpen: true, color: "bg-amber-500", sub: "the shape of the days ahead" },
+  { key: "anytime", label: "Anytime", defaultOpen: true, color: "bg-muted-foreground", sub: "no date — just intent" },
+  { key: "in_review", label: "In review", defaultOpen: true, color: "bg-purple-500" },
+  { key: "completed", label: "Done", defaultOpen: false, color: "bg-emerald-500" },
+  { key: "blocked", label: "Blocked", defaultOpen: false, color: "bg-red-500" },
+  { key: "abandoned", label: "Abandoned", defaultOpen: false, color: "bg-zinc-400" },
 ];
 
 function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
@@ -85,20 +85,22 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
 }
 
 function getStatusBadge(columnId: string) {
+  const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap";
+  const dot = "w-1 h-1 rounded-full";
   switch (columnId) {
     case "done":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Done</span>;
+      return <span className={cn(base, "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400")}><span className={cn(dot, "bg-emerald-500")} />Done</span>;
     case "in_progress":
     case "in-progress":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400">In Progress</span>;
+      return <span className={cn(base, "bg-blue-500/12 text-blue-700 dark:text-blue-400")}><span className={cn(dot, "bg-blue-500")} />In progress</span>;
     case "in-review":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400">In Review</span>;
+      return <span className={cn(base, "bg-purple-500/12 text-purple-700 dark:text-purple-400")}><span className={cn(dot, "bg-purple-500")} />In review</span>;
     case "blocked":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400">Blocked</span>;
+      return <span className={cn(base, "bg-red-500/12 text-red-700 dark:text-red-400")}><span className={cn(dot, "bg-red-500")} />Blocked</span>;
     case "abandoned":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-zinc-400/15 text-zinc-500 dark:text-zinc-400">Abandoned</span>;
+      return <span className={cn(base, "bg-zinc-400/15 text-zinc-600 dark:text-zinc-400")}><span className={cn(dot, "bg-zinc-400")} />Abandoned</span>;
     default:
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground">To Do</span>;
+      return <span className={cn(base, "bg-muted text-muted-foreground")}><span className={cn(dot, "bg-muted-foreground/60")} />To do</span>;
   }
 }
 
@@ -156,18 +158,18 @@ export const PlannerListView = ({
   const activeSpace = selectedSpaceId ? spaces.find(s => s.id === selectedSpaceId) : null;
 
   return (
-    <div className="h-full overflow-y-auto px-4 pb-4 relative">
+    <div className="h-full overflow-y-auto px-4 md:px-6 pb-8 relative bg-background">
       {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
       <div className={cn(
-        "gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
+        "gap-2 items-center px-4 py-2 border-b border-border text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
         !selectedSpaceId
-          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
-          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]"
+          ? "grid-cols-[minmax(0,1fr)_100px_120px_120px_110px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_120px_110px_36px]"
       )}>
-        <span className="pl-8">Name</span>
-        <span>Due Date</span>
+        <span className="pl-8">Task</span>
+        <span>Due</span>
         {!selectedSpaceId && <span>Space</span>}
         <span>Category</span>
         <span>Status</span>
@@ -198,26 +200,29 @@ export const PlannerListView = ({
         </span>
       </div>
 
-      {GROUP_CONFIG.map(({ key, label, color }) => {
+      {GROUP_CONFIG.map(({ key, label, color, sub }) => {
         const items = grouped[key];
         if (items.length === 0) return null;
         const isOpen = expandedGroups[key];
 
         return (
-          <div key={key} className="mt-1">
+          <section key={key} className="mt-6 first:mt-4">
             <button
               type="button"
-              className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 transition-colors text-left rounded-sm"
+              className="w-full flex items-baseline gap-3 px-2 py-2 text-left rounded-sm hover:bg-muted/30 transition-colors"
               onClick={() => toggleGroup(key)}
             >
-              {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
-              <span className={cn("w-2 h-2 rounded-full shrink-0", color)} />
-              <span className="text-xs font-semibold tracking-wide text-foreground">{label}</span>
-              <span className="text-[10px] text-muted-foreground ml-1">{items.length}</span>
+              {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground self-center" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground self-center" />}
+              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 self-center", color)} />
+              <span className="font-serif italic text-2xl tracking-tight text-foreground leading-none">{label}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{items.length}</span>
+              {sub && (
+                <span className="hidden sm:inline text-[11px] text-muted-foreground/80 ml-1">— {sub}</span>
+              )}
             </button>
 
             {isOpen && (
-              <div>
+              <div className="mt-1 rounded-lg overflow-hidden border border-border/60 bg-card">
                 {items.map((task) => (
                   <TaskRow
                     key={task.id}
@@ -237,26 +242,30 @@ export const PlannerListView = ({
                 {onAddTask && (
                   <button
                     type="button"
-                    className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors pl-12"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[11.5px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors pl-12 border-t border-dashed border-border"
                     onClick={onAddTask}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add Task</span>
+                    <span>Add task</span>
                   </button>
                 )}
               </div>
             )}
-          </div>
+          </section>
         );
       })}
 
       {tasks.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm font-medium">No tasks yet</p>
-          <p className="text-xs mt-1 mb-4">Get started by adding your first task.</p>
+        <div className="flex flex-col items-center justify-center text-center py-24 px-6">
+          <p className="font-serif italic text-3xl text-foreground/90 leading-tight">
+            A clear page.
+          </p>
+          <p className="text-sm text-muted-foreground mt-3 max-w-sm">
+            Nothing scheduled, nothing overdue. Add a task when you're ready to commit.
+          </p>
           {onAddTask && (
-            <Button size="sm" className="gap-1.5" onClick={onAddTask}>
-              <Plus className="w-4 h-4" /> Add Task
+            <Button size="sm" className="gap-1.5 mt-6 rounded-full px-4" onClick={onAddTask}>
+              <Plus className="w-4 h-4" /> Add a task
             </Button>
           )}
         </div>
@@ -438,15 +447,15 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
   return (
     <div
       className={cn(
-        "gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50 grid",
+        "gap-2 items-center px-4 h-11 hover:bg-accent/30 transition-colors cursor-pointer group border-b border-border/50 last:border-b-0 grid",
         showSpaceColumn
-          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
-          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]",
+          ? "grid-cols-[minmax(0,1fr)_100px_120px_120px_110px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_120px_110px_36px]",
         isSelected && "bg-primary/5"
       )}
       onClick={() => onEdit(task)}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <button
           type="button"
           className={cn(
@@ -469,21 +478,26 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
           {isDone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />}
         </button>
 
-        <span className={cn("text-sm truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
+        <span className={cn("text-[13px] font-medium leading-snug truncate text-foreground", isDone && "line-through text-muted-foreground font-normal")}>{task.title}</span>
       </div>
 
-      <span className={cn("text-xs truncate", task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone ? "text-destructive" : "text-muted-foreground")}>
-        {task.due_at ? format(parseISO(task.due_at), "MMM d") : "—"}
+      <span className={cn(
+        "font-mono text-[11px] tracking-wide truncate",
+        task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone
+          ? "text-destructive"
+          : "text-muted-foreground"
+      )}>
+        {task.due_at ? format(parseISO(task.due_at), "MMM d").toLowerCase() : "—"}
       </span>
 
       {showSpaceColumn && (
-        <span className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
-          {getSpaceColor() && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getSpaceColor() }} />}
+        <span className="text-[12px] text-foreground/80 truncate flex items-center gap-1.5">
+          {getSpaceColor() && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: getSpaceColor() }} />}
           {getSpaceName()}
         </span>
       )}
 
-      <span className="text-xs text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
+      <span className="text-[12px] text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
 
       {getStatusBadge(task.column_id)}
 
