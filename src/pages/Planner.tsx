@@ -337,6 +337,8 @@ const Planner = () => {
     );
   }
 
+  const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
+
   // ===== TASKS (TO DO) MODE =====
   if (isTodoMode) {
     return (
