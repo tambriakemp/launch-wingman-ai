@@ -49,15 +49,15 @@ interface PlannerListViewProps {
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
 
-const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string }[] = [
-  { key: "overdue", label: "OVERDUE", defaultOpen: true, color: "bg-destructive" },
-  { key: "today", label: "TODAY", defaultOpen: true, color: "bg-blue-500" },
-  { key: "this_week", label: "THIS WEEK", defaultOpen: true, color: "bg-amber-500" },
-  { key: "anytime", label: "ANYTIME", defaultOpen: true, color: "bg-muted-foreground" },
-  { key: "in_review", label: "IN REVIEW", defaultOpen: true, color: "bg-purple-500" },
-  { key: "completed", label: "DONE", defaultOpen: false, color: "bg-emerald-500" },
-  { key: "blocked", label: "BLOCKED", defaultOpen: false, color: "bg-red-500" },
-  { key: "abandoned", label: "ABANDONED", defaultOpen: false, color: "bg-zinc-400" },
+const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string; sub?: string }[] = [
+  { key: "overdue", label: "Overdue", defaultOpen: true, color: "bg-destructive", sub: "needs your attention" },
+  { key: "today", label: "Today", defaultOpen: true, color: "bg-primary", sub: "what you said yes to" },
+  { key: "this_week", label: "This week", defaultOpen: true, color: "bg-amber-500", sub: "the shape of the days ahead" },
+  { key: "anytime", label: "Anytime", defaultOpen: true, color: "bg-muted-foreground", sub: "no date — just intent" },
+  { key: "in_review", label: "In review", defaultOpen: true, color: "bg-purple-500" },
+  { key: "completed", label: "Done", defaultOpen: false, color: "bg-emerald-500" },
+  { key: "blocked", label: "Blocked", defaultOpen: false, color: "bg-red-500" },
+  { key: "abandoned", label: "Abandoned", defaultOpen: false, color: "bg-zinc-400" },
 ];
 
 function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
@@ -85,20 +85,22 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
 }
 
 function getStatusBadge(columnId: string) {
+  const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap";
+  const dot = "w-1 h-1 rounded-full";
   switch (columnId) {
     case "done":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Done</span>;
+      return <span className={cn(base, "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400")}><span className={cn(dot, "bg-emerald-500")} />Done</span>;
     case "in_progress":
     case "in-progress":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400">In Progress</span>;
+      return <span className={cn(base, "bg-blue-500/12 text-blue-700 dark:text-blue-400")}><span className={cn(dot, "bg-blue-500")} />In progress</span>;
     case "in-review":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400">In Review</span>;
+      return <span className={cn(base, "bg-purple-500/12 text-purple-700 dark:text-purple-400")}><span className={cn(dot, "bg-purple-500")} />In review</span>;
     case "blocked":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400">Blocked</span>;
+      return <span className={cn(base, "bg-red-500/12 text-red-700 dark:text-red-400")}><span className={cn(dot, "bg-red-500")} />Blocked</span>;
     case "abandoned":
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-zinc-400/15 text-zinc-500 dark:text-zinc-400">Abandoned</span>;
+      return <span className={cn(base, "bg-zinc-400/15 text-zinc-600 dark:text-zinc-400")}><span className={cn(dot, "bg-zinc-400")} />Abandoned</span>;
     default:
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground">To Do</span>;
+      return <span className={cn(base, "bg-muted text-muted-foreground")}><span className={cn(dot, "bg-muted-foreground/60")} />To do</span>;
   }
 }
 
