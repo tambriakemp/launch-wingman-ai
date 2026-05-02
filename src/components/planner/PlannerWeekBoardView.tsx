@@ -170,45 +170,55 @@ export const PlannerWeekBoardView = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div ref={scrollerRef} className="flex gap-3 p-4 h-full overflow-x-auto">
+      <div ref={scrollerRef} className="flex gap-3 p-4 h-full overflow-x-auto bg-muted/20">
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const dayTasks = tasksByDay[key] || [];
-          const completed = dayTasks.filter((t) => t.column_id === "done").length;
-          const total = dayTasks.length;
-          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           const isToday = key === todayStr;
+          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
           return (
             <div
               key={key}
               ref={isToday ? todayColRef : undefined}
-              className="flex flex-col w-[280px] min-w-[260px] shrink-0"
+              className={cn(
+                "flex flex-col w-[280px] min-w-[260px] shrink-0 rounded-xl border p-3",
+                isToday
+                  ? "bg-primary/5 border-primary/30"
+                  : isWeekend
+                  ? "bg-muted/40 border-border"
+                  : "bg-card border-border"
+              )}
             >
-              <div className="px-1 mb-3">
-                <div className="flex items-baseline gap-2">
-                  <span className={cn("text-base font-bold", isToday ? "text-primary" : "text-foreground")}>
-                    {format(day, "EEEE")}
-                  </span>
+              {/* Editorial day header */}
+              <div
+                className={cn(
+                  "flex items-baseline gap-2 pb-2.5 mb-3 border-b",
+                  isToday ? "border-b-2 border-primary" : "border-border"
+                )}
+              >
+                <div
+                  className={cn(
+                    "font-serif italic font-medium text-3xl leading-none tracking-tight",
+                    isToday ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  {format(day, "d")}
                 </div>
-                <span className="text-xs text-muted-foreground">{format(day, "MMM d")}</span>
-                <div className="mt-2 h-1 w-full rounded-full bg-muted overflow-hidden">
+                <div className="flex-1 min-w-0">
                   <div
-                    className="h-full bg-emerald-500 transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
+                    className={cn(
+                      "text-[11px] font-semibold uppercase tracking-[0.1em]",
+                      isToday ? "text-primary" : isWeekend ? "text-muted-foreground" : "text-foreground/80"
+                    )}
+                  >
+                    {format(day, "EEE")}
+                  </div>
+                  {isToday && (
+                    <div className="font-serif italic text-[11px] text-muted-foreground mt-0.5">today</div>
+                  )}
                 </div>
               </div>
-
-              <button
-                className="flex items-center justify-center gap-1.5 mb-2 px-2 py-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                onClick={() => {
-                  const d = setMinutes(setHours(new Date(day), 9), 0);
-                  onCreateTask?.({ due_at: d.toISOString() });
-                }}
-              >
-                <Plus className="w-3.5 h-3.5" /> Add task
-              </button>
 
               <Droppable droppableId={key}>
                 {(provided, snapshot) => (
@@ -216,10 +226,15 @@ export const PlannerWeekBoardView = ({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      "flex-1 overflow-y-auto space-y-2 p-1 rounded-xl transition-colors min-h-[120px]",
+                      "flex-1 overflow-y-auto space-y-2 rounded-lg transition-colors min-h-[80px]",
                       snapshot.isDraggingOver && "bg-accent/40 ring-2 ring-primary/20"
                     )}
                   >
+                    {dayTasks.length === 0 && !snapshot.isDraggingOver && (
+                      <div className="text-center py-6 px-2 font-serif italic text-sm text-muted-foreground">
+                        A clear page.
+                      </div>
+                    )}
                     {dayTasks.map((task, idx) => {
                       const space = spaces.find((s) => s.id === (task as any).space_id);
                       const cat = categories.find((c) => c.id === task.category);
@@ -227,6 +242,7 @@ export const PlannerWeekBoardView = ({
                       const time = formatTime(task.start_at);
                       const isRecurring = !!(task as any)._isVirtualRecurrence || !!task.recurrence_rule;
                       const draggableId = task.id;
+                      const accent = space?.color || cat?.color || "hsl(var(--primary))";
 
                       return (
                         <Draggable key={draggableId} draggableId={draggableId} index={idx}>
@@ -236,66 +252,66 @@ export const PlannerWeekBoardView = ({
                               {...dragProvided.draggableProps}
                               {...dragProvided.dragHandleProps}
                               className={cn(
-                                "rounded-lg border border-border bg-card p-2.5 hover:shadow-sm transition-all cursor-pointer group",
+                                "rounded-lg border border-border bg-background p-2.5 hover:shadow-sm transition-all cursor-pointer group",
                                 isDone && "opacity-60",
                                 dragSnapshot.isDragging && "shadow-lg ring-2 ring-primary/30"
                               )}
+                              style={{ borderLeft: `3px solid ${accent}` }}
                               onClick={() => onEditTask(task)}
                             >
-                              {time && (
-                                <div className="text-[10px] text-muted-foreground mb-1">{time}</div>
-                              )}
-                              <div className="flex items-start gap-2">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                {time ? (
+                                  <span className="font-mono text-[10.5px] font-semibold tracking-wide text-foreground/70">
+                                    {time}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                    All day
+                                  </span>
+                                )}
                                 <button
-                                  className="shrink-0 mt-0.5"
+                                  className="shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onToggleComplete?.(task);
                                   }}
                                 >
                                   {isDone ? (
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                   ) : (
-                                    <Circle className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                    <Circle className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                                   )}
                                 </button>
-                                <div className="flex-1 min-w-0">
-                                  <p
-                                    className={cn(
-                                      "text-sm font-medium leading-snug",
-                                      isDone && "line-through text-muted-foreground"
-                                    )}
+                              </div>
+                              <p
+                                className={cn(
+                                  "text-[12.5px] font-medium leading-snug text-foreground",
+                                  isDone && "line-through text-muted-foreground"
+                                )}
+                              >
+                                {task.title}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                {space && (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide"
+                                    style={{ background: `${space.color}1a`, color: space.color }}
                                   >
-                                    {task.title}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                    {space && (
-                                      <span
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium"
-                                        style={{
-                                          background: `${space.color}20`,
-                                          color: space.color,
-                                        }}
-                                      >
-                                        # {space.name.toLowerCase()}
-                                      </span>
-                                    )}
-                                    {cat && (
-                                      <span
-                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium"
-                                        style={{
-                                          background: `${cat.color}20`,
-                                          color: cat.color,
-                                        }}
-                                      >
-                                        {cat.name}
-                                      </span>
-                                    )}
-                                    {isRecurring && (
-                                      <Repeat className="w-3 h-3 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                </div>
+                                    <span className="w-1 h-1 rounded-full" style={{ background: space.color }} />
+                                    {space.name}
+                                  </span>
+                                )}
+                                {cat && (
+                                  <span
+                                    className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                    style={{ background: `${cat.color}1a`, color: cat.color }}
+                                  >
+                                    {cat.name}
+                                  </span>
+                                )}
+                                {isRecurring && (
+                                  <Repeat className="w-3 h-3 text-muted-foreground" />
+                                )}
                               </div>
                             </div>
                           )}
@@ -306,6 +322,16 @@ export const PlannerWeekBoardView = ({
                   </div>
                 )}
               </Droppable>
+
+              <button
+                className="mt-2 w-full px-2 py-1.5 rounded-lg border border-dashed border-border text-[11.5px] font-medium text-muted-foreground hover:border-primary/60 hover:text-primary hover:bg-primary/5 transition-colors"
+                onClick={() => {
+                  const d = setMinutes(setHours(new Date(day), 9), 0);
+                  onCreateTask?.({ due_at: d.toISOString() });
+                }}
+              >
+                + Add
+              </button>
             </div>
           );
         })}
