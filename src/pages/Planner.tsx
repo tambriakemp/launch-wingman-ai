@@ -38,12 +38,12 @@ import { PageLoader } from "@/components/ui/page-loader";
 const Planner = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const isTodoMode = location.pathname.endsWith("/tasks");
+  // Both /planner and /planner/tasks land here. Default the legacy /planner/tasks URL into List view.
+  const isTodoUrl = location.pathname.endsWith("/tasks");
 
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
-  // Sunsama mode: "board" | "month". Tasks mode: list | kanban
-  const [sunsamaView, setSunsamaView] = useState<"board" | "month">("board");
-  const [tasksView, setTasksView] = useState<"list" | "kanban">("list");
+  // Unified calendar views: "board" | "month" | "list"
+  const [sunsamaView, setSunsamaView] = useState<"board" | "month" | "list">(isTodoUrl ? "list" : "board");
   // Board window: 15 days back from today, 30 days forward (46 columns).
   const [boardStartDate, setBoardStartDate] = useState<Date>(() => startOfDay(subDays(new Date(), 15)));
   const BOARD_DAY_COUNT = 46;
@@ -92,17 +92,17 @@ const Planner = () => {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Filter tasks by selected space — status visibility ONLY applies in Tasks (To do) mode
+  // Filter tasks by selected space — status visibility ONLY applies in List view
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (selectedSpaceId) {
       result = result.filter(t => (t as any).space_id === selectedSpaceId);
     }
-    if (isTodoMode) {
+    if (sunsamaView === "list") {
       result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
     }
     return result;
-  }, [tasks, selectedSpaceId, isVisible, isTodoMode]);
+  }, [tasks, selectedSpaceId, isVisible, sunsamaView]);
 
   const activeCategories = useMemo(() => {
     return getCategoriesForSpace(selectedSpaceId);
@@ -298,17 +298,11 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
-  const PageIcon = isTodoMode ? ListTodo : CalendarDays;
-  const pageTitle = isTodoMode ? "To do" : "Calendar";
-  const pageSubtitle = isTodoMode
-    ? "All your tasks in one place. Filter by status, space, or category."
-    : "Plan your week, schedule your day.";
-  const iconBg = isTodoMode
-    ? "bg-blue-100/50 dark:bg-blue-900/20"
-    : "bg-amber-100/50 dark:bg-amber-900/20";
-  const iconColor = isTodoMode
-    ? "text-blue-600 dark:text-blue-400"
-    : "text-amber-600 dark:text-amber-400";
+  const PageIcon = CalendarDays;
+  const pageTitle = "Calendar";
+  const pageSubtitle = "Plan your week, schedule your day.";
+  const iconBg = "bg-amber-100/50 dark:bg-amber-900/20";
+  const iconColor = "text-amber-600 dark:text-amber-400";
 
   if (accessLoading || spacesLoading) {
     return (
@@ -341,77 +335,6 @@ const Planner = () => {
 
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId) || null;
 
-  // ===== TASKS (TO DO) MODE =====
-  if (isTodoMode) {
-    return (
-      <ProjectLayout>
-        <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6">
-          <div className="px-4 pt-6 pb-3 border-b border-border">
-            <div className="flex items-start gap-4 mb-3">
-              <div className={`p-3 ${iconBg} rounded-xl shrink-0`}>
-                <PageIcon className={`w-6 h-6 ${iconColor}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-                    <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
-                    <SpacesFilterDropdown
-                      spaces={spaces}
-                      selectedSpaceId={selectedSpaceId}
-                      onSelectSpace={setSelectedSpaceId}
-                      onCreateSpace={createSpace}
-                    />
-                    <Button size="sm" className="gap-1.5 h-8" onClick={handleAddTask}>
-                      <Plus className="w-4 h-4" /> Task
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex-1 overflow-hidden flex">
-            <div className="flex-1 overflow-hidden">
-              <PlannerListView
-                tasks={filteredTasks}
-                isLoading={isLoading}
-                onEditTask={handleEditTask}
-                onToggleComplete={handleToggleComplete}
-                onDeleteTask={handleDeleteTask}
-                onAddTask={handleAddTask}
-                categories={activeCategories}
-                spaces={spaces}
-                onBulkMoveSpace={handleBulkMoveSpace}
-                onBulkDelete={handleBulkDelete}
-                onBulkUpdateCategory={handleBulkUpdateCategory}
-                onBulkUpdateStatus={handleBulkUpdateStatus}
-                onCreateCategory={createCategory}
-                selectedSpaceId={selectedSpaceId}
-                allCategories={categories}
-                onUpdateSpace={updateSpace}
-              />
-            </div>
-          </div>
-        </div>
-
-        <PlannerTaskDialog
-          open={dialogOpen}
-          onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
-          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-          editTask={editingTask}
-          defaultDueAt={defaultDueAt}
-          spaces={spaces}
-          categories={activeCategories}
-          allCategories={categories}
-          selectedSpaceId={selectedSpaceId}
-          onCreateCategory={createCategory}
-        />
-      </ProjectLayout>
-    );
-  }
 
   // ===== SUNSAMA-STYLE CALENDAR MODE =====
   const handleTodayClick = () => {
@@ -433,25 +356,32 @@ const Planner = () => {
                   <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {sunsamaView === "list" && (
+                    <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+                  )}
+                  <SpacesFilterDropdown
+                    spaces={spaces}
+                    selectedSpaceId={selectedSpaceId}
+                    onSelectSpace={setSelectedSpaceId}
+                    onCreateSpace={createSpace}
+                  />
                   {sunsamaView === "board" && (
-                    <>
-                      <SpacesFilterDropdown
-                        spaces={spaces}
-                        selectedSpaceId={selectedSpaceId}
-                        onSelectSpace={setSelectedSpaceId}
-                        onCreateSpace={createSpace}
-                      />
-                      <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
-                        Today
-                      </Button>
-                    </>
+                    <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleTodayClick}>
+                      Today
+                    </Button>
                   )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5 h-8">
-                        {sunsamaView === "board" ? <LayoutGrid className="w-3.5 h-3.5" /> : <CalendarIcon className="w-3.5 h-3.5" />}
-                        {sunsamaView === "board" ? "Board" : "Calendar · Month"}
+                        {sunsamaView === "board" ? (
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        ) : sunsamaView === "month" ? (
+                          <CalendarIcon className="w-3.5 h-3.5" />
+                        ) : (
+                          <ListTodo className="w-3.5 h-3.5" />
+                        )}
+                        {sunsamaView === "board" ? "Board" : sunsamaView === "month" ? "Calendar · Month" : "List"}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
@@ -466,8 +396,16 @@ const Planner = () => {
                         <span className="flex-1">Calendar · Month</span>
                         {sunsamaView === "month" && <Check className="w-3.5 h-3.5" />}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSunsamaView("list")} className="gap-2">
+                        <ListTodo className="w-4 h-4" />
+                        <span className="flex-1">List</span>
+                        {sunsamaView === "list" && <Check className="w-3.5 h-3.5" />}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  <Button size="sm" className="gap-1.5 h-8" onClick={handleAddTask}>
+                    <Plus className="w-4 h-4" /> Task
+                  </Button>
                 </div>
               </div>
             </div>
@@ -504,6 +442,27 @@ const Planner = () => {
                 />
               }
             />
+          ) : sunsamaView === "list" ? (
+            <div className="flex-1 overflow-hidden">
+              <PlannerListView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+                onBulkMoveSpace={handleBulkMoveSpace}
+                onBulkDelete={handleBulkDelete}
+                onBulkUpdateCategory={handleBulkUpdateCategory}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onCreateCategory={createCategory}
+                selectedSpaceId={selectedSpaceId}
+                allCategories={categories}
+                onUpdateSpace={updateSpace}
+              />
+            </div>
           ) : (
             <div className="flex-1 overflow-hidden">
               <PlannerWeekBoardView
