@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { SpacesFilterDropdown } from "@/components/planner/SpacesFilterDropdown";
+import { PlannerWeekRail } from "@/components/planner/PlannerWeekRail";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
