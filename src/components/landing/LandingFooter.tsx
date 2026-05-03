@@ -7,19 +7,6 @@ const footerLinks = {
     { name: "Pricing", href: "/#pricing" },
     { name: "FAQ", href: "/#faq" },
   ],
-  features: [
-    { name: "Plan", href: "/features/plan" },
-    { name: "Branding", href: "/features/branding" },
-    { name: "Messaging", href: "/features/messaging" },
-    { name: "Execute", href: "/features/execute" },
-    { name: "Content Vault", href: "/features/content-vault" },
-    { name: "Insights", href: "/features/insights" },
-  ],
-  company: [
-    { name: "About", href: "/about" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
-  ],
   legal: [
     { name: "Privacy", href: "/privacy" },
     { name: "Terms", href: "/terms" },
