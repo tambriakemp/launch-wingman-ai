@@ -39,6 +39,7 @@ import { useStatusVisibility } from "@/hooks/useStatusVisibility";
 import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 import { PageLoader } from "@/components/ui/page-loader";
 import { MobilePlanner } from "@/components/planner/mobile/MobilePlanner";
+import { MobileAddTaskSheet } from "@/components/planner/mobile/MobileAddTaskSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Planner = () => {
