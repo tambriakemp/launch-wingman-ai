@@ -771,6 +771,49 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
   const showTimeline = phaseStatuses['setup'] === 'complete' && !!selectedFunnelType;
 
+  if (isMobile) {
+    const allUpcoming = [...todayContent, ...tomorrowContent, ...upcomingContent];
+    return (
+      <>
+        <MobileDashboard
+          firstName={profile?.first_name}
+          projectName={project?.name}
+          projectState={projectState}
+          nextBestTask={nextBestTask ? {
+            title: nextBestTask.title,
+            whyItMatters: nextBestTask.whyItMatters,
+            estimatedTimeRange: nextBestTask.estimatedTimeRange,
+            route: nextBestTask.route,
+          } : null}
+          activePhase={activePhase}
+          phaseStatuses={phaseStatuses}
+          activePct={activePhasePct}
+          stepIndex={stepIndex}
+          stepTotal={stepTotal}
+          dueToday={todayPlannerCount}
+          upcomingPlanner={upcomingPlannerCount}
+          upcomingContent={allUpcoming}
+          onStartCheckIn={() => setCheckInOpen(true)}
+          onStuck={() => setStuckModalOpen(true)}
+        />
+        <Suspense fallback={null}>
+          {checkInOpen && <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />}
+          {stuckModalOpen && (
+            <StuckHelpDialog
+              open={stuckModalOpen}
+              onOpenChange={setStuckModalOpen}
+              currentTask={{
+                title: nextBestTask?.title || "Getting started",
+                whyItMatters: nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
+              }}
+              projectContext={project?.name}
+            />
+          )}
+        </Suspense>
+      </>
+    );
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
