@@ -28,6 +28,8 @@ import { CheckInBanner } from "@/components/check-in";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase, PhaseStatus } from "@/types/tasks";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileDashboard } from "@/components/dashboard/mobile/MobileDashboard";
 
 // Lazy-loaded heavy dialogs (only mounted on demand)
 const CheckInFlow = lazy(() =>
