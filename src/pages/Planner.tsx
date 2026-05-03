@@ -299,6 +299,8 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
+  const [mobileAddOpen, setMobileAddOpen] = useState(false);
+
   const handleAddTask = () => {
     setEditingTask(null);
     setDefaultDueAt(null);
