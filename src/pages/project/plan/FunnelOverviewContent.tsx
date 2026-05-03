@@ -28,6 +28,8 @@ import { CheckInBanner } from "@/components/check-in";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase, PhaseStatus } from "@/types/tasks";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileDashboard } from "@/components/dashboard/mobile/MobileDashboard";
 
 // Lazy-loaded heavy dialogs (only mounted on demand)
 const CheckInFlow = lazy(() =>
@@ -465,6 +467,7 @@ const FUNNEL_LABEL_SHORT: Record<string, string> = {
 const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
@@ -767,6 +770,49 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     : undefined;
 
   const showTimeline = phaseStatuses['setup'] === 'complete' && !!selectedFunnelType;
+
+  if (isMobile) {
+    const allUpcoming = [...todayContent, ...tomorrowContent, ...upcomingContent];
+    return (
+      <>
+        <MobileDashboard
+          firstName={profile?.first_name}
+          projectName={project?.name}
+          projectState={projectState}
+          nextBestTask={nextBestTask ? {
+            title: nextBestTask.title,
+            whyItMatters: nextBestTask.whyItMatters,
+            estimatedTimeRange: nextBestTask.estimatedTimeRange,
+            route: nextBestTask.route,
+          } : null}
+          activePhase={activePhase}
+          phaseStatuses={phaseStatuses}
+          activePct={activePhasePct}
+          stepIndex={stepIndex}
+          stepTotal={stepTotal}
+          dueToday={todayPlannerCount}
+          upcomingPlanner={upcomingPlannerCount}
+          upcomingContent={allUpcoming}
+          onStartCheckIn={() => setCheckInOpen(true)}
+          onStuck={() => setStuckModalOpen(true)}
+        />
+        <Suspense fallback={null}>
+          {checkInOpen && <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />}
+          {stuckModalOpen && (
+            <StuckHelpDialog
+              open={stuckModalOpen}
+              onOpenChange={setStuckModalOpen}
+              currentTask={{
+                title: nextBestTask?.title || "Getting started",
+                whyItMatters: nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
+              }}
+              projectContext={project?.name}
+            />
+          )}
+        </Suspense>
+      </>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
