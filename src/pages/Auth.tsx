@@ -243,7 +243,12 @@ const Auth = () => {
     <div className="app-cream min-h-screen">
       <style>{`
         .auth-shell { display: grid; grid-template-columns: 1fr 1.1fr; min-height: 100vh; }
-        @media (max-width: 920px) { .auth-shell { grid-template-columns: 1fr; } .brand-side { display: none; } }
+        @media (max-width: 920px) {
+          .auth-shell { grid-template-columns: 1fr; }
+          .form-side { order: 1; }
+          .brand-side { order: 2; padding: 32px 24px 40px; border-right: 0; border-top: 1px solid hsl(var(--border-hairline)); }
+          .brand-headline { font-size: 36px !important; }
+        }
 
         .brand-side {
           background: hsl(var(--paper-100));
