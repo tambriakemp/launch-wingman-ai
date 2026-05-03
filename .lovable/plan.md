@@ -1,72 +1,46 @@
-## Goal
+# Mobile Dashboard Redesign
 
-On phones, the `/planner` page should look exactly like the attached `MobileTodo.jsx` mock — large editorial "To do." title, segmented Open/Mine/Today/Done filter, horizontal Spaces chips, terracotta "overdue" callout, grouped white card sections with circular checkboxes and swipe-to-act, terracotta FAB, and a 5-tab bottom bar (Today / Plan / Craft / Library / Me). Desktop (`md+`) is unchanged. When the app is running inside Capacitor (native iOS/Android), the bottom tab bar is hidden so the device's own native nav is used.
+Apply the attached `MobileDashboard.jsx` design to the project's `/projects/:id/dashboard` route on mobile, using the same native-vs-web pattern already in `MobilePlanner` (no `MobileTabBar` when running inside a Capacitor native shell).
 
-## Scope
+## Approach
 
-- Planner page (`/planner` and `/planner/tasks`) only. Other pages keep current responsive behavior.
-- Wired to real Supabase data already loaded in `Planner.tsx` (tasks, spaces, sections by Overdue / Today / This week).
-- Tap a row → opens existing `PlannerTaskDialog`. FAB → opens same dialog (new task).
-- Swipe-to-act and AI composer sheet are visual / interactive shells that reuse existing handlers (toggle complete, delete). The "AI parse" composer copy is shown but submits via the standard dialog for now (no new AI endpoint).
+1. **Create `src/components/dashboard/mobile/MobileDashboard.tsx`**
+   Faithful port of the uploaded `MobileDashboard.jsx`, using lucide-react icons in place of the inline SF SVGs, and our existing semantic tokens where reasonable. Sections, in order:
+   - Sticky collapsing nav (italic Fraunces "Today" appears on scroll, bell + avatar pill)
+   - Greeting block (uppercase date, large serif greeting with terracotta first name, project status pill)
+   - `NextStepHero` — cream gradient card with drag handle, eyebrow, serif headline, dark "Start this step" CTA, time + AI hints
+   - `PhaseCarousel` — horizontal snap of 6 phase cards (active = ink, done = check, others = white)
+   - `TodayWidget` — two stat tiles (Due today / Upcoming) tapping through to `/planner`
+   - `UpcomingList` — inset white card with date column, title, type dot
+   - `CheckInBanner` — warm gold banner with mic icon and Start button
+   - `AINudge` — dark inverted card with terracotta glow
+   - "Feeling stuck?" footer
+   - Terracotta FAB (bottom-right) → `/planner`
+   - `<MobileTabBar active="home" />` rendered **only when `useIsNativeApp()` is false**, mirroring the planner pattern.
 
-## Files to add
+2. **Wire data in `FunnelOverviewContent.tsx`**
+   Add `useIsMobile()` at the top. When mobile and `dashboardViewType === "in_progress"`, render `<MobileDashboard … />` with the props it already computes (`nextBestTask`, `activePhase`, `phaseStatuses`, `activePhasePct`, `stepIndex`, `stepTotal`, `todayPlannerCount`, `upcomingPlannerCount`, derived `upcomingContent`, `profile.first_name`, `project.name`, `projectState`) plus `onStartCheckIn={() => setCheckInOpen(true)}` and `onStuck={() => setStuckModalOpen(true)}`. Continue to render the existing `CheckInFlow` and `StuckHelpDialog` Suspense blocks below so dialogs work on mobile too.
+   The paused/completed/launched lifecycle branches stay on the existing desktop views (they already read fine on mobile and aren't covered by the mockup).
 
-1. `src/components/planner/mobile/MobilePlanner.tsx` — port of `MobileTodo.jsx` to TSX + Tailwind/inline styles, fed real data.
-   - Subcomponents inlined: `MTNavBar`, `MTSegmented`, `MTSpaceChip`, `MTOverdueCard`, `MTSection`, `MTTaskRow` (with swipe gesture using touch events), `MTFAB`, `MTTabBar`.
-   - Sections built from `tasks`: Overdue (due_at < today & !done), Today (due today & !done), This week (rest of ISO week & !done). Counts come from the same arrays.
-   - Filter chips (Open/Mine/Today/Done) filter the same lists client-side.
-   - Spaces chips use `usePlannerSpaces()` data with task counts; clicking sets `selectedSpaceId`.
-   - Checkbox calls existing `onToggleComplete`. Swipe-left reveals green check (complete) + terracotta trash (delete) actions.
-2. `src/components/planner/mobile/MobileTabBar.tsx` — 5-icon bottom nav. Routes:
-   - Today → `/dashboard`, Plan → `/planner` (active), Craft → `/marketing-hub`, Library → `/content-vault`, Me → `/settings`.
-3. `src/hooks/useIsNativeApp.ts` — returns `true` when `window.Capacitor?.isNativePlatform?.()` is true (safe-checked, SSR-safe). Used to hide the custom tab bar on native.
+3. **Strip extra page chrome on mobile**
+   In `ProjectLayout.tsx` the `<main>` has `px-2.5 py-4`. The new mobile dashboard is `position: fixed` and full-bleed, so the surrounding padding/topbar is fine — `MobileDashboard` overlays it. No layout changes needed beyond ensuring it sits above the sidebar trigger (z-index 30 already matches planner).
 
-## Files to edit
+## Native-vs-web rule
 
-- `src/pages/Planner.tsx`
-  - On `<md` viewports render `<MobilePlanner …/>` instead of the current desktop chrome (header strip, week pill, view toggle, week board / list / month).
-  - Pass through: `tasks`, `spaces`, `selectedSpaceId`, `setSelectedSpaceId`, `handleEditTask`, `handleToggleComplete`, `handleDeleteTask`, `handleAddTask`.
-  - Keep `PlannerTaskDialog` mounted (shared between mobile & desktop).
-- `src/components/layout/ProjectLayout.tsx`
-  - When the route is `/planner*` AND viewport is mobile AND not native, add bottom padding so content clears the 64px tab bar; otherwise no change. (Tab bar itself is rendered inside `MobilePlanner` so layout stays simple.)
-- `src/components/layout/TopBar.tsx` (read-only check first) — hide the existing mobile top bar on `/planner` so the native-style large title isn't doubled up.
-
-## Design fidelity
-
-- Cream background `#FBF7F1`, ink `#1F1B17`, terracotta `#C65A3E` (already in palette via `--paper-100`, `--ink-900`, `--terracotta-500`).
-- Headlines in Fraunces italic (already loaded). Body in `-apple-system, "SF Pro Text", system-ui`.
-- Card sections: white, `rounded-2xl`, subtle shadow, hairline divider at `marginLeft: 52px`.
-- Status pills (`IN PROGRESS`, `BLOCKED`, etc.) only shown when status ≠ TO DO/DONE.
-- FAB: 56×56 terracotta, fixed `right:18, bottom:92` (above tab bar) — `bottom:24` when native (no tab bar).
-- Sticky nav bar fades in title + adds blur when scrolled (scroll listener on the scroller div).
-- Safe-area insets respected on tab bar (`env(safe-area-inset-bottom)`).
-
-## Native detection
-
-```ts
-// src/hooks/useIsNativeApp.ts
-export function useIsNativeApp() {
-  const [isNative, setIsNative] = useState(false);
-  useEffect(() => {
-    const cap = (window as any).Capacitor;
-    setIsNative(!!cap?.isNativePlatform?.());
-  }, []);
-  return isNative;
-}
+Same as planner:
+```tsx
+{!isNative && <MobileTabBar active="home" />}
 ```
+And FAB / scroller bottom padding switches: `isNative ? 24 : 92` for FAB, `isNative ? 24 : 88` for scroller.
 
-In `MobilePlanner`: `{!isNative && <MobileTabBar active="plan" />}`.
+## Files
 
-## Out of scope (this pass)
+- **New:** `src/components/dashboard/mobile/MobileDashboard.tsx`
+- **Edit:** `src/pages/project/plan/FunnelOverviewContent.tsx` — add `useIsMobile` branch returning `<MobileDashboard … />` for the in-progress view
+- **No edits** to `MobileTabBar`, `useIsNativeApp`, or shared dashboard components
 
-- Implementing AI natural-language task parsing in the add sheet (uses existing dialog instead).
-- Applying the iOS treatment to other pages (Dashboard, Vault, etc.) — only Planner per request.
-- Capacitor project bootstrap (`npx cap init`, native projects). The native-detection hook is forward-compatible; setup is a separate task when you're ready.
+## Out of scope
 
-## Verification
-
-- Resize preview to 390×844 on `/planner`: matches the "At rest · large title" artboard.
-- Scroll the list: top nav bar gains blur + shows "To do" inline title.
-- Swipe a row left: reveals green check + red trash actions.
-- Tap FAB: existing task dialog opens.
-- Resize to ≥768px: original desktop calendar/week board returns unchanged.
+- No backend / schema changes
+- Desktop dashboard untouched
+- Notifications bell is visual only (no panel wired yet)
