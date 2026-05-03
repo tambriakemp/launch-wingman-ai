@@ -373,7 +373,15 @@ const Planner = () => {
           onEditTask={handleEditTask}
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
-          onAddTask={handleAddTask}
+          onAddTask={() => setMobileAddOpen(true)}
+        />
+        <MobileAddTaskSheet
+          open={mobileAddOpen}
+          onClose={() => setMobileAddOpen(false)}
+          onCreate={handleCreateTask}
+          spaces={spaces}
+          categories={categories}
+          selectedSpaceId={selectedSpaceId}
         />
         <PlannerTaskDialog
           open={dialogOpen}
