@@ -7,19 +7,6 @@ const footerLinks = {
     { name: "Pricing", href: "/#pricing" },
     { name: "FAQ", href: "/#faq" },
   ],
-  features: [
-    { name: "Plan", href: "/features/plan" },
-    { name: "Branding", href: "/features/branding" },
-    { name: "Messaging", href: "/features/messaging" },
-    { name: "Execute", href: "/features/execute" },
-    { name: "Content Vault", href: "/features/content-vault" },
-    { name: "Insights", href: "/features/insights" },
-  ],
-  company: [
-    { name: "About", href: "/about" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
-  ],
   legal: [
     { name: "Privacy", href: "/privacy" },
     { name: "Terms", href: "/terms" },
@@ -30,7 +17,7 @@ export const LandingFooter = () => {
   return (
     <footer className="border-t hairline">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="inline-flex items-baseline mb-4">
               <span className="font-serif text-2xl font-semibold text-foreground tracking-tight">
@@ -45,8 +32,6 @@ export const LandingFooter = () => {
 
           {[
             { title: "Product", links: footerLinks.product },
-            { title: "Features", links: footerLinks.features },
-            { title: "Company", links: footerLinks.company },
             { title: "Legal", links: footerLinks.legal },
           ].map((col) => (
             <div key={col.title}>
@@ -54,12 +39,21 @@ export const LandingFooter = () => {
               <ul className="space-y-3">
                 {col.links.map((link) => (
                   <li key={link.name}>
-                    <Link
-                      to={link.href}
-                      className="text-sm text-foreground/70 hover:text-foreground transition-colors"
-                    >
-                      {link.name}
-                    </Link>
+                    {link.href.startsWith("/#") ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+                      >
+                        {link.name}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+                      >
+                        {link.name}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

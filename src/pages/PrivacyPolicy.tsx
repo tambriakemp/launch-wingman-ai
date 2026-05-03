@@ -7,7 +7,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="landing-theme min-h-screen bg-background text-foreground font-sans">
       <SEO
         title="Privacy Policy — Launchely"
         description="Read how Launchely collects, uses, and protects your personal data."
@@ -27,12 +27,12 @@ const PrivacyPolicy = () => {
           </Link>
         </Button>
 
-        <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
+        <h1 className="font-serif text-4xl md:text-5xl font-semibold mb-4 tracking-tight">Privacy Policy</h1>
         <p className="text-muted-foreground mb-8">Last updated: December 17, 2025</p>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
           <section>
-            <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">
               Welcome to Launchely. We respect your privacy and are committed to protecting your personal data. 
               This privacy policy explains how we collect, use, disclose, and safeguard your information when you 
@@ -41,7 +41,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">2. Information We Collect</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">2. Information We Collect</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">We collect information you provide directly to us, including:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Account information (name, email address, password)</li>
@@ -52,11 +52,11 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">3. Third-Party Services</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">3. Third-Party Services</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               Our service integrates with third-party platforms to enhance functionality:
             </p>
-            <h3 className="text-xl font-medium mb-2">Pinterest Integration</h3>
+            <h3 className="font-serif text-xl font-semibold mb-2">Pinterest Integration</h3>
             <p className="text-muted-foreground leading-relaxed mb-4">
               When you connect your Pinterest account, we access:
             </p>
@@ -71,7 +71,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">4. How We Use Your Information</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">4. How We Use Your Information</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">We use the information we collect to:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Provide, maintain, and improve our services</li>
@@ -83,7 +83,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">5. Data Storage and Security</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">5. Data Storage and Security</h2>
             <p className="text-muted-foreground leading-relaxed">
               We implement appropriate technical and organizational measures to protect your personal data. 
               Your data is stored securely using industry-standard encryption. Access tokens for third-party 
@@ -92,7 +92,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">6. Data Retention</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">6. Data Retention</h2>
             <p className="text-muted-foreground leading-relaxed">
               We retain your personal data for as long as your account is active or as needed to provide you 
               services. You can request deletion of your account and associated data at any time by contacting us.
@@ -100,7 +100,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">7. Your Rights</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">7. Your Rights</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">You have the right to:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Access and receive a copy of your personal data</li>
@@ -112,7 +112,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">8. Changes to This Policy</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">8. Changes to This Policy</h2>
             <p className="text-muted-foreground leading-relaxed">
               We may update this privacy policy from time to time. We will notify you of any changes by 
               posting the new privacy policy on this page and updating the "Last updated" date.
@@ -120,7 +120,7 @@ const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">9. Contact Us</h2>
+            <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-4 tracking-tight">9. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have any questions about this privacy policy or our practices, please contact us at{" "}
               <a href="mailto:support@launchely.com" className="text-primary hover:underline">
