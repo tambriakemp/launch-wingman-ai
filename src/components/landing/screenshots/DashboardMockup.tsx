@@ -17,17 +17,25 @@ export const DashboardMockup = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
           {[
-            { icon: FolderOpen, label: "Active Projects", value: "3", color: "text-blue-500" },
-            { icon: CheckSquare, label: "Tasks Due", value: "12", color: "text-amber-500" },
-            { icon: Calendar, label: "Upcoming Launches", value: "2", color: "text-green-500" },
-            { icon: TrendingUp, label: "Content Pieces", value: "28", color: "text-purple-500" },
+            { icon: FolderOpen, label: "Active Projects", value: "3", color: "text-blue-500", mobile: true },
+            { icon: CheckSquare, label: "Tasks Due", value: "12", color: "text-amber-500", mobile: true },
+            { icon: Calendar, label: "Launches", label_full: "Upcoming Launches", value: "2", color: "text-green-500", mobile: true },
+            { icon: TrendingUp, label: "Content Pieces", value: "28", color: "text-purple-500", mobile: false },
           ].map((stat, i) => (
-            <div key={i} className="bg-card border border-border rounded-xl p-4">
+            <div
+              key={i}
+              className={`bg-card border border-border rounded-xl p-3 sm:p-4 min-w-0 ${
+                stat.mobile ? "" : "hidden sm:block"
+              }`}
+            >
               <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground">{stat.label}</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</div>
+              <div className="text-[11px] sm:text-xs text-muted-foreground leading-tight break-words">
+                <span className="sm:hidden">{stat.label}</span>
+                <span className="hidden sm:inline">{(stat as any).label_full || stat.label}</span>
+              </div>
             </div>
           ))}
         </div>
