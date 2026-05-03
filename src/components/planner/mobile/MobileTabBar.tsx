@@ -28,10 +28,10 @@ export const MobileTabBar = ({ active }: { active?: string }) => {
         backdropFilter: "blur(28px) saturate(180%)",
         WebkitBackdropFilter: "blur(28px) saturate(180%)",
         borderTop: `0.5px solid ${HAIRLINE}`,
-        paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div className="flex justify-around pt-2 pb-1">
+      <div className="flex justify-around pt-1 pb-0">
         {TABS.map((t) => {
           const isActive = activeId === t.id;
           const Icon = t.icon;
@@ -39,8 +39,8 @@ export const MobileTabBar = ({ active }: { active?: string }) => {
             <Link
               key={t.id}
               to={t.to}
-              className="flex flex-col items-center gap-[3px] py-1.5 px-2.5"
-              style={{ color: isActive ? TERRACOTTA : INK_60 }}
+              className="flex flex-col items-center py-1 px-2.5"
+              style={{ color: isActive ? TERRACOTTA : INK_60, gap: 1 }}
             >
               <Icon size={24} strokeWidth={isActive ? 2.2 : 1.7} />
               <span
