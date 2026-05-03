@@ -798,28 +798,28 @@ const FeatureBlock = ({
   reversed,
 }: FeatureBlockProps) => {
   return (
-    <section className="py-20 lg:py-28 border-t hairline">
+    <section className="py-20 lg:py-28 border-t hairline overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <motion.div
             initial={{ opacity: 0, x: reversed ? 20 : -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className={reversed ? "lg:order-2" : ""}
+            className={`min-w-0 ${reversed ? "lg:order-2" : ""}`}
           >
             <div className="eyebrow mb-5">{eyebrow}</div>
-            <h2 className="font-serif text-4xl md:text-5xl font-medium text-foreground tracking-tight leading-[1.1] mb-5">
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium text-foreground tracking-tight leading-[1.1] mb-5 break-words">
               {headlineLead}{" "}
               <span className="italic text-accent">{headlineAccent}</span>
             </h2>
-            <p className="font-serif italic text-lg text-foreground/70 mb-8 leading-relaxed">
+            <p className="font-serif italic text-base sm:text-lg text-foreground/70 mb-8 leading-relaxed">
               {lede}
             </p>
             <ul className="space-y-3.5">
               {features.map((f, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <span className="text-accent font-serif text-lg leading-none mt-1">✓</span>
-                  <span className="text-foreground/85">{f}</span>
+                  <span className="text-foreground/85 min-w-0 break-words">{f}</span>
                 </li>
               ))}
             </ul>
@@ -828,7 +828,7 @@ const FeatureBlock = ({
             initial={{ opacity: 0, x: reversed ? -20 : 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className={reversed ? "lg:order-1" : ""}
+            className={`min-w-0 max-w-full [&_*]:max-w-full ${reversed ? "lg:order-1" : ""}`}
           >
             {mockup}
           </motion.div>
