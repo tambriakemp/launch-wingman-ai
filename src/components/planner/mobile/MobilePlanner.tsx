@@ -503,8 +503,8 @@ export const MobilePlanner = ({
           position: "absolute",
           inset: 0,
           overflowY: "auto",
-          paddingTop: "calc(env(safe-area-inset-top) + 8px)",
-          paddingBottom: isNative ? 8 : 72,
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: isNative ? 8 : 64,
           WebkitOverflowScrolling: "touch",
         }}
       >
