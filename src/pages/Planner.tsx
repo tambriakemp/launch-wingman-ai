@@ -38,8 +38,11 @@ import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
 import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 import { PageLoader } from "@/components/ui/page-loader";
+import { MobilePlanner } from "@/components/planner/mobile/MobilePlanner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Planner = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const location = useLocation();
   // Both /planner and /planner/tasks land here. Default the legacy /planner/tasks URL into List view.
