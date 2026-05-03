@@ -467,6 +467,7 @@ const FUNNEL_LABEL_SHORT: Record<string, string> = {
 const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
