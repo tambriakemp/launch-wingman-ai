@@ -39,6 +39,7 @@ import { useStatusVisibility } from "@/hooks/useStatusVisibility";
 import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 import { PageLoader } from "@/components/ui/page-loader";
 import { MobilePlanner } from "@/components/planner/mobile/MobilePlanner";
+import { MobileAddTaskSheet } from "@/components/planner/mobile/MobileAddTaskSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Planner = () => {
@@ -298,6 +299,8 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
+  const [mobileAddOpen, setMobileAddOpen] = useState(false);
+
   const handleAddTask = () => {
     setEditingTask(null);
     setDefaultDueAt(null);
@@ -373,7 +376,15 @@ const Planner = () => {
           onEditTask={handleEditTask}
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
-          onAddTask={handleAddTask}
+          onAddTask={() => setMobileAddOpen(true)}
+        />
+        <MobileAddTaskSheet
+          open={mobileAddOpen}
+          onClose={() => setMobileAddOpen(false)}
+          onCreate={handleCreateTask}
+          spaces={spaces}
+          categories={categories}
+          selectedSpaceId={selectedSpaceId}
         />
         <PlannerTaskDialog
           open={dialogOpen}
