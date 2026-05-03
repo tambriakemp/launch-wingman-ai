@@ -528,15 +528,14 @@ export const MobilePlanner = ({
           >
             To do
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
             <button
               style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: 999,
                 border: 0,
-                background: scrolled ? "rgba(31,27,23,0.06)" : "rgba(255,255,255,0.5)",
-                backdropFilter: scrolled ? "none" : "blur(20px)",
+                background: "transparent",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -544,17 +543,16 @@ export const MobilePlanner = ({
               }}
               aria-label="Filter"
             >
-              <Filter size={17} color={INK} strokeWidth={1.8} />
+              <Filter size={18} color={INK} strokeWidth={1.8} />
             </button>
             <button
               onClick={onAddTask}
               style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: 999,
                 border: 0,
-                background: scrolled ? "rgba(31,27,23,0.06)" : "rgba(255,255,255,0.5)",
-                backdropFilter: scrolled ? "none" : "blur(20px)",
+                background: "transparent",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -562,7 +560,7 @@ export const MobilePlanner = ({
               }}
               aria-label="Add task"
             >
-              <Plus size={18} color={INK} strokeWidth={2.2} />
+              <Plus size={20} color={INK} strokeWidth={2.2} />
             </button>
           </div>
         </div>
