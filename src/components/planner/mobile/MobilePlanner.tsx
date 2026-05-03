@@ -453,6 +453,15 @@ export const MobilePlanner = ({
     if (isToday(p) || isPast(p)) return false;
     return isWithinInterval(p, { start: wkStart, end: wkEnd });
   });
+  const later = filteredTasks.filter((t) => {
+    if (t.column_id === "done") return false;
+    const d = t.due_at || t.start_at;
+    if (!d) return true;
+    const p = parseISO(d);
+    if (isPast(p) || isToday(p)) return false;
+    return !isWithinInterval(p, { start: wkStart, end: wkEnd });
+  });
+  const doneTasks = filteredTasks.filter((t) => t.column_id === "done");
 
   const openCount = tasks.filter((t) => t.column_id !== "done").length;
   const todayCount = tasks.filter((t) => {
