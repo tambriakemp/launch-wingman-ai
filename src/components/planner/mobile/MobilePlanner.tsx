@@ -495,8 +495,8 @@ export const MobilePlanner = ({
           left: 0,
           right: 0,
           zIndex: 30,
-          paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-          paddingBottom: 8,
+          paddingTop: "calc(env(safe-area-inset-top) + 4px)",
+          paddingBottom: 4,
           background: scrolled ? "rgba(251,247,241,0.85)" : "transparent",
           backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -510,7 +510,7 @@ export const MobilePlanner = ({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 16px",
-            height: 44,
+            height: 36,
           }}
         >
           <div
