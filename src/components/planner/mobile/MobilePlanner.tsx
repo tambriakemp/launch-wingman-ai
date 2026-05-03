@@ -453,6 +453,15 @@ export const MobilePlanner = ({
     if (isToday(p) || isPast(p)) return false;
     return isWithinInterval(p, { start: wkStart, end: wkEnd });
   });
+  const later = filteredTasks.filter((t) => {
+    if (t.column_id === "done") return false;
+    const d = t.due_at || t.start_at;
+    if (!d) return true;
+    const p = parseISO(d);
+    if (isPast(p) || isToday(p)) return false;
+    return !isWithinInterval(p, { start: wkStart, end: wkEnd });
+  });
+  const doneTasks = filteredTasks.filter((t) => t.column_id === "done");
 
   const openCount = tasks.filter((t) => t.column_id !== "done").length;
   const todayCount = tasks.filter((t) => {
@@ -487,85 +496,6 @@ export const MobilePlanner = ({
         zIndex: 30,
       }}
     >
-      {/* Sticky nav bar */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 30,
-          paddingTop: "calc(env(safe-area-inset-top) + 4px)",
-          paddingBottom: 4,
-          background: scrolled ? "rgba(251,247,241,0.85)" : "transparent",
-          backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
-          borderBottom: scrolled ? `0.5px solid ${HAIRLINE}` : "0.5px solid transparent",
-          transition: "all 240ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 16px",
-            height: 36,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontWeight: 500,
-              fontSize: 22,
-              letterSpacing: -0.5,
-              color: INK,
-              opacity: scrolled ? 1 : 0,
-              transform: scrolled ? "translateY(0)" : "translateY(6px)",
-              transition: "all 200ms ease-out",
-            }}
-          >
-            To do
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <button
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 999,
-                border: 0,
-                background: "transparent",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-              aria-label="Filter"
-            >
-              <Filter size={18} color={INK} strokeWidth={1.8} />
-            </button>
-            <button
-              onClick={onAddTask}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 999,
-                border: 0,
-                background: "transparent",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-              aria-label="Add task"
-            >
-              <Plus size={20} color={INK} strokeWidth={2.2} />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Scroller */}
       <div
         ref={scrollerRef}
@@ -573,28 +503,72 @@ export const MobilePlanner = ({
           position: "absolute",
           inset: 0,
           overflowY: "auto",
-          paddingTop: "calc(env(safe-area-inset-top) + 50px)",
-          paddingBottom: isNative ? 16 : 80,
+          paddingTop: "calc(env(safe-area-inset-top) + 8px)",
+          paddingBottom: isNative ? 8 : 72,
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {/* Greeting */}
+        {/* Greeting + inline actions */}
         <div style={{ padding: "4px 22px 0" }}>
           <div
             style={{
-              fontFamily: SF,
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-              color: INK_60,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
             }}
           >
-            {dateLine}
+            <div
+              style={{
+                fontFamily: SF,
+                fontSize: 13,
+                fontWeight: 600,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+                color: INK_60,
+              }}
+            >
+              {dateLine}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <button
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  border: 0,
+                  background: "transparent",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                aria-label="Filter"
+              >
+                <Filter size={18} color={INK} strokeWidth={1.8} />
+              </button>
+              <button
+                onClick={onAddTask}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  border: 0,
+                  background: "transparent",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                aria-label="Add task"
+              >
+                <Plus size={20} color={INK} strokeWidth={2.2} />
+              </button>
+            </div>
           </div>
           <h1
             style={{
-              margin: "6px 0 0",
+              margin: "2px 0 0",
               fontFamily: SERIF,
               fontWeight: 400,
               fontSize: 38,
@@ -772,6 +746,28 @@ export const MobilePlanner = ({
           onDelete={onDeleteTask}
           onEdit={onEditTask}
         />
+        <Section
+          label="Later"
+          count={later.length}
+          accent="ink"
+          tasks={later}
+          spaces={spaces}
+          onToggle={onToggleComplete}
+          onDelete={onDeleteTask}
+          onEdit={onEditTask}
+        />
+        {filter === "done" && (
+          <Section
+            label="Done"
+            count={doneTasks.length}
+            accent="ink"
+            tasks={doneTasks}
+            spaces={spaces}
+            onToggle={onToggleComplete}
+            onDelete={onDeleteTask}
+            onEdit={onEditTask}
+          />
+        )}
 
         <div style={{ textAlign: "center", padding: "32px 24px 24px" }}>
           <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: INK_60 }}>
