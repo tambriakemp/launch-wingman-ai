@@ -84,6 +84,7 @@
 .app-cream {
   background-color: hsl(var(--bg));
   color: hsl(var(--ink));
+  overflow-x: clip;
 }
 
 /* Serif utility for the app-cream scope as well */
