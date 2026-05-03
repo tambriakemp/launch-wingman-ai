@@ -495,8 +495,8 @@ export const MobilePlanner = ({
           left: 0,
           right: 0,
           zIndex: 30,
-          paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-          paddingBottom: 8,
+          paddingTop: "calc(env(safe-area-inset-top) + 4px)",
+          paddingBottom: 4,
           background: scrolled ? "rgba(251,247,241,0.85)" : "transparent",
           backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -510,7 +510,7 @@ export const MobilePlanner = ({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 16px",
-            height: 44,
+            height: 36,
           }}
         >
           <div
@@ -528,15 +528,14 @@ export const MobilePlanner = ({
           >
             To do
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
             <button
               style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: 999,
                 border: 0,
-                background: scrolled ? "rgba(31,27,23,0.06)" : "rgba(255,255,255,0.5)",
-                backdropFilter: scrolled ? "none" : "blur(20px)",
+                background: "transparent",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -544,17 +543,16 @@ export const MobilePlanner = ({
               }}
               aria-label="Filter"
             >
-              <Filter size={17} color={INK} strokeWidth={1.8} />
+              <Filter size={18} color={INK} strokeWidth={1.8} />
             </button>
             <button
               onClick={onAddTask}
               style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: 999,
                 border: 0,
-                background: scrolled ? "rgba(31,27,23,0.06)" : "rgba(255,255,255,0.5)",
-                backdropFilter: scrolled ? "none" : "blur(20px)",
+                background: "transparent",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -562,7 +560,7 @@ export const MobilePlanner = ({
               }}
               aria-label="Add task"
             >
-              <Plus size={18} color={INK} strokeWidth={2.2} />
+              <Plus size={20} color={INK} strokeWidth={2.2} />
             </button>
           </div>
         </div>
@@ -575,8 +573,8 @@ export const MobilePlanner = ({
           position: "absolute",
           inset: 0,
           overflowY: "auto",
-          paddingTop: "calc(env(safe-area-inset-top) + 70px)",
-          paddingBottom: isNative ? 32 : 100,
+          paddingTop: "calc(env(safe-area-inset-top) + 50px)",
+          paddingBottom: isNative ? 16 : 80,
           WebkitOverflowScrolling: "touch",
         }}
       >
