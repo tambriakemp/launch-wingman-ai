@@ -362,6 +362,35 @@ const Planner = () => {
       ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
       : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
 
+  if (isMobile) {
+    return (
+      <>
+        <MobilePlanner
+          tasks={tasks}
+          spaces={spaces}
+          selectedSpaceId={selectedSpaceId}
+          onSelectSpace={setSelectedSpaceId}
+          onEditTask={handleEditTask}
+          onToggleComplete={handleToggleComplete}
+          onDeleteTask={handleDeleteTask}
+          onAddTask={handleAddTask}
+        />
+        <PlannerTaskDialog
+          open={dialogOpen}
+          onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
+          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+          editTask={editingTask}
+          defaultDueAt={defaultDueAt}
+          spaces={spaces}
+          categories={activeCategories}
+          allCategories={categories}
+          selectedSpaceId={selectedSpaceId}
+          onCreateCategory={createCategory}
+        />
+      </>
+    );
+  }
+
   return (
     <ProjectLayout>
       <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col bg-[hsl(var(--paper-200))]">
