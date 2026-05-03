@@ -7,7 +7,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="landing-theme min-h-screen bg-background text-foreground font-sans">
       <SEO
         title="Privacy Policy — Launchely"
         description="Read how Launchely collects, uses, and protects your personal data."
