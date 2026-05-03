@@ -746,6 +746,28 @@ export const MobilePlanner = ({
           onDelete={onDeleteTask}
           onEdit={onEditTask}
         />
+        <Section
+          label="Later"
+          count={later.length}
+          accent="ink"
+          tasks={later}
+          spaces={spaces}
+          onToggle={onToggleComplete}
+          onDelete={onDeleteTask}
+          onEdit={onEditTask}
+        />
+        {filter === "done" && (
+          <Section
+            label="Done"
+            count={doneTasks.length}
+            accent="ink"
+            tasks={doneTasks}
+            spaces={spaces}
+            onToggle={onToggleComplete}
+            onDelete={onDeleteTask}
+            onEdit={onEditTask}
+          />
+        )}
 
         <div style={{ textAlign: "center", padding: "32px 24px 24px" }}>
           <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: INK_60 }}>
