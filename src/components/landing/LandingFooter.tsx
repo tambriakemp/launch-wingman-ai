@@ -17,7 +17,7 @@ export const LandingFooter = () => {
   return (
     <footer className="border-t hairline">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="inline-flex items-baseline mb-4">
               <span className="font-serif text-2xl font-semibold text-foreground tracking-tight">
@@ -32,8 +32,6 @@ export const LandingFooter = () => {
 
           {[
             { title: "Product", links: footerLinks.product },
-            { title: "Features", links: footerLinks.features },
-            { title: "Company", links: footerLinks.company },
             { title: "Legal", links: footerLinks.legal },
           ].map((col) => (
             <div key={col.title}>
