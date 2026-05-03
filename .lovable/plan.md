@@ -1,33 +1,72 @@
-## Restore horizontal scrolling Week view + compact all-day cards
+## Goal
 
-Switch the Week board back to a horizontally scrolling 61-day window (30 days back, today, 30 days forward), keeping the editorial design from the current grid intact. Also tighten the all-day cards so they don't grow vertically.
+On phones, the `/planner` page should look exactly like the attached `MobileTodo.jsx` mock — large editorial "To do." title, segmented Open/Mine/Today/Done filter, horizontal Spaces chips, terracotta "overdue" callout, grouped white card sections with circular checkboxes and swipe-to-act, terracotta FAB, and a 5-tab bottom bar (Today / Plan / Craft / Library / Me). Desktop (`md+`) is unchanged. When the app is running inside Capacitor (native iOS/Android), the bottom tab bar is hidden so the device's own native nav is used.
 
-### 1. `src/pages/Planner.tsx`
-- Replace `weekDays` (length 7) with a 61-day window: `Array.from({length: 61}, (_, i) => addDays(startOfDay(anchorDate), i - 30))`.
-- Keep prev/next behavior: shifting by 7 days re-anchors and re-centers the scroller on `anchorDate` via a `scrollToTodayNonce`-style counter passed to the board view (so it scrolls the new anchor column into view).
-- "Today" button: set `anchorDate = startOfDay(new Date())` and bump the nonce.
-- Header label logic stays as-is (Week N · Month Year, italic range from `weekStart`/`weekEnd`).
-- Remove the `PlannerWeekRail` from the board layout (it was tied to the 7-day frame and won't fit alongside a wide scroller). Board view becomes full width.
+## Scope
 
-### 2. `src/components/planner/PlannerWeekBoardView.tsx`
-- Continue accepting `days: Date[]`, but render as a single horizontally scrolling row instead of `grid-cols-7`:
-  - Container: `flex gap-3 overflow-x-auto p-6 md:p-8` with momentum scrolling.
-  - Each day column: fixed width (`w-[260px] shrink-0`), same card styling as today (paper-100, hairline border, today/weekend variants, italic Fraunces date number, source-colored task cards, "+ Add" button).
-- Add a `scrollToAnchorNonce` prop and a `useLayoutEffect` that scrolls the column matching `days[Math.floor(days.length/2)]` (today/anchor) into view (centered) whenever the nonce changes or on first mount.
-- Keep DnD, source pills, hover, all existing visuals.
+- Planner page (`/planner` and `/planner/tasks`) only. Other pages keep current responsive behavior.
+- Wired to real Supabase data already loaded in `Planner.tsx` (tasks, spaces, sections by Overdue / Today / This week).
+- Tap a row → opens existing `PlannerTaskDialog`. FAB → opens same dialog (new task).
+- Swipe-to-act and AI composer sheet are visual / interactive shells that reuse existing handlers (toggle complete, delete). The "AI parse" composer copy is shown but submits via the standard dialog for now (no new AI endpoint).
 
-### 3. Compact all-day cards
-- In the task card render, keep all-day cards visually identical in height to timed cards. Today the layout is a 3-row `grid gap-1.5` (time row → title → source pill). For all-day:
-  - Collapse the layout: render the "All day" label inline on the same row as the title (not as its own row), so the card is the same height as a timed card without a long description.
-  - Specifically: condense to two rows — top row `[All day pill] [checkbox]`, second row `[title] [source pill]` inline — or keep the same 3-row structure but force `min-height` parity and tighter `py-1.5` padding for all-day variants.
-- Result: all-day cards are not vertically taller than 1-line timed cards.
+## Files to add
 
-## Out of scope
-- Month and List views unchanged.
-- No DB or schema changes.
-- The `PlannerWeekRail` is removed from this view; can be re-introduced later if requested.
+1. `src/components/planner/mobile/MobilePlanner.tsx` — port of `MobileTodo.jsx` to TSX + Tailwind/inline styles, fed real data.
+   - Subcomponents inlined: `MTNavBar`, `MTSegmented`, `MTSpaceChip`, `MTOverdueCard`, `MTSection`, `MTTaskRow` (with swipe gesture using touch events), `MTFAB`, `MTTabBar`.
+   - Sections built from `tasks`: Overdue (due_at < today & !done), Today (due today & !done), This week (rest of ISO week & !done). Counts come from the same arrays.
+   - Filter chips (Open/Mine/Today/Done) filter the same lists client-side.
+   - Spaces chips use `usePlannerSpaces()` data with task counts; clicking sets `selectedSpaceId`.
+   - Checkbox calls existing `onToggleComplete`. Swipe-left reveals green check (complete) + terracotta trash (delete) actions.
+2. `src/components/planner/mobile/MobileTabBar.tsx` — 5-icon bottom nav. Routes:
+   - Today → `/dashboard`, Plan → `/planner` (active), Craft → `/marketing-hub`, Library → `/content-vault`, Me → `/settings`.
+3. `src/hooks/useIsNativeApp.ts` — returns `true` when `window.Capacitor?.isNativePlatform?.()` is true (safe-checked, SSR-safe). Used to hide the custom tab bar on native.
 
-## Technical notes
-- Use the existing `startOfDay`, `addDays` imports.
-- `scrollToAnchorNonce`: `const [scrollNonce, setScrollNonce] = useState(0)`, increment on Today/prev/next clicks, pass to `PlannerWeekBoardView`.
-- Inside the board, find the anchor column by matching `format(day, "yyyy-MM-dd") === format(anchorDate, "yyyy-MM-dd")` via a ref map, then `el.scrollIntoView({ inline: "center", block: "nearest" })`.
+## Files to edit
+
+- `src/pages/Planner.tsx`
+  - On `<md` viewports render `<MobilePlanner …/>` instead of the current desktop chrome (header strip, week pill, view toggle, week board / list / month).
+  - Pass through: `tasks`, `spaces`, `selectedSpaceId`, `setSelectedSpaceId`, `handleEditTask`, `handleToggleComplete`, `handleDeleteTask`, `handleAddTask`.
+  - Keep `PlannerTaskDialog` mounted (shared between mobile & desktop).
+- `src/components/layout/ProjectLayout.tsx`
+  - When the route is `/planner*` AND viewport is mobile AND not native, add bottom padding so content clears the 64px tab bar; otherwise no change. (Tab bar itself is rendered inside `MobilePlanner` so layout stays simple.)
+- `src/components/layout/TopBar.tsx` (read-only check first) — hide the existing mobile top bar on `/planner` so the native-style large title isn't doubled up.
+
+## Design fidelity
+
+- Cream background `#FBF7F1`, ink `#1F1B17`, terracotta `#C65A3E` (already in palette via `--paper-100`, `--ink-900`, `--terracotta-500`).
+- Headlines in Fraunces italic (already loaded). Body in `-apple-system, "SF Pro Text", system-ui`.
+- Card sections: white, `rounded-2xl`, subtle shadow, hairline divider at `marginLeft: 52px`.
+- Status pills (`IN PROGRESS`, `BLOCKED`, etc.) only shown when status ≠ TO DO/DONE.
+- FAB: 56×56 terracotta, fixed `right:18, bottom:92` (above tab bar) — `bottom:24` when native (no tab bar).
+- Sticky nav bar fades in title + adds blur when scrolled (scroll listener on the scroller div).
+- Safe-area insets respected on tab bar (`env(safe-area-inset-bottom)`).
+
+## Native detection
+
+```ts
+// src/hooks/useIsNativeApp.ts
+export function useIsNativeApp() {
+  const [isNative, setIsNative] = useState(false);
+  useEffect(() => {
+    const cap = (window as any).Capacitor;
+    setIsNative(!!cap?.isNativePlatform?.());
+  }, []);
+  return isNative;
+}
+```
+
+In `MobilePlanner`: `{!isNative && <MobileTabBar active="plan" />}`.
+
+## Out of scope (this pass)
+
+- Implementing AI natural-language task parsing in the add sheet (uses existing dialog instead).
+- Applying the iOS treatment to other pages (Dashboard, Vault, etc.) — only Planner per request.
+- Capacitor project bootstrap (`npx cap init`, native projects). The native-detection hook is forward-compatible; setup is a separate task when you're ready.
+
+## Verification
+
+- Resize preview to 390×844 on `/planner`: matches the "At rest · large title" artboard.
+- Scroll the list: top nav bar gains blur + shows "To do" inline title.
+- Swipe a row left: reveals green check + red trash actions.
+- Tap FAB: existing task dialog opens.
+- Resize to ≥768px: original desktop calendar/week board returns unchanged.

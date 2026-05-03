@@ -38,8 +38,11 @@ import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
 import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 import { PageLoader } from "@/components/ui/page-loader";
+import { MobilePlanner } from "@/components/planner/mobile/MobilePlanner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Planner = () => {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const location = useLocation();
   // Both /planner and /planner/tasks land here. Default the legacy /planner/tasks URL into List view.
@@ -358,6 +361,35 @@ const Planner = () => {
     format(weekStart, "MMM") === format(weekEnd, "MMM")
       ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
       : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
+
+  if (isMobile) {
+    return (
+      <>
+        <MobilePlanner
+          tasks={tasks}
+          spaces={spaces}
+          selectedSpaceId={selectedSpaceId}
+          onSelectSpace={setSelectedSpaceId}
+          onEditTask={handleEditTask}
+          onToggleComplete={handleToggleComplete}
+          onDeleteTask={handleDeleteTask}
+          onAddTask={handleAddTask}
+        />
+        <PlannerTaskDialog
+          open={dialogOpen}
+          onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
+          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+          editTask={editingTask}
+          defaultDueAt={defaultDueAt}
+          spaces={spaces}
+          categories={activeCategories}
+          allCategories={categories}
+          selectedSpaceId={selectedSpaceId}
+          onCreateCategory={createCategory}
+        />
+      </>
+    );
+  }
 
   return (
     <ProjectLayout>
