@@ -262,6 +262,7 @@ const Section = ({
   accent,
   tasks,
   spaces,
+  categories,
   onToggle,
   onDelete,
   onEdit,
@@ -271,6 +272,7 @@ const Section = ({
   accent: "terracotta" | "ink";
   tasks: PlannerTask[];
   spaces: PlannerSpace[];
+  categories: SpaceCategory[];
   onToggle: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
   onEdit: (t: PlannerTask) => void;
