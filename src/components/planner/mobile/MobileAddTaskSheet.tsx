@@ -1133,3 +1133,86 @@ function PickerRow({ label, dot, active, onClick }: { label: string; dot?: strin
     </button>
   );
 }
+
+function SubtaskRow({
+  subtask,
+  isLast,
+  onToggle,
+  onDelete,
+}: {
+  subtask: Subtask;
+  isLast: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  const [swiped, setSwiped] = useState(false);
+  const startX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (startX.current == null) return;
+    const dx = e.changedTouches[0].clientX - startX.current;
+    if (dx < -40) setSwiped(true);
+    else if (dx > 40) setSwiped(false);
+    startX.current = null;
+  };
+  const done = subtask.completed;
+  return (
+    <div style={{ position: "relative", overflow: "hidden", background: "#fff", borderBottom: isLast ? "none" : `0.5px solid ${HAIRLINE}` }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={() => { onToggle(); setSwiped(false); }}
+          style={{ width: 64, background: "#7E906E", border: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          aria-label="Complete"
+        >
+          <Check color="#fff" size={20} strokeWidth={2.4} />
+        </button>
+        <button
+          onClick={() => { onDelete(); setSwiped(false); }}
+          style={{ width: 64, background: TERRACOTTA, border: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          aria-label="Delete"
+        >
+          <Trash2 color="#fff" size={18} strokeWidth={2} />
+        </button>
+      </div>
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          position: "relative",
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "11px 14px",
+          transform: swiped ? "translateX(-128px)" : "translateX(0)",
+          transition: "transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+        }}
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          style={{
+            width: 22, height: 22, borderRadius: 999, flexShrink: 0,
+            border: `1.8px solid ${done ? TERRACOTTA : INK_20}`,
+            background: done ? TERRACOTTA : "transparent",
+            cursor: "pointer", padding: 0,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            transition: "all 160ms ease",
+          }}
+          aria-label="Toggle subtask"
+        >
+          {done && <Check color="#fff" size={11} strokeWidth={3.5} />}
+        </button>
+        <span
+          style={{
+            flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
+            color: done ? INK_40 : INK, letterSpacing: -0.2,
+            textDecoration: done ? "line-through" : "none",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}
+        >
+          {subtask.title}
+        </span>
+      </div>
+    </div>
+  );
+}
