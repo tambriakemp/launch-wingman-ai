@@ -85,6 +85,7 @@ const Auth = () => {
 
   // Google OAuth state
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const surecontactFiredRef = useRef(false);
 
   const { signIn, signUp, user } = useAuth();
