@@ -13,8 +13,9 @@ const getHaptics = async () => {
     return null;
   }
   try {
-    // @ts-ignore - optional dependency
-    const mod = await import(/* @vite-ignore */ "@capacitor/haptics" as string).catch(() => null);
+    const pkg = ["@capacitor", "haptics"].join("/");
+    // @ts-ignore - optional dependency, resolved at runtime on native only
+    const mod = await import(/* @vite-ignore */ pkg).catch(() => null);
     cachedHaptics = mod ?? null;
   } catch {
     cachedHaptics = null;
