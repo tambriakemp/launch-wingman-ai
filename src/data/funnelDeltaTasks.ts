@@ -2650,7 +2650,7 @@ const APPLICATION_MARKETING_TASKS: TaskTemplate[] = [
       'Booking confirmation email is set up and tested',
       'You have set a call capacity limit',
     ],
-    whyItMatters: 'An application or call funnel lives and dies on how frictionless the booking experience is. If someone wants to talk to you and can't figure out how to book in 30 seconds, they move on. Your booking link, calendar availability, and confirmation sequence need to be airtight before you send anyone to them.',
+    whyItMatters: "An application or call funnel lives and dies on how frictionless the booking experience is. If someone wants to talk to you and can't figure out how to book in 30 seconds, they move on. Your booking link, calendar availability, and confirmation sequence need to be airtight before you send anyone to them.",
     instructions: [
       'Set up your booking link using Calendly, TidyCal, or Systeme.io scheduling',
       'Block specific time slots on your calendar for discovery calls — don't leave it wide open',
@@ -2878,7 +2878,7 @@ const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
       'Link in bio points to the correct destination',
       'At least 5 pieces of content this week have the offer as the CTA',
     ],
-    whyItMatters: 'For a content-to-offer funnel, every post is a potential entry point to your sales page. But most creators break the path somewhere — a bio link that goes to the wrong place, a sales page that doesn't load on mobile, a checkout that glitches. Walk the path yourself before you send anyone down it. Then drive traffic deliberately, not randomly.',
+    whyItMatters: "For a content-to-offer funnel, every post is a potential entry point to your sales page. But most creators break the path somewhere — a bio link that goes to the wrong place, a sales page that doesn't load on mobile, a checkout that glitches. Walk the path yourself before you send anyone down it. Then drive traffic deliberately, not randomly.",
     instructions: [
       'Walk your entire conversion path as a new visitor:',
       '  — Open your profile on mobile as if you are seeing it for the first time',
