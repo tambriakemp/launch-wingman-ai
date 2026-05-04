@@ -855,3 +855,123 @@ export const MobilePlanner = ({
     </div>
   );
 };
+
+function CategoryFilterDrawer({
+  categories,
+  selectedIds,
+  spaceName,
+  onToggle,
+  onClear,
+  onClose,
+}: {
+  categories: SpaceCategory[];
+  selectedIds: string[];
+  spaceName: string | null;
+  onToggle: (id: string) => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { requestAnimationFrame(() => setMounted(true)); }, []);
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        flexDirection: "column",
+        background: mounted ? "rgba(31,27,23,0.40)" : "rgba(31,27,23,0)",
+        transition: "background 240ms ease",
+      }}
+    >
+      <div onClick={onClose} style={{ flex: 1 }} />
+      <div
+        style={{
+          background: PAPER,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+          maxHeight: "75%",
+          display: "flex",
+          flexDirection: "column",
+          transform: mounted ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+          boxShadow: "0 -10px 40px rgba(31,27,23,0.18)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
+          <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px 12px" }}>
+          <button
+            onClick={onClear}
+            disabled={selectedIds.length === 0}
+            style={{
+              background: "transparent",
+              border: 0,
+              padding: 0,
+              fontFamily: SF,
+              fontSize: 14.5,
+              color: selectedIds.length === 0 ? INK_40 : TERRACOTTA,
+              fontWeight: 500,
+              letterSpacing: -0.2,
+              cursor: selectedIds.length === 0 ? "default" : "pointer",
+            }}
+          >
+            Clear
+          </button>
+          <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 17, fontWeight: 500, color: INK }}>
+            Filter by category
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ width: 28, height: 28, border: 0, borderRadius: 999, background: "rgba(31,27,23,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          >
+            <X size={14} color={INK} strokeWidth={2.2} />
+          </button>
+        </div>
+        {spaceName && (
+          <div style={{ padding: "0 22px 10px", fontFamily: SF, fontSize: 12, fontWeight: 600, color: INK_60, letterSpacing: 0.5, textTransform: "uppercase" }}>
+            {spaceName}
+          </div>
+        )}
+        <div style={{ overflowY: "auto", padding: "0 12px 12px", WebkitOverflowScrolling: "touch" }}>
+          {categories.length === 0 ? (
+            <div style={{ padding: "32px 16px", textAlign: "center", fontFamily: SF, fontSize: 14, color: INK_60 }}>
+              {spaceName ? "No categories in this space yet." : "Pick a space first to filter by category."}
+            </div>
+          ) : (
+            categories.map((c) => {
+              const active = selectedIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => onToggle(c.id)}
+                  style={{
+                    width: "100%",
+                    background: active ? "rgba(198,90,62,0.08)" : "#fff",
+                    border: 0,
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    marginTop: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{ width: 10, height: 10, borderRadius: 999, background: c.color || INK_40 }} />
+                  <span style={{ flex: 1, fontFamily: SF, fontSize: 15, fontWeight: 500, color: INK, letterSpacing: -0.2 }}>{c.name}</span>
+                  {active && <Check size={16} color={TERRACOTTA} strokeWidth={2.4} />}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
