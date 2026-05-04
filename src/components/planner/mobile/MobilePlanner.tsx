@@ -397,6 +397,7 @@ const OverdueCard = ({ count }: { count: number }) => (
 export const MobilePlanner = ({
   tasks,
   spaces,
+  categories = [],
   selectedSpaceId,
   onSelectSpace,
   onEditTask,
@@ -407,7 +408,14 @@ export const MobilePlanner = ({
   const isNative = useIsNativeApp();
   const [filter, setFilter] = useState<FilterId>("open");
   const [scrolled, setScrolled] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Reset category selection when space changes (categories are space-scoped)
+  useEffect(() => {
+    setSelectedCategoryIds([]);
+  }, [selectedSpaceId]);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -417,20 +425,34 @@ export const MobilePlanner = ({
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
+  const spaceCategories = useMemo(
+    () => (selectedSpaceId ? categories.filter((c) => c.space_id === selectedSpaceId) : []),
+    [categories, selectedSpaceId]
+  );
+
   // Apply filter chips
   const filteredTasks = useMemo(() => {
     let list = tasks;
     if (selectedSpaceId) list = list.filter((t) => (t as any).space_id === selectedSpaceId);
+    if (selectedCategoryIds.length > 0) {
+      list = list.filter((t) => t.category && selectedCategoryIds.includes(t.category));
+    }
     if (filter === "open") list = list.filter((t) => t.column_id !== "done");
     else if (filter === "done") list = list.filter((t) => t.column_id === "done");
-    else if (filter === "mine") list = list.filter((t) => t.column_id !== "done");
+    else if (filter === "overdue")
+      list = list.filter((t) => {
+        const d = t.due_at;
+        if (!d || t.column_id === "done") return false;
+        const p = parseISO(d);
+        return isPast(p) && !isToday(p);
+      });
     else if (filter === "today")
       list = list.filter((t) => {
         const d = t.due_at || t.start_at;
         return d && isToday(parseISO(d)) && t.column_id !== "done";
       });
     return list;
-  }, [tasks, selectedSpaceId, filter]);
+  }, [tasks, selectedSpaceId, filter, selectedCategoryIds]);
 
   const now = new Date();
   const wkStart = startOfWeek(now, { weekStartsOn: 1 });
