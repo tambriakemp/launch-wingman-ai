@@ -101,8 +101,10 @@ export const PlannerWeekBoardView = ({
       const el = dayRefs.current[anchorKey];
       const container = scrollContainerRef.current;
       if (!el || !container) return false;
-      // el.offsetLeft is relative to the scroll container (its offset parent), so use it directly.
-      const target = Math.max(0, el.offsetLeft);
+      // Use bounding rects so we don't depend on offsetParent positioning.
+      const elRect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const target = Math.max(0, container.scrollLeft + (elRect.left - containerRect.left));
       container.scrollTo({ left: target, behavior });
       return true;
     };
