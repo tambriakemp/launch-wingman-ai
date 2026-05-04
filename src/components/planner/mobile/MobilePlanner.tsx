@@ -247,6 +247,26 @@ const TaskRow = ({
               <span style={{ width: 6, height: 6, borderRadius: 999, background: spaceColor }} />
               {spaceName}
             </span>
+            {category && (
+              <>
+                <span style={{ width: 2, height: 2, borderRadius: 999, background: INK_40 }} />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontFamily: SF,
+                    fontSize: 11.5,
+                    fontWeight: 500,
+                    color: INK_60,
+                    letterSpacing: -0.1,
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: category.color || "#94a3b8" }} />
+                  {category.name}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
