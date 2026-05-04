@@ -637,14 +637,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/app/ai-studio/hooks"
-              element={
-                <ProtectedRoute>
-                  <HookGenerator />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_HOOK_GENERATOR && (
+              <Route
+                path="/app/ai-studio/hooks"
+                element={
+                  <ProtectedRoute>
+                    <HookGenerator />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/app/ai-studio/sales-page"
               element={
