@@ -22,6 +22,10 @@ const VALID_ACTIONS = [
   "create_planner_task",
   "update_planner_task",
   "delete_planner_task",
+  "list_subtasks",
+  "create_subtask",
+  "update_subtask",
+  "delete_subtask",
 ] as const;
 
 type Action = (typeof VALID_ACTIONS)[number];
