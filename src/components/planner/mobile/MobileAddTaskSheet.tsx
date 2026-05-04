@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote } from "lucide-react";
+import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2 } from "lucide-react";
+import { z } from "zod";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { toTitleCase } from "@/lib/utils";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
+
+const taskSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(200, "Title is too long"),
+  notes: z.string().max(2000, "Notes are too long").optional(),
+});
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
 const SERIF = '"Fraunces", "New York", Georgia, serif';
@@ -42,6 +51,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [picker, setPicker] = useState<PickerType>(null);
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -53,12 +65,40 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       setPriority("normal");
       setDueAt(null);
       setPicker(null);
+      setSuggestions([]);
       requestAnimationFrame(() => setMounted(true));
       setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
     }
   }, [open, selectedSpaceId]);
+
+  // Debounced AI suggestions while typing.
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = title.trim();
+    if (trimmed.length < 2 || trimmed.length > 80) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("parse-task-nl", {
+          body: { mode: "suggest", partial: trimmed },
+        });
+        if (!error && data?.suggestions) {
+          setSuggestions(
+            (data.suggestions as string[])
+              .filter((s) => s && s.toLowerCase() !== trimmed.toLowerCase())
+              .slice(0, 4)
+          );
+        }
+      } catch { /* silent */ }
+      finally { setLoadingSuggestions(false); }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [title, open]);
 
   const space = useMemo(() => spaces.find((s) => s.id === spaceId) || null, [spaces, spaceId]);
   const spaceCategories = useMemo(
@@ -68,14 +108,42 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const category = spaceCategories.find((c) => c.id === categoryId) || null;
   const isComposer = title.trim().length === 0;
 
+  const handleAIParse = async () => {
+    const input = title.trim();
+    if (!input || parsing) return;
+    setParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-task-nl", {
+        body: { mode: "parse", input },
+      });
+      if (error) throw error;
+      if (data?.title) setTitle(data.title);
+      if (data?.due_date) {
+        const d = new Date(data.due_date);
+        if (!isNaN(d.getTime())) setDueAt(d);
+      }
+      if (data?.priority) setPriority(data.priority);
+      toast.success("Parsed", { description: "Filled fields from your sentence." });
+    } catch (e: any) {
+      toast.error("Couldn't parse", { description: e?.message || "Try editing manually." });
+    } finally {
+      setParsing(false);
+    }
+  };
+
   const handleSave = async () => {
-    if (isComposer || submitting) return;
+    if (submitting) return;
+    const result = taskSchema.safeParse({ title: title.trim(), notes: notes.trim() });
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || "Invalid task");
+      return;
+    }
     setSubmitting(true);
     try {
       const dueIso = dueAt ? dueAt.toISOString() : null;
       await onCreate({
-        title: title.trim(),
-        description: notes.trim(),
+        title: toTitleCase(result.data.title),
+        description: result.data.notes || "",
         column_id: "todo",
         task_type: "task",
         priority,
@@ -86,6 +154,8 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
         ...(({ space_id: spaceId } as any)),
       });
       onClose();
+    } catch (e: any) {
+      toast.error("Couldn't add task", { description: e?.message });
     } finally {
       setSubmitting(false);
     }
@@ -228,9 +298,11 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                 fontStyle: isComposer ? "italic" : "normal",
               }}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
+                onClick={handleAIParse}
+                disabled={isComposer || parsing}
                 style={{
                   background: "rgba(198,90,62,0.10)",
                   color: TERRACOTTA,
@@ -244,34 +316,46 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                   fontSize: 12.5,
                   fontWeight: 600,
                   letterSpacing: -0.1,
-                  cursor: "pointer",
+                  cursor: isComposer ? "default" : "pointer",
+                  opacity: isComposer ? 0.5 : 1,
                 }}
               >
-                <Mic size={13} color={TERRACOTTA} strokeWidth={2} /> Voice
+                {parsing
+                  ? <Loader2 size={13} color={TERRACOTTA} strokeWidth={2} className="animate-spin" />
+                  : <Wand2 size={13} color={TERRACOTTA} strokeWidth={2} />}
+                {parsing ? "Parsing…" : "Parse with AI"}
               </button>
-              <button
-                type="button"
-                style={{
-                  background: "rgba(31,27,23,0.06)",
-                  color: INK,
-                  border: 0,
-                  borderRadius: 999,
-                  padding: "6px 12px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontFamily: SF,
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  letterSpacing: -0.1,
-                  cursor: "pointer",
-                }}
-              >
-                <LinkIcon size={13} color={INK} strokeWidth={2} /> Paste
-              </button>
+              {loadingSuggestions && suggestions.length === 0 && (
+                <span style={{ fontFamily: SF, fontSize: 12, color: INK_40 }}>Thinking…</span>
+              )}
             </div>
+            {suggestions.length > 0 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setTitle(s); setSuggestions([]); }}
+                    style={{
+                      background: "rgba(31,27,23,0.05)",
+                      color: INK,
+                      border: `1px solid ${HAIRLINE}`,
+                      borderRadius: 999,
+                      padding: "5px 10px",
+                      fontFamily: SF,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
 
         {/* fields scroller */}
         <div
