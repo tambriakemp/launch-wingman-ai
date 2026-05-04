@@ -51,6 +51,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [picker, setPicker] = useState<PickerType>(null);
   const [submitting, setSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -62,12 +65,40 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       setPriority("normal");
       setDueAt(null);
       setPicker(null);
+      setSuggestions([]);
       requestAnimationFrame(() => setMounted(true));
       setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
     }
   }, [open, selectedSpaceId]);
+
+  // Debounced AI suggestions while typing.
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = title.trim();
+    if (trimmed.length < 2 || trimmed.length > 80) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("parse-task-nl", {
+          body: { mode: "suggest", partial: trimmed },
+        });
+        if (!error && data?.suggestions) {
+          setSuggestions(
+            (data.suggestions as string[])
+              .filter((s) => s && s.toLowerCase() !== trimmed.toLowerCase())
+              .slice(0, 4)
+          );
+        }
+      } catch { /* silent */ }
+      finally { setLoadingSuggestions(false); }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [title, open]);
 
   const space = useMemo(() => spaces.find((s) => s.id === spaceId) || null, [spaces, spaceId]);
   const spaceCategories = useMemo(
@@ -77,14 +108,42 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const category = spaceCategories.find((c) => c.id === categoryId) || null;
   const isComposer = title.trim().length === 0;
 
+  const handleAIParse = async () => {
+    const input = title.trim();
+    if (!input || parsing) return;
+    setParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-task-nl", {
+        body: { mode: "parse", input },
+      });
+      if (error) throw error;
+      if (data?.title) setTitle(data.title);
+      if (data?.due_date) {
+        const d = new Date(data.due_date);
+        if (!isNaN(d.getTime())) setDueAt(d);
+      }
+      if (data?.priority) setPriority(data.priority);
+      toast.success("Parsed", { description: "Filled fields from your sentence." });
+    } catch (e: any) {
+      toast.error("Couldn't parse", { description: e?.message || "Try editing manually." });
+    } finally {
+      setParsing(false);
+    }
+  };
+
   const handleSave = async () => {
-    if (isComposer || submitting) return;
+    if (submitting) return;
+    const result = taskSchema.safeParse({ title: title.trim(), notes: notes.trim() });
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message || "Invalid task");
+      return;
+    }
     setSubmitting(true);
     try {
       const dueIso = dueAt ? dueAt.toISOString() : null;
       await onCreate({
-        title: title.trim(),
-        description: notes.trim(),
+        title: toTitleCase(result.data.title),
+        description: result.data.notes || "",
         column_id: "todo",
         task_type: "task",
         priority,
@@ -95,6 +154,8 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
         ...(({ space_id: spaceId } as any)),
       });
       onClose();
+    } catch (e: any) {
+      toast.error("Couldn't add task", { description: e?.message });
     } finally {
       setSubmitting(false);
     }
