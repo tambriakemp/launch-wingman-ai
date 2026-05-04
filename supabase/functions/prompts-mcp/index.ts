@@ -1017,6 +1017,139 @@ mcpServer.tool("delete_planner_task", {
     };
   },
 });
+
+mcpServer.tool("list_subtasks", {
+  description: "List all subtasks for a parent task, ordered by position.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      taskId: { type: "string" },
+      authHeader: { type: "string" },
+    },
+    required: ["taskId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const { data, error } = await serviceClient
+      .from("subtasks")
+      .select("id, task_id, title, description, completed, position, created_at, updated_at")
+      .eq("task_id", params.taskId)
+      .eq("user_id", userId)
+      .order("position", { ascending: true });
+    if (error) throw error;
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ subtasks: data || [] }) }],
+    };
+  },
+});
+
+mcpServer.tool("create_subtask", {
+  description: "Create a subtask under a parent planner task.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      taskId: { type: "string", description: "Parent task ID" },
+      title: { type: "string" },
+      description: { type: "string" },
+      completed: { type: "boolean" },
+      position: { type: "number" },
+      authHeader: { type: "string" },
+    },
+    required: ["taskId", "title"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const title = String(params.title || "").trim();
+    if (!title) throw new Error("title is required");
+
+    const { data: parent } = await serviceClient
+      .from("tasks").select("id").eq("id", params.taskId).eq("user_id", userId).maybeSingle();
+    if (!parent) throw new Error("Parent task not found");
+
+    const { data: maxRow } = await serviceClient
+      .from("subtasks").select("position").eq("task_id", params.taskId)
+      .order("position", { ascending: false }).limit(1).maybeSingle();
+    const nextPosition = params.position !== undefined ? params.position : ((maxRow as any)?.position ?? -1) + 1;
+
+    const { data, error } = await serviceClient
+      .from("subtasks")
+      .insert({
+        task_id: params.taskId,
+        user_id: userId,
+        title,
+        description: params.description || null,
+        completed: params.completed === true,
+        position: nextPosition,
+      })
+      .select("id, task_id, title, description, completed, position, created_at, updated_at")
+      .maybeSingle();
+    if (error) throw error;
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, subtask: data }) }],
+    };
+  },
+});
+
+mcpServer.tool("update_subtask", {
+  description: "Update a subtask's title, description, completed state, or position.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      subtaskId: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      completed: { type: "boolean" },
+      position: { type: "number" },
+      authHeader: { type: "string" },
+    },
+    required: ["subtaskId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const updates: Record<string, unknown> = {};
+    if (params.title !== undefined) updates.title = params.title;
+    if (params.description !== undefined) updates.description = params.description;
+    if (params.completed !== undefined) updates.completed = params.completed;
+    if (params.position !== undefined) updates.position = params.position;
+    if (Object.keys(updates).length === 0) throw new Error("Provide at least one field to update");
+
+    const { data, error } = await serviceClient
+      .from("subtasks").update(updates)
+      .eq("id", params.subtaskId).eq("user_id", userId)
+      .select("id, task_id, title, description, completed, position, created_at, updated_at")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("Subtask not found");
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, subtask: data }) }],
+    };
+  },
+});
+
+mcpServer.tool("delete_subtask", {
+  description: "Delete a subtask by ID.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      subtaskId: { type: "string" },
+      authHeader: { type: "string" },
+    },
+    required: ["subtaskId"],
+  },
+  handler: async (params: any) => {
+    const { userId, serviceClient } = await authenticate(params.authHeader || null);
+    const { data, error } = await serviceClient
+      .from("subtasks").delete()
+      .eq("id", params.subtaskId).eq("user_id", userId)
+      .select("id").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("Subtask not found");
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ success: true, deleted_id: data.id }) }],
+    };
+  },
+});
+
 const transport = new StreamableHttpTransport();
 transport.bind(mcpServer);
 
