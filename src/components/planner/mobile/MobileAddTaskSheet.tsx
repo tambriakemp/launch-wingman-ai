@@ -35,11 +35,14 @@ const HAIRLINE = "rgba(31,27,23,0.10)";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreate: (data: Partial<PlannerTask>) => Promise<void>;
+  onCreate: (data: Partial<PlannerTask>) => Promise<string | void>;
+  onUpdate?: (id: string, data: Partial<PlannerTask>) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   spaces: PlannerSpace[];
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onCreateCategory?: (spaceId: string, name: string, color?: string) => Promise<SpaceCategory | null>;
+  editTask?: PlannerTask | null;
 }
 
 const CATEGORY_PALETTE = ["#E0B341", "#7E906E", "#C65A3E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
