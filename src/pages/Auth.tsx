@@ -423,6 +423,7 @@ const Auth = () => {
             <div className="wordmark">
               Launchely<span className="dot">.</span>
             </div>
+          </div>
 
           <div className="brand-body">
             <div className="brand-eyebrow">{isSignup ? "New here" : "Welcome back"}</div>
