@@ -56,7 +56,8 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId, onCreateCategory }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, editTask }: Props) {
+  const isEdit = !!editTask;
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [spaceId, setSpaceId] = useState<string | null>(selectedSpaceId);
@@ -73,28 +74,52 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [categoryQuery, setCategoryQuery] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const categorySearchRef = useRef<HTMLInputElement>(null);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+
+  const fetchSubtasks = useCallback(async (taskId: string) => {
+    const { data } = await supabase
+      .from("subtasks")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("position", { ascending: true });
+    if (data) setSubtasks(data as unknown as Subtask[]);
+  }, []);
 
   useEffect(() => {
     if (open) {
-      setTitle("");
-      setNotes("");
-      setSpaceId(selectedSpaceId);
-      setCategoryId(null);
-      setPriority("normal");
-      setDueAt(null);
+      if (editTask) {
+        setTitle(editTask.title || "");
+        setNotes(editTask.description || "");
+        setSpaceId((editTask as any).space_id || selectedSpaceId);
+        setCategoryId(editTask.category || null);
+        setPriority((editTask as any).priority || "normal");
+        const d = editTask.due_at || editTask.start_at;
+        setDueAt(d ? new Date(d) : null);
+        fetchSubtasks(editTask.id);
+      } else {
+        setTitle("");
+        setNotes("");
+        setSpaceId(selectedSpaceId);
+        setCategoryId(null);
+        setPriority("normal");
+        setDueAt(null);
+        setSubtasks([]);
+      }
       setPicker(null);
       setSuggestions([]);
       setCategoryQuery("");
+      setNewSubtaskTitle("");
       requestAnimationFrame(() => setMounted(true));
-      setTimeout(() => inputRef.current?.focus(), 240);
+      if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
     }
-  }, [open, selectedSpaceId]);
+  }, [open, selectedSpaceId, editTask, fetchSubtasks]);
 
-  // Debounced AI suggestions while typing.
+  // Debounced AI suggestions while typing (only in create mode).
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEdit) return;
     const trimmed = title.trim();
     if (trimmed.length < 2 || trimmed.length > 80) {
       setSuggestions([]);
@@ -117,7 +142,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       finally { setLoadingSuggestions(false); }
     }, 600);
     return () => clearTimeout(timer);
-  }, [title, open]);
+  }, [title, open, isEdit]);
 
   const space = useMemo(() => spaces.find((s) => s.id === spaceId) || null, [spaces, spaceId]);
   const spaceCategories = useMemo(
