@@ -648,7 +648,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
               boxShadow: isComposer ? "none" : "0 4px 14px -4px rgba(31,27,23,0.4)",
             }}
           >
-            {isComposer ? "Type to add task" : submitting ? "Adding…" : "Add task"}
+            {isComposer ? "Type to add task" : submitting ? (isEdit ? "Saving…" : "Adding…") : (isEdit ? "Save changes" : "Add task")}
             {!isComposer && !submitting && <ArrowRight size={16} color={PAPER} strokeWidth={2.4} />}
           </button>
         </div>
