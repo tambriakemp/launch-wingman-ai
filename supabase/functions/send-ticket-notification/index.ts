@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const body: TicketNotificationRequest = await req.json();
-    const appUrl = Deno.env.get("APP_URL") || "https://launchely.com";
+    const appUrl = Deno.env.get("APP_URL") || "https://app.launchely.com";
 
     // Handle new ticket notification to support team
     if (body.type === "new_ticket") {

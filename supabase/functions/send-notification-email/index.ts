@@ -45,7 +45,7 @@ const getEmailContent = (
   data?: Record<string, any>
 ): { subject: string; html: string } => {
   const firstName = profile.first_name || "there";
-  const appUrl = Deno.env.get("APP_URL") || "https://launchely.com";
+  const appUrl = Deno.env.get("APP_URL") || "https://app.launchely.com";
 
   switch (type) {
     case "welcome":

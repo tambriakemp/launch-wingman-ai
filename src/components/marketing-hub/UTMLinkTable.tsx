@@ -63,7 +63,7 @@ export const UTMLinkTable = ({ links, folders = [], onDelete, onMoveToFolder, pu
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   };
 
-  const getShortUrl = (shortCode: string) => `https://launchely.com/r/${shortCode}`;
+  const getShortUrl = (shortCode: string) => `https://app.launchely.com/r/${shortCode}`;
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);

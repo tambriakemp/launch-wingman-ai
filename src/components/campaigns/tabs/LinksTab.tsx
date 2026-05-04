@@ -147,7 +147,7 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
     queryClient.invalidateQueries({ queryKey: ["campaign-utm-links", campaignId] });
   };
 
-  const getShortUrl = (shortCode: string) => `https://launchely.com/r/${shortCode}`;
+  const getShortUrl = (shortCode: string) => `https://app.launchely.com/r/${shortCode}`;
 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;

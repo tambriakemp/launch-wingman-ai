@@ -15,7 +15,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Construct app URL from Supabase URL
 const APP_URL = SUPABASE_URL.includes("supabase.co")
   ? SUPABASE_URL.replace(".supabase.co", ".lovable.app")
-  : "https://launchely.com";
+  : "https://app.launchely.com";
 
 /**
  * Scheduled function to send:

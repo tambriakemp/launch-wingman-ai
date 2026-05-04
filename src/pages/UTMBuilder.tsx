@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 
-const PUBLISHED_URL = "https://launchely.com";
+const PUBLISHED_URL = "https://app.launchely.com";
 
 const generateShortCode = (): string => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
