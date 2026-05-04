@@ -339,6 +339,7 @@ const Section = ({
               task={t}
               isLast={i === tasks.length - 1}
               spaces={spaces}
+              categories={categories}
               onToggle={onToggle}
               onDelete={onDelete}
               onEdit={onEdit}
