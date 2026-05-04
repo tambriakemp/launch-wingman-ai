@@ -119,7 +119,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'What is the subject line of your welcome email?', 
           type: 'text', 
           required: true, 
-          placeholder: "e.g., \"Here\'s your [freebie name] 🎉\"",'
+          placeholder: "e.g., \"Here\'s your [freebie name] 🎉\"",
           helperText: 'Keep it clear and direct — it should match exactly what they signed up for.'
         },
         { 
@@ -708,7 +708,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: "What will you say to attendees who didn\'t buy?",
           type: 'textarea',
           required: true,
-          placeholder: "e.g., \"Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\'s right for you, just reply here.\"",'
+          placeholder: "e.g., \"Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\'s right for you, just reply here.\"",
           helperText: 'One question answered can convert a hesitant attendee into a buyer.',
         },
       ],
@@ -1969,7 +1969,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     ],
     whyItMatters: "A launch to a waitlist almost always outperforms a cold launch. People who raised their hand before your cart opens are already warm — they\'re expecting you to share.",
     instructions: [
-      "Create a simple way for people to say \"I\'m interested\" before you launch",'
+      "Create a simple way for people to say \"I\'m interested\" before you launch",
       'This can be a waitlist form, a DM keyword, or a reply to an email',
       'Share it at least once before launch day',
     ],
@@ -2598,7 +2598,7 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
       'Write these 4 follow-up pieces now — not after the training:',
       '',
       '1. Replay email (send within 24 hours of training):',
-      "  Subject line option: \"Here's the replay — [training name]\"",'
+      "  Subject line option: \"Here's the replay — [training name]\"",
       '  Include: replay link, what was covered, a natural mention of your offer, deadline reminder',
       '',
       '2. Non-attendee email (send within 48 hours):',
@@ -2833,7 +2833,7 @@ const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
       '  Optionally: address the most common objection one more time',
       '',
       '3. Final story post (post 2 hours before close):',
-      "  Script it: \"Cart closes in 2 hours. Here's the link.\" — simple, direct, no overthinking",'
+      "  Script it: \"Cart closes in 2 hours. Here's the link.\" — simple, direct, no overthinking",
       '',
       '4. Last day feed post (post on the final day):',
       '  Visually strong. Mentions the deadline. Ends with one CTA.',
@@ -2888,7 +2888,7 @@ const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
       '  — Test on mobile specifically — most of your buyers will be on their phone',
       'Fix any friction points before you drive traffic',
       'This week: create 5 pieces of content where the primary CTA is your offer (not your freebie, not a follow)',
-      "Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with \"if you want to go deeper, here's how,\" one is personal and shows your process, one is direct and promotional",'
+      "Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with \"if you want to go deeper, here's how,\" one is personal and shows your process, one is direct and promotional",
       'Every caption ends with one clear call to action — not "click the link in bio and also follow me and also save this"',
     ],
     inputType: 'checklist',
