@@ -48,7 +48,9 @@ const MonitoringTab = lazy(() => import('@/components/admin/MonitoringTab').then
 const ConfigTab = lazy(() => import('@/components/admin/ConfigTab').then(m => ({ default: m.ConfigTab })));
 const SupportTicketsTab = lazy(() => import('@/components/admin/SupportTicketsTab').then(m => ({ default: m.SupportTicketsTab })));
 const ActivityLogsTab = lazy(() => import('@/components/admin/ActivityLogsTab').then(m => ({ default: m.ActivityLogsTab })));
-const MarketingAssetsTab = lazy(() => import('@/components/admin/MarketingAssetsTab').then(m => ({ default: m.MarketingAssetsTab })));
+const MarketingAssetsTab = () => (
+  <div className="text-sm text-muted-foreground">Marketing assets are managed on the public site.</div>
+);
 
 // Lazy load platform stats components (they call the heavy edge function)
 const ProjectStatsCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.ProjectStatsCard })));
