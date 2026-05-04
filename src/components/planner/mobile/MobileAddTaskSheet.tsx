@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote } from "lucide-react";
+import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2 } from "lucide-react";
+import { z } from "zod";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { toTitleCase } from "@/lib/utils";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
+
+const taskSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(200, "Title is too long"),
+  notes: z.string().max(2000, "Notes are too long").optional(),
+});
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
 const SERIF = '"Fraunces", "New York", Georgia, serif';
