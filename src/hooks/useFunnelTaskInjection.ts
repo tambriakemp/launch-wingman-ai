@@ -236,10 +236,9 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         messaging: 1,
         build: 2,
         content: 3,
-        marketing: 4,
-        'pre-launch': 5,
-        launch: 6,
-        'post-launch': 7,
+        'pre-launch': 4,
+        launch: 5,
+        'post-launch': 6,
       };
       const phaseDiff = phaseOrder[a.phase] - phaseOrder[b.phase];
       if (phaseDiff !== 0) return phaseDiff;
