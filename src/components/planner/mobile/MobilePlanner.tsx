@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, isToday, isPast, parseISO, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
-import { Plus, Filter, Check, Trash2, Flame } from "lucide-react";
+import { Plus, Filter, Check, Trash2, Flame, X } from "lucide-react";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
-import type { PlannerSpace } from "@/hooks/usePlannerSpaces";
+import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import { MobileTabBar } from "./MobileTabBar";
 import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
@@ -16,11 +16,12 @@ const INK_40 = "rgba(31,27,23,0.42)";
 const INK_20 = "rgba(31,27,23,0.20)";
 const HAIRLINE = "rgba(31,27,23,0.10)";
 
-type FilterId = "open" | "mine" | "today" | "done";
+type FilterId = "open" | "overdue" | "today" | "done";
 
 interface Props {
   tasks: PlannerTask[];
   spaces: PlannerSpace[];
+  categories?: SpaceCategory[];
   selectedSpaceId: string | null;
   onSelectSpace: (id: string | null) => void;
   onEditTask: (task: PlannerTask) => void;
