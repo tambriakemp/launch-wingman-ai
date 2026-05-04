@@ -72,6 +72,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       setDueAt(null);
       setPicker(null);
       setSuggestions([]);
+      setCategoryQuery("");
       requestAnimationFrame(() => setMounted(true));
       setTimeout(() => inputRef.current?.focus(), 240);
     } else {
