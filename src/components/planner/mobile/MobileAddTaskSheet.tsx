@@ -298,9 +298,11 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                 fontStyle: isComposer ? "italic" : "normal",
               }}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
+                onClick={handleAIParse}
+                disabled={isComposer || parsing}
                 style={{
                   background: "rgba(198,90,62,0.10)",
                   color: TERRACOTTA,
@@ -314,34 +316,46 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                   fontSize: 12.5,
                   fontWeight: 600,
                   letterSpacing: -0.1,
-                  cursor: "pointer",
+                  cursor: isComposer ? "default" : "pointer",
+                  opacity: isComposer ? 0.5 : 1,
                 }}
               >
-                <Mic size={13} color={TERRACOTTA} strokeWidth={2} /> Voice
+                {parsing
+                  ? <Loader2 size={13} color={TERRACOTTA} strokeWidth={2} className="animate-spin" />
+                  : <Wand2 size={13} color={TERRACOTTA} strokeWidth={2} />}
+                {parsing ? "Parsing…" : "Parse with AI"}
               </button>
-              <button
-                type="button"
-                style={{
-                  background: "rgba(31,27,23,0.06)",
-                  color: INK,
-                  border: 0,
-                  borderRadius: 999,
-                  padding: "6px 12px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontFamily: SF,
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  letterSpacing: -0.1,
-                  cursor: "pointer",
-                }}
-              >
-                <LinkIcon size={13} color={INK} strokeWidth={2} /> Paste
-              </button>
+              {loadingSuggestions && suggestions.length === 0 && (
+                <span style={{ fontFamily: SF, fontSize: 12, color: INK_40 }}>Thinking…</span>
+              )}
             </div>
+            {suggestions.length > 0 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setTitle(s); setSuggestions([]); }}
+                    style={{
+                      background: "rgba(31,27,23,0.05)",
+                      color: INK,
+                      border: `1px solid ${HAIRLINE}`,
+                      borderRadius: 999,
+                      padding: "5px 10px",
+                      fontFamily: SF,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
 
         {/* fields scroller */}
         <div
