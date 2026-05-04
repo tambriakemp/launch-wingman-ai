@@ -1,46 +1,83 @@
-# Mobile Dashboard Redesign
+## Goal
 
-Apply the attached `MobileDashboard.jsx` design to the project's `/projects/:id/dashboard` route on mobile, using the same native-vs-web pattern already in `MobilePlanner` (no `MobileTabBar` when running inside a Capacitor native shell).
+Rebuild `src/pages/project/Playbook.tsx` so the desktop and mobile views match the uploaded mockups (`Launchely_Playbook.jsx` and `Mobile_Playbook_Launchely_Design_System.jsx`) exactly: an editorial "field guide" treatment with a chapter rail, a featured pull-quote, numbered insight entries, and a contextual sidebar (desktop) / stacked sections (mobile).
 
-## Approach
+The existing data sources stay the same (`usePlaybookData`, active phase, `PHASE_WISDOM`); only presentation changes. Demo strings shown in the mockups become fallbacks when real data isn't available.
 
-1. **Create `src/components/dashboard/mobile/MobileDashboard.tsx`**
-   Faithful port of the uploaded `MobileDashboard.jsx`, using lucide-react icons in place of the inline SF SVGs, and our existing semantic tokens where reasonable. Sections, in order:
-   - Sticky collapsing nav (italic Fraunces "Today" appears on scroll, bell + avatar pill)
-   - Greeting block (uppercase date, large serif greeting with terracotta first name, project status pill)
-   - `NextStepHero` — cream gradient card with drag handle, eyebrow, serif headline, dark "Start this step" CTA, time + AI hints
-   - `PhaseCarousel` — horizontal snap of 6 phase cards (active = ink, done = check, others = white)
-   - `TodayWidget` — two stat tiles (Due today / Upcoming) tapping through to `/planner`
-   - `UpcomingList` — inset white card with date column, title, type dot
-   - `CheckInBanner` — warm gold banner with mic icon and Start button
-   - `AINudge` — dark inverted card with terracotta glow
-   - "Feeling stuck?" footer
-   - Terracotta FAB (bottom-right) → `/planner`
-   - `<MobileTabBar active="home" />` rendered **only when `useIsNativeApp()` is false**, mirroring the planner pattern.
+## Design tokens used
 
-2. **Wire data in `FunnelOverviewContent.tsx`**
-   Add `useIsMobile()` at the top. When mobile and `dashboardViewType === "in_progress"`, render `<MobileDashboard … />` with the props it already computes (`nextBestTask`, `activePhase`, `phaseStatuses`, `activePhasePct`, `stepIndex`, `stepTotal`, `todayPlannerCount`, `upcomingPlannerCount`, derived `upcomingContent`, `profile.first_name`, `project.name`, `projectState`) plus `onStartCheckIn={() => setCheckInOpen(true)}` and `onStuck={() => setStuckModalOpen(true)}`. Continue to render the existing `CheckInFlow` and `StuckHelpDialog` Suspense blocks below so dialogs work on mobile too.
-   The paused/completed/launched lifecycle branches stay on the existing desktop views (they already read fine on mobile and aren't covered by the mockup).
+The project already exposes these CSS vars in `src/index.css`: `--paper-100`, `--paper-200`, `--ink-900`, `--terracotta-500`, `--clay-200`, `--border-hairline`, `--font-display` (Fraunces), `--font-body`, `--font-mono`. We'll consume them via inline styles where Tailwind doesn't cover them, matching the mockup styling exactly.
 
-3. **Strip extra page chrome on mobile**
-   In `ProjectLayout.tsx` the `<main>` has `px-2.5 py-4`. The new mobile dashboard is `position: fixed` and full-bleed, so the surrounding padding/topbar is fine — `MobileDashboard` overlays it. No layout changes needed beyond ensuring it sits above the sidebar trigger (z-index 30 already matches planner).
+## Content mapping
 
-## Native-vs-web rule
+Mockup element → real data source:
+- Chapter rail (6 chapters: Planning, Messaging, Build, Content, Pre-launch, Launch) → existing project phases. Active = `activePhaseData.active_phase`. "Done" = phases before active. Counts pulled from `PHASE_WISDOM[phase].length` + project-derived insight counts.
+- Featured pull-quote → first item from `data.insights` (or first `PHASE_WISDOM[currentPhase]` tip when not enough completed projects).
+- Numbered editorial entries → remaining `data.insights` mapped to `{ n, tag, headline, body, meta }`. `tag` from category label ("On voice", "On clarity"…), `headline` from insight text first sentence, `body` from remainder, `meta` from category source.
+- Sidebar "What helps now" → `PHASE_WISDOM[currentPhase]` (top 4).
+- Sidebar "Your pattern" (dark card) → first insight in `data.insights` with category `general`, fallback to a static line.
+- Sidebar "Up next" → next phase after `currentPhase`.
 
-Same as planner:
-```tsx
-{!isNative && <MobileTabBar active="home" />}
+## Layout
+
+Desktop (≥`md`):
+
+```text
++-----------------------------------------------------------+
+| Eyebrow: Playbook · Field guide                            |
+| H1 Fraunces (italic terracotta "playbook")  [Search][Read] |
+| Italic lede                                                |
++-----------------------------------------------------------+
+| Chapters · 6                          55 entries           |
+| [01 W1 ✓ Planning] [02 W2 ● Messaging(active,dark)] ...    |
++-----------------------------------------------------------+
+| Primary col (1.55fr)               | Sidebar (1fr)         |
+|                                    |                       |
+|  Featured pull-quote (clay-200)    |  What helps now (card)|
+|  Section title (chapter)           |  Your pattern (ink)   |
+|  Numbered entries 01 02 03 04      |  Up next (paper-200)  |
+|  Footer "see all" link             |                       |
++-----------------------------------------------------------+
 ```
-And FAB / scroller bottom padding switches: `isNative ? 24 : 92` for FAB, `isNative ? 24 : 88` for scroller.
 
-## Files
+Mobile (`<md`):
 
-- **New:** `src/components/dashboard/mobile/MobileDashboard.tsx`
-- **Edit:** `src/pages/project/plan/FunnelOverviewContent.tsx` — add `useIsMobile` branch returning `<MobileDashboard … />` for the in-progress view
-- **No edits** to `MobileTabBar`, `useIsNativeApp`, or shared dashboard components
+```text
+Title block
+Chapters horizontal scroll (segmented, snap)
+Featured quote (clay gradient)
+Chapter section header
+Entries card (white, hairline-divided rows)
+"Your pattern" dark card
+"Up next" row
+Footer
+```
+
+We'll use Tailwind `hidden md:block` / `md:hidden` to show one or the other, both rendered inside `ProjectLayout`.
+
+## Implementation steps
+
+1. **Rewrite `src/pages/project/Playbook.tsx`** — replace current card-based render entirely:
+   - Keep top-level data fetching (`usePlaybookData`, active phase query, `PHASE_WISDOM`, loading + empty states).
+   - Update `PlaybookSkeleton` and `PlaybookEmptyState` to use the new editorial header look (eyebrow + Fraunces title) for visual consistency, but keep the wisdom-card list as the empty fallback.
+   - Build small presentational subcomponents (in-file): `EditorialHeader`, `ChapterRail`, `FeaturedQuote`, `NumberedEntry`, `SidebarHelpsNow`, `SidebarPattern`, `SidebarUpNext`, `MobileChapterSegments`, `MobileEntries`, etc. Inline styles using CSS vars match mockups.
+   - Compute `chapters` from a fixed 6-phase array, marking `done`/`active`/`upcoming` based on `currentPhase`.
+   - Map `data.insights` → numbered entries; provide tag/headline/body/meta (split first sentence as headline, rest as body when insight text isn't pre-structured; tag = category label).
+   - Drop the old `WisdomCard`, `InsightCard`, `PlaybookSection`, and `ReflectionPrompt` blocks (no longer in the design).
+   - Remove unused lucide imports; keep `BookMarked`, `Search`, `ArrowRight`, `Check`, `Bookmark`, `Sparkles`, `ChevronRight`.
+
+2. **No new files / no design-token changes** — all required CSS vars already exist.
+
+3. **Routing untouched** — Playbook is already mounted at `/projects/:id/playbook` via existing route.
 
 ## Out of scope
 
-- No backend / schema changes
-- Desktop dashboard untouched
-- Notifications bell is visual only (no panel wired yet)
+- The mockups include a global app shell (top bar, bottom tab bar, sidebar). We already have `ProjectLayout` + `MobileTabBar`; we won't duplicate the mockup's nav. Only the page content area is rebuilt.
+- No DB schema changes, no new hooks, no data semantics changes.
+- The `ReflectionPrompt` ("Does this feel accurate?") block is removed since it isn't in the new design. If you want to keep it, say so and I'll tuck it under the footer.
+
+## Acceptance check
+
+- Desktop ≥1024px renders: editorial header, chapter rail (6 cards, active = ink-900), clay featured quote with terracotta accent and Apply/Save links, 4 numbered entries with terracotta italic numerals and hairline dividers, right sidebar (white card + ink card + paper card).
+- Mobile <768px renders: Fraunces title block, horizontal-scrolling segmented chapters with snap, clay gradient featured quote, white rounded entries card with hairline rows, dark "Your pattern" card, "Up next" pill row, italic footer line.
+- Loading and "not enough data" states still work and use the new header style.
