@@ -469,7 +469,7 @@ const Auth = () => {
             </div>
             Already helping 1,200+ coaches, creators, and small teams launch.
           </div>
-        </aside>
+        </aside>}
 
         {/* Form side */}
         <main className="form-side">
