@@ -326,6 +326,8 @@ const CoachAssessment = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isMobile } = useAssessmentLayout();
+  const haptics = useHaptics();
   const [currentStep, setCurrentStep] = useState(0);
   const [checkedStatements, setCheckedStatements] = useState<Record<string, boolean>>({});
   const [setAnswers, setSetAnswers] = useState<Record<string, CoachType>>({});
