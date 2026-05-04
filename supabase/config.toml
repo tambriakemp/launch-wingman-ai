@@ -1,295 +1,201 @@
 project_id = "ydhagqgurqhlguxkkppb"
 
- [functions.process-scheduled-posts]
- verify_jwt = false
- 
-[functions.get-payment-config]
-verify_jwt = false
-
-[functions.check-admin]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.rename-vault-videos]
-verify_jwt = false
-
-[functions.vault-download]
-verify_jwt = false
-
-[functions.sync-r2-vault]
-verify_jwt = false
-
-[functions.send-assessment-reminder]
-verify_jwt = false
-
-[functions.generate-offer-ideas]
-verify_jwt = false
-
-[functions.generate-problem-statement]
-verify_jwt = false
-
-[functions.generate-offer-transformation]
-verify_jwt = false
-
-[functions.generate-sales-copy]
-verify_jwt = false
-
-[functions.generate-sub-audiences]
-verify_jwt = false
-
-[functions.generate-dream-outcome]
-verify_jwt = false
-
-[functions.generate-pain-symptoms]
-verify_jwt = false
-
-[functions.generate-likelihood-elements]
-verify_jwt = false
-
-[functions.generate-time-effort]
-verify_jwt = false
-
-[functions.generate-audience-refinements]
-verify_jwt = false
-
-[functions.admin-impersonate-user]
-verify_jwt = false
-
-[functions.log-impersonation-end]
-verify_jwt = false
-
-[functions.track-activity]
-verify_jwt = false
-
-[functions.admin-notify]
-verify_jwt = false
-
-[functions.pinterest-auth-start]
-verify_jwt = false
-
-[functions.pinterest-auth-callback]
-verify_jwt = false
-
-[functions.pinterest-get-boards]
-verify_jwt = false
-
-[functions.pinterest-create-board]
-verify_jwt = false
-
-[functions.post-to-pinterest]
-verify_jwt = false
-
-[functions.get-stuck-help]
-verify_jwt = false
-
-[functions.task-ai-assist]
-verify_jwt = false
-
-[functions.update-article-order]
-verify_jwt = false
-
-[functions.generate-talking-points]
-verify_jwt = false
-
-[functions.generate-content-draft]
-verify_jwt = false
-
-[functions.admin-update-user]
-verify_jwt = false
-
-[functions.send-notification-email]
-verify_jwt = false
-
-[functions.scheduled-email-jobs]
-verify_jwt = false
-
-[functions.elevenlabs-tts]
-verify_jwt = false
-
-[functions.instagram-auth-start]
-verify_jwt = false
-
-[functions.instagram-auth-callback]
-verify_jwt = false
-
-[functions.instagram-get-accounts]
-verify_jwt = false
-
-[functions.post-to-instagram]
-verify_jwt = false
-
-[functions.generate-timeline-suggestions]
-verify_jwt = false
-
-[functions.admin-platform-stats]
-verify_jwt = false
-
-[functions.admin-user-status]
-verify_jwt = false
-
-[functions.admin-delete-user]
-verify_jwt = false
-
-[functions.admin-get-user-projects]
-verify_jwt = false
-
-[functions.admin-export-user-data]
-verify_jwt = false
-
-[functions.export-my-data]
-verify_jwt = false
-
-[functions.delete-my-account]
-verify_jwt = false
-
-[functions.instagram-refresh-token]
-verify_jwt = false
-
-[functions.admin-system-health]
-verify_jwt = false
-
-[functions.admin-churn-risk]
-verify_jwt = false
-
-[functions.marketing-webhook]
-verify_jwt = false
-
-[functions.extract-canva-thumbnail]
-verify_jwt = false
-
-[functions.bulk-import-canva]
-verify_jwt = false
-
-[functions.validate-coupon]
-verify_jwt = false
-
-[functions.admin-list-coupons]
-verify_jwt = false
-
-[functions.admin-manage-coupon]
-verify_jwt = false
-
-[functions.analyze-photo-category]
-verify_jwt = false
-
-[functions.upload-photo-to-r2]
-verify_jwt = false
-
-[functions.process-photo-batch]
-verify_jwt = false
-
-[functions.upload-preset-to-r2]
-verify_jwt = false
-
-[functions.generate-brand-asset]
-verify_jwt = false
-
-[functions.generate-social-post]
-verify_jwt = false
-
-[functions.upload-document-to-r2]
-verify_jwt = false
-
-[functions.vault-preview]
-verify_jwt = false
-
-[functions.convert-document-to-pdf]
-verify_jwt = false
-
-[functions.tiktok-auth-start]
-verify_jwt = false
-
-[functions.tiktok-auth-callback]
-verify_jwt = false
-
-[functions.post-to-tiktok]
-verify_jwt = false
-
-[functions.tiktok-webhook]
-verify_jwt = false
-
-[functions.tiktok-creator-info]
-verify_jwt = false
-
-[functions.tiktok-revoke-token]
-verify_jwt = false
-
-[functions.post-to-tiktok-photo]
-verify_jwt = false
-
-[functions.surecontact-webhook]
-verify_jwt = false
-
-[functions.surecontact-init]
-verify_jwt = false
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.create-subscription-intent]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.admin-manage-subscription]
-verify_jwt = false
-
-[functions.create-payment-intent-only]
-verify_jwt = false
-
-[functions.complete-subscription-checkout]
-verify_jwt = false
-
-[functions.check-email-exists]
-verify_jwt = false
-
-[functions.generate-social-bio]
-verify_jwt = false
-
-[functions.utm-redirect]
-verify_jwt = false
-
-[functions.campaign-leads]
-verify_jwt = false
-
-[functions.campaign-pixel]
-verify_jwt = false
-
-[functions.parse-prompts-bulk]
-verify_jwt = false
-
-[functions.generate-prompt-cover]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.convert-video]
-verify_jwt = false
-
-[functions.swap-outfit]
-verify_jwt = false
-
-[functions.prompts-api]
-verify_jwt = false
-
-[functions.prompts-mcp]
-verify_jwt = false
-
-[functions.send-transactional-email]
-verify_jwt = true
-
-[functions.preview-transactional-email]
-verify_jwt = false
-
-[functions.handle-email-unsubscribe]
-verify_jwt = false
-
-[functions.handle-email-suppression]
-verify_jwt = false
+[functions]
+  [functions.admin-churn-risk]
+    verify_jwt = false
+  [functions.admin-delete-user]
+    verify_jwt = false
+  [functions.admin-export-user-data]
+    verify_jwt = false
+  [functions.admin-get-user-projects]
+    verify_jwt = false
+  [functions.admin-impersonate-user]
+    verify_jwt = false
+  [functions.admin-list-coupons]
+    verify_jwt = false
+  [functions.admin-manage-coupon]
+    verify_jwt = false
+  [functions.admin-manage-subscription]
+    verify_jwt = false
+  [functions.admin-notify]
+    verify_jwt = false
+  [functions.admin-platform-stats]
+    verify_jwt = false
+  [functions.admin-system-health]
+    verify_jwt = false
+  [functions.admin-update-user]
+    verify_jwt = false
+  [functions.admin-user-status]
+    verify_jwt = false
+  [functions.analyze-photo-category]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.bulk-import-canva]
+    verify_jwt = false
+  [functions.campaign-leads]
+    verify_jwt = false
+  [functions.campaign-pixel]
+    verify_jwt = false
+  [functions.check-admin]
+    verify_jwt = false
+  [functions.check-email-exists]
+    verify_jwt = false
+  [functions.check-subscription]
+    verify_jwt = false
+  [functions.complete-subscription-checkout]
+    verify_jwt = false
+  [functions.convert-document-to-pdf]
+    verify_jwt = false
+  [functions.convert-video]
+    verify_jwt = false
+  [functions.create-checkout]
+    verify_jwt = false
+  [functions.create-payment-intent-only]
+    verify_jwt = false
+  [functions.create-subscription-intent]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.delete-my-account]
+    verify_jwt = false
+  [functions.elevenlabs-tts]
+    verify_jwt = false
+  [functions.export-my-data]
+    verify_jwt = false
+  [functions.extract-canva-thumbnail]
+    verify_jwt = false
+  [functions.generate-audience-refinements]
+    verify_jwt = false
+  [functions.generate-brand-asset]
+    verify_jwt = false
+  [functions.generate-content-draft]
+    verify_jwt = false
+  [functions.generate-dream-outcome]
+    verify_jwt = false
+  [functions.generate-likelihood-elements]
+    verify_jwt = false
+  [functions.generate-offer-ideas]
+    verify_jwt = false
+  [functions.generate-offer-transformation]
+    verify_jwt = false
+  [functions.generate-pain-symptoms]
+    verify_jwt = false
+  [functions.generate-problem-statement]
+    verify_jwt = false
+  [functions.generate-prompt-cover]
+    verify_jwt = false
+  [functions.generate-sales-copy]
+    verify_jwt = false
+  [functions.generate-social-bio]
+    verify_jwt = false
+  [functions.generate-social-post]
+    verify_jwt = false
+  [functions.generate-sub-audiences]
+    verify_jwt = false
+  [functions.generate-talking-points]
+    verify_jwt = false
+  [functions.generate-time-effort]
+    verify_jwt = false
+  [functions.generate-timeline-suggestions]
+    verify_jwt = false
+  [functions.get-payment-config]
+    verify_jwt = false
+  [functions.get-stuck-help]
+    verify_jwt = false
+  [functions.handle-email-suppression]
+    verify_jwt = false
+  [functions.handle-email-unsubscribe]
+    verify_jwt = false
+  [functions.instagram-auth-callback]
+    verify_jwt = false
+  [functions.instagram-auth-start]
+    verify_jwt = false
+  [functions.instagram-get-accounts]
+    verify_jwt = false
+  [functions.instagram-refresh-token]
+    verify_jwt = false
+  [functions.log-impersonation-end]
+    verify_jwt = false
+  [functions.marketing-webhook]
+    verify_jwt = false
+  [functions.parse-prompts-bulk]
+    verify_jwt = false
+  [functions.pinterest-auth-callback]
+    verify_jwt = false
+  [functions.pinterest-auth-start]
+    verify_jwt = false
+  [functions.pinterest-create-board]
+    verify_jwt = false
+  [functions.pinterest-get-boards]
+    verify_jwt = false
+  [functions.post-to-instagram]
+    verify_jwt = false
+  [functions.post-to-pinterest]
+    verify_jwt = false
+  [functions.post-to-tiktok]
+    verify_jwt = false
+  [functions.post-to-tiktok-photo]
+    verify_jwt = false
+  [functions.preview-transactional-email]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.process-photo-batch]
+    verify_jwt = false
+  [functions.process-scheduled-posts]
+    verify_jwt = false
+  [functions.prompts-api]
+    verify_jwt = false
+  [functions.prompts-mcp]
+    verify_jwt = false
+  [functions.rename-vault-videos]
+    verify_jwt = false
+  [functions.scheduled-email-jobs]
+    verify_jwt = false
+  [functions.send-assessment-reminder]
+    verify_jwt = false
+  [functions.send-notification-email]
+    verify_jwt = false
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.stripe-webhook]
+    verify_jwt = false
+  [functions.surecontact-init]
+    verify_jwt = false
+  [functions.surecontact-webhook]
+    verify_jwt = false
+  [functions.swap-outfit]
+    verify_jwt = false
+  [functions.sync-r2-vault]
+    verify_jwt = false
+  [functions.task-ai-assist]
+    verify_jwt = false
+  [functions.tiktok-auth-callback]
+    verify_jwt = false
+  [functions.tiktok-auth-start]
+    verify_jwt = false
+  [functions.tiktok-creator-info]
+    verify_jwt = false
+  [functions.tiktok-revoke-token]
+    verify_jwt = false
+  [functions.tiktok-webhook]
+    verify_jwt = false
+  [functions.track-activity]
+    verify_jwt = false
+  [functions.update-article-order]
+    verify_jwt = false
+  [functions.upload-document-to-r2]
+    verify_jwt = false
+  [functions.upload-photo-to-r2]
+    verify_jwt = false
+  [functions.upload-preset-to-r2]
+    verify_jwt = false
+  [functions.utm-redirect]
+    verify_jwt = false
+  [functions.validate-coupon]
+    verify_jwt = false
+  [functions.vault-download]
+    verify_jwt = false
+  [functions.vault-preview]
+    verify_jwt = false
