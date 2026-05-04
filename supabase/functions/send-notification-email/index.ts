@@ -673,15 +673,14 @@ serve(async (req) => {
     // Get email content
     const { subject, html } = getEmailContent(email_type, userProfile, data);
 
-    // Send email
-    const emailResponse = await resend.emails.send({
-      from: "Launchely <hello@launchely.com>",
-      to: [userEmail],
+    // Send email via Lovable Emails
+    await sendLovableEmail({
+      to: userEmail,
       subject,
-      html,
+      bodyHtml: html,
     });
 
-    logStep("Email sent", emailResponse);
+    logStep("Email enqueued", { userEmail });
 
     // Log the sent email
     await supabase.from("email_logs").insert({
@@ -691,7 +690,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, email_id: emailResponse.data?.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
