@@ -424,6 +424,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
                 fontStyle: isComposer ? "italic" : "normal",
               }}
             />
+            {!isEdit && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -455,6 +456,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
                 <span style={{ fontFamily: SF, fontSize: 12, color: INK_40 }}>Thinking…</span>
               )}
             </div>
+            )}
             {suggestions.length > 0 && (
               <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                 {suggestions.map((s) => (
