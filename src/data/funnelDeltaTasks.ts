@@ -2849,7 +2849,7 @@ const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
       options: [
         { value: 'cart_open_email_done', label: 'Cart open email written and scheduled', description: 'Sends the moment your offer goes live' },
         { value: 'last24_email_done', label: 'Last 24-hour email written and saved as draft', description: 'Ready to send — not written during launch week' },
-        { value: `final_story_scripted', label: 'Final story post scripted', description: 'Simple, direct — "Cart closes in 2 hours. Here's the link."` },
+        { value: 'final_story_scripted', label: 'Final story post scripted', description: `Simple, direct — "Cart closes in 2 hours. Here's the link."` },
         { value: 'last_feed_post_done', label: 'Last day feed post written', description: 'Visually strong, mentions deadline, one CTA' },
       ],
     },
