@@ -177,34 +177,19 @@ serve(async (req) => {
         break;
     }
 
-    // Send email using Resend API directly
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      logStep("RESEND_API_KEY not configured, skipping email");
-      return new Response(JSON.stringify({ success: true, message: 'Email skipped - no API key' }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
+    // Send via Lovable Emails to each admin
+    await Promise.all(
+      adminEmails.map((to) =>
+        sendLovableEmail({
+          to,
+          subject,
+          bodyHtml: htmlContent,
+        })
+      )
+    );
+    logStep("Emails enqueued", { count: adminEmails.length });
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: "Launchely <onboarding@resend.dev>",
-        to: adminEmails,
-        subject,
-        html: htmlContent,
-      }),
-    });
-
-    const emailResult = await emailResponse.json();
-    logStep("Email sent", { response: emailResult });
-
-    return new Response(JSON.stringify({ success: true, emailResult }), {
+    return new Response(JSON.stringify({ success: true, count: adminEmails.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
