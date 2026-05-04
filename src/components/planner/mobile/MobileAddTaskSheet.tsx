@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2, Search, Plus } from "lucide-react";
+import { ChevronRight, Sparkles, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2, Search, Plus, Trash2, ListChecks } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toTitleCase } from "@/lib/utils";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
+
+interface Subtask {
+  id: string;
+  task_id?: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  _local?: boolean;
+}
 
 const taskSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200, "Title is too long"),
