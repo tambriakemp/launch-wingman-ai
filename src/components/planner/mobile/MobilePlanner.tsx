@@ -21,7 +21,7 @@ type FilterId = "open" | "overdue" | "today" | "done";
 interface Props {
   tasks: PlannerTask[];
   spaces: PlannerSpace[];
-  categories?: SpaceCategory[];
+  categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onSelectSpace: (id: string | null) => void;
   onEditTask: (task: PlannerTask) => void;
