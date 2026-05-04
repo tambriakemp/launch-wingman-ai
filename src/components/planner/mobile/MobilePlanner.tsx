@@ -21,7 +21,7 @@ type FilterId = "open" | "overdue" | "today" | "done";
 interface Props {
   tasks: PlannerTask[];
   spaces: PlannerSpace[];
-  categories?: SpaceCategory[];
+  categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onSelectSpace: (id: string | null) => void;
   onEditTask: (task: PlannerTask) => void;
@@ -76,6 +76,7 @@ const TaskRow = ({
   task,
   isLast,
   spaces,
+  categories,
   onToggle,
   onDelete,
   onEdit,
@@ -83,6 +84,7 @@ const TaskRow = ({
   task: PlannerTask;
   isLast: boolean;
   spaces: PlannerSpace[];
+  categories: SpaceCategory[];
   onToggle: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
   onEdit: (t: PlannerTask) => void;
@@ -104,6 +106,7 @@ const TaskRow = ({
   const space = spaces.find((s) => s.id === (task as any).space_id);
   const spaceColor = space?.color || "#94a3b8";
   const spaceName = space?.name || "Unassigned";
+  const category = task.category ? categories.find((c) => c.id === task.category) : null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
@@ -244,6 +247,26 @@ const TaskRow = ({
               <span style={{ width: 6, height: 6, borderRadius: 999, background: spaceColor }} />
               {spaceName}
             </span>
+            {category && (
+              <>
+                <span style={{ width: 2, height: 2, borderRadius: 999, background: INK_40 }} />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontFamily: SF,
+                    fontSize: 11.5,
+                    fontWeight: 500,
+                    color: INK_60,
+                    letterSpacing: -0.1,
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: category.color || "#94a3b8" }} />
+                  {category.name}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -259,6 +282,7 @@ const Section = ({
   accent,
   tasks,
   spaces,
+  categories,
   onToggle,
   onDelete,
   onEdit,
@@ -268,6 +292,7 @@ const Section = ({
   accent: "terracotta" | "ink";
   tasks: PlannerTask[];
   spaces: PlannerSpace[];
+  categories: SpaceCategory[];
   onToggle: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
   onEdit: (t: PlannerTask) => void;
@@ -334,6 +359,7 @@ const Section = ({
               task={t}
               isLast={i === tasks.length - 1}
               spaces={spaces}
+              categories={categories}
               onToggle={onToggle}
               onDelete={onDelete}
               onEdit={onEdit}
@@ -756,6 +782,7 @@ export const MobilePlanner = ({
           accent="terracotta"
           tasks={overdue}
           spaces={spaces}
+          categories={categories}
           onToggle={onToggleComplete}
           onDelete={onDeleteTask}
           onEdit={onEditTask}
@@ -766,6 +793,7 @@ export const MobilePlanner = ({
           accent="ink"
           tasks={today}
           spaces={spaces}
+          categories={categories}
           onToggle={onToggleComplete}
           onDelete={onDeleteTask}
           onEdit={onEditTask}
@@ -776,6 +804,7 @@ export const MobilePlanner = ({
           accent="ink"
           tasks={week}
           spaces={spaces}
+          categories={categories}
           onToggle={onToggleComplete}
           onDelete={onDeleteTask}
           onEdit={onEditTask}
@@ -786,6 +815,7 @@ export const MobilePlanner = ({
           accent="ink"
           tasks={later}
           spaces={spaces}
+          categories={categories}
           onToggle={onToggleComplete}
           onDelete={onDeleteTask}
           onEdit={onEditTask}
@@ -797,6 +827,7 @@ export const MobilePlanner = ({
             accent="ink"
             tasks={doneTasks}
             spaces={spaces}
+          categories={categories}
             onToggle={onToggleComplete}
             onDelete={onDeleteTask}
             onEdit={onEditTask}
