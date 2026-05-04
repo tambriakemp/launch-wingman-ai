@@ -103,6 +103,7 @@ const GoalFolderDetail = lazy(() => import("./pages/GoalFolderDetail"));
 
 const WeeklyReview = lazy(() => import("./pages/WeeklyReview"));
 const LinkInBio = lazy(() => import("./pages/LinkInBio"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
