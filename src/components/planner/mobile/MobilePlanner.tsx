@@ -561,20 +561,25 @@ export const MobilePlanner = ({
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <button
+                onClick={() => setFilterOpen(true)}
                 style={{
+                  position: "relative",
                   width: 32,
                   height: 32,
                   borderRadius: 999,
                   border: 0,
-                  background: "transparent",
+                  background: selectedCategoryIds.length > 0 ? "rgba(198,90,62,0.12)" : "transparent",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                 }}
-                aria-label="Filter"
+                aria-label="Filter by category"
               >
-                <Filter size={18} color={INK} strokeWidth={1.8} />
+                <Filter size={18} color={selectedCategoryIds.length > 0 ? TERRACOTTA : INK} strokeWidth={1.8} />
+                {selectedCategoryIds.length > 0 && (
+                  <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: 999, background: TERRACOTTA, border: `1.5px solid ${PAPER}` }} />
+                )}
               </button>
               <button
                 onClick={onAddTask}
