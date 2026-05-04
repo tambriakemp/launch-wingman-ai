@@ -38,20 +38,18 @@ export const SignupEmail = ({
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          !
+          .
         </Text>
         <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
+          Confirm your address (
+          <Link href={`mailto:${recipient}`} style={link}>{recipient}</Link>
+          ) to start your launch:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Verify Email
+          Verify my email
         </Button>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          Didn't create an account? You can safely ignore this email.
         </Text>
       </Container>
     </Body>
@@ -60,27 +58,10 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const main = { backgroundColor: '#ffffff', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', color: 'hsl(28, 13%, 12%)' }
+const container = { padding: '32px 28px', maxWidth: '560px' }
+const h1 = { fontFamily: 'Fraunces, Georgia, serif', fontStyle: 'italic' as const, fontSize: '28px', fontWeight: 500 as const, color: 'hsl(28, 13%, 12%)', margin: '0 0 20px', letterSpacing: '-0.01em' }
+const text = { fontSize: '15px', color: 'hsl(28, 13%, 30%)', lineHeight: '1.6', margin: '0 0 20px' }
+const link = { color: 'hsl(13, 56%, 51%)', textDecoration: 'underline' }
+const button = { backgroundColor: 'hsl(13, 56%, 51%)', color: '#ffffff', fontSize: '14px', fontWeight: 600 as const, borderRadius: '12px', padding: '12px 22px', textDecoration: 'none', display: 'inline-block' }
+const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
