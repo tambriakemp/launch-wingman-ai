@@ -837,6 +837,21 @@ export const MobilePlanner = ({
       </button>
 
       {!isNative && <MobileTabBar active="plan" />}
+
+      {filterOpen && (
+        <CategoryFilterDrawer
+          categories={spaceCategories}
+          selectedIds={selectedCategoryIds}
+          spaceName={spaces.find((s) => s.id === selectedSpaceId)?.name || null}
+          onToggle={(id) =>
+            setSelectedCategoryIds((prev) =>
+              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+            )
+          }
+          onClear={() => setSelectedCategoryIds([])}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </div>
   );
 };
