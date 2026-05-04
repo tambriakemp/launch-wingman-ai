@@ -52,6 +52,8 @@ const CampaignPlanner = lazy(() => import("./pages/CampaignPlanner"));
 const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
 const SocialPlanner = lazy(() => import("./pages/SocialPlanner"));
 
+// Feature flag — set to true to re-enable the Hook Generator tool everywhere.
+const FEATURE_HOOK_GENERATOR = false;
 const HookGenerator = lazy(() => import("./pages/HookGenerator"));
 const SalesPageWriter = lazy(() => import("./pages/SalesPageWriter"));
 const EmailSequenceGenerator = lazy(() => import("./pages/EmailSequenceGenerator"));
