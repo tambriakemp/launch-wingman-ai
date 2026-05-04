@@ -1,29 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendLovableEmail } from "../_shared/send-email.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 async function sendEmailUpdateNotification(email: string, oldEmail: string) {
   try {
-    await resend.emails.send({
-      from: "Launchely <hello@launchely.com>",
-      to: [email],
+    await sendLovableEmail({
+      to: email,
       subject: "Your Email Has Been Updated",
-      html: `
-        <h2>Email Address Updated</h2>
+      heading: "Email Address Updated",
+      bodyHtml: `
         <p>Hello,</p>
         <p>Your account email has been updated from <strong>${oldEmail}</strong> to <strong>${email}</strong>.</p>
         <p>If you did not request this change, please contact our support team immediately.</p>
         <p>Best regards,<br>The Launchely Team</p>
       `,
     });
-    console.log(`Email update notification sent to ${email}`);
     return true;
   } catch (error) {
     console.error('Failed to send email update notification:', error);
@@ -33,12 +29,11 @@ async function sendEmailUpdateNotification(email: string, oldEmail: string) {
 
 async function sendTempPasswordNotification(email: string, tempPassword: string) {
   try {
-    await resend.emails.send({
-      from: "Launchely <hello@launchely.com>",
-      to: [email],
+    await sendLovableEmail({
+      to: email,
       subject: "Your Temporary Password",
-      html: `
-        <h2>Temporary Password</h2>
+      heading: "Temporary Password",
+      bodyHtml: `
         <p>Hello,</p>
         <p>A temporary password has been set for your account. Please use the following password to log in:</p>
         <p style="font-family: monospace; font-size: 18px; background: #f4f4f4; padding: 12px; border-radius: 6px; display: inline-block;">
@@ -49,7 +44,6 @@ async function sendTempPasswordNotification(email: string, tempPassword: string)
         <p>Best regards,<br>The Launchely Team</p>
       `,
     });
-    console.log(`Temp password notification sent to ${email}`);
     return true;
   } catch (error) {
     console.error('Failed to send temp password notification:', error);

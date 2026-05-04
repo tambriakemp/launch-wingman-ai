@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { sendLovableEmail } from "../_shared/send-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -675,15 +673,14 @@ serve(async (req) => {
     // Get email content
     const { subject, html } = getEmailContent(email_type, userProfile, data);
 
-    // Send email
-    const emailResponse = await resend.emails.send({
-      from: "Launchely <hello@launchely.com>",
-      to: [userEmail],
+    // Send email via Lovable Emails
+    await sendLovableEmail({
+      to: userEmail,
       subject,
-      html,
+      bodyHtml: html,
     });
 
-    logStep("Email sent", emailResponse);
+    logStep("Email enqueued", { userEmail });
 
     // Log the sent email
     await supabase.from("email_logs").insert({
@@ -693,7 +690,7 @@ serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, email_id: emailResponse.data?.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

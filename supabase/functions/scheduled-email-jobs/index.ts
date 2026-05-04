@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendLovableEmail } from "../_shared/send-email.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
@@ -8,7 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -144,11 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
           const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
           
           // Send email with exact copy from spec
-          await resend.emails.send({
-            from: "Launchely <hello@launchely.com>",
-            to: [user.email],
-            subject: "A quick moment to reflect",
-            html: `
+          await sendLovableEmail({ to: user.email, subject: "A quick moment to reflect", bodyHtml: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
                 <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
                 
@@ -182,8 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
                   Launchely
                 </p>
               </div>
-            `,
-          });
+            ` });
 
           await supabase.from("email_logs").insert({
             user_id: pref.user_id,
@@ -281,11 +275,7 @@ const handler = async (req: Request): Promise<Response> => {
           const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
           
           // Send email with exact copy from spec
-          await resend.emails.send({
-            from: "Launchely <hello@launchely.com>",
-            to: [user.email],
-            subject: "You don't have to start over",
-            html: `
+          await sendLovableEmail({ to: user.email, subject: "You don't have to start over", bodyHtml: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
                 <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
                 
@@ -319,8 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
                   Launchely
                 </p>
               </div>
-            `,
-          });
+            ` });
 
           // Mark this project as having received relaunch invite
           await supabase
@@ -401,19 +390,14 @@ const handler = async (req: Request): Promise<Response> => {
 
           const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
           
-          await resend.emails.send({
-            from: "Launchely <hello@launchely.com>",
-            to: [user.email],
-            subject: `${proj.name} is waiting for you`,
-            html: `
+          await sendLovableEmail({ to: user.email, subject: `${proj.name} is waiting for you`, bodyHtml: `
               <p>Hi ${firstName},</p>
               <p>Your project "${proj.name}" is still paused.</p>
               <p>Life gets busy — no judgment here. Whenever you're ready to pick back up, your progress is exactly where you left it.</p>
               <p><a href="${APP_URL}/project/${proj.id}">Resume your project</a></p>
               <p>Or if this project no longer fits, you can always archive it and start something new.</p>
               <p>Launchely</p>
-            `,
-          });
+            ` });
 
           await supabase.from("email_logs").insert({
             user_id: proj.user_id,
@@ -565,11 +549,7 @@ const handler = async (req: Request): Promise<Response> => {
         const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
 
         // Send email with exact copy from spec
-        await resend.emails.send({
-          from: "Launchely <hello@launchely.com>",
-          to: [user.email],
-          subject: "If you want to go a little deeper",
-          html: `
+        await sendLovableEmail({ to: user.email, subject: "If you want to go a little deeper", bodyHtml: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
               <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
               
@@ -618,8 +598,7 @@ const handler = async (req: Request): Promise<Response> => {
                 Launchely
               </p>
             </div>
-          `,
-        });
+          ` });
 
         // Log the email
         await supabase.from("email_logs").insert({

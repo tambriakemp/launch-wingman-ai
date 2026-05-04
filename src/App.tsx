@@ -103,6 +103,7 @@ const GoalFolderDetail = lazy(() => import("./pages/GoalFolderDetail"));
 
 const WeeklyReview = lazy(() => import("./pages/WeeklyReview"));
 const LinkInBio = lazy(() => import("./pages/LinkInBio"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -161,6 +162,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/go" element={<SalesFunnel />} />
             <Route path="/links" element={<LinkInBio />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/ai-twin-formula" element={<AITwinFormula />} />
             <Route path="/ai-twin-formula/thank-you" element={<AITwinThankYou />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
