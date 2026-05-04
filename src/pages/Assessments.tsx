@@ -1,303 +1,573 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ClipboardCheck,
-  Users,
+  Compass,
+  Sparkles,
   ArrowRight,
-  Target,
-  Heart,
-  Clock,
-  CheckCircle2,
-  Trophy,
-  Rocket,
-  DollarSign,
-  Package,
+  Calendar,
+  List,
+  Sparkles as SparkIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
+import { AssessmentShell, useAssessmentLayout } from "@/components/assessments/AssessmentShell";
+import {
+  PageHeader,
+  LargeMobileTitle,
+  StatusChip,
+} from "@/components/assessments/primitives";
+import {
+  A_HAIR,
+  A_INK,
+  A_INK_60,
+  A_PAPER,
+  A_PAPER2,
+  A_TERRA,
+  FONT_DISPLAY,
+  accentFor,
+  AccentName,
+} from "@/components/assessments/tokens";
 
-interface SavedLaunchAssessment {
-  answers: Record<number, number>;
-  reflections: Record<string, string>;
-  score: number;
-  completedAt: string;
+interface AssessmentDef {
+  id: string;
+  title: string;
+  blurb: string;
+  minutes: string;
+  parts: string;
+  href: string;
+  storageKey: string;
+  accent: AccentName;
+  Icon: typeof ClipboardCheck;
 }
 
-interface SavedCoachAssessment {
-  setAnswers: Record<string, string>;
-  reflections: Record<string, string>;
-  barriers: string[];
-  barrierExpansion: string;
-  commitment: Record<string, string>;
-  primaryApproach: "maya" | "derek" | "lauren";
-  completedAt: string;
-}
-
-interface SavedWhyStatement {
-  completedAt: string;
-  whyStatement?: string;
-}
-
-const getLaunchResultSummary = (score: number) => {
-  if (score <= 15) {
-    return { title: "The Announcer", icon: Target, color: "text-warning", range: "0-15" };
-  } else if (score <= 30) {
-    return { title: "The Partial Prelauncher", icon: Rocket, color: "text-secondary", range: "16-30" };
-  } else {
-    return { title: "The Strategic Prelauncher", icon: Trophy, color: "text-success", range: "31-45" };
-  }
-};
-
-const getCoachResultSummary = (primaryApproach: "maya" | "derek" | "lauren") => {
-  const profiles = {
-    maya: { title: "Maya - The Community Builder", icon: Heart, color: "text-success" },
-    derek: { title: "Derek - The Direct Seller", icon: DollarSign, color: "text-warning" },
-    lauren: { title: "Lauren - The Product-Centric Coach", icon: Package, color: "text-secondary" },
-  };
-  return profiles[primaryApproach];
-};
-
-const assessments = [
+const ASSESSMENTS: AssessmentDef[] = [
   {
     id: "launch",
-    title: "What's Your Current Launch Approach?",
-    description: "Discover your current launch strategy and get personalized recommendations to improve your prelaunch process.",
-    icon: ClipboardCheck,
+    title: "What's your current launch approach?",
+    blurb:
+      "Discover your current launch strategy and get tailored notes on what to refine before your next prelaunch.",
+    minutes: "~10 min",
+    parts: "15 questions",
     href: "/assessments/launch",
-    duration: "~10 minutes",
-    questions: 15,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-    categories: ["Pre-Launch Content", "Engagement", "Trust Building", "Data Gathering", "Launch Mindset"],
     storageKey: ASSESSMENT_KEYS.LAUNCH,
+    accent: "terracotta",
+    Icon: ClipboardCheck,
   },
   {
     id: "coach",
-    title: "Which Coach Are You?",
-    description: "Understand which coaching approach you're currently using and learn about your long-term business trajectory.",
-    icon: Users,
+    title: "Which coach are you?",
+    blurb:
+      "Understand the coaching archetype you lead with and see where your long-term business is naturally pulling.",
+    minutes: "~15 min",
+    parts: "4 parts",
     href: "/assessments/coach",
-    duration: "~15 minutes",
-    questions: 4,
-    color: "text-secondary",
-    bgColor: "bg-secondary/10",
-    categories: ["Maya (Community Builder)", "Derek (Direct Seller)", "Lauren (Product-Centric)"],
     storageKey: ASSESSMENT_KEYS.COACH,
+    accent: "plum",
+    Icon: Compass,
   },
   {
-    id: "why-statement",
-    title: "Personal \"Why Statement\" for Mastering Prelaunch",
-    description: "Create a personal Why Statement that will keep you motivated through the learning process and remind you why you're investing in this system.",
-    icon: Heart,
+    id: "why",
+    title: 'Personal "why" statement',
+    blurb:
+      "Find the through-line — the quiet belief that pulls your launch, your offer, and your audience together.",
+    minutes: "~20 min",
+    parts: "8 parts",
     href: "/assessments/why-statement",
-    duration: "~20 minutes",
-    questions: 8,
-    color: "text-accent",
-    bgColor: "bg-accent/10",
-    categories: ["Current Reality", "Desired Future", "8 Benefits", "Deeper Why", "Commitment"],
     storageKey: ASSESSMENT_KEYS.WHY_STATEMENT,
+    accent: "moss",
+    Icon: Sparkles,
   },
 ];
 
+type Status = "ready" | "in-progress" | "completed";
+interface SavedSummary {
+  status: Status;
+  progress?: number;
+  score?: string;
+  label?: string;
+}
+
+const summarize = (def: AssessmentDef, raw: any): SavedSummary => {
+  if (!raw) return { status: "ready" };
+  if (raw.completedAt) {
+    if (def.id === "launch" && typeof raw.score === "number") {
+      const label =
+        raw.score <= 15 ? "The Announcer" : raw.score <= 30 ? "The Partial Prelauncher" : "The Strategic Prelauncher";
+      return { status: "completed", score: `${raw.score}/45`, label };
+    }
+    if (def.id === "coach" && raw.primaryApproach) {
+      const map: Record<string, string> = {
+        maya: "The Community Builder",
+        derek: "The Direct Seller",
+        lauren: "The Product-Centric Coach",
+      };
+      return { status: "completed", label: map[raw.primaryApproach] };
+    }
+    return { status: "completed", label: "Completed" };
+  }
+  // Heuristic progress
+  let prog = 0;
+  if (raw.answers) prog = Object.keys(raw.answers).length / 15;
+  else if (raw.currentStep !== undefined) prog = Math.min(1, raw.currentStep / 8);
+  if (prog > 0) return { status: "in-progress", progress: prog };
+  return { status: "ready" };
+};
+
 const Assessments = () => {
   const { user } = useAuth();
-  const [savedResults, setSavedResults] = useState<{
-    launch: SavedLaunchAssessment | null;
-    coach: SavedCoachAssessment | null;
-    whyStatement: SavedWhyStatement | null;
-  }>({
-    launch: null,
-    coach: null,
-    whyStatement: null,
-  });
+  const navigate = useNavigate();
+  const { isMobile } = useAssessmentLayout();
+  const [summaries, setSummaries] = useState<Record<string, SavedSummary>>({});
 
   useEffect(() => {
     if (!user?.id) return;
-    
-    // Load saved assessments from localStorage with user-scoped keys
-    const launchData = getAssessmentData<SavedLaunchAssessment>(ASSESSMENT_KEYS.LAUNCH, user.id);
-    const coachData = getAssessmentData<SavedCoachAssessment>(ASSESSMENT_KEYS.COACH, user.id);
-    const whyData = getAssessmentData<SavedWhyStatement>(ASSESSMENT_KEYS.WHY_STATEMENT, user.id);
-
-    setSavedResults({
-      launch: launchData,
-      coach: coachData,
-      whyStatement: whyData,
+    const next: Record<string, SavedSummary> = {};
+    ASSESSMENTS.forEach((a) => {
+      next[a.id] = summarize(a, getAssessmentData(a.storageKey, user.id));
     });
+    setSummaries(next);
   }, [user?.id]);
 
-  const getAssessmentResult = (assessmentId: string) => {
-    switch (assessmentId) {
-      case "launch":
-        if (savedResults.launch?.score !== undefined) {
-          return getLaunchResultSummary(savedResults.launch.score);
-        }
-        return null;
-      case "coach":
-        if (savedResults.coach?.primaryApproach) {
-          return getCoachResultSummary(savedResults.coach.primaryApproach);
-        }
-        return null;
-      case "why-statement":
-        if (savedResults.whyStatement?.completedAt) {
-          return { title: "Why Statement Created", icon: CheckCircle2, color: "text-success" };
-        }
-        return null;
-      default:
-        return null;
-    }
-  };
+  const renderCard = (a: AssessmentDef) => {
+    const sum = summaries[a.id] ?? { status: "ready" as Status };
+    const accent = accentFor(a.accent);
+    const isDone = sum.status === "completed";
+    const isProg = sum.status === "in-progress";
+    const cta = isDone ? "View results" : isProg ? "Resume" : isMobile ? "Start assessment" : "Start";
 
-  const getCompletedDate = (assessmentId: string) => {
-    switch (assessmentId) {
-      case "launch":
-        return savedResults.launch?.completedAt;
-      case "coach":
-        return savedResults.coach?.completedAt;
-      case "why-statement":
-        return savedResults.whyStatement?.completedAt;
-      default:
-        return null;
+    if (isMobile) {
+      return (
+        <div
+          key={a.id}
+          style={{
+            background: "#fff",
+            borderRadius: 22,
+            padding: "16px 18px",
+            boxShadow:
+              "0 1px 2px rgba(31,27,23,0.04), 0 4px 16px -8px rgba(31,27,23,0.06)",
+          }}
+        >
+          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: accent.tint,
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <a.Icon size={20} color={accent.strong} strokeWidth={2} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: FONT_DISPLAY,
+                  fontWeight: 500,
+                  fontSize: 17,
+                  lineHeight: 1.2,
+                  letterSpacing: -0.3,
+                  color: A_INK,
+                }}
+              >
+                {a.title}
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 12,
+                  color: A_INK_60,
+                  letterSpacing: -0.1,
+                }}
+              >
+                <span>{a.minutes}</span>
+                <span style={{ width: 3, height: 3, borderRadius: 999, background: "currentColor", opacity: 0.5 }} />
+                <span>{a.parts}</span>
+              </div>
+            </div>
+          </div>
+          <p
+            style={{
+              fontSize: 13.5,
+              lineHeight: 1.45,
+              color: A_INK_60,
+              margin: "10px 0 0",
+              letterSpacing: -0.15,
+            }}
+          >
+            {a.blurb}
+          </p>
+          {isProg && (
+            <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  flex: 1,
+                  height: 4,
+                  borderRadius: 999,
+                  background: "rgba(31,27,23,0.06)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(sum.progress ?? 0) * 100}%`,
+                    height: "100%",
+                    background: A_TERRA,
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, color: A_INK_60 }}>
+                {Math.round((sum.progress ?? 0) * 100)}%
+              </span>
+            </div>
+          )}
+          {isDone && (
+            <div
+              style={{
+                marginTop: 12,
+                padding: "8px 12px",
+                borderRadius: 10,
+                background: A_PAPER2,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  background: "#4F6B52",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                ✓
+              </span>
+              {sum.score && <span style={{ fontSize: 12.5, fontWeight: 600 }}>{sum.score}</span>}
+              <span style={{ fontSize: 12.5, color: A_INK_60 }}>
+                {sum.score ? "· " : ""}{sum.label}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => navigate(a.href)}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              background: isDone ? A_PAPER2 : A_INK,
+              color: isDone ? A_INK : A_PAPER,
+              border: 0,
+              borderRadius: 14,
+              padding: "12px 14px",
+              fontSize: 15,
+              fontWeight: 600,
+              letterSpacing: -0.2,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              cursor: "pointer",
+            }}
+          >
+            {cta}
+            <ArrowRight size={15} strokeWidth={2.2} />
+          </button>
+        </div>
+      );
     }
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // Desktop card
+    return (
+      <article
+        key={a.id}
+        style={{
+          background: "#fff",
+          border: `1px solid ${A_HAIR}`,
+          borderRadius: 14,
+          padding: "22px 26px",
+          display: "grid",
+          gridTemplateColumns: "56px 1fr auto",
+          gap: 22,
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 12,
+            background: accent.tint,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <a.Icon size={24} color={accent.strong} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h3
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 500,
+                fontSize: 20,
+                letterSpacing: "-0.01em",
+                color: A_INK,
+                margin: 0,
+              }}
+            >
+              {a.title}
+            </h3>
+            <StatusChip status={sum.status} />
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+            <MetaPill icon={<Calendar size={12} />}>{a.minutes}</MetaPill>
+            <MetaPill icon={<List size={12} />}>{a.parts}</MetaPill>
+            {isDone && sum.label && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  background: A_INK,
+                  color: A_PAPER,
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                }}
+              >
+                {sum.score ? `${sum.score} · ` : ""}{sum.label}
+              </span>
+            )}
+          </div>
+          <p
+            style={{
+              fontSize: 13.5,
+              lineHeight: 1.55,
+              color: A_INK_60,
+              margin: "10px 0 0",
+              maxWidth: 620,
+            }}
+          >
+            {a.blurb}
+          </p>
+          {isProg && (
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                maxWidth: 320,
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  height: 4,
+                  borderRadius: 999,
+                  background: A_PAPER2,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(sum.progress ?? 0) * 100}%`,
+                    height: "100%",
+                    background: A_TERRA,
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: 11, color: A_INK_60 }}>
+                {Math.round((sum.progress ?? 0) * 100)}%
+              </span>
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+          <Link
+            to={a.href}
+            style={{
+              background: isDone ? "transparent" : A_INK,
+              color: isDone ? A_INK : A_PAPER,
+              border: isDone ? `1px solid ${A_HAIR}` : 0,
+              borderRadius: 999,
+              padding: "10px 18px",
+              fontSize: 13,
+              fontWeight: 500,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+            }}
+          >
+            {cta}
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+      </article>
+    );
   };
 
   return (
-    <ProjectLayout>
-      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 px-6">
-        <div className="flex items-start gap-4 pt-8">
-          <div className="p-3 bg-purple-100/50 dark:bg-purple-900/20 rounded-xl shrink-0">
-            <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Assessments</h1>
-            <p className="text-muted-foreground">
-              Take these assessments to understand your current approach and get personalized recommendations.
-            </p>
-          </div>
-        </div>
+    <AssessmentShell mobile={{ bareTop: true }} desktopMaxWidth={1080}>
+      {isMobile ? (
+        <>
+          <LargeMobileTitle
+            eyebrow="Assessments"
+            title="Know where you actually stand."
+            italicWord="actually"
+            lede="Honest reflections, not personality quizzes. A few quiet minutes each."
+          />
 
-        {/* Info Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-foreground mb-1">Why Take These Assessments?</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Understanding where you are now is the first step to growth. These assessments provide honest 
-                    feedback about your current approach and actionable insights to help you build a more sustainable, 
-                    successful coaching business. Your results are saved so you can track your progress over time.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <div className="grid gap-6">
-          {assessments.map((assessment, index) => {
-            const result = getAssessmentResult(assessment.id);
-            const completedDate = getCompletedDate(assessment.id);
-            const isCompleted = !!result;
-            const ResultIcon = result?.icon;
-
-            return (
-              <motion.div
-                key={assessment.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
+          {/* Why card */}
+          <div style={{ padding: "0 16px 14px" }}>
+            <div
+              style={{
+                background: "rgba(31,27,23,0.04)",
+                borderRadius: 18,
+                padding: "16px 18px",
+                display: "flex",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "rgba(31,27,23,0.08)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
               >
-                <Card variant="elevated" className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 md:gap-4">
-                          <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl ${assessment.bgColor} flex items-center justify-center shrink-0`}>
-                            <assessment.icon className={`w-5 h-5 md:w-7 md:h-7 ${assessment.color}`} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <CardTitle className="text-base md:text-xl">{assessment.title}</CardTitle>
-                              {isCompleted && (
-                                <Badge variant="outline" className="text-success border-success/30 bg-success/10 text-[10px] md:text-xs">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Completed
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
-                              <Badge variant="outline" className="text-[10px] md:text-xs">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {assessment.duration}
-                              </Badge>
-                              <Badge variant="outline" className="text-[10px] md:text-xs">
-                                <Target className="w-3 h-3 mr-1" />
-                                {assessment.questions} {assessment.questions === 1 ? "part" : assessment.questions > 10 ? "questions" : "parts"}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <CardDescription className="text-base">
-                      {assessment.description}
-                    </CardDescription>
+                <SparkIcon size={16} color={A_INK} />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontWeight: 500,
+                    fontSize: 16,
+                    color: A_INK,
+                  }}
+                >
+                  Why bother taking these?
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: A_INK_60, margin: "4px 0 0" }}>
+                  Each assessment gives you an honest read on one dimension of your launch and saves the result so you can watch it move.
+                </p>
+              </div>
+            </div>
+          </div>
 
-                    {/* Result Summary when completed */}
-                    {isCompleted && result && (
-                      <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                        <div className="flex items-center gap-3">
-                          {ResultIcon && <ResultIcon className={`w-5 h-5 ${result.color}`} />}
-                          <div>
-                            <p className={`font-medium ${result.color}`}>{result.title}</p>
-                            {completedDate && (
-                              <p className="text-xs text-muted-foreground">
-                                Completed on {formatDate(completedDate)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+          <div style={{ padding: "0 16px", display: "grid", gap: 12 }}>
+            {ASSESSMENTS.map(renderCard)}
+          </div>
+        </>
+      ) : (
+        <>
+          <PageHeader
+            eyebrow="Assessments"
+            title="Know where you actually stand."
+            italicWord="actually"
+            lede="Honest reflections — not personality quizzes. Each one takes a few quiet minutes and gives you back a map of what to refine before your next launch."
+          />
 
-                    <div className="flex gap-2">
-                      <Button asChild className="w-full sm:w-auto">
-                        <Link to={assessment.href}>
-                          {isCompleted ? "View Results" : "Start Assessment"}
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </ProjectLayout>
+          {/* Why card */}
+          <section
+            style={{
+              background: "hsl(var(--clay-200))",
+              borderRadius: 14,
+              padding: "22px 26px",
+              display: "flex",
+              gap: 18,
+              alignItems: "flex-start",
+              marginBottom: 28,
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "rgba(31,27,23,0.08)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <SparkIcon size={18} color={A_INK} />
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: FONT_DISPLAY,
+                  fontWeight: 500,
+                  fontSize: 18,
+                  letterSpacing: "-0.01em",
+                  color: A_INK,
+                }}
+              >
+                Why bother taking these?
+              </div>
+              <p
+                style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.55,
+                  color: A_INK,
+                  margin: "4px 0 0",
+                  maxWidth: 720,
+                  opacity: 0.78,
+                }}
+              >
+                You can't refine what you can't see. Each assessment gives you an honest read on one specific dimension of your launch — content, audience, mindset — and saves the result so you can watch it move over time.
+              </p>
+            </div>
+          </section>
+
+          <div style={{ display: "grid", gap: 14 }}>{ASSESSMENTS.map(renderCard)}</div>
+        </>
+      )}
+    </AssessmentShell>
   );
 };
+
+const MetaPill = ({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      padding: "4px 10px",
+      borderRadius: 999,
+      background: A_PAPER2,
+      border: `1px solid ${A_HAIR}`,
+      fontSize: 12,
+      color: A_INK_60,
+      whiteSpace: "nowrap",
+    }}
+  >
+    {icon}
+    {children}
+  </span>
+);
 
 export default Assessments;
