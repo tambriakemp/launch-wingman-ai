@@ -76,6 +76,7 @@ const TaskRow = ({
   task,
   isLast,
   spaces,
+  categories,
   onToggle,
   onDelete,
   onEdit,
@@ -83,6 +84,7 @@ const TaskRow = ({
   task: PlannerTask;
   isLast: boolean;
   spaces: PlannerSpace[];
+  categories: SpaceCategory[];
   onToggle: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
   onEdit: (t: PlannerTask) => void;
@@ -104,6 +106,7 @@ const TaskRow = ({
   const space = spaces.find((s) => s.id === (task as any).space_id);
   const spaceColor = space?.color || "#94a3b8";
   const spaceName = space?.name || "Unassigned";
+  const category = task.category ? categories.find((c) => c.id === task.category) : null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
