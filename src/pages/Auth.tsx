@@ -47,6 +47,12 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const AppleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+    <path d="M16.365 1.43c0 1.14-.42 2.23-1.24 3.04-.83.83-2.18 1.47-3.27 1.38-.13-1.1.43-2.27 1.2-3.05.86-.86 2.34-1.5 3.31-1.37zM20.5 17.27c-.55 1.27-.81 1.83-1.51 2.95-.98 1.57-2.36 3.52-4.07 3.54-1.52.01-1.91-.99-3.97-.97-2.06.01-2.49.99-4.01.97-1.71-.02-3.02-1.78-4-3.34C.27 15.97-.04 10.84 1.95 8.04 3.4 6.04 5.7 4.86 7.86 4.86c2.2 0 3.59 1.21 5.41 1.21 1.77 0 2.85-1.21 5.4-1.21 1.92 0 3.96 1.05 5.41 2.86-4.76 2.6-3.99 9.4-3.58 9.55z"/>
+  </svg>
+);
+
 const Auth = () => {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -79,6 +85,7 @@ const Auth = () => {
 
   // Google OAuth state
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const surecontactFiredRef = useRef(false);
 
   const { signIn, signUp, user } = useAuth();
@@ -234,6 +241,24 @@ const Auth = () => {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setGoogleLoading(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setAppleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: `${window.location.origin}/auth`,
+      });
+      if (result.error) {
+        toast.error(result.error.message || "Apple sign-in failed");
+        setAppleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Apple sign-in failed");
+      setAppleLoading(false);
     }
   };
 
@@ -529,6 +554,15 @@ const Auth = () => {
                   >
                     {googleLoading ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
                     Continue with Google
+                  </button>
+                  <button
+                    type="button"
+                    className="social-btn"
+                    onClick={handleApple}
+                    disabled={appleLoading}
+                  >
+                    {appleLoading ? <Loader2 size={16} className="animate-spin" /> : <AppleIcon />}
+                    Continue with Apple
                   </button>
                 </div>
 
