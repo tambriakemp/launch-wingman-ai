@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +28,8 @@ import { trackAssessmentComplete } from "@/lib/activityTracking";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
+import { AssessmentShell, useAssessmentLayout } from "@/components/assessments/AssessmentShell";
+import { useHaptics } from "@/hooks/useHaptics";
 
 type CoachType = "maya" | "derek" | "lauren";
 
@@ -325,6 +326,8 @@ const CoachAssessment = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isMobile } = useAssessmentLayout();
+  const haptics = useHaptics();
   const [currentStep, setCurrentStep] = useState(0);
   const [checkedStatements, setCheckedStatements] = useState<Record<string, boolean>>({});
   const [setAnswers, setSetAnswers] = useState<Record<string, CoachType>>({});
@@ -578,7 +581,7 @@ const CoachAssessment = () => {
   // Start screen
   if (!hasStarted) {
     return (
-      <ProjectLayout>
+      <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -670,14 +673,14 @@ const CoachAssessment = () => {
             </Card>
           </motion.div>
         </div>
-      </ProjectLayout>
+      </AssessmentShell>
     );
   }
 
   // Results screen
   if (showResults) {
     return (
-      <ProjectLayout>
+      <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -929,7 +932,7 @@ const CoachAssessment = () => {
             </Button>
           </motion.div>
         </div>
-      </ProjectLayout>
+      </AssessmentShell>
     );
   }
 
@@ -938,7 +941,7 @@ const CoachAssessment = () => {
   const progress = ((currentStep + 1) / setQuestions.length) * 100;
 
   return (
-    <ProjectLayout>
+    <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Progress Bar */}
         <AssessmentProgressBar
@@ -1023,7 +1026,7 @@ const CoachAssessment = () => {
           </div>
         </div>
       </div>
-    </ProjectLayout>
+    </AssessmentShell>
   );
 };
 
