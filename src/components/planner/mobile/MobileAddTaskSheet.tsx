@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2 } from "lucide-react";
+import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2, Search, Plus } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +30,10 @@ interface Props {
   spaces: PlannerSpace[];
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
+  onCreateCategory?: (spaceId: string, name: string, color?: string) => Promise<SpaceCategory | null>;
 }
+
+const CATEGORY_PALETTE = ["#E0B341", "#7E906E", "#C65A3E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
 
 const PRIORITIES = [
   { id: "urgent", label: "Urgent" },
@@ -41,7 +44,7 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId, onCreateCategory }: Props) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [spaceId, setSpaceId] = useState<string | null>(selectedSpaceId);
@@ -55,6 +58,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const categorySearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -66,6 +72,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       setDueAt(null);
       setPicker(null);
       setSuggestions([]);
+      setCategoryQuery("");
       requestAnimationFrame(() => setMounted(true));
       setTimeout(() => inputRef.current?.focus(), 240);
     } else {
@@ -550,25 +557,134 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
               ))}
             </>
           )}
-          {picker === "category" && (
-            <>
-              <PickerRow active={categoryId === null} label="No category" onClick={() => { setCategoryId(null); setPicker(null); }} />
-              {spaceCategories.length === 0 && (
-                <div style={{ padding: 16, fontFamily: SF, fontSize: 13, color: INK_60, textAlign: "center" }}>
-                  {spaceId ? "No categories in this space" : "Pick a space first"}
-                </div>
-              )}
-              {spaceCategories.map((c) => (
-                <PickerRow
-                  key={c.id}
-                  active={categoryId === c.id}
-                  label={c.name}
-                  dot={c.color}
-                  onClick={() => { setCategoryId(c.id); setPicker(null); }}
-                />
-              ))}
-            </>
-          )}
+          {picker === "category" && (() => {
+            const q = categoryQuery.trim();
+            const qLower = q.toLowerCase();
+            const filtered = q
+              ? spaceCategories.filter(c => c.name.toLowerCase().includes(qLower))
+              : spaceCategories;
+            const exactMatch = spaceCategories.some(c => c.name.toLowerCase() === qLower);
+            const canCreate = !!spaceId && q.length > 0 && q.length <= 40 && !exactMatch && !!onCreateCategory;
+            const handleCreate = async () => {
+              if (!canCreate || creatingCategory) return;
+              setCreatingCategory(true);
+              try {
+                const name = toTitleCase(q);
+                const color = CATEGORY_PALETTE[spaceCategories.length % CATEGORY_PALETTE.length];
+                const created = await onCreateCategory!(spaceId!, name, color);
+                if (created) {
+                  try { (navigator as any).vibrate?.(8); } catch {}
+                  setCategoryId(created.id);
+                  setCategoryQuery("");
+                  setPicker(null);
+                }
+              } finally {
+                setCreatingCategory(false);
+              }
+            };
+            return (
+              <>
+                {spaceId && (
+                  <div style={{ position: "sticky", top: 0, background: PAPER, paddingBottom: 8, zIndex: 1 }}>
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                      <Search size={15} color={INK_40} strokeWidth={2} style={{ position: "absolute", left: 12, pointerEvents: "none" }} />
+                      <input
+                        ref={categorySearchRef}
+                        autoFocus
+                        value={categoryQuery}
+                        onChange={(e) => setCategoryQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (filtered.length > 0) {
+                              setCategoryId(filtered[0].id);
+                              setPicker(null);
+                            } else if (canCreate) {
+                              handleCreate();
+                            }
+                          }
+                        }}
+                        placeholder="Search or create category"
+                        inputMode="search"
+                        enterKeyHint="done"
+                        autoCapitalize="words"
+                        autoCorrect="off"
+                        style={{
+                          width: "100%",
+                          height: 40,
+                          borderRadius: 12,
+                          border: `1px solid ${HAIRLINE}`,
+                          background: "#fff",
+                          padding: "0 36px 0 34px",
+                          fontFamily: SF,
+                          fontSize: 16,
+                          color: INK,
+                          outline: "none",
+                          WebkitAppearance: "none",
+                        }}
+                      />
+                      {categoryQuery && (
+                        <button
+                          type="button"
+                          onClick={() => { setCategoryQuery(""); categorySearchRef.current?.focus(); }}
+                          aria-label="Clear search"
+                          style={{ position: "absolute", right: 8, width: 24, height: 24, borderRadius: 999, border: 0, background: "rgba(31,27,23,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                        >
+                          <X size={12} color={INK} strokeWidth={2.4} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!q && <PickerRow active={categoryId === null} label="No category" onClick={() => { setCategoryId(null); setPicker(null); }} />}
+                {filtered.map((c) => (
+                  <PickerRow
+                    key={c.id}
+                    active={categoryId === c.id}
+                    label={c.name}
+                    dot={c.color}
+                    onClick={() => { setCategoryId(c.id); setPicker(null); }}
+                  />
+                ))}
+                {canCreate && (
+                  <button
+                    onClick={handleCreate}
+                    disabled={creatingCategory}
+                    style={{
+                      width: "100%",
+                      background: "rgba(198,90,62,0.08)",
+                      border: `1px dashed rgba(198,90,62,0.35)`,
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      marginTop: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ width: 18, height: 18, borderRadius: 999, background: TERRACOTTA, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {creatingCategory ? <Loader2 size={11} color={PAPER} className="animate-spin" /> : <Plus size={12} color={PAPER} strokeWidth={2.6} />}
+                    </span>
+                    <span style={{ flex: 1, fontFamily: SF, fontSize: 15, fontWeight: 500, color: INK, letterSpacing: -0.2 }}>
+                      Create "<span style={{ color: TERRACOTTA, fontWeight: 600 }}>{toTitleCase(q)}</span>"
+                    </span>
+                  </button>
+                )}
+                {spaceCategories.length === 0 && !q && (
+                  <div style={{ padding: 16, fontFamily: SF, fontSize: 13, color: INK_60, textAlign: "center" }}>
+                    {spaceId ? "No categories yet — type a name above to create one." : "Pick a space first"}
+                  </div>
+                )}
+                {q && filtered.length === 0 && !canCreate && spaceId && (
+                  <div style={{ padding: 16, fontFamily: SF, fontSize: 13, color: INK_60, textAlign: "center" }}>
+                    No matches.
+                  </div>
+                )}
+              </>
+            );
+          })()}
           {picker === "priority" && (
             <>
               {PRIORITIES.map((p) => (

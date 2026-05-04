@@ -385,6 +385,7 @@ const Planner = () => {
           spaces={spaces}
           categories={categories}
           selectedSpaceId={selectedSpaceId}
+          onCreateCategory={createCategory}
         />
         <PlannerTaskDialog
           open={dialogOpen}
