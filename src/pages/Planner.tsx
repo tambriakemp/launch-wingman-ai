@@ -138,7 +138,7 @@ const Planner = () => {
       return;
     }
 
-    const { error } = await supabase.from("tasks").insert({
+    const { data: inserted, error } = await supabase.from("tasks").insert({
       project_id: projectId,
       user_id: user.id,
       title: toTitleCase(data.title!),
@@ -156,7 +156,7 @@ const Planner = () => {
       position: 0,
       recurrence_rule: data.recurrence_rule || null,
       space_id: (data as any).space_id || selectedSpaceId || null,
-    } as any);
+    } as any).select("id").single();
 
     if (error) {
       console.error("Error creating planner task:", error);
@@ -165,17 +165,11 @@ const Planner = () => {
     }
 
     toast.success("Task created");
-    const { data: latestTasks } = await supabase
-      .from("tasks")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("task_scope", "planner")
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (latestTasks?.[0]?.id) {
-      syncTask(latestTasks[0].id, "create");
+    if (inserted?.id) {
+      syncTask(inserted.id, "create");
     }
     fetchTasks();
+    return inserted?.id as string | undefined;
   };
 
   const handleUpdateTask = async (data: Partial<PlannerTask>) => {
