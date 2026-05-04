@@ -2424,7 +2424,7 @@ const FREEBIE_MARKETING_TASKS: TaskTemplate[] = [
       'Every post this week points to the opt-in — not the paid offer',
       'You are tracking how many sign-ups each piece drives',
     ],
-    whyItMatters: 'For a freebie funnel, your list is the asset — not your social following. Every piece of content you create this week should have one job: get people to the opt-in page. Once they're on your list, your email sequence takes over. Split your energy: 70% driving opt-ins, 30% building trust on social.',
+    whyItMatters: "For a freebie funnel, your list is the asset — not your social following. Every piece of content you create this week should have one job: get people to the opt-in page. Once they're on your list, your email sequence takes over. Split your energy: 70% driving opt-ins, 30% building trust on social.",
     instructions: [
       'Create 5 pieces of content this week — every single one has the freebie as the CTA (not the paid offer)',
       'Rotate your content types: one carousel, one reel, one caption post, one story series, one educational thread or post',
