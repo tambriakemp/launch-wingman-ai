@@ -264,10 +264,16 @@ const Auth = () => {
 
   const isSignup = mode === "signup";
 
+  // Detect native app shell (Capacitor) to hide marketing/brand panel
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    (((window as any).Capacitor?.isNativePlatform?.() ?? false) ||
+      /(Median|MedianJS|gonative|capacitor)/i.test(window.navigator.userAgent));
+
   return (
     <div className="app-cream min-h-screen">
       <style>{`
-        .auth-shell { display: grid; grid-template-columns: 1fr 1.1fr; min-height: 100vh; }
+        .auth-shell { display: grid; grid-template-columns: ${isNativeApp ? "1fr" : "1fr 1.1fr"}; min-height: 100vh; }
         @media (max-width: 920px) {
           .auth-shell { grid-template-columns: 1fr; }
           .form-side { order: 1; }
@@ -418,7 +424,7 @@ const Auth = () => {
 
       <div className="auth-shell">
         {/* Brand side */}
-        <aside className="brand-side">
+        {!isNativeApp && <aside className="brand-side">
           <div className="brand-top">
             <div className="wordmark">
               Launchely<span className="dot">.</span>
@@ -463,7 +469,7 @@ const Auth = () => {
             </div>
             Already helping 1,200+ coaches, creators, and small teams launch.
           </div>
-        </aside>
+        </aside>}
 
         {/* Form side */}
         <main className="form-side">
