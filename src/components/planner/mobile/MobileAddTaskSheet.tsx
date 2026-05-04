@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Sparkles, Mic, Link as LinkIcon, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2, Search, Plus } from "lucide-react";
+import { ChevronRight, Sparkles, ArrowRight, X, Check, Folder, Calendar as CalIcon, Flame, Flag, Repeat, Bell, StickyNote, Loader2, Wand2, Search, Plus, Trash2, ListChecks } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toTitleCase } from "@/lib/utils";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
+
+interface Subtask {
+  id: string;
+  task_id?: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  _local?: boolean;
+}
 
 const taskSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200, "Title is too long"),
@@ -26,11 +35,14 @@ const HAIRLINE = "rgba(31,27,23,0.10)";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreate: (data: Partial<PlannerTask>) => Promise<void>;
+  onCreate: (data: Partial<PlannerTask>) => Promise<string | void>;
+  onUpdate?: (id: string, data: Partial<PlannerTask>) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   spaces: PlannerSpace[];
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onCreateCategory?: (spaceId: string, name: string, color?: string) => Promise<SpaceCategory | null>;
+  editTask?: PlannerTask | null;
 }
 
 const CATEGORY_PALETTE = ["#E0B341", "#7E906E", "#C65A3E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
@@ -44,7 +56,8 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId, onCreateCategory }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, editTask }: Props) {
+  const isEdit = !!editTask;
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [spaceId, setSpaceId] = useState<string | null>(selectedSpaceId);
@@ -61,28 +74,52 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [categoryQuery, setCategoryQuery] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const categorySearchRef = useRef<HTMLInputElement>(null);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+
+  const fetchSubtasks = useCallback(async (taskId: string) => {
+    const { data } = await supabase
+      .from("subtasks")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("position", { ascending: true });
+    if (data) setSubtasks(data as unknown as Subtask[]);
+  }, []);
 
   useEffect(() => {
     if (open) {
-      setTitle("");
-      setNotes("");
-      setSpaceId(selectedSpaceId);
-      setCategoryId(null);
-      setPriority("normal");
-      setDueAt(null);
+      if (editTask) {
+        setTitle(editTask.title || "");
+        setNotes(editTask.description || "");
+        setSpaceId((editTask as any).space_id || selectedSpaceId);
+        setCategoryId(editTask.category || null);
+        setPriority((editTask as any).priority || "normal");
+        const d = editTask.due_at || editTask.start_at;
+        setDueAt(d ? new Date(d) : null);
+        fetchSubtasks(editTask.id);
+      } else {
+        setTitle("");
+        setNotes("");
+        setSpaceId(selectedSpaceId);
+        setCategoryId(null);
+        setPriority("normal");
+        setDueAt(null);
+        setSubtasks([]);
+      }
       setPicker(null);
       setSuggestions([]);
       setCategoryQuery("");
+      setNewSubtaskTitle("");
       requestAnimationFrame(() => setMounted(true));
-      setTimeout(() => inputRef.current?.focus(), 240);
+      if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
     }
-  }, [open, selectedSpaceId]);
+  }, [open, selectedSpaceId, editTask, fetchSubtasks]);
 
-  // Debounced AI suggestions while typing.
+  // Debounced AI suggestions while typing (only in create mode).
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEdit) return;
     const trimmed = title.trim();
     if (trimmed.length < 2 || trimmed.length > 80) {
       setSuggestions([]);
@@ -105,7 +142,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
       finally { setLoadingSuggestions(false); }
     }, 600);
     return () => clearTimeout(timer);
-  }, [title, open]);
+  }, [title, open, isEdit]);
 
   const space = useMemo(() => spaces.find((s) => s.id === spaceId) || null, [spaces, spaceId]);
   const spaceCategories = useMemo(
@@ -138,6 +175,23 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
     }
   };
 
+  const flushSubtasksForTask = async (taskId: string) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return;
+    const local = subtasks.filter((s) => s._local);
+    if (local.length === 0) return;
+    await supabase.from("subtasks").insert(
+      local.map((s, i) => ({
+        task_id: taskId,
+        user_id: uid,
+        title: s.title,
+        completed: s.completed,
+        position: i,
+      })) as any
+    );
+  };
+
   const handleSave = async () => {
     if (submitting) return;
     const result = taskSchema.safeParse({ title: title.trim(), notes: notes.trim() });
@@ -148,10 +202,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
     setSubmitting(true);
     try {
       const dueIso = dueAt ? dueAt.toISOString() : null;
-      await onCreate({
+      const payload: Partial<PlannerTask> = {
         title: toTitleCase(result.data.title),
         description: result.data.notes || "",
-        column_id: "todo",
         task_type: "task",
         priority,
         category: categoryId,
@@ -159,12 +212,78 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
         start_at: dueIso,
         end_at: dueIso,
         ...(({ space_id: spaceId } as any)),
-      });
+      };
+      if (isEdit && editTask && onUpdate) {
+        await onUpdate(editTask.id, payload);
+      } else {
+        const newId = await onCreate({ ...payload, column_id: "todo" });
+        if (typeof newId === "string") {
+          await flushSubtasksForTask(newId);
+        }
+      }
       onClose();
     } catch (e: any) {
-      toast.error("Couldn't add task", { description: e?.message });
+      toast.error(isEdit ? "Couldn't update task" : "Couldn't add task", { description: e?.message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // --- Subtask handlers ---
+  const addSubtask = async () => {
+    const t = newSubtaskTitle.trim();
+    if (!t) return;
+    if (isEdit && editTask) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { error } = await supabase.from("subtasks").insert({
+        task_id: editTask.id,
+        user_id: userData.user.id,
+        title: toTitleCase(t),
+        position: subtasks.length,
+      });
+      if (error) { toast.error("Failed to add subtask"); return; }
+      setNewSubtaskTitle("");
+      fetchSubtasks(editTask.id);
+    } else {
+      // Buffer locally; flush on save
+      setSubtasks((prev) => [...prev, {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        title: toTitleCase(t),
+        completed: false,
+        position: prev.length,
+        _local: true,
+      }]);
+      setNewSubtaskTitle("");
+    }
+  };
+
+  const toggleSubtask = async (st: Subtask) => {
+    if (st._local || !isEdit) {
+      setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
+      return;
+    }
+    setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
+    await supabase.from("subtasks").update({ completed: !st.completed }).eq("id", st.id);
+  };
+
+  const deleteSubtask = async (st: Subtask) => {
+    if (st._local || !isEdit) {
+      setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
+      return;
+    }
+    setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
+    await supabase.from("subtasks").delete().eq("id", st.id);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!isEdit || !editTask || !onDelete) return;
+    if (!window.confirm("Delete this task?")) return;
+    try {
+      await onDelete(editTask.id);
+      onClose();
+    } catch (e: any) {
+      toast.error("Couldn't delete task", { description: e?.message });
     }
   };
 
@@ -237,7 +356,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
               color: INK,
             }}
           >
-            New task
+            {isEdit ? "Edit task" : "New task"}
           </div>
           <button
             onClick={handleSave}
@@ -281,7 +400,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                   textTransform: "uppercase",
                 }}
               >
-                Type naturally
+                {isEdit ? "Title" : "Type naturally"}
               </span>
             </div>
             <textarea
@@ -305,6 +424,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                 fontStyle: isComposer ? "italic" : "normal",
               }}
             />
+            {!isEdit && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -336,6 +456,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
                 <span style={{ fontFamily: SF, fontSize: 12, color: INK_40 }}>Thinking…</span>
               )}
             </div>
+            )}
             {suggestions.length > 0 && (
               <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                 {suggestions.map((s) => (
@@ -473,6 +594,138 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
             />
           </div>
 
+          {/* Subtasks */}
+          <div style={{ padding: "24px 22px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <div
+              style={{
+                fontFamily: SF,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+                color: INK_60,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <ListChecks size={13} color={INK_60} strokeWidth={2.2} />
+              Subtasks
+              {subtasks.length > 0 && (
+                <span style={{ fontFamily: SF, fontSize: 11, fontWeight: 600, color: INK_40, letterSpacing: 0.2 }}>
+                  · {subtasks.filter((s) => s.completed).length}/{subtasks.length}
+                </span>
+              )}
+            </div>
+          </div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              margin: "0 16px",
+              boxShadow: "0 1px 2px rgba(31,27,23,0.04)",
+              overflow: "hidden",
+            }}
+          >
+            {subtasks.map((st, i) => (
+              <SubtaskRow
+                key={st.id}
+                subtask={st}
+                isLast={i === subtasks.length - 1}
+                onToggle={() => toggleSubtask(st)}
+                onDelete={() => deleteSubtask(st)}
+              />
+            ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 999,
+                  background: "rgba(198,90,62,0.10)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Plus size={13} color={TERRACOTTA} strokeWidth={2.6} />
+              </span>
+              <input
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSubtask();
+                  }
+                }}
+                placeholder="Add a subtask"
+                enterKeyHint="done"
+                autoCapitalize="sentences"
+                style={{
+                  flex: 1,
+                  border: 0,
+                  outline: "none",
+                  background: "transparent",
+                  fontFamily: SF,
+                  fontSize: 15,
+                  color: INK,
+                  letterSpacing: -0.2,
+                }}
+              />
+              {newSubtaskTitle.trim().length > 0 && (
+                <button
+                  type="button"
+                  onClick={addSubtask}
+                  style={{
+                    background: TERRACOTTA,
+                    color: PAPER,
+                    border: 0,
+                    borderRadius: 999,
+                    padding: "5px 12px",
+                    fontFamily: SF,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    letterSpacing: -0.1,
+                    cursor: "pointer",
+                  }}
+                >
+                  Add
+                </button>
+              )}
+            </div>
+          </div>
+
+          {isEdit && onDelete && (
+            <div style={{ padding: "20px 16px 4px" }}>
+              <button
+                type="button"
+                onClick={handleDeleteTask}
+                style={{
+                  width: "100%",
+                  background: "rgba(198,90,62,0.08)",
+                  color: TERRACOTTA,
+                  border: 0,
+                  borderRadius: 14,
+                  padding: "12px 14px",
+                  fontFamily: SF,
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  letterSpacing: -0.2,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <Trash2 size={15} color={TERRACOTTA} strokeWidth={2} />
+                Delete task
+              </button>
+            </div>
+          )}
+
           <div style={{ height: 100 }} />
         </div>
 
@@ -529,7 +782,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
               boxShadow: isComposer ? "none" : "0 4px 14px -4px rgba(31,27,23,0.4)",
             }}
           >
-            {isComposer ? "Type to add task" : submitting ? "Adding…" : "Add task"}
+            {isComposer ? "Type to add task" : submitting ? (isEdit ? "Saving…" : "Adding…") : (isEdit ? "Save changes" : "Add task")}
             {!isComposer && !submitting && <ArrowRight size={16} color={PAPER} strokeWidth={2.4} />}
           </button>
         </div>
@@ -878,5 +1131,88 @@ function PickerRow({ label, dot, active, onClick }: { label: string; dot?: strin
       <span style={{ flex: 1, fontFamily: SF, fontSize: 15, fontWeight: 500, color: INK, letterSpacing: -0.2 }}>{label}</span>
       {active && <Check size={16} color={TERRACOTTA} strokeWidth={2.4} />}
     </button>
+  );
+}
+
+function SubtaskRow({
+  subtask,
+  isLast,
+  onToggle,
+  onDelete,
+}: {
+  subtask: Subtask;
+  isLast: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  const [swiped, setSwiped] = useState(false);
+  const startX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (startX.current == null) return;
+    const dx = e.changedTouches[0].clientX - startX.current;
+    if (dx < -40) setSwiped(true);
+    else if (dx > 40) setSwiped(false);
+    startX.current = null;
+  };
+  const done = subtask.completed;
+  return (
+    <div style={{ position: "relative", overflow: "hidden", background: "#fff", borderBottom: isLast ? "none" : `0.5px solid ${HAIRLINE}` }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={() => { onToggle(); setSwiped(false); }}
+          style={{ width: 64, background: "#7E906E", border: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          aria-label="Complete"
+        >
+          <Check color="#fff" size={20} strokeWidth={2.4} />
+        </button>
+        <button
+          onClick={() => { onDelete(); setSwiped(false); }}
+          style={{ width: 64, background: TERRACOTTA, border: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          aria-label="Delete"
+        >
+          <Trash2 color="#fff" size={18} strokeWidth={2} />
+        </button>
+      </div>
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          position: "relative",
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "11px 14px",
+          transform: swiped ? "translateX(-128px)" : "translateX(0)",
+          transition: "transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+        }}
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          style={{
+            width: 22, height: 22, borderRadius: 999, flexShrink: 0,
+            border: `1.8px solid ${done ? TERRACOTTA : INK_20}`,
+            background: done ? TERRACOTTA : "transparent",
+            cursor: "pointer", padding: 0,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            transition: "all 160ms ease",
+          }}
+          aria-label="Toggle subtask"
+        >
+          {done && <Check color="#fff" size={11} strokeWidth={3.5} />}
+        </button>
+        <span
+          style={{
+            flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
+            color: done ? INK_40 : INK, letterSpacing: -0.2,
+            textDecoration: done ? "line-through" : "none",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}
+        >
+          {subtask.title}
+        </span>
+      </div>
+    </div>
   );
 }

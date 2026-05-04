@@ -138,7 +138,7 @@ const Planner = () => {
       return;
     }
 
-    const { error } = await supabase.from("tasks").insert({
+    const { data: inserted, error } = await supabase.from("tasks").insert({
       project_id: projectId,
       user_id: user.id,
       title: toTitleCase(data.title!),
@@ -156,7 +156,7 @@ const Planner = () => {
       position: 0,
       recurrence_rule: data.recurrence_rule || null,
       space_id: (data as any).space_id || selectedSpaceId || null,
-    } as any);
+    } as any).select("id").single();
 
     if (error) {
       console.error("Error creating planner task:", error);
@@ -165,17 +165,11 @@ const Planner = () => {
     }
 
     toast.success("Task created");
-    const { data: latestTasks } = await supabase
-      .from("tasks")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("task_scope", "planner")
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (latestTasks?.[0]?.id) {
-      syncTask(latestTasks[0].id, "create");
+    if (inserted?.id) {
+      syncTask(inserted.id, "create");
     }
     fetchTasks();
+    return inserted?.id as string | undefined;
   };
 
   const handleUpdateTask = async (data: Partial<PlannerTask>) => {
@@ -366,6 +360,7 @@ const Planner = () => {
       : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
 
   if (isMobile) {
+    const mobileEditing = dialogOpen ? editingTask : null;
     return (
       <>
         <MobilePlanner
@@ -376,28 +371,24 @@ const Planner = () => {
           onEditTask={handleEditTask}
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
-          onAddTask={() => setMobileAddOpen(true)}
+          onAddTask={() => { setEditingTask(null); setDefaultDueAt(null); setMobileAddOpen(true); }}
         />
         <MobileAddTaskSheet
-          open={mobileAddOpen}
-          onClose={() => setMobileAddOpen(false)}
+          open={mobileAddOpen || (!!mobileEditing)}
+          onClose={() => {
+            setMobileAddOpen(false);
+            setDialogOpen(false);
+            setEditingTask(null);
+            setDefaultDueAt(null);
+          }}
           onCreate={handleCreateTask}
+          onUpdate={async (_id, d) => { await handleUpdateTask(d); }}
+          onDelete={handleDeleteTask}
           spaces={spaces}
           categories={categories}
           selectedSpaceId={selectedSpaceId}
           onCreateCategory={createCategory}
-        />
-        <PlannerTaskDialog
-          open={dialogOpen}
-          onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
-          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-          editTask={editingTask}
-          defaultDueAt={defaultDueAt}
-          spaces={spaces}
-          categories={activeCategories}
-          allCategories={categories}
-          selectedSpaceId={selectedSpaceId}
-          onCreateCategory={createCategory}
+          editTask={mobileEditing}
         />
       </>
     );
@@ -596,7 +587,7 @@ const Planner = () => {
       <PlannerTaskDialog
         open={dialogOpen}
         onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
-        onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        onSubmit={async (d) => { if (editingTask) await handleUpdateTask(d); else await handleCreateTask(d); }}
         editTask={editingTask}
         defaultDueAt={defaultDueAt}
         spaces={spaces}
