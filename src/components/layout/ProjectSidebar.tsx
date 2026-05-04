@@ -101,8 +101,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "ai-studio", label: "AI Avatar Studio", icon: Wand2, href: "/app/ai-studio", isAdvancedOnly: true },
       { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isAdvancedOnly: true },
       { id: "carousel-builder", label: "Carousel Builder", icon: Layers, href: "/carousel-builder", isAdvancedOnly: true },
-      { id: "hooks", label: "Hook Generator", icon: Zap, href: "/app/ai-studio/hooks", isAdvancedOnly: true },
-      
+      // Hook Generator hidden via feature flag (FEATURE_HOOK_GENERATOR)
       { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
       { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
       { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault" },
