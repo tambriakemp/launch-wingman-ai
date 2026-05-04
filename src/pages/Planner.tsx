@@ -360,6 +360,7 @@ const Planner = () => {
       : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
 
   if (isMobile) {
+    const mobileEditing = dialogOpen ? editingTask : null;
     return (
       <>
         <MobilePlanner
@@ -370,28 +371,32 @@ const Planner = () => {
           onEditTask={handleEditTask}
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
-          onAddTask={() => setMobileAddOpen(true)}
+          onAddTask={() => { setEditingTask(null); setDefaultDueAt(null); setMobileAddOpen(true); }}
         />
         <MobileAddTaskSheet
-          open={mobileAddOpen}
-          onClose={() => setMobileAddOpen(false)}
+          open={mobileAddOpen || (!!mobileEditing)}
+          onClose={() => {
+            setMobileAddOpen(false);
+            setDialogOpen(false);
+            setEditingTask(null);
+            setDefaultDueAt(null);
+          }}
           onCreate={handleCreateTask}
+          onUpdate={async (id, d) => {
+            // Reuse handleUpdateTask by temporarily targeting this task
+            const target = tasks.find(t => t.id === id);
+            if (!target) return;
+            const prev = editingTask;
+            setEditingTask(target);
+            await handleUpdateTask(d);
+            if (prev?.id !== target.id) setEditingTask(prev);
+          }}
+          onDelete={handleDeleteTask}
           spaces={spaces}
           categories={categories}
           selectedSpaceId={selectedSpaceId}
           onCreateCategory={createCategory}
-        />
-        <PlannerTaskDialog
-          open={dialogOpen}
-          onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
-          onSubmit={async (d) => { if (editingTask) await handleUpdateTask(d); else await handleCreateTask(d); }}
-          editTask={editingTask}
-          defaultDueAt={defaultDueAt}
-          spaces={spaces}
-          categories={activeCategories}
-          allCategories={categories}
-          selectedSpaceId={selectedSpaceId}
-          onCreateCategory={createCategory}
+          editTask={mobileEditing}
         />
       </>
     );
