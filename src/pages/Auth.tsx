@@ -424,7 +424,7 @@ const Auth = () => {
 
       <div className="auth-shell">
         {/* Brand side */}
-        <aside className="brand-side">
+        {!isNativeApp && <aside className="brand-side">
           <div className="brand-top">
             <div className="wordmark">
               Launchely<span className="dot">.</span>
