@@ -579,11 +579,23 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add notes, links, anything that helps future-you…"
               rows={3}
+              ref={(el) => {
+                if (el) {
+                  el.style.height = "auto";
+                  el.style.height = Math.max(el.scrollHeight, 64) + "px";
+                }
+              }}
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = Math.max(el.scrollHeight, 64) + "px";
+              }}
               style={{
                 width: "100%",
                 border: 0,
                 outline: "none",
                 resize: "none",
+                overflow: "hidden",
                 background: "transparent",
                 fontFamily: SF,
                 fontSize: 14.5,
