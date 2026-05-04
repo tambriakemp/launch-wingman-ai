@@ -400,7 +400,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
                   textTransform: "uppercase",
                 }}
               >
-                Type naturally
+                {isEdit ? "Title" : "Type naturally"}
               </span>
             </div>
             <textarea
