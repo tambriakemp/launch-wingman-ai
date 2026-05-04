@@ -555,6 +555,15 @@ const Auth = () => {
                     {googleLoading ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
                     Continue with Google
                   </button>
+                  <button
+                    type="button"
+                    className="social-btn"
+                    onClick={handleApple}
+                    disabled={appleLoading}
+                  >
+                    {appleLoading ? <Loader2 size={16} className="animate-spin" /> : <AppleIcon />}
+                    Continue with Apple
+                  </button>
                 </div>
 
                 <div className="auth-divider">
