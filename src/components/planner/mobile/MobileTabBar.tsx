@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Sparkles, Folder, User } from "lucide-react";
+import { Home, Calendar, Sparkles, Target, User } from "lucide-react";
 
 const TABS = [
   { id: "home", label: "Today", icon: Home, to: "/dashboard" },
   { id: "plan", label: "Plan", icon: Calendar, to: "/planner" },
   { id: "craft", label: "AI Studio", icon: Sparkles, to: "/app/ai-studio" },
-  { id: "library", label: "Library", icon: Folder, to: "/content-vault" },
+  { id: "campaigns", label: "Campaigns", icon: Target, to: "/marketing-hub/campaigns" },
   { id: "me", label: "Me", icon: User, to: "/settings" },
 ];
 
