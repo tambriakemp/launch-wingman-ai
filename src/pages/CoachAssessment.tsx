@@ -581,7 +581,7 @@ const CoachAssessment = () => {
   // Start screen
   if (!hasStarted) {
     return (
-      <ProjectLayout>
+      <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -673,14 +673,14 @@ const CoachAssessment = () => {
             </Card>
           </motion.div>
         </div>
-      </ProjectLayout>
+      </AssessmentShell>
     );
   }
 
   // Results screen
   if (showResults) {
     return (
-      <ProjectLayout>
+      <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -932,7 +932,7 @@ const CoachAssessment = () => {
             </Button>
           </motion.div>
         </div>
-      </ProjectLayout>
+      </AssessmentShell>
     );
   }
 
@@ -941,7 +941,7 @@ const CoachAssessment = () => {
   const progress = ((currentStep + 1) / setQuestions.length) * 100;
 
   return (
-    <ProjectLayout>
+    <AssessmentShell mobile={{ title: "Which Coach Are You?", onBack: () => navigate("/assessments") }}>
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Progress Bar */}
         <AssessmentProgressBar
@@ -1026,7 +1026,7 @@ const CoachAssessment = () => {
           </div>
         </div>
       </div>
-    </ProjectLayout>
+    </AssessmentShell>
   );
 };
 

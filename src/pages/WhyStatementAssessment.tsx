@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { AssessmentShell } from "@/components/assessments/AssessmentShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -931,7 +931,7 @@ const WhyStatementAssessment = () => {
   };
 
   return (
-    <ProjectLayout>
+    <AssessmentShell mobile={{ title: "Why Statement", onBack: () => navigate("/assessments") }}>
       <div className="max-w-4xl mx-auto space-y-6">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -1006,7 +1006,7 @@ const WhyStatementAssessment = () => {
           )}
         </AnimatePresence>
       </div>
-    </ProjectLayout>
+    </AssessmentShell>
   );
 };
 
