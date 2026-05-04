@@ -491,6 +491,12 @@ export const MobilePlanner = ({
     const d = t.due_at || t.start_at;
     return d && isToday(parseISO(d)) && t.column_id !== "done";
   }).length;
+  const overdueCount = tasks.filter((t) => {
+    const d = t.due_at;
+    if (!d || t.column_id === "done") return false;
+    const p = parseISO(d);
+    return isPast(p) && !isToday(p);
+  }).length;
 
   // Spaces chips with counts
   const spaceCounts = useMemo(() => {
