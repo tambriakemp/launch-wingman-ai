@@ -58,6 +58,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const categorySearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
