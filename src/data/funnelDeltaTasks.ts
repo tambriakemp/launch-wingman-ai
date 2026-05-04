@@ -66,7 +66,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     skipReasonRequired: false,
     completionCriteria: [
       'People can sign up and receive your freebie automatically',
-      'You\'ve tested the delivery process',
+      "You\'ve tested the delivery process",
     ],
     whyItMatters: 'Setting up delivery ensures your freebie reaches people automatically when they sign up. This builds trust and starts the relationship.',
     instructions: [
@@ -108,7 +108,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Include the freebie link or access instructions clearly at the top',
       'Introduce yourself in one or two sentences — not a full bio',
-      'Tell them what\'s coming next so they look out for your emails',
+      "Tell them what\'s coming next so they look out for your emails",
     ],
     inputType: 'form',
     inputSchema: {
@@ -119,7 +119,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'What is the subject line of your welcome email?', 
           type: 'text', 
           required: true, 
-          placeholder: 'e.g., "Here\'s your [freebie name] 🎉"',
+          placeholder: "e.g., \"Here\'s your [freebie name] 🎉\"",
           helperText: 'Keep it clear and direct — it should match exactly what they signed up for.'
         },
         { 
@@ -127,8 +127,8 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'What will you include in the email body?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'e.g., freebie link, brief intro, what\'s coming next...',
-          helperText: 'You\'re not writing the full email here — just planning the key elements.'
+          placeholder: "e.g., freebie link, brief intro, what\'s coming next...",
+          helperText: "You\'re not writing the full email here — just planning the key elements."
         },
       ],
     },
@@ -164,7 +164,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
       fields: [
         { 
           name: 'email_2_purpose', 
-          label: 'Email 2 — What\'s the focus?', 
+          label: "Email 2 — What\'s the focus?", 
           type: 'textarea', 
           required: true, 
           placeholder: 'e.g., A quick win or tip related to the freebie topic...',
@@ -172,7 +172,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
         { 
           name: 'email_3_purpose', 
-          label: 'Email 3 — What\'s the focus?', 
+          label: "Email 3 — What\'s the focus?", 
           type: 'textarea', 
           required: true, 
           placeholder: 'e.g., A story, common mistake, or reframe...',
@@ -180,7 +180,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
         { 
           name: 'email_4_purpose', 
-          label: 'Email 4 — What\'s the focus?', 
+          label: "Email 4 — What\'s the focus?", 
           type: 'textarea', 
           required: false, 
           placeholder: 'e.g., Social proof, a result, or addressing a common objection...',
@@ -192,7 +192,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'Final email — How will you introduce your offer?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'e.g., "If you\'ve found this helpful, here\'s how to go deeper..."',
+          placeholder: "e.g., \"If you\'ve found this helpful, here\'s how to go deeper...\"",
           helperText: 'This should feel like a natural invitation, not a pitch.'
         },
       ],
@@ -221,7 +221,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     ],
     whyItMatters: 'Your freebie invitation is how people discover your free resource. It should clearly communicate the value and make signing up feel like an obvious choice.',
     instructions: [
-      'Write a simple description of what they\'ll get',
+      "Write a simple description of what they\'ll get",
       'Focus on the problem it solves',
       'Include a clear call to action',
     ],
@@ -256,7 +256,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
       'Your email subscribers have been invited to your offer',
       'The invitation feels natural and supportive',
     ],
-    whyItMatters: 'Your email subscribers already trust you. Inviting them to your offer is a natural next step in the relationship you\'ve been building.',
+    whyItMatters: "Your email subscribers already trust you. Inviting them to your offer is a natural next step in the relationship you\'ve been building.",
     instructions: [
       'Write a simple email inviting subscribers to your offer',
       'Reference the freebie they received',
@@ -327,7 +327,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     skipReasonRequired: false,
     completionCriteria: [
       'You know how many people opted in',
-      'You have a sense of what worked and what didn\'t',
+      "You have a sense of what worked and what didn\'t",
     ],
     whyItMatters: 'List growth is the metric that matters most for a freebie funnel. Knowing how many opted in — and from which source — helps you understand what to do more of next time.',
     instructions: [
@@ -424,14 +424,14 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You know exactly what you\'ll teach',
+      "You know exactly what you\'ll teach",
       'Your training naturally leads into your offer',
     ],
-    whyItMatters: 'Your live training is where you teach something genuinely helpful. When you\'re clear on your focus, you\'ll teach with confidence and your audience will see how your offer can take them further.',
+    whyItMatters: "Your live training is where you teach something genuinely helpful. When you\'re clear on your focus, you\'ll teach with confidence and your audience will see how your offer can take them further.",
     instructions: [
       'Pick one topic you can teach in a single session',
       'Focus on teaching over pitching — this is about helping first',
-      'Your slides don\'t need to be perfect. You do.',
+      "Your slides don\'t need to be perfect. You do.",
     ],
     inputType: 'form',
     inputSchema: {
@@ -447,7 +447,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
   },
   {
     taskId: 'build_choose_training_host',
-    title: 'Choose how you\'ll host your training',
+    title: "Choose how you\'ll host your training",
     phase: 'build',
     funnelTypes: ['live_training_offer'],
     order: 1.6,
@@ -459,10 +459,10 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve decided where your training will happen',
+      "You\'ve decided where your training will happen",
       'You feel comfortable with your choice',
     ],
-    whyItMatters: 'Choosing a platform you\'re comfortable with means you can focus on teaching, not troubleshooting. Use what you know.',
+    whyItMatters: "Choosing a platform you\'re comfortable with means you can focus on teaching, not troubleshooting. Use what you know.",
     instructions: [
       'Pick a platform where you can go live with your audience',
       'Examples: Zoom, Instagram Live, YouTube Live, Facebook Live',
@@ -496,12 +496,12 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     skipReasonRequired: false,
     completionCriteria: [
       'You can clearly explain what your training is about',
-      'People will understand who it\'s for and what they\'ll learn',
+      "People will understand who it\'s for and what they\'ll learn",
     ],
-    whyItMatters: 'Your invitation is how people decide to show up. When it\'s clear and welcoming, the right people will save their spot.',
+    whyItMatters: "Your invitation is how people decide to show up. When it\'s clear and welcoming, the right people will save their spot.",
     instructions: [
       'Write a short paragraph explaining what the training is',
-      'Be clear about who it\'s for',
+      "Be clear about who it\'s for",
       'Include a simple call to action (e.g., "Save your spot")',
       'No urgency, hype, or countdown language needed',
     ],
@@ -539,7 +539,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Pick a date and time that works for you',
       'Consider when your audience is most available',
-      'You don\'t need calendar integrations or reminders set up',
+      "You don\'t need calendar integrations or reminders set up",
     ],
     inputType: 'form',
     inputSchema: {
@@ -570,7 +570,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
       'You showed up and taught',
       'You confirmed the training was delivered',
     ],
-    whyItMatters: 'This is the moment you\'ve been building toward. You don\'t need to be perfect — just present and helpful. Show up, teach, and connect.',
+    whyItMatters: "This is the moment you\'ve been building toward. You don\'t need to be perfect — just present and helpful. Show up, teach, and connect.",
     instructions: [
       'Show up at the scheduled time',
       'Teach what you planned',
@@ -604,7 +604,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve tested your audio and video',
+      "You\'ve tested your audio and video",
       'You know how to share your screen and manage participants',
     ],
     whyItMatters: 'Technical issues during a live training destroy trust instantly. Five minutes of testing before the session saves you from apologizing to your audience for thirty minutes.',
@@ -645,7 +645,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
       'The replay has been sent to everyone who registered',
       'The replay email includes a clear CTA to your offer',
     ],
-    whyItMatters: 'Most people who registered for a live training didn\'t attend. The replay email reaches the people who wanted to come but couldn\'t — and it\'s your second best chance to convert them.',
+    whyItMatters: "Most people who registered for a live training didn\'t attend. The replay email reaches the people who wanted to come but couldn\'t — and it\'s your second best chance to convert them.",
     instructions: [
       'Upload or host the recording somewhere accessible',
       'Email all registrants with the replay link within 24 hours',
@@ -661,7 +661,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
           type: 'text',
           required: true,
           placeholder: 'e.g., YouTube (unlisted), Vimeo, Google Drive link...',
-          helperText: 'It just needs to be accessible — it doesn\'t need to be fancy.',
+          helperText: "It just needs to be accessible — it doesn\'t need to be fancy.",
         },
         {
           name: 'replay_sent',
@@ -678,7 +678,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
   },
   {
     taskId: 'postlaunch_training_follow_up_attendees',
-    title: 'Follow up with attendees who didn\'t buy',
+    title: "Follow up with attendees who didn\'t buy",
     phase: 'post-launch',
     funnelTypes: ['live_training_offer'],
     order: 1.6,
@@ -690,14 +690,14 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: true,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve sent a follow-up to people who attended but didn\'t buy',
+      "You\'ve sent a follow-up to people who attended but didn\'t buy",
       'The message feels warm and helpful — not chasing',
     ],
     whyItMatters: 'People who attended your training are warm. They invested their time. Many of them wanted to buy but had a question, a hesitation, or simply got distracted. A personal follow-up addresses that without pressure.',
     instructions: [
       'Export your attendee list from your hosting platform',
       'Cross-reference with who purchased',
-      'Send a short, warm message to those who attended but didn\'t buy',
+      "Send a short, warm message to those who attended but didn\'t buy",
     ],
     inputType: 'form',
     inputSchema: {
@@ -705,10 +705,10 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
       fields: [
         {
           name: 'followup_message',
-          label: 'What will you say to attendees who didn\'t buy?',
+          label: "What will you say to attendees who didn\'t buy?",
           type: 'textarea',
           required: true,
-          placeholder: 'e.g., "Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\'s right for you, just reply here."',
+          placeholder: "e.g., \"Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\'s right for you, just reply here.\"",
           helperText: 'One question answered can convert a hesitant attendee into a buyer.',
         },
       ],
@@ -743,11 +743,11 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'re clear on who your ideal applicant is',
+      "You\'re clear on who your ideal applicant is",
       'You can articulate who is NOT a good fit',
       'You have a simple readiness qualifier',
     ],
-    whyItMatters: 'Clarity on your ideal applicant helps you attract the right people and have more productive conversations. It also helps people self-select out if they\'re not ready.',
+    whyItMatters: "Clarity on your ideal applicant helps you attract the right people and have more productive conversations. It also helps people self-select out if they\'re not ready.",
     instructions: [
       'Describe your ideal applicant — be specific about their situation',
       'Identify who this is NOT for (this protects both of you)',
@@ -780,11 +780,11 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve decided how people will apply',
+      "You\'ve decided how people will apply",
       'You have 3–5 simple questions ready',
       'You know where applications will be submitted',
     ],
-    whyItMatters: 'Your application is the first step in the conversation. Simple questions help you understand who you\'re talking to — without automation or scoring systems.',
+    whyItMatters: "Your application is the first step in the conversation. Simple questions help you understand who you\'re talking to — without automation or scoring systems.",
     instructions: [
       'Decide on your format: form, DM, or email',
       'Write 3–5 simple questions that reveal readiness',
@@ -820,7 +820,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     skipReasonRequired: false,
     completionCriteria: [
       'You can clearly explain who the conversation is for',
-      'You\'ve described what the call helps with',
+      "You\'ve described what the call helps with",
       'You have a simple call to action',
     ],
     whyItMatters: 'Your invitation sets the tone for the entire process. It should feel warm and clear — inviting the right people into a genuine conversation.',
@@ -894,7 +894,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
       'Calls were held, OR the launch window ended',
       'You showed up for the conversations',
     ],
-    whyItMatters: 'This is about showing up for conversations with people who raised their hand. You don\'t need to track outcomes or conversions — just be present and helpful.',
+    whyItMatters: "This is about showing up for conversations with people who raised their hand. You don\'t need to track outcomes or conversions — just be present and helpful.",
     instructions: [
       'Show up for scheduled calls',
       'Listen and be present',
@@ -985,7 +985,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
     whyItMatters: 'This step reduces pressure to "constantly create" by helping you define what kind of value evolves or refreshes inside your membership.',
     instructions: [
       'Think about what changes or updates members can expect',
-      'This doesn\'t need to be new every time — just relevant',
+      "This doesn\'t need to be new every time — just relevant",
       'Focus on sustainability, not volume',
     ],
     inputType: 'form',
@@ -998,7 +998,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
           type: 'textarea', 
           required: true, 
           placeholder: 'Describe what changes or updates members can expect...',
-          helperText: 'This doesn\'t need to be new every time — just relevant.'
+          helperText: "This doesn\'t need to be new every time — just relevant."
         },
       ],
     },
@@ -1021,7 +1021,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You can explain why this isn\'t a one-time product',
+      "You can explain why this isn\'t a one-time product",
       'The reason feels honest and clear',
     ],
     whyItMatters: 'This step helps you articulate why your offer works better as ongoing support instead of a one-time solution — focusing on reality, not persuasion.',
@@ -1193,7 +1193,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
     whyItMatters: 'This step helps prevent churn by aligning expectations early. Clear expectations reduce regret later.',
     instructions: [
       'Think about what someone should understand before joining',
-      'Be honest about what the membership is and isn\'t',
+      "Be honest about what the membership is and isn\'t",
       'Focus on clarity, not selling',
     ],
     inputType: 'form',
@@ -1232,10 +1232,10 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
       'Each new member has heard from you personally',
       'They feel welcomed — not just processed',
     ],
-    whyItMatters: 'First impressions in a membership determine whether someone stays past month one. A personal welcome — even just one message — creates a sense of belonging that automated onboarding can\'t replicate.',
+    whyItMatters: "First impressions in a membership determine whether someone stays past month one. A personal welcome — even just one message — creates a sense of belonging that automated onboarding can\'t replicate.",
     instructions: [
       'Send a personal message to each new member in the first 24–48 hours',
-      'Introduce yourself and let them know you\'re glad they\'re here',
+      "Introduce yourself and let them know you\'re glad they\'re here",
       'Ask one simple question to start a conversation',
     ],
     inputType: 'form',
@@ -1247,8 +1247,8 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
           label: 'What will you say to welcome new members?',
           type: 'textarea',
           required: true,
-          placeholder: 'e.g., "Welcome — so glad you\'re here. I\'d love to know what brought you to join. What are you most hoping to get from this?"',
-          helperText: 'Short and genuine. This isn\'t an onboarding email — it\'s a human moment.',
+          placeholder: "e.g., \"Welcome — so glad you\'re here. I\'d love to know what brought you to join. What are you most hoping to get from this?\"",
+          helperText: "Short and genuine. This isn\'t an onboarding email — it\'s a human moment.",
         },
       ],
     },
@@ -1272,7 +1272,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
       'You have a plan for what members will get in month one',
       'The plan feels sustainable, not overwhelming',
     ],
-    whyItMatters: 'Your first month sets the precedent for what membership looks like. What you deliver — and how consistently — signals to members whether staying is worth it. A clear, simple plan is better than an ambitious one you can\'t keep up with.',
+    whyItMatters: "Your first month sets the precedent for what membership looks like. What you deliver — and how consistently — signals to members whether staying is worth it. A clear, simple plan is better than an ambitious one you can\'t keep up with.",
     instructions: [
       'Decide what members will receive in the first 30 days',
       'Prioritise consistency and sustainability over volume',
@@ -1325,7 +1325,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       'The challenge has one clear focus',
       'It feels achievable within the timeframe',
     ],
-    whyItMatters: 'A focused challenge prevents overwhelm. When participants know exactly what they\'re working toward, they\'re more likely to stay engaged.',
+    whyItMatters: "A focused challenge prevents overwhelm. When participants know exactly what they\'re working toward, they\'re more likely to stay engaged.",
     instructions: [
       'Anchor the challenge to one clear outcome',
       'Avoid multiple goals or competing focuses',
@@ -1362,14 +1362,14 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve chosen a duration',
+      "You\'ve chosen a duration",
       'The length feels realistic and supportive',
     ],
     whyItMatters: 'The right duration makes your challenge feel approachable. Shorter challenges often have higher completion rates.',
     instructions: [
       'Pick a timeframe that feels supportive, not exhausting',
       'Shorter is often more approachable',
-      'Consider your audience\'s capacity',
+      "Consider your audience\'s capacity",
     ],
     inputType: 'selection',
     inputSchema: {
@@ -1403,7 +1403,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       'The promise focuses on transformation, not tasks',
       'It emphasizes momentum, not mastery',
     ],
-    whyItMatters: 'Your challenge promise describes what participants gain by the end — not what they do daily. Focus on how they\'ll feel or think differently.',
+    whyItMatters: "Your challenge promise describes what participants gain by the end — not what they do daily. Focus on how they\'ll feel or think differently.",
     instructions: [
       'Describe the shift participants experience',
       'Focus on momentum, not mastery',
@@ -1418,7 +1418,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
           label: 'How will participants feel or think differently by the end of the challenge?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'Describe the transformation or shift they\'ll experience...',
+          placeholder: "Describe the transformation or shift they\'ll experience...",
           helperText: 'Focus on momentum, not mastery.'
         },
       ],
@@ -1443,9 +1443,9 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       'You can address fears of falling behind',
       'The framing feels supportive, not pressuring',
     ],
-    whyItMatters: 'Many people drop out of challenges because they feel like they\'ve "failed" after missing a day. Normalizing imperfect participation increases completion.',
+    whyItMatters: "Many people drop out of challenges because they feel like they\'ve \"failed\" after missing a day. Normalizing imperfect participation increases completion.",
     instructions: [
-      'Think about how you\'ll reassure participants',
+      "Think about how you\'ll reassure participants",
       'Focus on progress, not perfection',
       'Remove fear of falling behind',
     ],
@@ -1455,10 +1455,10 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       fields: [
         { 
           name: 'pressure_reduction', 
-          label: 'How do you explain that missing a day doesn\'t mean failing?', 
+          label: "How do you explain that missing a day doesn\'t mean failing?", 
           type: 'textarea', 
           required: true, 
-          placeholder: 'Describe how you\'ll reassure participants who fall behind...',
+          placeholder: "Describe how you\'ll reassure participants who fall behind...",
           helperText: 'Reassurance increases participation.'
         },
       ],
@@ -1569,7 +1569,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       'Participation expectations are clear',
       'People understand what to expect before joining',
     ],
-    whyItMatters: 'Clear expectations reduce drop-off. When people understand what they\'re signing up for, they\'re more likely to participate fully.',
+    whyItMatters: "Clear expectations reduce drop-off. When people understand what they\'re signing up for, they\'re more likely to participate fully.",
     instructions: [
       'Be clear about what the challenge involves',
       'Set realistic expectations',
@@ -1608,7 +1608,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve acknowledged the people who completed the challenge',
+      "You\'ve acknowledged the people who completed the challenge",
       'The celebration feels genuine — not performative',
     ],
     whyItMatters: 'Challenge completers are your most engaged audience. Celebrating them publicly costs nothing and does three things: it rewards the people who showed up, it makes non-completers wish they had, and it creates social proof of real participation.',
@@ -1651,7 +1651,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
       'Challenge completers have heard about your core offer',
       'The invitation felt earned and natural',
     ],
-    whyItMatters: 'People who completed your challenge are your hottest leads. They\'ve already done the work, experienced a taste of your method, and proven they follow through. This is the moment your challenge was building toward.',
+    whyItMatters: "People who completed your challenge are your hottest leads. They\'ve already done the work, experienced a taste of your method, and proven they follow through. This is the moment your challenge was building toward.",
     instructions: [
       'Share your core offer with people who completed the challenge',
       'Frame it as the natural next step after the challenge experience',
@@ -1667,7 +1667,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
           type: 'textarea',
           required: true,
           placeholder: 'e.g., A personal email, a community post, or a final live session where you present the next step...',
-          helperText: 'Frame it as a continuation of what they\'ve already started — not a new sale.',
+          helperText: "Frame it as a continuation of what they\'ve already started — not a new sale.",
         },
       ],
     },
@@ -1823,14 +1823,14 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You can address what happens if someone doesn\'t join now',
+      "You can address what happens if someone doesn\'t join now",
       'The framing reduces fear, not creates it',
     ],
     whyItMatters: 'Addressing what happens if someone misses the window reduces fear-based resistance. Clarity builds trust more than urgency.',
     instructions: [
       'Be honest about what happens after the window closes',
       'Focus on clarity, not FOMO',
-      'Reduce fear, don\'t amplify it',
+      "Reduce fear, don\'t amplify it",
     ],
     inputType: 'form',
     inputSchema: {
@@ -1838,7 +1838,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
       fields: [
         { 
           name: 'missed_timing_framing', 
-          label: 'How do you explain what happens if someone doesn\'t join during this window?', 
+          label: "How do you explain what happens if someone doesn\'t join during this window?", 
           type: 'textarea', 
           required: true, 
           placeholder: 'Describe what happens after — honestly and clearly...',
@@ -1913,7 +1913,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Plan one email per day or every other day across your launch window',
       'Each email should do one thing — introduce, educate, address objections, or create urgency',
-      'The final 1–2 emails are your most important — don\'t skip them',
+      "The final 1–2 emails are your most important — don\'t skip them",
     ],
     inputType: 'form',
     inputSchema: {
@@ -1924,7 +1924,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           label: 'Cart open email — What will you say when doors open?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'e.g., Announce what\'s available, who it\'s for, and what\'s included...',
+          placeholder: "e.g., Announce what\'s available, who it\'s for, and what\'s included...",
           helperText: 'This is your first impression — clarity over hype.'
         },
         { 
@@ -1932,7 +1932,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           label: 'Middle emails — What will you cover between open and close?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'e.g., what\'s inside, a story, FAQ, objection handling, a win from a past student...',
+          placeholder: "e.g., what\'s inside, a story, FAQ, objection handling, a win from a past student...",
           helperText: 'Plan 2–4 emails that deepen interest and handle doubt.'
         },
         { 
@@ -1941,7 +1941,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           type: 'textarea', 
           required: true, 
           placeholder: 'e.g., Cart closes tonight, last chance, what happens after close...',
-          helperText: 'Your close email is often your highest-converting email — don\'t skip it.'
+          helperText: "Your close email is often your highest-converting email — don\'t skip it."
         },
       ],
     },
@@ -1967,9 +1967,9 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
       'People can express interest before you launch',
       'You have a way to follow up with interested people',
     ],
-    whyItMatters: 'A launch to a waitlist almost always outperforms a cold launch. People who raised their hand before your cart opens are already warm — they\'re expecting you to share.',
+    whyItMatters: "A launch to a waitlist almost always outperforms a cold launch. People who raised their hand before your cart opens are already warm — they\'re expecting you to share.",
     instructions: [
-      'Create a simple way for people to say "I\'m interested" before you launch',
+      "Create a simple way for people to say \"I\'m interested\" before you launch",
       'This can be a waitlist form, a DM keyword, or a reply to an email',
       'Share it at least once before launch day',
     ],
@@ -1996,7 +1996,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           type: 'textarea', 
           required: false, 
           placeholder: 'e.g., Instagram stories, email list, TikTok bio...',
-          sectionLabel: 'Optional: Where you\'ll share it',
+          sectionLabel: "Optional: Where you\'ll share it",
           helperText: 'Pick one or two places — not everywhere at once.'
         },
       ],
@@ -2018,13 +2018,13 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve shared at least one piece of pre-launch content',
+      "You\'ve shared at least one piece of pre-launch content",
       'Your audience has context before you open the cart',
     ],
     whyItMatters: 'Audiences who see 3–5 pieces of relevant content before a launch are more likely to buy than those who only see launch announcements. Pre-launch content does the warming — so launch week can do the selling.',
     instructions: [
       'Share content that relates to the problem your offer solves',
-      'You don\'t need to mention the launch yet — just warm up the conversation',
+      "You don\'t need to mention the launch yet — just warm up the conversation",
       'Aim for 2–3 posts or emails in the week before you launch',
     ],
     inputType: 'form',
@@ -2147,11 +2147,11 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
       'You have a simple record of how this launch performed',
       'You know one thing to keep and one thing to change',
     ],
-    whyItMatters: 'A launch debrief doesn\'t need to be a spreadsheet. It just needs to capture what happened — so next time, you\'re not starting from zero. The creators who get better with every launch are the ones who take ten minutes to write it down.',
+    whyItMatters: "A launch debrief doesn\'t need to be a spreadsheet. It just needs to capture what happened — so next time, you\'re not starting from zero. The creators who get better with every launch are the ones who take ten minutes to write it down.",
     instructions: [
       'Note your key numbers — revenue, buyers, email opens, link clicks',
       'Identify one thing that drove results',
-      'Identify one thing you\'d change',
+      "Identify one thing you\'d change",
     ],
     inputType: 'form',
     inputSchema: {
@@ -2222,10 +2222,10 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
       'Your link in bio points somewhere useful',
       'Someone clicking it would know what to do next',
     ],
-    whyItMatters: 'For content-to-offer, your link in bio is the bridge between your content and your offer. If it doesn\'t exist or leads nowhere, your content can\'t convert.',
+    whyItMatters: "For content-to-offer, your link in bio is the bridge between your content and your offer. If it doesn\'t exist or leads nowhere, your content can\'t convert.",
     instructions: [
       'Choose one destination — your sales page, landing page, or direct DM',
-      'Update your bio across the platforms you\'ll use',
+      "Update your bio across the platforms you\'ll use",
       'Test it yourself to make sure it works',
     ],
     inputType: 'form',
@@ -2271,10 +2271,10 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
       'You have a simple response ready when someone asks',
       'It feels natural, not scripted',
     ],
-    whyItMatters: 'When your content works, people will DM you. Having a warm, clear response ready means you never miss a potential sale because you didn\'t know what to say.',
+    whyItMatters: "When your content works, people will DM you. Having a warm, clear response ready means you never miss a potential sale because you didn\'t know what to say.",
     instructions: [
       'Write 2–3 sentences you could paste or adapt when someone shows interest',
-      'Include what the offer is, who it\'s for, and a clear next step',
+      "Include what the offer is, who it\'s for, and a clear next step",
       'Keep it conversational — not copy-pasted sales language',
     ],
     inputType: 'form',
@@ -2286,7 +2286,7 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'What will you say when someone DMs asking about your offer?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'e.g., "Hey! Yes, [offer name] is a [short description]. It\'s for [audience]. Here\'s the link: [link]"',
+          placeholder: "e.g., \"Hey! Yes, [offer name] is a [short description]. It\'s for [audience]. Here\'s the link: [link]\"",
           helperText: 'Write it the way you would actually talk — not like a brochure.'
         },
       ],
@@ -2317,7 +2317,7 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Think about content that teaches or resonates — then invites',
       'Your CTA should be one clear next step, not a pitch',
-      'You\'ll write the actual posts in the next task',
+      "You\'ll write the actual posts in the next task",
     ],
     inputType: 'form',
     inputSchema: {
@@ -2367,10 +2367,10 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve posted content that naturally mentions your offer',
+      "You\'ve posted content that naturally mentions your offer",
       'One post is enough to start',
     ],
-    whyItMatters: 'This is the simplest version of launching — share something valuable, then let people know how to go deeper. You don\'t need a campaign. One post with a clear next step is a real launch.',
+    whyItMatters: "This is the simplest version of launching — share something valuable, then let people know how to go deeper. You don\'t need a campaign. One post with a clear next step is a real launch.",
     instructions: [
       'Share content that connects to the problem your offer solves',
       'At the end, invite people to take one clear next step',
@@ -2536,9 +2536,9 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
       '  — Email invite to your list (send 7 days before, resend 2 days before with different subject line)',
       '  — Instagram and/or TikTok story series with a countdown sticker (start 5 days before)',
       '  — 3 feed posts about the training topic — each ending with a registration CTA',
-      '  — Personal invitations to warm contacts who've engaged with this topic before',
+      "  — Personal invitations to warm contacts who've engaged with this topic before",
       '  — If applicable: one collaboration or shoutout from an account your audience trusts',
-      'Track your registration count every day — if you're behind pace, push harder on personal invitations',
+      "Track your registration count every day — if you're behind pace, push harder on personal invitations",
       'The day before: send a "last chance to register" email to your full list',
     ],
     inputType: 'form',
@@ -2598,7 +2598,7 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
       'Write these 4 follow-up pieces now — not after the training:',
       '',
       '1. Replay email (send within 24 hours of training):',
-      '  Subject line option: "Here's the replay — [training name]"',
+      "  Subject line option: \"Here's the replay — [training name]\"",
       '  Include: replay link, what was covered, a natural mention of your offer, deadline reminder',
       '',
       '2. Non-attendee email (send within 48 hours):',
@@ -2653,7 +2653,7 @@ const APPLICATION_MARKETING_TASKS: TaskTemplate[] = [
     whyItMatters: "An application or call funnel lives and dies on how frictionless the booking experience is. If someone wants to talk to you and can't figure out how to book in 30 seconds, they move on. Your booking link, calendar availability, and confirmation sequence need to be airtight before you send anyone to them.",
     instructions: [
       'Set up your booking link using Calendly, TidyCal, or Systeme.io scheduling',
-      'Block specific time slots on your calendar for discovery calls — don't leave it wide open',
+      "Block specific time slots on your calendar for discovery calls — don't leave it wide open",
       'Set your call capacity limit: decide the maximum number of calls you will take. When that number is hit, applications close. This creates real scarcity.',
       'Write and activate your booking confirmation email: sent automatically when someone books. Include: call time, what to prepare, your calendar invite, and how to reschedule.',
       'Book a fake appointment yourself using the link — go through the full experience as a new caller would',
@@ -2723,7 +2723,7 @@ const MEMBERSHIP_MARKETING_TASKS: TaskTemplate[] = [
       '  — A value post: your best teaching, a framework, a resource, or a behind-the-scenes look at how you work',
       '  — A conversation starter: ask a question your ideal member would love to answer',
       'Write your community welcome message — the automatic DM or pinned post that every new member sees when they join',
-      'Set your community guidelines or norms — even one sentence about what this space is and isn't',
+      "Set your community guidelines or norms — even one sentence about what this space is and isn't",
       'Join the community yourself using a test account and go through the onboarding flow as a new member',
       'Note anything that felt confusing or unwelcoming — fix it before launch',
     ],
@@ -2774,10 +2774,10 @@ const CHALLENGE_MARKETING_TASKS: TaskTemplate[] = [
       '  — Day 3: A deeper challenge or reflection that builds momentum',
       '  — Day 4: Social proof, wins from the community, and a push through the midpoint',
       '  — Day 5: The transformation summary + natural bridge to your offer',
-      'Schedule or queue each day's content inside the community so it posts automatically',
+      "Schedule or queue each day's content inside the community so it posts automatically",
       'Write your daily check-in prompt — the question you ask each day to keep participants engaged and accountable',
       'Test your registration flow: register yourself using a test account and confirm you land in the right place',
-      'Make sure the community settings are correct: who can see posts, whether it's public or private, how new members are approved',
+      "Make sure the community settings are correct: who can see posts, whether it's public or private, how new members are approved",
     ],
     inputType: 'checklist',
     inputSchema: {
@@ -2833,7 +2833,7 @@ const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
       '  Optionally: address the most common objection one more time',
       '',
       '3. Final story post (post 2 hours before close):',
-      '  Script it: "Cart closes in 2 hours. Here's the link." — simple, direct, no overthinking',
+      "  Script it: \"Cart closes in 2 hours. Here's the link.\" — simple, direct, no overthinking",
       '',
       '4. Last day feed post (post on the final day):',
       '  Visually strong. Mentions the deadline. Ends with one CTA.',
@@ -2883,12 +2883,12 @@ const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
       'Walk your entire conversion path as a new visitor:',
       '  — Open your profile on mobile as if you are seeing it for the first time',
       '  — Click your link in bio — does it go to the right place?',
-      '  — Read your sales page as a stranger — is it clear what you're selling and who it's for?',
+      "  — Read your sales page as a stranger — is it clear what you're selling and who it's for?",
       '  — Click the buy button — does the checkout load correctly?',
       '  — Test on mobile specifically — most of your buyers will be on their phone',
       'Fix any friction points before you drive traffic',
       'This week: create 5 pieces of content where the primary CTA is your offer (not your freebie, not a follow)',
-      'Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with "if you want to go deeper, here's how," one is personal and shows your process, one is direct and promotional',
+      "Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with \"if you want to go deeper, here's how,\" one is personal and shows your process, one is direct and promotional",
       'Every caption ends with one clear call to action — not "click the link in bio and also follow me and also save this"',
     ],
     inputType: 'checklist',
@@ -2921,14 +2921,14 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       {
         taskId: 'build_email_platform',
         changes: {
-          whyItMatters: 'For content-to-offer, email helps you stay connected with people who showed interest. It\'s not required to launch, but it extends your reach beyond the first post.',
+          whyItMatters: "For content-to-offer, email helps you stay connected with people who showed interest. It\'s not required to launch, but it extends your reach beyond the first post.",
         },
       },
       {
         taskId: 'launch_share_offer_once',
         changes: {
           title: 'Share your first selling post',
-          whyItMatters: 'Your launch is one clear post that teaches, resonates, or tells a story — and then invites people to take one next step. That\'s all this needs to be.',
+          whyItMatters: "Your launch is one clear post that teaches, resonates, or tells a story — and then invites people to take one next step. That\'s all this needs to be.",
         },
       },
     ],
@@ -2941,7 +2941,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         taskId: 'build_email_platform',
         changes: {
           blocking: true,
-          whyItMatters: 'Since you\'re using a freebie to build your list, your email platform is essential. This is how you\'ll deliver the freebie and nurture subscribers toward your offer.',
+          whyItMatters: "Since you\'re using a freebie to build your list, your email platform is essential. This is how you\'ll deliver the freebie and nurture subscribers toward your offer.",
         },
       },
       {
@@ -2960,7 +2960,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       {
         taskId: 'build_choose_platform',
         changes: {
-          whyItMatters: 'This is where you\'ll invite people at the end of your training. Keep it simple — you just need somewhere to send them.',
+          whyItMatters: "This is where you\'ll invite people at the end of your training. Keep it simple — you just need somewhere to send them.",
         },
       },
       {
@@ -2968,8 +2968,8 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         changes: {
           instructions: [
             'Most of your content will invite people to your live training, not directly to your offer',
-            'Focus on building anticipation for what you\'ll teach',
-            'Share why this training matters and who it\'s for',
+            "Focus on building anticipation for what you\'ll teach",
+            "Share why this training matters and who it\'s for",
           ],
         },
       },
@@ -2977,14 +2977,14 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         taskId: 'launch_prepare_announcement',
         changes: {
           title: 'Announce your live training',
-          whyItMatters: 'This is your moment to let people know about your training. Focus on what they\'ll learn and how to join — no sales language needed.',
+          whyItMatters: "This is your moment to let people know about your training. Focus on what they\'ll learn and how to join — no sales language needed.",
         },
       },
       {
         taskId: 'launch_share_offer',
         changes: {
           title: 'Invite attendees to your offer',
-          whyItMatters: 'After teaching, you\'ll invite people who want to go deeper. This should feel clear, warm, and optional — not pushy.',
+          whyItMatters: "After teaching, you\'ll invite people who want to go deeper. This should feel clear, warm, and optional — not pushy.",
         },
       },
     ],
@@ -2996,13 +2996,13 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       {
         taskId: 'build_choose_platform',
         changes: {
-          whyItMatters: 'This is where people will be directed after the call if it\'s a fit. Keep it simple.',
+          whyItMatters: "This is where people will be directed after the call if it\'s a fit. Keep it simple.",
         },
       },
       {
         taskId: 'build_payment_setup',
         changes: {
-          whyItMatters: 'Payments typically happen after the call for this type of offer. You don\'t need a checkout page — just a way to collect payment when the time is right.',
+          whyItMatters: "Payments typically happen after the call for this type of offer. You don\'t need a checkout page — just a way to collect payment when the time is right.",
         },
       },
       {
@@ -3018,8 +3018,8 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       {
         taskId: 'launch_prepare_announcement',
         changes: {
-          title: 'Announce that you\'re opening applications',
-          whyItMatters: 'This is when you let people know you\'re accepting applications. The tone should be clear, warm, and invitational — not sales-y.',
+          title: "Announce that you\'re opening applications",
+          whyItMatters: "This is when you let people know you\'re accepting applications. The tone should be clear, warm, and invitational — not sales-y.",
         },
       },
       {
@@ -3039,7 +3039,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         taskId: 'build_email_platform',
         changes: {
           blocking: true,
-          whyItMatters: 'Email is essential for membership onboarding and ongoing member communication. This is how you\'ll welcome new members and keep them engaged.',
+          whyItMatters: "Email is essential for membership onboarding and ongoing member communication. This is how you\'ll welcome new members and keep them engaged.",
         },
       },
       {
@@ -3086,7 +3086,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         taskId: 'launch_share_offer',
         changes: {
           title: 'Invite people to join your challenge',
-          whyItMatters: 'This is the moment you open registration. Focus on who this is for and what they\'ll experience — no pressure or urgency.',
+          whyItMatters: "This is the moment you open registration. Focus on who this is for and what they\'ll experience — no pressure or urgency.",
         },
       },
     ],
