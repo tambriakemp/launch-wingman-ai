@@ -175,6 +175,23 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
     }
   };
 
+  const flushSubtasksForTask = async (taskId: string) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return;
+    const local = subtasks.filter((s) => s._local);
+    if (local.length === 0) return;
+    await supabase.from("subtasks").insert(
+      local.map((s, i) => ({
+        task_id: taskId,
+        user_id: uid,
+        title: s.title,
+        completed: s.completed,
+        position: i,
+      })) as any
+    );
+  };
+
   const handleSave = async () => {
     if (submitting) return;
     const result = taskSchema.safeParse({ title: title.trim(), notes: notes.trim() });
@@ -185,10 +202,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
     setSubmitting(true);
     try {
       const dueIso = dueAt ? dueAt.toISOString() : null;
-      await onCreate({
+      const payload: Partial<PlannerTask> = {
         title: toTitleCase(result.data.title),
         description: result.data.notes || "",
-        column_id: "todo",
         task_type: "task",
         priority,
         category: categoryId,
@@ -196,12 +212,78 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
         start_at: dueIso,
         end_at: dueIso,
         ...(({ space_id: spaceId } as any)),
-      });
+      };
+      if (isEdit && editTask && onUpdate) {
+        await onUpdate(editTask.id, payload);
+      } else {
+        const newId = await onCreate({ ...payload, column_id: "todo" });
+        if (typeof newId === "string") {
+          await flushSubtasksForTask(newId);
+        }
+      }
       onClose();
     } catch (e: any) {
-      toast.error("Couldn't add task", { description: e?.message });
+      toast.error(isEdit ? "Couldn't update task" : "Couldn't add task", { description: e?.message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // --- Subtask handlers ---
+  const addSubtask = async () => {
+    const t = newSubtaskTitle.trim();
+    if (!t) return;
+    if (isEdit && editTask) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const { error } = await supabase.from("subtasks").insert({
+        task_id: editTask.id,
+        user_id: userData.user.id,
+        title: toTitleCase(t),
+        position: subtasks.length,
+      });
+      if (error) { toast.error("Failed to add subtask"); return; }
+      setNewSubtaskTitle("");
+      fetchSubtasks(editTask.id);
+    } else {
+      // Buffer locally; flush on save
+      setSubtasks((prev) => [...prev, {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        title: toTitleCase(t),
+        completed: false,
+        position: prev.length,
+        _local: true,
+      }]);
+      setNewSubtaskTitle("");
+    }
+  };
+
+  const toggleSubtask = async (st: Subtask) => {
+    if (st._local || !isEdit) {
+      setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
+      return;
+    }
+    setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
+    await supabase.from("subtasks").update({ completed: !st.completed }).eq("id", st.id);
+  };
+
+  const deleteSubtask = async (st: Subtask) => {
+    if (st._local || !isEdit) {
+      setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
+      return;
+    }
+    setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
+    await supabase.from("subtasks").delete().eq("id", st.id);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!isEdit || !editTask || !onDelete) return;
+    if (!window.confirm("Delete this task?")) return;
+    try {
+      await onDelete(editTask.id);
+      onClose();
+    } catch (e: any) {
+      toast.error("Couldn't delete task", { description: e?.message });
     }
   };
 
