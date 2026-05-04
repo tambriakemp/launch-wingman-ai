@@ -26,8 +26,8 @@ const VALID_ACTIONS = [
 
 type Action = (typeof VALID_ACTIONS)[number];
 
-const VAULT_URL = "https://launchely.com/app/content-vault/ai-prompts/general";
-const PLANNER_URL = "https://launchely.com/app/planner";
+const VAULT_URL = "https://app.launchely.com/app/content-vault/ai-prompts/general";
+const PLANNER_URL = "https://app.launchely.com/app/planner";
 
 const VALID_STATUSES = ["todo", "in-progress", "in-review", "done", "blocked", "abandoned"];
 const VALID_PRIORITIES = ["urgent", "high", "normal", "low"];
