@@ -870,6 +870,102 @@ Now generate a high-quality image for this scene, featuring the EXACT person fro
         result = { success: true, deleted_id: data.id };
         break;
       }
+
+      case "list_subtasks": {
+        const taskId = body.taskId as string;
+        if (!taskId) {
+          return new Response(JSON.stringify({ error: "taskId is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data, error } = await serviceClient
+          .from("subtasks")
+          .select("id, task_id, title, description, completed, position, created_at, updated_at")
+          .eq("task_id", taskId)
+          .eq("user_id", userId)
+          .order("position", { ascending: true });
+        if (error) throw error;
+        result = { subtasks: data || [] };
+        break;
+      }
+
+      case "create_subtask": {
+        const taskId = body.taskId as string;
+        const title = String(body.title || "").trim();
+        if (!taskId || !title) {
+          return new Response(JSON.stringify({ error: "taskId and title are required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Verify parent task ownership
+        const { data: parent } = await serviceClient
+          .from("tasks").select("id").eq("id", taskId).eq("user_id", userId).maybeSingle();
+        if (!parent) throw new Error("Parent task not found");
+
+        // Compute next position
+        const { data: maxRow } = await serviceClient
+          .from("subtasks").select("position").eq("task_id", taskId)
+          .order("position", { ascending: false }).limit(1).maybeSingle();
+        const nextPosition = body.position !== undefined ? body.position : ((maxRow as any)?.position ?? -1) + 1;
+
+        const { data, error } = await serviceClient
+          .from("subtasks")
+          .insert({
+            task_id: taskId,
+            user_id: userId,
+            title,
+            description: body.description || null,
+            completed: body.completed === true,
+            position: nextPosition,
+          })
+          .select("id, task_id, title, description, completed, position, created_at, updated_at")
+          .maybeSingle();
+        if (error) throw error;
+        result = { success: true, subtask: data };
+        break;
+      }
+
+      case "update_subtask": {
+        const subtaskId = body.subtaskId as string;
+        if (!subtaskId) {
+          return new Response(JSON.stringify({ error: "subtaskId is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const updates: Record<string, unknown> = {};
+        if (body.title !== undefined) updates.title = body.title;
+        if (body.description !== undefined) updates.description = body.description;
+        if (body.completed !== undefined) updates.completed = body.completed;
+        if (body.position !== undefined) updates.position = body.position;
+        if (Object.keys(updates).length === 0) throw new Error("Provide at least one field to update");
+
+        const { data, error } = await serviceClient
+          .from("subtasks").update(updates)
+          .eq("id", subtaskId).eq("user_id", userId)
+          .select("id, task_id, title, description, completed, position, created_at, updated_at")
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Subtask not found");
+        result = { success: true, subtask: data };
+        break;
+      }
+
+      case "delete_subtask": {
+        const subtaskId = body.subtaskId as string;
+        if (!subtaskId) {
+          return new Response(JSON.stringify({ error: "subtaskId is required" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data, error } = await serviceClient
+          .from("subtasks").delete()
+          .eq("id", subtaskId).eq("user_id", userId)
+          .select("id").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Subtask not found");
+        result = { success: true, deleted_id: data.id };
+        break;
+      }
     }
 
     return new Response(JSON.stringify(result), {
