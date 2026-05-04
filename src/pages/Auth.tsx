@@ -6,7 +6,7 @@ import { Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import "@/components/landing/landing-theme.css";
+
 
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
