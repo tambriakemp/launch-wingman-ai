@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +28,8 @@ import { trackAssessmentComplete } from "@/lib/activityTracking";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
+import { AssessmentShell, useAssessmentLayout } from "@/components/assessments/AssessmentShell";
+import { useHaptics } from "@/hooks/useHaptics";
 
 type CoachType = "maya" | "derek" | "lauren";
 
