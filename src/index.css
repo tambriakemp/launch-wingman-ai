@@ -4,7 +4,7 @@
 @import "@fontsource/plus-jakarta-sans/700.css";
 /* Editorial display + mono fonts for Launch Tasks design system */
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
-@import "./components/landing/landing-theme.css";
+
 
 @tailwind base;
 @tailwind components;
