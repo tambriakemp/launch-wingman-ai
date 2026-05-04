@@ -53,6 +53,7 @@ const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style
   messaging: MessageCircle,
   build: Hammer,
   content: PenTool,
+  marketing: Megaphone,
   'pre-launch': Megaphone,
   launch: Rocket,
   'post-launch': Rocket,
@@ -213,7 +214,11 @@ const PHASE_NARRATIVE: Partial<Record<Phase, { headline: string; copy: string }>
   },
   content: {
     headline: "You have what to say.",
-    copy: "Content is ready. Time to warm up the room before launch week.",
+    copy: "Content is ready. Now let's build the machine that gets it in front of people.",
+  },
+  marketing: {
+    headline: "The machine is running.",
+    copy: "Sequences live. Content scheduled. Tracking set up. Time to launch.",
   },
   'pre-launch': {
     headline: "The runway is lit.",

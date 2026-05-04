@@ -130,4 +130,43 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   content_define_themes:
     "Content pillars are the handful of topics you'll return to again and again — the ideas that naturally show up in how you talk about your work. They're not categories you force yourself into. They're themes you already have opinions on, stories from, or lessons learned. When you know your pillars, you'll never stare at a blank page. And the more specific you are here, the more every piece of generated content will sound like you — not like a template.",
+
+  marketing_email_sequence:
+    "Email is the only channel you own. Social platforms change their algorithm, reduce your reach, and occasionally disappear. Your email list does none of those things. A 7-email sequence isn't marketing fluff — it's a conversation you have with someone over the week before your offer opens. Done right, by the time they reach email 6, they've already made their decision. They're just waiting for the link.",
+
+  marketing_content_creation:
+    "Two weeks of pre-scheduled content changes how a launch feels — for you and for your audience. For you: no scrambling, no blank-page panic during the most important week of your launch. For your audience: consistent momentum that builds curiosity before the offer is ever mentioned. This is one of the most valuable things you'll do in this whole process. The work happens now, so launch week can be about connection and response — not creation.",
+
+  marketing_campaign_setup:
+    "Most creators launch blind — they post, they hope, and they guess at what worked afterward. Setting up campaign tracking before you start means you'll finish your launch knowing exactly which piece of content drove traffic, which email drove clicks, and which channel was worth the effort. That data doesn't just feel satisfying — it makes your next launch meaningfully better without doubling your effort.",
+
+  marketing_engagement_sprint:
+    "Five days of intentional engagement before your launch is worth more than a year of passive posting. When you're actively present in the conversations your ideal audience is already having — replying, commenting, showing up in communities — your name becomes familiar before they ever land on your sales page. That familiarity is trust. And trust is what converts a follower into a buyer.",
+
+  marketing_freebie_traffic:
+    "Your freebie is the bridge between a stranger and a subscriber. But it only works if people know it exists and actively choose to go get it. Every piece of content this week has one job: make someone want the freebie enough to give you their email. Not follow you, not like your post — give you their email. That's the conversion that matters.",
+
+  marketing_freebie_delivery_test:
+    "You built the opt-in. You set up the delivery. Now you need to walk through it as your subscriber would — from a different email address, on a different device, exactly as a new person would experience it. Because if the freebie doesn't arrive, or it lands in spam, or the download link is broken, everything else you're about to do to drive traffic will be wasted.",
+
+  marketing_training_fill_room:
+    "Registration numbers matter — not because they determine your worth, but because an empty room is a hard experience to recover from. Set a specific number before you start promoting, then work the math backwards. Every piece of promotion you do should be tied to that goal. When you know the number you're chasing, the work becomes specific instead of scattered.",
+
+  marketing_training_followup_plan:
+    "Write your follow-up sequence now — before the training happens, before you're tired, before adrenaline has replaced clear thinking. The people who attended and didn't buy are your warmest leads. The people who registered and didn't show are still warm. The follow-up sequence is often where more revenue is generated than in the live session itself. Do the work now so you can send it without hesitation after.",
+
+  marketing_application_booking:
+    "A broken booking experience loses you the call before you've said a word. When someone is ready to invest time into a discovery call — which is a big commitment — the path from 'I want to talk to you' to 'I have a confirmed appointment' needs to take less than 60 seconds. Test it yourself. Fix what's clunky. Then share the link with confidence.",
+
+  marketing_membership_seed_community:
+    "Nobody joins a ghost town. When your first members arrive to an empty space, the first feeling they have is doubt — about whether anyone else is here, whether this is worth it, whether they made a mistake. Three pieces of content posted before anyone joins changes that completely. They arrive to activity, to structure, to a welcome. That first impression determines whether they stay.",
+
+  marketing_challenge_container:
+    "The challenge is the product. Not your Instagram presence, not your sales page — the daily experience inside the challenge is what your participants are paying for with their time and attention. When Day 1 content is already live before registration opens, when the space feels organized and intentional, participants arrive trusting you before you've asked them for anything.",
+
+  marketing_launch_deadline_push:
+    "The last 24 hours of an open cart is where the majority of sales happen. Not because people are procrastinators — because they need the deadline to make a decision. That final email, that last story post, that closing message on the last day — these are the most important things you'll write this whole launch. Don't write them while you're exhausted from launch week. Write them now.",
+
+  marketing_cto_traffic_conversion:
+    "Content-to-offer only works when the path from post to purchase is frictionless. A broken link in bio, a sales page that doesn't load on mobile, a checkout that times out — any of these will stop a conversion cold. Walk the path yourself before you send anyone down it. Then drive traffic deliberately: five posts this week, each with one clear call to action pointing to the offer.",
 };

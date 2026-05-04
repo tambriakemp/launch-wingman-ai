@@ -174,7 +174,7 @@ function PlaybookEmptyState({ wisdomCards, currentPhase }: { wisdomCards: { tip:
   const navigate = useNavigate();
   const phaseLabels: Record<string, string> = {
     setup: 'Setup', planning: 'Planning', messaging: 'Messaging', build: 'Build',
-    content: 'Content', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
+    content: 'Content', marketing: 'Marketing', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
   };
 
   return (
@@ -376,7 +376,7 @@ export default function Playbook() {
 
   const phaseLabels: Record<string, string> = {
     setup: 'Setup', planning: 'Planning', messaging: 'Messaging', build: 'Build',
-    content: 'Content', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
+    content: 'Content', marketing: 'Marketing', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
   };
 
   if (isLoading) {

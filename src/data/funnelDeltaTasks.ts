@@ -14,6 +14,7 @@ import { TaskTemplate, FunnelType } from '@/types/tasks';
 // Path: Freebie → Email nurture → Offer
 
 export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
+  ...FREEBIE_MARKETING_TASKS,
   // BUILD Phase Additions
   {
     taskId: 'build_create_freebie',
@@ -407,6 +408,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
 // no reminders logic, no performance metrics. Goal is confidence and connection.
 
 export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
+  ...LIVE_TRAINING_MARKETING_TASKS,
   // BUILD Phase Additions
   {
     taskId: 'build_define_training_focus',
@@ -725,6 +727,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
 // no automation, no performance tracking. Launchely guides clarity and readiness.
 
 export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
+  ...APPLICATION_MARKETING_TASKS,
   // ==================== BUILD Phase Additions ====================
   {
     taskId: 'build_clarify_applicants',
@@ -920,6 +923,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
 // no scarcity, no urgency. Launchely guides thinking about ongoing value.
 
 export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
+  ...MEMBERSHIP_MARKETING_TASKS,
   // ==================== PLANNING Phase Additions ====================
   {
     taskId: 'planning_ongoing_promise',
@@ -1302,6 +1306,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
 // no pressure or urgency. Launchely guides thinking about focused momentum.
 
 export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
+  ...CHALLENGE_MARKETING_TASKS,
   // ==================== PLANNING Phase Additions ====================
   {
     taskId: 'planning_challenge_focus',
@@ -1680,6 +1685,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
 // no scarcity frameworks. Launchely guides clarity and intentionality.
 
 export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
+  ...LAUNCH_MARKETING_TASKS,
   // ==================== PLANNING Phase Additions ====================
   {
     taskId: 'planning_launch_window',
@@ -2197,6 +2203,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
 // These tasks are specific to the content-to-offer funnel type.
 
 export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
+  ...CONTENT_TO_OFFER_MARKETING_TASKS,
   // ==================== BUILD Phase Additions ====================
   {
     taskId: 'build_link_in_bio',
@@ -2393,6 +2400,512 @@ export interface FunnelDeltaConfig {
   deltaTasks: TaskTemplate[];
   modifiedTasks: TaskModification[];
 }
+
+
+// ==================== MARKETING PHASE — Funnel-Specific Tasks ====================
+
+// Freebie funnel: drive traffic to opt-in and nurture sequence
+const FREEBIE_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_freebie_traffic',
+    title: 'Drive traffic to your opt-in page',
+    phase: 'marketing',
+    funnelTypes: ['freebie_email_offer'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 60,
+    blocking: false,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'At least 5 pieces of content created with the freebie as the sole CTA',
+      'Every post this week points to the opt-in — not the paid offer',
+      'You are tracking how many sign-ups each piece drives',
+    ],
+    whyItMatters: 'For a freebie funnel, your list is the asset — not your social following. Every piece of content you create this week should have one job: get people to the opt-in page. Once they're on your list, your email sequence takes over. Split your energy: 70% driving opt-ins, 30% building trust on social.',
+    instructions: [
+      'Create 5 pieces of content this week — every single one has the freebie as the CTA (not the paid offer)',
+      'Rotate your content types: one carousel, one reel, one caption post, one story series, one educational thread or post',
+      'Every caption ends with a variation of "Get [freebie name] free at the link in bio"',
+      'Update your link in bio to point directly to your opt-in page — not your main website',
+      'After each piece goes live, track how many new opt-ins you receive that day',
+      'If a piece drives zero opt-ins, note what was different — hook, topic, or call-to-action',
+      'Your goal is to know which type of content drives the most opt-ins before you open the paid offer',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'optin_url',
+          label: 'What is the URL of your opt-in page?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., yoursite.com/freebie or systeme.io/your-page',
+          helperText: 'This is the link that goes in your bio and every CTA.',
+        },
+        {
+          name: 'daily_optin_goal',
+          label: 'How many opt-ins are you aiming for before you open your paid offer?',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g., 100 subscribers',
+          helperText: 'Having a number keeps you focused. There is no wrong answer.',
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/marketing_freebie_traffic',
+  },
+  {
+    taskId: 'marketing_freebie_delivery_test',
+    title: 'Test your opt-in and delivery flow end-to-end',
+    phase: 'marketing',
+    funnelTypes: ['freebie_email_offer'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You submitted the opt-in form with a test email address',
+      'The freebie arrived in your inbox — not in spam',
+      'The welcome email arrived and reads correctly',
+      'You confirmed the experience on mobile',
+    ],
+    whyItMatters: 'You can drive hundreds of people to your opt-in and lose all of them because the freebie never arrived, or landed in spam, or the download link was broken. This test takes 15 minutes and prevents that from happening. Do it from a different device and a different email address than the one you built it with.',
+    instructions: [
+      'Open an incognito browser window or use a different device',
+      'Go to your opt-in page as a new visitor',
+      'Submit the form with a test email address (a personal Gmail works)',
+      'Check that email inbox — confirm the welcome email arrived within 5 minutes',
+      'Check your spam folder — if it landed there, fix your sender settings before driving traffic',
+      'Click the freebie download link and confirm it opens correctly',
+      'Read the welcome email as your subscriber would — check the tone, the formatting, and the next step',
+      'Repeat on mobile — open the opt-in on your phone and go through the full flow',
+      'Fix anything that felt broken, confusing, or unprofessional before you promote',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'form_submitted', label: 'Opt-in form submitted with test email', description: 'Done from a different email address than your account' },
+        { value: 'email_arrived', label: 'Welcome email arrived in inbox (not spam)', description: 'Within 5 minutes of opt-in' },
+        { value: 'freebie_delivered', label: 'Freebie download link works correctly', description: 'File opens and is readable' },
+        { value: 'mobile_tested', label: 'Full flow tested on mobile', description: 'Opt-in page, email, and download all work on phone' },
+        { value: 'issues_fixed', label: 'Any issues found are fixed', description: 'Nothing broken before you drive traffic' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    route: '/projects/:id/tasks/marketing_freebie_delivery_test',
+  },
+];
+
+// Live training funnel: fill the room + plan follow-up before the event
+const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_training_fill_room',
+    title: 'Fill the room — hit your registration goal',
+    phase: 'marketing',
+    funnelTypes: ['live_training_offer'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 45,
+    estimatedMinutesMax: 90,
+    blocking: false,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Registration goal is set as a specific number',
+      'Promotion plan is mapped out by channel',
+      'Email invite sent to your list',
+      'Story countdown started',
+      'Daily registration count is being tracked',
+    ],
+    whyItMatters: 'An empty room is the worst outcome for a live training — not because of the sales, but because of how it feels to present to 3 people when you expected 50. Set a specific registration number before you start promoting, then work the math backwards. If 10% of people who see your invitation register, how many need to see it? That number tells you exactly how hard to push.',
+    instructions: [
+      'Set your registration goal: a specific number of people registered before your training date',
+      'Work backwards: if 10% of people who see your invitation register, you need [goal x 10] people to see it',
+      'Map your promotion channels:',
+      '  — Email invite to your list (send 7 days before, resend 2 days before with different subject line)',
+      '  — Instagram and/or TikTok story series with a countdown sticker (start 5 days before)',
+      '  — 3 feed posts about the training topic — each ending with a registration CTA',
+      '  — Personal invitations to warm contacts who've engaged with this topic before',
+      '  — If applicable: one collaboration or shoutout from an account your audience trusts',
+      'Track your registration count every day — if you're behind pace, push harder on personal invitations',
+      'The day before: send a "last chance to register" email to your full list',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'registration_goal',
+          label: 'How many registrations are you aiming for?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., 50 registrations',
+          helperText: 'Pick a number that feels exciting but realistic. You can always set a higher goal next time.',
+        },
+        {
+          name: 'training_date',
+          label: 'When is your live training?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., June 18, 2025 at 12pm EST',
+          helperText: 'Include time zone so you can map your promotion schedule backwards.',
+        },
+        {
+          name: 'registration_link',
+          label: 'What is your registration link?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., systeme.io/your-training-page',
+          helperText: 'This goes in your bio, emails, and every piece of promotional content.',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples'],
+    route: '/projects/:id/tasks/marketing_training_fill_room',
+  },
+  {
+    taskId: 'marketing_training_followup_plan',
+    title: 'Write your post-training follow-up sequence before the training happens',
+    phase: 'marketing',
+    funnelTypes: ['live_training_offer'],
+    order: 3.5,
+    priority: 1,
+    estimatedMinutesMin: 45,
+    estimatedMinutesMax: 60,
+    blocking: false,
+    dependencies: ['marketing_training_fill_room'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Replay email written and ready to send within 24 hours of training',
+      'Follow-up email for non-attendees is written',
+      'Follow-up sequence for attendees who did not buy is written',
+      'All follow-ups are loaded and ready to send — not to be written after the event',
+    ],
+    whyItMatters: 'After a live training, you will be tired, relieved, and possibly running on adrenaline. That is the worst state to write sales follow-up emails. Do it now, before the training, when your thinking is clear. The follow-up sequence is often where more sales happen than in the live session itself — most buyers need to watch the replay or see the offer one more time before they decide.',
+    instructions: [
+      'Write these 4 follow-up pieces now — not after the training:',
+      '',
+      '1. Replay email (send within 24 hours of training):',
+      '  Subject line option: "Here's the replay — [training name]"',
+      '  Include: replay link, what was covered, a natural mention of your offer, deadline reminder',
+      '',
+      '2. Non-attendee email (send within 48 hours):',
+      '  For people who registered but did not show up',
+      '  Keep it short: replay link, one sentence about what they missed, one CTA to your offer',
+      '',
+      '3. Attended-but-did-not-buy follow-up (send 3-4 days after training):',
+      '  Handle the most common objection. Ask if they have questions. Keep it personal in tone.',
+      '',
+      '4. Final reminder (send 24 hours before offer closes):',
+      '  Deadline is real. Remind them what changes when the offer closes.',
+      '',
+      'Load all 4 into Systeme.io (or your email platform) so they are ready to send immediately after your training',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'replay_email_written', label: 'Replay email written and ready to send', description: 'Send within 24 hours of training — includes replay link and offer CTA' },
+        { value: 'non_attendee_email_written', label: 'Non-attendee email written', description: 'For people who registered but did not show up' },
+        { value: 'no_buy_followup_written', label: 'Attended-but-did-not-buy follow-up written', description: 'Handles the most common objection, keeps it personal' },
+        { value: 'deadline_reminder_written', label: 'Final deadline reminder written', description: 'Send 24 hours before the offer closes' },
+        { value: 'all_loaded', label: 'All 4 emails loaded into email platform and ready to send', description: 'Scheduled or queued — not waiting to be written after the event' },
+      ],
+    },
+    aiAssistModes: ['generate', 'examples'],
+    route: '/projects/:id/tasks/marketing_training_followup_plan',
+  },
+];
+
+// Application/call funnel: booking infrastructure
+const APPLICATION_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_application_booking',
+    title: 'Set up your booking infrastructure',
+    phase: 'marketing',
+    funnelTypes: ['application_call'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: true,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Booking link is live and tested',
+      'Call slots are blocked on your calendar',
+      'Booking confirmation email is set up and tested',
+      'You have set a call capacity limit',
+    ],
+    whyItMatters: 'An application or call funnel lives and dies on how frictionless the booking experience is. If someone wants to talk to you and can't figure out how to book in 30 seconds, they move on. Your booking link, calendar availability, and confirmation sequence need to be airtight before you send anyone to them.',
+    instructions: [
+      'Set up your booking link using Calendly, TidyCal, or Systeme.io scheduling',
+      'Block specific time slots on your calendar for discovery calls — don't leave it wide open',
+      'Set your call capacity limit: decide the maximum number of calls you will take. When that number is hit, applications close. This creates real scarcity.',
+      'Write and activate your booking confirmation email: sent automatically when someone books. Include: call time, what to prepare, your calendar invite, and how to reschedule.',
+      'Book a fake appointment yourself using the link — go through the full experience as a new caller would',
+      'Confirm the calendar invite arrives in your test inbox within 5 minutes of booking',
+      'Set a reminder to send a 24-hour reminder email before each call',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'booking_tool',
+          label: 'Which booking tool are you using?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., Calendly, TidyCal, Systeme.io scheduling...',
+        },
+        {
+          name: 'booking_link',
+          label: 'What is your booking link?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., calendly.com/yourname/discovery',
+          helperText: 'Test this link yourself before sharing it.',
+        },
+        {
+          name: 'call_capacity',
+          label: 'What is your call capacity limit?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g., 10 discovery calls',
+          helperText: 'When this number is hit, applications close. This is what makes the scarcity real.',
+        },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    route: '/projects/:id/tasks/marketing_application_booking',
+  },
+];
+
+// Membership funnel: seed community before launch
+const MEMBERSHIP_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_membership_seed_community',
+    title: 'Seed your community before anyone joins',
+    phase: 'marketing',
+    funnelTypes: ['membership'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 60,
+    blocking: true,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Community platform is live and set up',
+      'At least 3 pieces of content are posted inside before launch',
+      'Welcome message and community guidelines are in place',
+      'Join flow is tested — you know what new members see when they arrive',
+    ],
+    whyItMatters: 'Nobody joins a ghost town. When your first members arrive and see an empty community with no posts, no energy, and no activity — they feel like they made a mistake. Seed your community with content before anyone joins, so the first experience is "this is alive and active" rather than "did anyone else join this?"',
+    instructions: [
+      'Make sure your community platform is fully set up (Skool, Circle, Facebook Group, Systeme.io community, or similar)',
+      'Post at least 3 pieces of content inside the community before launch day:',
+      '  — A welcome post: who this community is for, what members can expect, what to do first',
+      '  — A value post: your best teaching, a framework, a resource, or a behind-the-scenes look at how you work',
+      '  — A conversation starter: ask a question your ideal member would love to answer',
+      'Write your community welcome message — the automatic DM or pinned post that every new member sees when they join',
+      'Set your community guidelines or norms — even one sentence about what this space is and isn't',
+      'Join the community yourself using a test account and go through the onboarding flow as a new member',
+      'Note anything that felt confusing or unwelcoming — fix it before launch',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'platform_live', label: 'Community platform is live and configured', description: 'Skool, Circle, Facebook Group, or similar' },
+        { value: 'welcome_post_done', label: 'Welcome post published inside community', description: 'Who this is for, what to expect, what to do first' },
+        { value: 'value_post_done', label: 'Value post published inside community', description: 'Teaching, framework, resource, or behind-the-scenes' },
+        { value: 'conversation_starter_done', label: 'Conversation starter post published', description: 'A question your ideal member would love to answer' },
+        { value: 'welcome_message_set', label: 'Welcome message and guidelines in place', description: 'New members see this when they join' },
+        { value: 'flow_tested', label: 'Join flow tested as a new member', description: 'You know exactly what someone experiences when they join' },
+      ],
+    },
+    aiAssistModes: ['generate', 'examples'],
+    route: '/projects/:id/tasks/marketing_membership_seed_community',
+  },
+];
+
+// Challenge funnel: build challenge container and daily content
+const CHALLENGE_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_challenge_container',
+    title: 'Build your challenge container and daily content',
+    phase: 'marketing',
+    funnelTypes: ['challenge'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 60,
+    estimatedMinutesMax: 120,
+    blocking: true,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Challenge community space is live and ready for participants',
+      'Day 1 through Day 5 content is written and scheduled inside the community',
+      'Registration flow is tested end-to-end',
+      'Daily check-in prompts are ready',
+    ],
+    whyItMatters: 'The challenge itself is the product. Not the sales page, not your bio — the daily experience inside the challenge is what turns a participant into a buyer. When Day 1 content is already live before anyone registers, when the space feels organized and ready, when participants arrive to structure instead of chaos — they trust you before the offer is ever mentioned.',
+    instructions: [
+      'Set up your challenge community space (Facebook Group, Skool, Telegram, or similar)',
+      'Write your Day 1 through Day 5 daily content — these are the prompts, lessons, or actions participants complete each day:',
+      '  — Day 1: Welcome + the one thing they need to do today (keep it achievable)',
+      '  — Day 2: A teaching or framework that expands on Day 1',
+      '  — Day 3: A deeper challenge or reflection that builds momentum',
+      '  — Day 4: Social proof, wins from the community, and a push through the midpoint',
+      '  — Day 5: The transformation summary + natural bridge to your offer',
+      'Schedule or queue each day's content inside the community so it posts automatically',
+      'Write your daily check-in prompt — the question you ask each day to keep participants engaged and accountable',
+      'Test your registration flow: register yourself using a test account and confirm you land in the right place',
+      'Make sure the community settings are correct: who can see posts, whether it's public or private, how new members are approved',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'community_live', label: 'Challenge community space is live', description: 'Facebook Group, Skool, Telegram, or similar — set up and ready' },
+        { value: 'day1_ready', label: 'Day 1 content written and scheduled', description: 'Welcome + first achievable action' },
+        { value: 'day2_ready', label: 'Day 2 content written and scheduled', description: 'Teaching or framework that expands on Day 1' },
+        { value: 'day3_ready', label: 'Day 3 content written and scheduled', description: 'Deeper challenge or reflection' },
+        { value: 'day4_ready', label: 'Day 4 content written and scheduled', description: 'Social proof, wins, midpoint motivation' },
+        { value: 'day5_ready', label: 'Day 5 content written and scheduled', description: 'Transformation summary + bridge to offer' },
+        { value: 'registration_tested', label: 'Registration flow tested end-to-end', description: 'You know exactly what participants see when they join' },
+      ],
+    },
+    aiAssistModes: ['generate', 'examples'],
+    route: '/projects/:id/tasks/marketing_challenge_container',
+  },
+];
+
+// Launch/open cart funnel: write deadline push content in advance
+const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_launch_deadline_push',
+    title: 'Write your deadline push before launch week starts',
+    phase: 'marketing',
+    funnelTypes: ['launch'],
+    order: 3.5,
+    priority: 1,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 60,
+    blocking: false,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Cart open email written and scheduled',
+      'Last 24-hour email written and ready',
+      'Final story post scripted',
+      'Last day feed post written',
+    ],
+    whyItMatters: 'The last 24 hours of an open cart typically generates 40 to 60 percent of total launch sales. Most creators improvise this moment — exhausted, second-guessing their copy, and posting something weak right when it matters most. Write your deadline push now, before launch week starts, when your thinking is clear and your energy is full. Scheduled in advance, delivered without hesitation.',
+    instructions: [
+      'Write these 4 pieces now — not during launch week:',
+      '',
+      '1. Cart open email (send the moment your offer goes live):',
+      '  Subject: something immediate and exciting, not clever',
+      '  Body: what they get, what it costs, the deadline, one link',
+      '  Keep it short — they already know what this is from your sequence',
+      '',
+      '2. Last 24-hour email (send exactly 24 hours before cart closes):',
+      '  Subject: mentions the deadline explicitly',
+      '  Body: what they lose if they wait, a reminder of the transformation, one link',
+      '  Optionally: address the most common objection one more time',
+      '',
+      '3. Final story post (post 2 hours before close):',
+      '  Script it: "Cart closes in 2 hours. Here's the link." — simple, direct, no overthinking',
+      '',
+      '4. Last day feed post (post on the final day):',
+      '  Visually strong. Mentions the deadline. Ends with one CTA.',
+      '  This is not the moment for soft content — be direct',
+      '',
+      'Schedule the cart open email in your email platform now',
+      'Save the last 24-hour email as a draft, ready to send',
+      'Save the story script and feed post as drafts in your Social Planner',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'cart_open_email_done', label: 'Cart open email written and scheduled', description: 'Sends the moment your offer goes live' },
+        { value: 'last24_email_done', label: 'Last 24-hour email written and saved as draft', description: 'Ready to send — not written during launch week' },
+        { value: 'final_story_scripted', label: 'Final story post scripted', description: 'Simple, direct — "Cart closes in 2 hours. Here's the link."' },
+        { value: 'last_feed_post_done', label: 'Last day feed post written', description: 'Visually strong, mentions deadline, one CTA' },
+      ],
+    },
+    aiAssistModes: ['generate', 'examples'],
+    route: '/projects/:id/tasks/marketing_launch_deadline_push',
+  },
+];
+
+// Content to offer funnel: traffic and conversion focus
+const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
+  {
+    taskId: 'marketing_cto_traffic_conversion',
+    title: 'Audit your conversion path and drive traffic',
+    phase: 'marketing',
+    funnelTypes: ['content_to_offer'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: false,
+    dependencies: ['marketing_email_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Full conversion path tested as a new visitor',
+      'Link in bio points to the correct destination',
+      'At least 5 pieces of content this week have the offer as the CTA',
+    ],
+    whyItMatters: 'For a content-to-offer funnel, every post is a potential entry point to your sales page. But most creators break the path somewhere — a bio link that goes to the wrong place, a sales page that doesn't load on mobile, a checkout that glitches. Walk the path yourself before you send anyone down it. Then drive traffic deliberately, not randomly.',
+    instructions: [
+      'Walk your entire conversion path as a new visitor:',
+      '  — Open your profile on mobile as if you are seeing it for the first time',
+      '  — Click your link in bio — does it go to the right place?',
+      '  — Read your sales page as a stranger — is it clear what you're selling and who it's for?',
+      '  — Click the buy button — does the checkout load correctly?',
+      '  — Test on mobile specifically — most of your buyers will be on their phone',
+      'Fix any friction points before you drive traffic',
+      'This week: create 5 pieces of content where the primary CTA is your offer (not your freebie, not a follow)',
+      'Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with "if you want to go deeper, here's how," one is personal and shows your process, one is direct and promotional',
+      'Every caption ends with one clear call to action — not "click the link in bio and also follow me and also save this"',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'path_tested_mobile', label: 'Conversion path tested on mobile', description: 'Bio link → sales page → checkout — all work correctly on phone' },
+        { value: 'link_in_bio_correct', label: 'Link in bio points to the offer sales page', description: 'Not a generic linktree with 10 options' },
+        { value: 'sales_page_loads', label: 'Sales page loads correctly and reads clearly', description: 'A stranger would understand what you're selling and who it's for' },
+        { value: 'offer_content_created', label: '5 offer-focused posts created this week', description: 'Each with a single CTA pointing to the offer' },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/marketing_cto_traffic_conversion',
+  },
+];
+
 
 export interface TaskModification {
   taskId: string;
@@ -2631,7 +3144,7 @@ export function getTaskModificationsForFunnel(funnelType: FunnelType): TaskModif
 }
 
 // Phases where injection is allowed (includes planning and messaging for some funnels)
-export const INJECTION_ALLOWED_PHASES = ['planning', 'messaging', 'build', 'content', 'launch'] as const;
+export const INJECTION_ALLOWED_PHASES = ['planning', 'messaging', 'build', 'content', 'marketing', 'launch'] as const;
 
 // Phases that are always universal (no injection)
 export const UNIVERSAL_PHASES = ['planning', 'messaging', 'post-launch'] as const;
