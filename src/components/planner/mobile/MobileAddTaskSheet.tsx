@@ -356,7 +356,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
               color: INK,
             }}
           >
-            New task
+            {isEdit ? "Edit task" : "New task"}
           </div>
           <button
             onClick={handleSave}
