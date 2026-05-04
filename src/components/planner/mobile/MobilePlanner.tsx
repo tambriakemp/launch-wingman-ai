@@ -642,7 +642,7 @@ export const MobilePlanner = ({
           >
             {([
               { id: "open" as FilterId, label: "Open", count: openCount },
-              { id: "mine" as FilterId, label: "Mine", count: openCount },
+              { id: "overdue" as FilterId, label: "Overdue", count: overdueCount },
               { id: "today" as FilterId, label: "Today", count: todayCount },
               { id: "done" as FilterId, label: "Done" },
             ]).map((it) => {
