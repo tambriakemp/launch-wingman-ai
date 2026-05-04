@@ -14,7 +14,7 @@ const getHaptics = async () => {
   }
   try {
     // @ts-ignore - optional dependency
-    const mod = await import("@capacitor/haptics").catch(() => null);
+    const mod = await import(/* @vite-ignore */ "@capacitor/haptics" as string).catch(() => null);
     cachedHaptics = mod ?? null;
   } catch {
     cachedHaptics = null;
