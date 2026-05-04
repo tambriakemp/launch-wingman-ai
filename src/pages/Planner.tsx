@@ -382,15 +382,7 @@ const Planner = () => {
             setDefaultDueAt(null);
           }}
           onCreate={handleCreateTask}
-          onUpdate={async (id, d) => {
-            // Reuse handleUpdateTask by temporarily targeting this task
-            const target = tasks.find(t => t.id === id);
-            if (!target) return;
-            const prev = editingTask;
-            setEditingTask(target);
-            await handleUpdateTask(d);
-            if (prev?.id !== target.id) setEditingTask(prev);
-          }}
+          onUpdate={async (_id, d) => { await handleUpdateTask(d); }}
           onDelete={handleDeleteTask}
           spaces={spaces}
           categories={categories}
