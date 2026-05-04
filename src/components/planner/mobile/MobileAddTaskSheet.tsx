@@ -44,7 +44,7 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, spaces, categories, selectedSpaceId, onCreateCategory }: Props) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [spaceId, setSpaceId] = useState<string | null>(selectedSpaceId);
