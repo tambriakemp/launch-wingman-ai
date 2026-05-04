@@ -366,6 +366,7 @@ const Planner = () => {
         <MobilePlanner
           tasks={tasks}
           spaces={spaces}
+          categories={categories}
           selectedSpaceId={selectedSpaceId}
           onSelectSpace={setSelectedSpaceId}
           onEditTask={handleEditTask}
