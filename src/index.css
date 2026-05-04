@@ -326,3 +326,103 @@
     transform: scale(1);
   }
 }
+
+/* ============================================================
+ * Editorial Cream + Terracotta theme — scoped to app shell
+ * (Restored from removed landing-theme.css; tokens used across
+ *  ProjectLayout, AdminLayout, Auth, Goals, planner pages, etc.)
+ * ============================================================ */
+.app-cream {
+  /* raw palette */
+  --bg: 35 50% 96%;
+  --ink: 30 9% 10%;
+  --muted-ink: 30 9% 33%;
+  --hairline: 35 28% 87%;
+  --card-ink: 0 0% 100%;
+  --terracotta: 13 56% 51%;
+  --terracotta-soft: 13 56% 95%;
+  --warm-gold: 38 60% 56%;
+  --clay-200: 30 38% 84%;
+  --paper-50: 38 60% 98%;
+  --paper-100: 35 45% 94%;
+  --paper-200: 35 38% 90%;
+
+  /* extended */
+  --ink-100: 30 9% 92%;
+  --ink-300: 30 9% 70%;
+  --ink-700: 30 9% 28%;
+  --ink-800: 30 9% 20%;
+  --ink-900: 30 9% 10%;
+  --terracotta-50: 13 56% 95%;
+  --terracotta-500: 13 56% 51%;
+  --terracotta-600: 13 56% 44%;
+  --terracotta-700: 13 56% 38%;
+  --moss-100: 110 22% 90%;
+  --moss-500: 130 28% 42%;
+  --moss-700: 130 30% 28%;
+  --fg-muted: 30 9% 50%;
+  --fg-secondary: 30 9% 33%;
+  --fg-subtle: 30 9% 70%;
+  --border-hairline: 35 28% 87%;
+  --border-default: 35 22% 80%;
+  --font-display: "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* shadcn semantic overrides within the cream scope */
+  --background: 35 50% 96%;
+  --foreground: 30 9% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 30 9% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 9% 10%;
+  --primary: 30 9% 10%;
+  --primary-foreground: 35 50% 96%;
+  --secondary: 35 28% 92%;
+  --secondary-foreground: 30 9% 10%;
+  --muted: 35 30% 94%;
+  --muted-foreground: 30 9% 33%;
+  --accent: 13 56% 51%;
+  --accent-foreground: 0 0% 100%;
+  --border: 35 28% 87%;
+  --input: 35 28% 87%;
+  --ring: 13 56% 51%;
+
+  --sidebar-background: 38 60% 98%;
+  --sidebar-foreground: 30 9% 33%;
+  --sidebar-primary: 13 56% 51%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 35 35% 92%;
+  --sidebar-accent-foreground: 30 9% 10%;
+  --sidebar-border: 35 28% 87%;
+  --sidebar-ring: 13 56% 51%;
+
+  background-color: hsl(var(--bg));
+  color: hsl(var(--ink));
+}
+
+.app-cream .font-serif {
+  font-family: var(--font-display);
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+.app-cream .eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: hsl(var(--terracotta));
+}
+
+.app-cream .hairline { border-color: hsl(var(--hairline)); }
+
+.app-cream .card-soft {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--hairline));
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 1px rgba(31, 27, 23, 0.04), 0 8px 24px -8px rgba(31, 27, 23, 0.06);
+}
+</replace>
+
