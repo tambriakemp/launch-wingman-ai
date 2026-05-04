@@ -43,12 +43,12 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'freebie_name', label: 'What is your freebie called?', type: 'text', required: true, placeholder: 'e.g., The 5-Step Morning Routine Checklist' },
-        { name: 'freebie_format', label: 'What format is it?', type: 'select', required: true, placeholder: 'Choose one...' },
-        { name: 'freebie_problem', label: 'What problem does it solve?', type: 'textarea', required: true, placeholder: 'Describe the specific problem your freebie helps with...' },
+        { name: `freebie_name', label: 'What is your freebie called?', type: 'text', required: true, placeholder: 'e.g., The 5-Step Morning Routine Checklist` },
+        { name: `freebie_format', label: 'What format is it?', type: 'select', required: true, placeholder: 'Choose one...` },
+        { name: `freebie_problem', label: 'What problem does it solve?', type: 'textarea', required: true, placeholder: 'Describe the specific problem your freebie helps with...` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/build_create_freebie',
   },
   {
@@ -78,12 +78,12 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'signup_form_ready', label: 'Signup form/page ready', description: 'People can enter their email to get the freebie' },
-        { value: 'delivery_connected', label: 'Delivery connected', description: 'The freebie is sent automatically after signup' },
-        { value: 'tested_flow', label: 'Tested the full flow', description: 'I\'ve signed up myself and received the freebie' },
+        { value: `signup_form_ready', label: 'Signup form/page ready', description: 'People can enter their email to get the freebie` },
+        { value: `delivery_connected', label: 'Delivery connected', description: 'The freebie is sent automatically after signup` },
+        { value: `tested_flow', label: 'Tested the full flow', description: 'I\'ve signed up myself and received the freebie` },
       ],
     },
-    aiAssistModes: ['simplify', 'help_me_choose'],
+    aiAssistModes: [`simplify', 'help_me_choose`],
     route: '/projects/:id/tasks/build_freebie_delivery',
   },
 
@@ -119,7 +119,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: 'What is the subject line of your welcome email?', 
           type: 'text', 
           required: true, 
-          placeholder: "e.g., \"Here\'s your [freebie name] 🎉\"",
+          placeholder: "e.g., \"Here\`s your [freebie name] 🎉\"",`
           helperText: 'Keep it clear and direct — it should match exactly what they signed up for.'
         },
         { 
@@ -132,7 +132,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    aiAssistModes: [`examples', 'help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/build_welcome_email',
   },
   {
@@ -197,7 +197,7 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    aiAssistModes: [`examples', 'help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/build_nurture_sequence',
   },
 
@@ -229,12 +229,12 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'invitation_headline', label: 'Headline for your freebie invitation', type: 'text', required: true, placeholder: 'e.g., Get my free [resource name]' },
-        { name: 'invitation_body', label: 'Body text (2-3 sentences)', type: 'textarea', required: true, placeholder: 'Describe what they\'ll get and why it matters...' },
-        { name: 'invitation_cta', label: 'Call to action', type: 'text', required: true, placeholder: 'e.g., Download now, Get instant access' },
+        { name: `invitation_headline', label: 'Headline for your freebie invitation', type: 'text', required: true, placeholder: 'e.g., Get my free [resource name]` },
+        { name: `invitation_body', label: 'Body text (2-3 sentences)', type: 'textarea', required: true, placeholder: 'Describe what they\'ll get and why it matters...` },
+        { name: `invitation_cta', label: 'Call to action', type: 'text', required: true, placeholder: 'e.g., Download now, Get instant access` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/content_freebie_invitation',
   },
 
@@ -266,11 +266,11 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'email_drafted', label: 'Offer email drafted', description: 'I\'ve written the email invitation' },
-        { value: 'email_sent', label: 'Email sent to subscribers', description: 'My subscribers have received the invitation' },
+        { value: `email_drafted', label: 'Offer email drafted', description: 'I\'ve written the email invitation` },
+        { value: `email_sent', label: 'Email sent to subscribers', description: 'My subscribers have received the invitation` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/launch_invite_subscribers',
   },
 
@@ -302,9 +302,9 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'form_works', label: 'Opt-in form submits correctly', description: 'No errors, redirects to thank you page' },
-        { value: 'email_arrives', label: 'Welcome email arrives', description: 'Delivered to inbox, not spam' },
-        { value: 'freebie_accessible', label: 'Freebie is accessible', description: 'Link works, file downloads, or page loads correctly' },
+        { value: `form_works', label: 'Opt-in form submits correctly', description: 'No errors, redirects to thank you page` },
+        { value: `email_arrives', label: 'Welcome email arrives', description: 'Delivered to inbox, not spam` },
+        { value: `freebie_accessible', label: 'Freebie is accessible', description: 'Link works, file downloads, or page loads correctly` },
       ],
     },
     aiAssistModes: ['simplify'],
@@ -388,13 +388,13 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'radio',
       options: [
-        { value: 'direct_offer', label: 'Send them directly to my offer', description: 'The nurture sequence ends with a clear link to buy.' },
-        { value: 'conversation', label: 'Invite them to a conversation', description: 'Ask them to reply, DM, or book a call before pitching.' },
-        { value: 'more_value', label: 'Send more value content first', description: 'Keep nurturing before introducing the offer.' },
-        { value: 'not_sure', label: 'Still deciding — I\'ll figure this out', description: 'You can set this up later, but don\'t leave subscribers hanging too long.' },
+        { value: `direct_offer', label: 'Send them directly to my offer', description: 'The nurture sequence ends with a clear link to buy.` },
+        { value: `conversation', label: 'Invite them to a conversation', description: 'Ask them to reply, DM, or book a call before pitching.` },
+        { value: `more_value', label: 'Send more value content first', description: 'Keep nurturing before introducing the offer.` },
+        { value: `not_sure', label: 'Still deciding — I\'ll figure this out', description: 'You can set this up later, but don\'t leave subscribers hanging too long.` },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_freebie_nurture_next',
   },
 ];
@@ -437,12 +437,12 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'training_topic', label: 'What topic will you teach?', type: 'text', required: true, placeholder: 'e.g., How to create a content plan in 30 minutes' },
-        { name: 'training_promise', label: 'What\'s the one thing they\'ll learn or walk away with?', type: 'textarea', required: true, placeholder: 'Describe the single key takeaway...' },
-        { name: 'training_to_offer', label: 'How does this training connect to your offer?', type: 'textarea', required: true, placeholder: 'Explain the natural bridge from what you teach to what you sell...' },
+        { name: `training_topic', label: 'What topic will you teach?', type: 'text', required: true, placeholder: 'e.g., How to create a content plan in 30 minutes` },
+        { name: `training_promise', label: 'What\'s the one thing they\'ll learn or walk away with?', type: 'textarea', required: true, placeholder: 'Describe the single key takeaway...` },
+        { name: `training_to_offer', label: 'How does this training connect to your offer?', type: 'textarea', required: true, placeholder: 'Explain the natural bridge from what you teach to what you sell...` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/build_define_training_focus',
   },
   {
@@ -472,11 +472,11 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'training_platform', label: 'Where will you host your training?', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live, YouTube Live' },
-        { name: 'why_this_platform', label: 'Why this platform? (optional)', type: 'textarea', required: false, placeholder: 'What makes this feel like the right choice?' },
+        { name: `training_platform', label: 'Where will you host your training?', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live, YouTube Live` },
+        { name: `why_this_platform', label: 'Why this platform? (optional)', type: 'textarea', required: false, placeholder: 'What makes this feel like the right choice?` },
       ],
     },
-    aiAssistModes: ['simplify', 'help_me_choose'],
+    aiAssistModes: [`simplify', 'help_me_choose`],
     route: '/projects/:id/tasks/build_choose_training_host',
   },
 
@@ -502,18 +502,18 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Write a short paragraph explaining what the training is',
       "Be clear about who it\'s for",
-      'Include a simple call to action (e.g., "Save your spot")',
+      `Include a simple call to action (e.g., "Save your spot")`,
       'No urgency, hype, or countdown language needed',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'invitation_paragraph', label: 'Describe your training in one short paragraph', type: 'textarea', required: true, placeholder: 'What is it? Who is it for? What will they learn?' },
-        { name: 'invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Save your spot, Register now, Join me live' },
+        { name: `invitation_paragraph', label: 'Describe your training in one short paragraph', type: 'textarea', required: true, placeholder: 'What is it? Who is it for? What will they learn?` },
+        { name: `invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Save your spot, Register now, Join me live` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/content_training_invitation',
   },
 
@@ -545,9 +545,9 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'training_date', label: 'What date will you host your training?', type: 'text', required: true, placeholder: 'e.g., Saturday, February 15th' },
-        { name: 'training_time', label: 'What time?', type: 'text', required: true, placeholder: 'e.g., 11am EST' },
-        { name: 'training_platform_confirmed', label: 'Where will it happen? (confirm platform)', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live' },
+        { name: `training_date', label: 'What date will you host your training?', type: 'text', required: true, placeholder: 'e.g., Saturday, February 15th` },
+        { name: `training_time', label: 'What time?', type: 'text', required: true, placeholder: 'e.g., 11am EST` },
+        { name: `training_platform_confirmed', label: 'Where will it happen? (confirm platform)', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live` },
       ],
     },
     aiAssistModes: ['simplify'],
@@ -581,11 +581,11 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'training_delivered', label: 'Training delivered', description: 'I showed up and taught my training' },
-        { value: 'offer_shared', label: 'Offer was shared', description: 'I invited attendees to learn more about my offer' },
+        { value: `training_delivered', label: 'Training delivered', description: 'I showed up and taught my training` },
+        { value: `offer_shared', label: 'Offer was shared', description: 'I invited attendees to learn more about my offer` },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/launch_host_training',
   },
 
@@ -617,10 +617,10 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'audio_tested', label: 'Audio tested and clear', description: 'You can hear yourself, no echo or background noise' },
-        { value: 'video_tested', label: 'Video tested', description: 'Camera works, lighting is acceptable' },
-        { value: 'screen_share_tested', label: 'Screen share or slides tested', description: 'You know how to share what you need to show' },
-        { value: 'link_confirmed', label: 'Join link confirmed', description: 'The link you\'re sharing actually works' },
+        { value: `audio_tested', label: 'Audio tested and clear', description: 'You can hear yourself, no echo or background noise` },
+        { value: `video_tested', label: 'Video tested', description: 'Camera works, lighting is acceptable` },
+        { value: `screen_share_tested', label: 'Screen share or slides tested', description: 'You know how to share what you need to show` },
+        { value: `link_confirmed', label: 'Join link confirmed', description: 'The link you\'re sharing actually works` },
       ],
     },
     aiAssistModes: ['simplify'],
@@ -708,12 +708,12 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
           label: "What will you say to attendees who didn\'t buy?",
           type: 'textarea',
           required: true,
-          placeholder: "e.g., \"Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\'s right for you, just reply here.\"",
+          placeholder: "e.g., \"Thanks for joining — I hope it was helpful. If you have any questions about [offer] or whether it\`s right for you, just reply here.\"",`
           helperText: 'One question answered can convert a hesitant attendee into a buyer.',
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_training_follow_up_attendees',
   },
 ];
@@ -751,19 +751,19 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Describe your ideal applicant — be specific about their situation',
       'Identify who this is NOT for (this protects both of you)',
-      'Think of one simple readiness qualifier (e.g., "willing to take action")',
+      `Think of one simple readiness qualifier (e.g., "willing to take action")`,
       'Focus on clarity over persuasion — no pressure language',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'ideal_applicant', label: 'Who is your ideal applicant?', type: 'textarea', required: true, placeholder: 'Describe the person who\'s ready for this conversation...' },
-        { name: 'not_a_fit', label: 'Who is this NOT for?', type: 'textarea', required: true, placeholder: 'Describe who shouldn\'t apply right now...' },
-        { name: 'readiness_qualifier', label: 'What\'s one sign they\'re ready?', type: 'text', required: true, placeholder: 'e.g., Willing to take action, Already has some experience...' },
+        { name: `ideal_applicant', label: 'Who is your ideal applicant?', type: 'textarea', required: true, placeholder: 'Describe the person who\'s ready for this conversation...` },
+        { name: `not_a_fit', label: 'Who is this NOT for?', type: 'textarea', required: true, placeholder: 'Describe who shouldn\'t apply right now...` },
+        { name: `readiness_qualifier', label: 'What\'s one sign they\'re ready?', type: 'text', required: true, placeholder: 'e.g., Willing to take action, Already has some experience...` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/build_clarify_applicants',
   },
   {
@@ -795,12 +795,12 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'application_format', label: 'How will people apply?', type: 'select', required: true, placeholder: 'Choose a format...' },
-        { name: 'application_questions', label: 'What questions will you ask? (3-5 questions)', type: 'textarea', required: true, placeholder: 'List your application questions...' },
-        { name: 'application_destination', label: 'Where will applications be submitted?', type: 'text', required: true, placeholder: 'e.g., Google Form, DM on Instagram, email to...' },
+        { name: `application_format', label: 'How will people apply?', type: 'select', required: true, placeholder: 'Choose a format...` },
+        { name: `application_questions', label: 'What questions will you ask? (3-5 questions)', type: 'textarea', required: true, placeholder: 'List your application questions...` },
+        { name: `application_destination', label: 'Where will applications be submitted?', type: 'text', required: true, placeholder: 'e.g., Google Form, DM on Instagram, email to...` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples', 'help_me_choose'],
+    aiAssistModes: [`simplify', 'examples', 'help_me_choose`],
     route: '/projects/:id/tasks/build_create_application',
   },
 
@@ -827,18 +827,18 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     instructions: [
       'Write one short paragraph explaining who this is for',
       'Describe what happens on the call and after applying',
-      'Include a simple CTA (e.g., "Apply to work together")',
+      `Include a simple CTA (e.g., "Apply to work together")`,
       'No urgency, scarcity, or pressure language',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'invitation_paragraph', label: 'Describe who this is for and what the call helps with', type: 'textarea', required: true, placeholder: 'One short paragraph explaining the opportunity...' },
-        { name: 'invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Apply to work together, Start the conversation' },
+        { name: `invitation_paragraph', label: 'Describe who this is for and what the call helps with', type: 'textarea', required: true, placeholder: 'One short paragraph explaining the opportunity...` },
+        { name: `invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Apply to work together, Start the conversation` },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: [`simplify', 'examples`],
     route: '/projects/:id/tasks/content_application_invitation',
   },
 
@@ -870,11 +870,11 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'application_shared', label: 'Application link/instructions shared', description: 'I\'ve made it clear how to apply' },
-        { value: 'invitation_feels_right', label: 'Invitation feels inviting', description: 'The tone is warm and welcoming' },
+        { value: `application_shared', label: 'Application link/instructions shared', description: 'I\'ve made it clear how to apply` },
+        { value: `invitation_feels_right', label: 'Invitation feels inviting', description: 'The tone is warm and welcoming` },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/launch_invite_applications',
   },
   {
@@ -905,11 +905,11 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'calls_held', label: 'Calls held or launch window ended', description: 'I showed up for the conversations' },
-        { value: 'present_and_helpful', label: 'Was present and helpful', description: 'I focused on connection, not closing' },
+        { value: `calls_held', label: 'Calls held or launch window ended', description: 'I showed up for the conversations` },
+        { value: `present_and_helpful', label: 'Was present and helpful', description: 'I focused on connection, not closing` },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/launch_hold_calls',
   },
 ];
@@ -962,7 +962,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/planning_ongoing_promise',
   },
   {
@@ -982,7 +982,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
       'You understand the nature of updates in your membership',
       'It feels sustainable to deliver',
     ],
-    whyItMatters: 'This step reduces pressure to "constantly create" by helping you define what kind of value evolves or refreshes inside your membership.',
+    whyItMatters: `This step reduces pressure to "constantly create" by helping you define what kind of value evolves or refreshes inside your membership.`,
     instructions: [
       'Think about what changes or updates members can expect',
       "This doesn\'t need to be new every time — just relevant",
@@ -1002,7 +1002,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/planning_monthly_evolution',
   },
 
@@ -1044,7 +1044,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_why_membership',
   },
   {
@@ -1061,7 +1061,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You can address the "do I need this forever?" question',
+      `You can address the "do I need this forever?" question`,
       'The framing feels honest and pressure-free',
     ],
     whyItMatters: 'This step helps you reduce buyer resistance around commitment by explaining the value of staying without pressure.',
@@ -1079,12 +1079,12 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
           label: 'How do you explain the value of staying without pressure?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'Address the "do I need this forever?" question honestly...',
+          placeholder: `Address the "do I need this forever?" question honestly...`,
           helperText: 'Clarity builds trust more than urgency.'
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_ongoing_access_framing',
   },
 
@@ -1126,7 +1126,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/build_membership_container',
   },
 
@@ -1168,7 +1168,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/content_retention_content',
   },
 
@@ -1210,7 +1210,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/launch_set_joining_expectations',
   },
 
@@ -1252,7 +1252,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_membership_onboard_personally',
   },
   {
@@ -1292,7 +1292,7 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify', 'help_me_choose'],
+    aiAssistModes: [`examples', 'simplify', 'help_me_choose`],
     route: '/projects/:id/tasks/postlaunch_membership_plan_first_month',
   },
 ];
@@ -1345,7 +1345,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/planning_challenge_focus',
   },
   {
@@ -1375,13 +1375,13 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'radio',
       options: [
-        { value: '3_days', label: '3 days', description: 'Quick momentum — great for simple wins' },
-        { value: '5_days', label: '5 days', description: 'Balanced length — most common choice' },
-        { value: '7_days', label: '7 days', description: 'More depth — good for building habits' },
-        { value: 'other', label: 'Other / Not sure yet', description: 'You can decide later' },
+        { value: `3_days', label: '3 days', description: 'Quick momentum — great for simple wins` },
+        { value: `5_days', label: '5 days', description: 'Balanced length — most common choice` },
+        { value: `7_days', label: '7 days', description: 'More depth — good for building habits` },
+        { value: `other', label: 'Other / Not sure yet', description: 'You can decide later` },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples'],
+    aiAssistModes: [`help_me_choose', 'examples`],
     route: '/projects/:id/tasks/planning_challenge_duration',
   },
 
@@ -1423,12 +1423,12 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_challenge_promise',
   },
   {
     taskId: 'messaging_reduce_pressure',
-    title: 'How you reduce pressure to "keep up"',
+    title: `How you reduce pressure to "keep up"`,
     phase: 'messaging',
     funnelTypes: ['challenge'],
     order: 2.6,
@@ -1463,7 +1463,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_reduce_pressure',
   },
 
@@ -1505,7 +1505,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/build_participation_container',
   },
 
@@ -1547,7 +1547,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/content_momentum_content',
   },
 
@@ -1589,7 +1589,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/launch_challenge_expectations',
   },
 
@@ -1631,7 +1631,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_challenge_celebrate',
   },
   {
@@ -1671,7 +1671,7 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_challenge_pitch_completers',
   },
 ];
@@ -1724,7 +1724,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/planning_launch_window',
   },
   {
@@ -1741,12 +1741,12 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You know when the launch is "done"',
+      `You know when the launch is "done"`,
       'The endpoint reduces pressure and prevents burnout',
     ],
     whyItMatters: 'Defining completion reduces burnout by setting a clear endpoint. This could be a date, a feeling, or a decision — not a metric.',
     instructions: [
-      'Think about what signals "done" for you',
+      `Think about what signals "done" for you`,
       'Avoid tying completion to sales numbers',
       'Focus on a sustainable endpoint',
     ],
@@ -1759,12 +1759,12 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           label: 'How will you know when this launch is complete?', 
           type: 'textarea', 
           required: true, 
-          placeholder: 'Describe what "done" looks like for this launch...',
+          placeholder: `Describe what "done" looks like for this launch...`,
           helperText: 'This could be a date, a feeling, or a decision — not a metric.'
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/planning_launch_completion',
   },
 
@@ -1806,7 +1806,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_why_now',
   },
   {
@@ -1846,7 +1846,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/messaging_missed_timing',
   },
 
@@ -1888,7 +1888,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/build_launch_access',
   },
 
@@ -1945,7 +1945,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    aiAssistModes: [`examples', 'help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/build_launch_email_sequence',
   },
 
@@ -1969,7 +1969,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     ],
     whyItMatters: "A launch to a waitlist almost always outperforms a cold launch. People who raised their hand before your cart opens are already warm — they\'re expecting you to share.",
     instructions: [
-      "Create a simple way for people to say \"I\'m interested\" before you launch",
+      "Create a simple way for people to say \"I\`m interested\" before you launch",`
       'This can be a waitlist form, a DM keyword, or a reply to an email',
       'Share it at least once before launch day',
     ],
@@ -1983,11 +1983,11 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
           type: 'select', 
           required: true,
           options: [
-            { value: '', label: 'Choose an approach...' },
-            { value: 'waitlist_form', label: 'A waitlist signup form' },
-            { value: 'dm_keyword', label: 'DM me a keyword' },
-            { value: 'email_reply', label: 'Reply to my email' },
-            { value: 'comment', label: 'Comment on a post' },
+            { value: `', label: 'Choose an approach...` },
+            { value: `waitlist_form', label: 'A waitlist signup form` },
+            { value: `dm_keyword', label: 'DM me a keyword` },
+            { value: `email_reply', label: 'Reply to my email` },
+            { value: `comment', label: 'Comment on a post` },
           ]
         },
         { 
@@ -2001,7 +2001,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples'],
+    aiAssistModes: [`help_me_choose', 'examples`],
     route: '/projects/:id/tasks/prelaunch_build_waitlist',
   },
   {
@@ -2041,7 +2041,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'help_me_choose'],
+    aiAssistModes: [`examples', 'help_me_choose`],
     route: '/projects/:id/tasks/prelaunch_warmup_content',
   },
 
@@ -2083,7 +2083,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/content_decision_support',
   },
 
@@ -2125,7 +2125,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'examples', 'simplify`],
     route: '/projects/:id/tasks/launch_set_expectations',
   },
 
@@ -2191,7 +2191,7 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/postlaunch_launch_debrief',
   },
 ];
@@ -2251,7 +2251,7 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'simplify'],
+    aiAssistModes: [`help_me_choose', 'simplify`],
     route: '/projects/:id/tasks/build_link_in_bio',
   },
   {
@@ -2291,7 +2291,7 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/build_dm_response',
   },
 
@@ -2339,16 +2339,16 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
           sectionLabel: 'Optional: Your call to action style',
           helperText: 'Choose the approach that feels most natural.',
           options: [
-            { value: '', label: 'Select an approach...' },
-            { value: 'link_in_bio', label: 'Link in bio' },
-            { value: 'dm_me', label: 'DM me a keyword' },
-            { value: 'comment', label: 'Comment to get the link' },
-            { value: 'direct_link', label: 'Direct link in post or caption' },
+            { value: `', label: 'Select an approach...` },
+            { value: `link_in_bio', label: 'Link in bio` },
+            { value: `dm_me', label: 'DM me a keyword` },
+            { value: `comment', label: 'Comment to get the link` },
+            { value: `direct_link', label: 'Direct link in post or caption` },
           ]
         },
       ],
     },
-    aiAssistModes: ['examples', 'help_me_choose'],
+    aiAssistModes: [`examples', 'help_me_choose`],
     route: '/projects/:id/tasks/content_selling_post_structure',
   },
 
@@ -2380,13 +2380,13 @@ export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'radio',
       options: [
-        { value: 'value_post_cta', label: 'A value post with a clear CTA', description: 'Teach or share something useful, then invite people to learn more.' },
-        { value: 'personal_story', label: 'A personal story that leads to your offer', description: 'Share a relevant experience and connect it to how your offer helps.' },
-        { value: 'problem_solution', label: 'A problem-to-solution post', description: 'Name the problem your audience faces, then position your offer as the next step.' },
-        { value: 'direct_announcement', label: 'A direct offer announcement', description: 'Simply tell people what you have, who it\'s for, and how to get it.' },
+        { value: `value_post_cta', label: 'A value post with a clear CTA', description: 'Teach or share something useful, then invite people to learn more.` },
+        { value: `personal_story', label: 'A personal story that leads to your offer', description: 'Share a relevant experience and connect it to how your offer helps.` },
+        { value: `problem_solution', label: 'A problem-to-solution post', description: 'Name the problem your audience faces, then position your offer as the next step.` },
+        { value: `direct_announcement', label: 'A direct offer announcement', description: 'Simply tell people what you have, who it\'s for, and how to get it.` },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/launch_content_to_offer_share',
   },
 ];
@@ -2428,7 +2428,7 @@ const FREEBIE_MARKETING_TASKS: TaskTemplate[] = [
     instructions: [
       'Create 5 pieces of content this week — every single one has the freebie as the CTA (not the paid offer)',
       'Rotate your content types: one carousel, one reel, one caption post, one story series, one educational thread or post',
-      'Every caption ends with a variation of "Get [freebie name] free at the link in bio"',
+      `Every caption ends with a variation of "Get [freebie name] free at the link in bio"`,
       'Update your link in bio to point directly to your opt-in page — not your main website',
       'After each piece goes live, track how many new opt-ins you receive that day',
       'If a piece drives zero opt-ins, note what was different — hook, topic, or call-to-action',
@@ -2456,7 +2456,7 @@ const FREEBIE_MARKETING_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/marketing_freebie_traffic',
   },
   {
@@ -2494,11 +2494,11 @@ const FREEBIE_MARKETING_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'form_submitted', label: 'Opt-in form submitted with test email', description: 'Done from a different email address than your account' },
-        { value: 'email_arrived', label: 'Welcome email arrived in inbox (not spam)', description: 'Within 5 minutes of opt-in' },
-        { value: 'freebie_delivered', label: 'Freebie download link works correctly', description: 'File opens and is readable' },
-        { value: 'mobile_tested', label: 'Full flow tested on mobile', description: 'Opt-in page, email, and download all work on phone' },
-        { value: 'issues_fixed', label: 'Any issues found are fixed', description: 'Nothing broken before you drive traffic' },
+        { value: `form_submitted', label: 'Opt-in form submitted with test email', description: 'Done from a different email address than your account` },
+        { value: `email_arrived', label: 'Welcome email arrived in inbox (not spam)', description: 'Within 5 minutes of opt-in` },
+        { value: `freebie_delivered', label: 'Freebie download link works correctly', description: 'File opens and is readable` },
+        { value: `mobile_tested', label: 'Full flow tested on mobile', description: 'Opt-in page, email, and download all work on phone` },
+        { value: `issues_fixed', label: 'Any issues found are fixed', description: 'Nothing broken before you drive traffic` },
       ],
     },
     aiAssistModes: ['simplify'],
@@ -2539,7 +2539,7 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
       "  — Personal invitations to warm contacts who've engaged with this topic before",
       '  — If applicable: one collaboration or shoutout from an account your audience trusts',
       "Track your registration count every day — if you're behind pace, push harder on personal invitations",
-      'The day before: send a "last chance to register" email to your full list',
+      `The day before: send a "last chance to register" email to your full list`,
     ],
     inputType: 'form',
     inputSchema: {
@@ -2571,7 +2571,7 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
         },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'examples'],
+    aiAssistModes: [`help_me_choose', 'examples`],
     route: '/projects/:id/tasks/marketing_training_fill_room',
   },
   {
@@ -2598,7 +2598,7 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
       'Write these 4 follow-up pieces now — not after the training:',
       '',
       '1. Replay email (send within 24 hours of training):',
-      "  Subject line option: \"Here's the replay — [training name]\"",
+      "  Subject line option: \"Here`s the replay — [training name]\"",`
       '  Include: replay link, what was covered, a natural mention of your offer, deadline reminder',
       '',
       '2. Non-attendee email (send within 48 hours):',
@@ -2617,14 +2617,14 @@ const LIVE_TRAINING_MARKETING_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'replay_email_written', label: 'Replay email written and ready to send', description: 'Send within 24 hours of training — includes replay link and offer CTA' },
-        { value: 'non_attendee_email_written', label: 'Non-attendee email written', description: 'For people who registered but did not show up' },
-        { value: 'no_buy_followup_written', label: 'Attended-but-did-not-buy follow-up written', description: 'Handles the most common objection, keeps it personal' },
-        { value: 'deadline_reminder_written', label: 'Final deadline reminder written', description: 'Send 24 hours before the offer closes' },
-        { value: 'all_loaded', label: 'All 4 emails loaded into email platform and ready to send', description: 'Scheduled or queued — not waiting to be written after the event' },
+        { value: `replay_email_written', label: 'Replay email written and ready to send', description: 'Send within 24 hours of training — includes replay link and offer CTA` },
+        { value: `non_attendee_email_written', label: 'Non-attendee email written', description: 'For people who registered but did not show up` },
+        { value: `no_buy_followup_written', label: 'Attended-but-did-not-buy follow-up written', description: 'Handles the most common objection, keeps it personal` },
+        { value: `deadline_reminder_written', label: 'Final deadline reminder written', description: 'Send 24 hours before the offer closes` },
+        { value: `all_loaded', label: 'All 4 emails loaded into email platform and ready to send', description: 'Scheduled or queued — not waiting to be written after the event` },
       ],
     },
-    aiAssistModes: ['generate', 'examples'],
+    aiAssistModes: [`generate', 'examples`],
     route: '/projects/:id/tasks/marketing_training_followup_plan',
   },
 ];
@@ -2715,7 +2715,7 @@ const MEMBERSHIP_MARKETING_TASKS: TaskTemplate[] = [
       'Welcome message and community guidelines are in place',
       'Join flow is tested — you know what new members see when they arrive',
     ],
-    whyItMatters: 'Nobody joins a ghost town. When your first members arrive and see an empty community with no posts, no energy, and no activity — they feel like they made a mistake. Seed your community with content before anyone joins, so the first experience is "this is alive and active" rather than "did anyone else join this?"',
+    whyItMatters: `Nobody joins a ghost town. When your first members arrive and see an empty community with no posts, no energy, and no activity — they feel like they made a mistake. Seed your community with content before anyone joins, so the first experience is "this is alive and active" rather than "did anyone else join this?"`,
     instructions: [
       'Make sure your community platform is fully set up (Skool, Circle, Facebook Group, Systeme.io community, or similar)',
       'Post at least 3 pieces of content inside the community before launch day:',
@@ -2731,15 +2731,15 @@ const MEMBERSHIP_MARKETING_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'platform_live', label: 'Community platform is live and configured', description: 'Skool, Circle, Facebook Group, or similar' },
-        { value: 'welcome_post_done', label: 'Welcome post published inside community', description: 'Who this is for, what to expect, what to do first' },
-        { value: 'value_post_done', label: 'Value post published inside community', description: 'Teaching, framework, resource, or behind-the-scenes' },
-        { value: 'conversation_starter_done', label: 'Conversation starter post published', description: 'A question your ideal member would love to answer' },
-        { value: 'welcome_message_set', label: 'Welcome message and guidelines in place', description: 'New members see this when they join' },
-        { value: 'flow_tested', label: 'Join flow tested as a new member', description: 'You know exactly what someone experiences when they join' },
+        { value: `platform_live', label: 'Community platform is live and configured', description: 'Skool, Circle, Facebook Group, or similar` },
+        { value: `welcome_post_done', label: 'Welcome post published inside community', description: 'Who this is for, what to expect, what to do first` },
+        { value: `value_post_done', label: 'Value post published inside community', description: 'Teaching, framework, resource, or behind-the-scenes` },
+        { value: `conversation_starter_done', label: 'Conversation starter post published', description: 'A question your ideal member would love to answer` },
+        { value: `welcome_message_set', label: 'Welcome message and guidelines in place', description: 'New members see this when they join` },
+        { value: `flow_tested', label: 'Join flow tested as a new member', description: 'You know exactly what someone experiences when they join` },
       ],
     },
-    aiAssistModes: ['generate', 'examples'],
+    aiAssistModes: [`generate', 'examples`],
     route: '/projects/:id/tasks/marketing_membership_seed_community',
   },
 ];
@@ -2783,16 +2783,16 @@ const CHALLENGE_MARKETING_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'community_live', label: 'Challenge community space is live', description: 'Facebook Group, Skool, Telegram, or similar — set up and ready' },
-        { value: 'day1_ready', label: 'Day 1 content written and scheduled', description: 'Welcome + first achievable action' },
-        { value: 'day2_ready', label: 'Day 2 content written and scheduled', description: 'Teaching or framework that expands on Day 1' },
-        { value: 'day3_ready', label: 'Day 3 content written and scheduled', description: 'Deeper challenge or reflection' },
-        { value: 'day4_ready', label: 'Day 4 content written and scheduled', description: 'Social proof, wins, midpoint motivation' },
-        { value: 'day5_ready', label: 'Day 5 content written and scheduled', description: 'Transformation summary + bridge to offer' },
-        { value: 'registration_tested', label: 'Registration flow tested end-to-end', description: 'You know exactly what participants see when they join' },
+        { value: `community_live', label: 'Challenge community space is live', description: 'Facebook Group, Skool, Telegram, or similar — set up and ready` },
+        { value: `day1_ready', label: 'Day 1 content written and scheduled', description: 'Welcome + first achievable action` },
+        { value: `day2_ready', label: 'Day 2 content written and scheduled', description: 'Teaching or framework that expands on Day 1` },
+        { value: `day3_ready', label: 'Day 3 content written and scheduled', description: 'Deeper challenge or reflection` },
+        { value: `day4_ready', label: 'Day 4 content written and scheduled', description: 'Social proof, wins, midpoint motivation` },
+        { value: `day5_ready', label: 'Day 5 content written and scheduled', description: 'Transformation summary + bridge to offer` },
+        { value: `registration_tested', label: 'Registration flow tested end-to-end', description: 'You know exactly what participants see when they join` },
       ],
     },
-    aiAssistModes: ['generate', 'examples'],
+    aiAssistModes: [`generate', 'examples`],
     route: '/projects/:id/tasks/marketing_challenge_container',
   },
 ];
@@ -2833,7 +2833,7 @@ const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
       '  Optionally: address the most common objection one more time',
       '',
       '3. Final story post (post 2 hours before close):',
-      "  Script it: \"Cart closes in 2 hours. Here's the link.\" — simple, direct, no overthinking",
+      "  Script it: \"Cart closes in 2 hours. Here`s the link.\" — simple, direct, no overthinking",`
       '',
       '4. Last day feed post (post on the final day):',
       '  Visually strong. Mentions the deadline. Ends with one CTA.',
@@ -2847,13 +2847,13 @@ const LAUNCH_MARKETING_TASKS: TaskTemplate[] = [
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'cart_open_email_done', label: 'Cart open email written and scheduled', description: 'Sends the moment your offer goes live' },
-        { value: 'last24_email_done', label: 'Last 24-hour email written and saved as draft', description: 'Ready to send — not written during launch week' },
-        { value: 'final_story_scripted', label: 'Final story post scripted', description: 'Simple, direct — "Cart closes in 2 hours. Here's the link."' },
-        { value: 'last_feed_post_done', label: 'Last day feed post written', description: 'Visually strong, mentions deadline, one CTA' },
+        { value: `cart_open_email_done', label: 'Cart open email written and scheduled', description: 'Sends the moment your offer goes live` },
+        { value: `last24_email_done', label: 'Last 24-hour email written and saved as draft', description: 'Ready to send — not written during launch week` },
+        { value: `final_story_scripted', label: 'Final story post scripted', description: 'Simple, direct — "Cart closes in 2 hours. Here's the link."` },
+        { value: `last_feed_post_done', label: 'Last day feed post written', description: 'Visually strong, mentions deadline, one CTA` },
       ],
     },
-    aiAssistModes: ['generate', 'examples'],
+    aiAssistModes: [`generate', 'examples`],
     route: '/projects/:id/tasks/marketing_launch_deadline_push',
   },
 ];
@@ -2888,20 +2888,20 @@ const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
       '  — Test on mobile specifically — most of your buyers will be on their phone',
       'Fix any friction points before you drive traffic',
       'This week: create 5 pieces of content where the primary CTA is your offer (not your freebie, not a follow)',
-      "Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with \"if you want to go deeper, here's how,\" one is personal and shows your process, one is direct and promotional",
-      'Every caption ends with one clear call to action — not "click the link in bio and also follow me and also save this"',
+      "Vary the angles: one addresses a specific objection, one shares a transformation or result, one is purely educational and ends with \"if you want to go deeper, here`s how,\" one is personal and shows your process, one is direct and promotional",`
+      `Every caption ends with one clear call to action — not "click the link in bio and also follow me and also save this"`,
     ],
     inputType: 'checklist',
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'path_tested_mobile', label: 'Conversion path tested on mobile', description: 'Bio link → sales page → checkout — all work correctly on phone' },
-        { value: 'link_in_bio_correct', label: 'Link in bio points to the offer sales page', description: 'Not a generic linktree with 10 options' },
-        { value: 'sales_page_loads', label: 'Sales page loads correctly and reads clearly', description: 'A stranger would understand what you're selling and who it's for' },
-        { value: 'offer_content_created', label: '5 offer-focused posts created this week', description: 'Each with a single CTA pointing to the offer' },
+        { value: `path_tested_mobile', label: 'Conversion path tested on mobile', description: 'Bio link → sales page → checkout — all work correctly on phone` },
+        { value: `link_in_bio_correct', label: 'Link in bio points to the offer sales page', description: 'Not a generic linktree with 10 options` },
+        { value: `sales_page_loads', label: 'Sales page loads correctly and reads clearly', description: 'A stranger would understand what you're selling and who it's for` },
+        { value: `offer_content_created', label: '5 offer-focused posts created this week', description: 'Each with a single CTA pointing to the offer` },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: [`examples', 'simplify`],
     route: '/projects/:id/tasks/marketing_cto_traffic_conversion',
   },
 ];
@@ -3144,7 +3144,7 @@ export function getTaskModificationsForFunnel(funnelType: FunnelType): TaskModif
 }
 
 // Phases where injection is allowed (includes planning and messaging for some funnels)
-export const INJECTION_ALLOWED_PHASES = ['planning', 'messaging', 'build', 'content', 'marketing', 'launch'] as const;
+export const INJECTION_ALLOWED_PHASES = [`planning', 'messaging', 'build', 'content', 'marketing', 'launch`] as const;
 
 // Phases that are always universal (no injection)
-export const UNIVERSAL_PHASES = ['planning', 'messaging', 'post-launch'] as const;
+export const UNIVERSAL_PHASES = [`planning', 'messaging', 'post-launch`] as const;
