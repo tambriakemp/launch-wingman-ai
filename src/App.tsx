@@ -14,9 +14,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
 
-const Landing = lazy(() => import("./pages/Landing"));
-const HowItWorks = lazy(() => import("./pages/HowItWorks"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
