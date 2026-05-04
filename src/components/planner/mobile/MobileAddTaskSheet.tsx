@@ -594,6 +594,138 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
             />
           </div>
 
+          {/* Subtasks */}
+          <div style={{ padding: "24px 22px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <div
+              style={{
+                fontFamily: SF,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+                textTransform: "uppercase",
+                color: INK_60,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <ListChecks size={13} color={INK_60} strokeWidth={2.2} />
+              Subtasks
+              {subtasks.length > 0 && (
+                <span style={{ fontFamily: SF, fontSize: 11, fontWeight: 600, color: INK_40, letterSpacing: 0.2 }}>
+                  · {subtasks.filter((s) => s.completed).length}/{subtasks.length}
+                </span>
+              )}
+            </div>
+          </div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              margin: "0 16px",
+              boxShadow: "0 1px 2px rgba(31,27,23,0.04)",
+              overflow: "hidden",
+            }}
+          >
+            {subtasks.map((st, i) => (
+              <SubtaskRow
+                key={st.id}
+                subtask={st}
+                isLast={i === subtasks.length - 1}
+                onToggle={() => toggleSubtask(st)}
+                onDelete={() => deleteSubtask(st)}
+              />
+            ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 999,
+                  background: "rgba(198,90,62,0.10)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Plus size={13} color={TERRACOTTA} strokeWidth={2.6} />
+              </span>
+              <input
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSubtask();
+                  }
+                }}
+                placeholder="Add a subtask"
+                enterKeyHint="done"
+                autoCapitalize="sentences"
+                style={{
+                  flex: 1,
+                  border: 0,
+                  outline: "none",
+                  background: "transparent",
+                  fontFamily: SF,
+                  fontSize: 15,
+                  color: INK,
+                  letterSpacing: -0.2,
+                }}
+              />
+              {newSubtaskTitle.trim().length > 0 && (
+                <button
+                  type="button"
+                  onClick={addSubtask}
+                  style={{
+                    background: TERRACOTTA,
+                    color: PAPER,
+                    border: 0,
+                    borderRadius: 999,
+                    padding: "5px 12px",
+                    fontFamily: SF,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    letterSpacing: -0.1,
+                    cursor: "pointer",
+                  }}
+                >
+                  Add
+                </button>
+              )}
+            </div>
+          </div>
+
+          {isEdit && onDelete && (
+            <div style={{ padding: "20px 16px 4px" }}>
+              <button
+                type="button"
+                onClick={handleDeleteTask}
+                style={{
+                  width: "100%",
+                  background: "rgba(198,90,62,0.08)",
+                  color: TERRACOTTA,
+                  border: 0,
+                  borderRadius: 14,
+                  padding: "12px 14px",
+                  fontFamily: SF,
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  letterSpacing: -0.2,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <Trash2 size={15} color={TERRACOTTA} strokeWidth={2} />
+                Delete task
+              </button>
+            </div>
+          )}
+
           <div style={{ height: 100 }} />
         </div>
 
