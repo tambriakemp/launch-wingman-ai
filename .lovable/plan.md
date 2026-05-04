@@ -1,92 +1,78 @@
 ## Goal
 
-Rewrite the Assessments surfaces to match the uploaded `Assessments_Launchely_Design_System.jsx` (desktop) and `Mobile_Assessments.jsx` (native iOS) mockups exactly, while preserving all existing assessment data, scoring, autosave, reflections, analytics, and routes.
+Bring all modals/dialogs across the app in line with the new Assessments "editorial native" design system (warm paper, ink, terracotta accents, Fraunces display headings, soft rounded shells, mobile sheet behavior with safe-area chrome and haptics).
 
-## Scope
+We'll do this primarily by upgrading the **shared shadcn primitives** (`Dialog`, `AlertDialog`) so all 79+ consumer components inherit the new look automatically — no need to touch each modal file individually.
 
-Four screens × two layouts each (desktop + native-mobile):
+## What changes
 
-1. **Assessments list** (`/assessments`) — `src/pages/Assessments.tsx`
-2. **Intro** (start screen) — gating state inside each assessment runner
-3. **Question runner** — single-question step UI
-4. **Results** — score hero, breakdown bars, reflections
+### 1. New shared modal shell — `src/components/ui/dialog.tsx`
 
-Applies to all three assessments:
-- `src/pages/Assessment.tsx` (Launch — 15 questions, 5 sections)
-- `src/pages/CoachAssessment.tsx` (Coach — 4 parts)
-- `src/pages/WhyStatementAssessment.tsx` (Why Statement — 8 parts)
+Rebuild `DialogContent` / `DialogHeader` / `DialogFooter` / `DialogTitle` / `DialogDescription` / `DialogBody` to mirror Assessment surfaces:
 
-## Design language to apply
+- **Overlay**: warm ink wash `rgba(31,27,23,0.55)` + 8px blur (matches the assessments backdrop, not the current 3px blur).
+- **Content shell**:
+  - Background `--paper-100` (`#FBF7F1`).
+  - Border: hairline `rgba(31,27,23,0.10)` instead of the heavy ink-900 1px stroke.
+  - Corners: soft `20px` radius (assessments use `18–24px`), not the current sharp `4px`.
+  - Shadow: assessment-style `0 24px 60px -20px rgba(31,27,23,0.35)`.
+  - Max-width `560px`; on mobile (`<640px`) snaps to a **bottom sheet** with rounded top corners, full-width, safe-area-aware bottom padding, drag-affordance pill, slides up from bottom (`data-[state=open]:slide-in-from-bottom`).
+- **Close button**: small circular paper-200 button with terracotta hover, top-right with safe-area offset on mobile.
+- **Header**:
+  - Background paper (no separate paper-200 bar).
+  - Optional `eyebrow` rendered as small uppercase **terracotta** mono label with `№ 0X ·` stamp (already supported — kept).
+  - Title uses `font-display` (Fraunces) at `26px` desktop / `22px` mobile, weight 400, `-0.02em` tracking, with optional italic terracotta accent word (new prop `italicWord`, mirrors `LargeMobileTitle`).
+  - Description: Fraunces italic 15px ink-60 (kept).
+  - Bottom hairline divider only when a body follows.
+- **Body**: `px-7 py-6` desktop, `px-5 py-5` mobile, paper background.
+- **Footer**: paper background, hairline top, right-aligned actions; on mobile becomes a sticky bottom bar with safe-area bottom padding, full-width primary button.
+- **Haptics**: fire `useHaptics().light()` on open and `selection()` on close (mobile/native only).
 
-Pulled from the mockups:
+### 2. Same upgrade for `src/components/ui/alert-dialog.tsx`
 
-- **Palette**: paper `#FBF7F1`, paper-2 `#F7F1E8`, ink `#1F1B17`, terracotta `#C65A3E`, moss `#4F6B52`, plum `#6B3A5C`, hairline `rgba(31,27,23,0.10)`.
-- **Typography**: Fraunces display for headings/labels (italic accents on hero words); SF Pro Text body on mobile, existing system body on desktop.
-- **Cards**: white, 14–22px radius, hairline border on desktop, soft shadow on mobile, no left-border stripe.
-- **Status chips**: moss "Completed", terracotta dot "In progress", inline progress bar.
-- **Buttons**: pill (`border-radius: 999`) on desktop; rounded 14–16 on mobile; ink-dark primary, paper-tint secondary.
-- **Hero blocks**: warm clay gradient with radial glow, ink icon tile, meta pills.
+Mirror the changes above so destructive confirmations (incl. `DeleteConfirmDialog`, `DeleteConfirmationDialog`) match. Keep the typed-DELETE input styling but skin its `Input` to the editorial paper field.
 
-## Native-mobile behavior (Capacitor-friendly)
+### 3. Mobile-sheet behavior
 
-Render the mobile layout when `useIsMobile()` is true OR `useIsNativeApp()` is true:
+Add a `useIsMobile()` branch in `DialogContent` (and `AlertDialogContent`) that swaps positioning classes:
 
-- Full-bleed paper background, no app sidebar/topbar (hide ProjectLayout chrome on these routes for mobile).
-- Sticky top nav with `Back` (terracotta text) + centered title + right action (`Save`/`Share`).
-- Sticky bottom CTA bar with `backdrop-filter: blur(20px) saturate(180%)` and `padding-bottom: env(safe-area-inset-bottom)`.
-- Large iOS title section + Fraunces serif accent.
-- Inset grouped lists (sections/breakdown).
-- Tap targets ≥44pt; momentum scroll (`-webkit-overflow-scrolling: touch`); 240ms ease-out for progress + selection.
-- Haptic feedback hook on option select, Next/Prev, Save (Capacitor `@capacitor/haptics` if available; no-op web fallback).
-- Status bar / home indicator chrome is supplied by the device — do NOT render the dummy bezel from the mockup; just leave correct safe-area padding.
-- Hide the existing `MobileTabBar` while inside an assessment runner (full-screen flow).
+```text
+desktop:  centered, 560px, 20px radius, scale-in
+mobile :  bottom-anchored, 100% width, top-radius 24px, slide-in-from-bottom,
+          max-height 92vh, internal scroll, safe-area bottom padding,
+          1px drag handle bar at top
+```
 
-## File-by-file changes
+This makes every existing dialog feel like a native iOS sheet on phones without the consumers changing.
 
-### `src/pages/Assessments.tsx` (list)
+### 4. Token alignment
 
-- Replace the current Card grid with the design-system layout:
-  - Editorial PageHeader with eyebrow `ASSESSMENTS`, Fraunces title `Know where you actually stand.` (italic "actually" in terracotta), lede.
-  - Featured clay "Why bother taking these?" block.
-  - Card list mapped from the existing 3 assessments + driven by saved status (`ready` / `in-progress` / `completed`).
-  - Status chip + meta pills (`~10 min`, `15 questions`).
-  - Score + label badge when completed; progress bar when in-progress.
-  - Primary action: `Start` / `Resume` / `View results` linking to existing routes.
-- Mobile variant: large-title scroll view, inset cards, no app chrome.
+Add a small set of CSS vars (or reuse existing) so the dialog uses the same palette as `assessments/tokens.ts`:
 
-### `src/pages/Assessment.tsx`, `CoachAssessment.tsx`, `WhyStatementAssessment.tsx`
+- `--paper-100` `#FBF7F1`, `--paper-200` `#F7F1E8`
+- `--ink-900` `#1F1B17`, `--fg-secondary` `rgba(31,27,23,0.62)`
+- `--terracotta-500` `#C65A3E`, `--border-hairline` `rgba(31,27,23,0.10)`
 
-Keep all existing data, scoring, autosave, analytics, navigation, and routes. Replace JSX only.
+Verify these already exist in `src/index.css`; if any are missing we add them (non-breaking — additive).
 
-Each gets four UI states wired to existing state machines:
+### 5. Spot-fix one custom modal as proof
 
-1. **Intro** (when `!hasStarted`): hero clay card with assessment title + meta pills, "Before you begin" instructions card, sections list (numbered), CTA `Begin assessment` + `Save for later`.
-2. **Question** (during run): top progress strip (`Step n of N · Section · pct%`), white question card with eyebrow `Question n`, Fraunces prompt, lettered option buttons (selected = ink fill, terracotta letter chip, check icon), Prev / Save & exit / Next footer.
-3. **Reflections**: same card layout as results but with textareas, autosave preserved.
-4. **Results**: hero card with circle icon, range pill, label (Fraunces), large score `42 / 45`, "What this means / significance / focus" copy blocks, section breakdown bars (moss when full, terracotta otherwise), reflection accordion, sticky `Save` + `Apply to your launch` actions.
+`src/components/dashboard/StuckHelpDialog.tsx` (the modal in the screenshot) is rebuilt on top of the new primitive: add `eyebrow="Stuck Help"`, italic accent on "blocking", switch the inner reassurance/step cards to paper-200 + terracotta accent + Fraunces, and convert action buttons to the assessment `PrimaryButton` style (ink pill primary, ghost secondary).
 
-Mobile variants mirror the `Mobile_Assessments.jsx` flows: sticky top nav with Exit/Save, single progress bar, inset option list, sticky `Prev / Next` footer, results show "Show N more questions" expand affordance.
+### 6. Out of scope
 
-### Shared helpers
+- We do **not** rewrite each of the 79 dialogs individually. They'll inherit the new shell automatically. If a specific modal (e.g. `TaskDialog`, `LaunchCalendarEventDialog`) needs further editorial polish, that can happen in a follow-up.
+- `Sheet` / `Drawer` / `Popover` primitives are not touched in this pass.
 
-New `src/components/assessments/` directory with:
+## Files to change
 
-- `AssessmentShell.tsx` — picks desktop vs mobile (uses `useIsMobile`, `useIsNativeApp`); supplies sticky top nav + bottom CTA slots; hides ProjectLayout chrome on mobile.
-- `AssessmentHero.tsx`, `SectionsList.tsx`, `OptionButton.tsx`, `ProgressStrip.tsx`, `ResultHero.tsx`, `BreakdownBars.tsx`, `ReflectionsCard.tsx`.
-- `tokens.ts` — shared color/font constants from the mockups so all three runners share styling.
-- `useHaptics.ts` — wraps Capacitor `@capacitor/haptics` with web fallback.
-
-Each existing assessment page becomes a thin wrapper that maps its data into these components. No business logic changes.
-
-## Out of scope
-
-- No DB / schema changes.
-- No new analytics events (existing `trackAssessmentCompletion` calls preserved).
-- No changes to the Why Statement worksheet's domain logic, just visual layout.
-- The "Audience clarity" / "Offer readiness" mock cards from the mockup data are illustrative — only the 3 real assessments will be rendered.
+- `src/components/ui/dialog.tsx` — rewrite shell, add mobile sheet branch, add italicWord on title, integrate haptics.
+- `src/components/ui/alert-dialog.tsx` — mirror shell + mobile sheet.
+- `src/components/dashboard/StuckHelpDialog.tsx` — re-skin to new pattern as the canonical example.
+- `src/index.css` — add any missing paper/ink/terracotta CSS vars (only if not already defined).
 
 ## Acceptance
 
-- Desktop matches the design-system mockup layout, spacing, type scale.
-- Mobile (and native app) shows full-screen iOS chrome: large titles, inset cards, sticky bottom CTA respecting safe area, no app sidebar/tabbar in the assessment flow.
-- All three assessments still: load saved progress, autosave, score correctly, store reflections, fire analytics, and navigate back to `/assessments`.
+- The "What's blocking you right now?" modal matches the Assessments visual language (warm paper, Fraunces title with italic terracotta accent, eyebrow stamp, soft 20px corners, ink primary pill button).
+- Opening any other dialog (e.g. Project Settings, Habit, Task, Delete confirmation) on desktop shows the same paper/ink shell; on mobile it slides up as a bottom sheet with safe-area padding.
+- No consumer files break — all existing `<DialogHeader>`, `<DialogTitle>`, `<DialogFooter>` calls keep working.
