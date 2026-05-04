@@ -2897,7 +2897,7 @@ const CONTENT_TO_OFFER_MARKETING_TASKS: TaskTemplate[] = [
       options: [
         { value: 'path_tested_mobile', label: 'Conversion path tested on mobile', description: 'Bio link → sales page → checkout — all work correctly on phone' },
         { value: 'link_in_bio_correct', label: 'Link in bio points to the offer sales page', description: 'Not a generic linktree with 10 options' },
-        { value: 'sales_page_loads', label: 'Sales page loads correctly and reads clearly', description: 'A stranger would understand what you're selling and who it's for' },
+        { value: 'sales_page_loads', label: 'Sales page loads correctly and reads clearly', description: "A stranger would understand what you're selling and who it's for" },
         { value: 'offer_content_created', label: '5 offer-focused posts created this week', description: 'Each with a single CTA pointing to the offer' },
       ],
     },
