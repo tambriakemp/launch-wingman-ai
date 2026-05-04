@@ -14,9 +14,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
 
-const Landing = lazy(() => import("./pages/Landing"));
-const HowItWorks = lazy(() => import("./pages/HowItWorks"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
@@ -42,9 +39,6 @@ const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
 const AdminAssets = lazy(() => import("./pages/admin/AdminAssets"));
 const AdminLayout = lazy(() => import("./components/layout/AdminLayout").then((m) => ({ default: m.AdminLayout })));
-const SalesFunnel = lazy(() => import("./pages/SalesFunnel"));
-const AITwinFormula = lazy(() => import("./pages/AITwinFormula"));
-const AITwinThankYou = lazy(() => import("./pages/AITwinThankYou"));
 const UTMBuilder = lazy(() => import("./pages/UTMBuilder"));
 const UTMRedirect = lazy(() => import("./pages/UTMRedirect"));
 const CampaignAnalytics = lazy(() => import("./pages/CampaignAnalytics"));
@@ -58,18 +52,6 @@ const HookGenerator = lazy(() => import("./pages/HookGenerator"));
 const SalesPageWriter = lazy(() => import("./pages/SalesPageWriter"));
 const EmailSequenceGenerator = lazy(() => import("./pages/EmailSequenceGenerator"));
 const CarouselBuilder = lazy(() => import("./pages/CarouselBuilder"));
-const AssessmentsFeature = lazy(() => import("./pages/features/AssessmentsFeature"));
-const PlanFeature = lazy(() => import("./pages/features/PlanFeature"));
-const BrandingFeature = lazy(() => import("./pages/features/BrandingFeature"));
-const MessagingFeature = lazy(() => import("./pages/features/MessagingFeature"));
-const ExecuteFeature = lazy(() => import("./pages/features/ExecuteFeature"));
-const ContentVaultFeature = lazy(() => import("./pages/features/ContentVaultFeature"));
-const RelaunchFeature = lazy(() => import("./pages/features/RelaunchFeature"));
-const About = lazy(() => import("./pages/About"));
-const Blog = lazy(() => import("./pages/Blog"));
-const BlogPost = lazy(() => import("./pages/BlogPost"));
-const Contact = lazy(() => import("./pages/Contact"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const ProjectPlan = lazy(() => import("./pages/project/ProjectPlan"));
 const ProjectExecute = lazy(() => import("./pages/project/ProjectExecute"));
 const OffersLibrary = lazy(() => import("./pages/project/OffersLibrary"));
@@ -148,25 +130,27 @@ const App = () => (
           <ImpersonationBanner />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
-            {/* Public marketing pages */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/contact" element={<Contact />} />
+            {/* Public auth + utility routes */}
+            <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
-            <Route path="/go" element={<SalesFunnel />} />
             <Route path="/links" element={<LinkInBio />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
-            <Route path="/ai-twin-formula" element={<AITwinFormula />} />
-            <Route path="/ai-twin-formula/thank-you" element={<AITwinThankYou />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            
+
+            {/* Legacy marketing redirects -> launchely.com */}
+            <Route path="/how-it-works" element={<Navigate to="/auth" replace />} />
+            <Route path="/privacy" element={<Navigate to="/auth" replace />} />
+            <Route path="/terms" element={<Navigate to="/auth" replace />} />
+            <Route path="/about" element={<Navigate to="/auth" replace />} />
+            <Route path="/blog" element={<Navigate to="/auth" replace />} />
+            <Route path="/blog/:slug" element={<Navigate to="/auth" replace />} />
+            <Route path="/contact" element={<Navigate to="/auth" replace />} />
+            <Route path="/go" element={<Navigate to="/auth" replace />} />
+            <Route path="/ai-twin-formula" element={<Navigate to="/auth" replace />} />
+            <Route path="/ai-twin-formula/thank-you" element={<Navigate to="/auth" replace />} />
+            <Route path="/features/*" element={<Navigate to="/auth" replace />} />
+
             {/* Onboarding flow (shown once after registration) */}
             <Route
               path="/onboarding"
@@ -176,23 +160,13 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
-            {/* Feature pages */}
-            <Route path="/features/assessments" element={<AssessmentsFeature />} />
-            <Route path="/features/plan" element={<PlanFeature />} />
-            <Route path="/features/branding" element={<BrandingFeature />} />
-            <Route path="/features/messaging" element={<MessagingFeature />} />
-            <Route path="/features/execute" element={<ExecuteFeature />} />
-            <Route path="/features/content-vault" element={<ContentVaultFeature />} />
-            
-            <Route path="/features/relaunch" element={<RelaunchFeature />} />
-            
+
             {/* Smart redirect to last used project */}
             <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
             {/* Legacy redirects */}
             <Route path="/dashboard" element={<Navigate to="/app" replace />} />
             <Route path="/projects" element={<Navigate to="/app" replace />} />
-            
+
             {/* Project-specific routes - Plan section uses unified ProjectPlan */}
             <Route
               path="/projects/:id"

@@ -420,12 +420,9 @@ const Auth = () => {
         {/* Brand side */}
         <aside className="brand-side">
           <div className="brand-top">
-            <Link to="/" className="wordmark">
+            <div className="wordmark">
               Launchely<span className="dot">.</span>
-            </Link>
-            <Link to="/" className="back-link">
-              ← Back to home
-            </Link>
+            </div>
           </div>
 
           <div className="brand-body">
