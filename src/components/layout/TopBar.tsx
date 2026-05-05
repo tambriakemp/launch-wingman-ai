@@ -46,6 +46,8 @@ export const TopBar = () => {
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
+  if (isNative && isMobile) return null;
+
   return (
     <header
       className="sticky top-0 z-40 flex items-center justify-between gap-3 px-3 md:px-10 py-3 border-b border-[hsl(var(--hairline))] backdrop-blur-md"
