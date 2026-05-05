@@ -10,6 +10,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent iOS Safari / native WebView from auto-zooming when focusing form fields.
+   Inputs must render at >= 16px on small screens to suppress the zoom behavior. */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 @layer base {
   :root {
     /* Light Theme - Clean SaaS Dashboard */
