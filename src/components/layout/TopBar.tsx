@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ export const TopBar = () => {
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
   const { hasAdminAccess } = useFeatureAccess();
   const isMobile = useIsMobile();
+  const isNative = useIsNativeApp();
   const { toggle } = useMobileSidebar();
 
   const { data: profile } = useQuery({

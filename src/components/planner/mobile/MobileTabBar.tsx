@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Calendar, Sparkles, Target, User } from "lucide-react";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 const TABS = [
   { id: "home", label: "Today", icon: Home, to: "/dashboard" },
@@ -15,6 +16,8 @@ const HAIRLINE = "rgba(31,27,23,0.10)";
 
 export const MobileTabBar = ({ active }: { active?: string }) => {
   const location = useLocation();
+  const isNative = useIsNativeApp();
+  if (isNative) return null;
   const activeId =
     active ||
     TABS.find((t) => location.pathname.startsWith(t.to))?.id ||
