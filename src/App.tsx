@@ -125,6 +125,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TikTokEnvironmentProvider>
+          <PushRegistrar />
           <PageViewTracker />
           <ScrollToTop />
           <ImpersonationBanner />
