@@ -86,14 +86,15 @@ export interface PlannerTask {
 
 interface Subtask {
   id: string;
-  task_id: string;
-  user_id: string;
+  task_id?: string;
+  user_id?: string;
   title: string;
   completed: boolean;
   position: number;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  _local?: boolean;
 }
 
 const STATUSES = [
@@ -115,7 +116,7 @@ const PRIORITIES = [
 interface PlannerTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
+  onSubmit: (data: Partial<PlannerTask>) => Promise<string | void | undefined>;
   editTask?: PlannerTask | null;
   defaultDueAt?: Date | null;
   spaces?: PlannerSpace[];
@@ -300,7 +301,7 @@ export const PlannerTaskDialog = ({
       }
       // else: no dates at all — all null
 
-      await onSubmit({
+      const result = await onSubmit({
         title: toTitleCase(title),
         description: description.trim(),
         task_type: "task",
@@ -314,6 +315,25 @@ export const PlannerTaskDialog = ({
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
+
+      // If we just created the task and there are buffered local subtasks, persist them.
+      if (!editTask && typeof result === "string" && subtasks.length > 0) {
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData.user?.id;
+        const local = subtasks.filter(s => s._local);
+        if (uid && local.length > 0) {
+          await supabase.from("subtasks").insert(
+            local.map((s, i) => ({
+              task_id: result,
+              user_id: uid,
+              title: s.title,
+              completed: s.completed,
+              position: i,
+            })) as any
+          );
+        }
+      }
+
       onOpenChange(false);
     } catch {} finally {
       setIsSubmitting(false);
@@ -345,7 +365,19 @@ export const PlannerTaskDialog = ({
 
   // --- Subtask CRUD ---
   const addSubtask = async () => {
-    if (!editTask || !newSubtaskTitle.trim()) return;
+    if (!newSubtaskTitle.trim()) return;
+    if (!editTask) {
+      // Buffer locally; flush after task is created.
+      setSubtasks(prev => [...prev, {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        title: toTitleCase(newSubtaskTitle),
+        completed: false,
+        position: prev.length,
+        _local: true,
+      }]);
+      setNewSubtaskTitle("");
+      return;
+    }
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
     const { error } = await supabase.from("subtasks").insert({
@@ -360,11 +392,20 @@ export const PlannerTaskDialog = ({
   };
 
   const toggleSubtask = async (st: Subtask) => {
+    if (st._local) {
+      setSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s));
+      return;
+    }
     await supabase.from("subtasks").update({ completed: !st.completed }).eq("id", st.id);
     setSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s));
   };
 
   const deleteSubtask = async (id: string) => {
+    const target = subtasks.find(s => s.id === id);
+    if (target?._local) {
+      setSubtasks(prev => prev.filter(s => s.id !== id));
+      return;
+    }
     await supabase.from("subtasks").delete().eq("id", id);
     if (editTask) fetchSubtasks(editTask.id);
   };
@@ -616,71 +657,71 @@ export const PlannerTaskDialog = ({
               />
             </div>
 
-            {/* Subtasks — only when editing, with more spacing */}
-            {editTask && (
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Subtasks</span>
-                    {subtasks.length > 0 && (
-                      <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
-                    )}
-                  </div>
-                </div>
-
-                {subtasks.length > 0 && (
-                  <Progress value={progressPct} className="h-1.5" />
-                )}
-
-                <div className="space-y-1">
-                  {subtasks.map(st => (
-                    <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <Checkbox
-                        checked={st.completed}
-                        onCheckedChange={() => toggleSubtask(st)}
-                        className="shrink-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => openSubtaskDetail(st)}
-                        className={cn(
-                          "flex-1 text-left text-sm truncate",
-                          st.completed && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {st.title}
-                      </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
-                </div>
-
+            {/* Subtasks */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Input
-                    value={newSubtaskTitle}
-                    onChange={e => setNewSubtaskTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
-                    placeholder="Add a subtask..."
-                    className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                  {newSubtaskTitle.trim() && (
-                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                  <ListChecks className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Subtasks</span>
+                  {subtasks.length > 0 && (
+                    <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
                   )}
                 </div>
               </div>
-            )}
+
+              {subtasks.length > 0 && (
+                <Progress value={progressPct} className="h-1.5" />
+              )}
+
+              <div className="space-y-1">
+                {subtasks.map(st => (
+                  <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      checked={st.completed}
+                      onCheckedChange={() => toggleSubtask(st)}
+                      className="shrink-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => editTask && !st._local ? openSubtaskDetail(st) : undefined}
+                      className={cn(
+                        "flex-1 text-left text-sm truncate",
+                        st.completed && "line-through text-muted-foreground"
+                      )}
+                    >
+                      {st.title}
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {editTask && !st._local && (
+                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  value={newSubtaskTitle}
+                  onChange={e => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
+                  placeholder="Add a subtask..."
+                  className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                {newSubtaskTitle.trim() && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                )}
+              </div>
+            </div>
           </div>
 
           <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">

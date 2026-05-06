@@ -1,44 +1,41 @@
-## Goal
-In native shells (Capacitor / AppMySite / Mobiloud), hide the in-app top bar and the mobile bottom tab bar so the native chrome is the only navigation. Also stop iOS from zooming the page when tapping into form fields (notably on `/auth`).
+Plan to fix the three planner issues:
 
-## Changes
+1. Allow completing one recurring occurrence from Weekly view
+- Remove the current block that says recurring instances cannot be completed.
+- When a virtual recurring instance is checked, create a real task occurrence for that specific date only:
+  - Copy the parent task’s title, dates, space, category, priority, etc.
+  - Set `recurrence_parent_id` to the parent recurring task.
+  - Set `recurrence_rule` to `null` so this row is only that one date.
+  - Set `column_id` to `done` for that occurrence.
+- Add that occurrence date to the parent task’s `recurrence_exception_dates` so the virtual version for that same date is hidden and replaced by the real completed occurrence.
+- If that completed occurrence is later unchecked, only that occurrence row changes back to `todo`; the recurring series remains unchanged.
+- Keep editing behavior as-is: clicking a virtual recurring task opens the parent series, while clicking the real checked occurrence edits only that occurrence.
 
-### 1. Hide the TopBar on native (mobile only)
-`src/components/layout/TopBar.tsx`
-- Import `useIsNativeApp`.
-- If `isNative && isMobile`, return `null`. (Desktop preview/web behavior is unchanged; native apps are mobile-only.)
+2. Restore subtasks when creating a new task
+- Update the desktop task sheet so the Subtasks section appears during task creation, not only while editing an existing task.
+- Match the existing mobile behavior:
+  - New subtasks entered before the parent task exists will be stored locally in the sheet.
+  - After the task is created, those subtasks will be inserted and linked to the new task.
+- Keep existing edit-mode subtask behavior unchanged.
+- Update the task dialog submit contract so task creation can return the new task id, allowing the dialog to save the buffered subtasks immediately after the parent task is created.
 
-This removes the bar across every screen wrapped in `ProjectLayout` / `AdminLayout` when running in AppMySite, Mobiloud, or Capacitor.
+3. Fix Weekly view snapping to today
+- The likely root cause is in `PlannerWeekBoardView`: the scroll-to-today effect runs while the weekly board is still in its loading state, before the day columns exist. Because the effect only depends on the anchor date, it does not reliably rerun after loading finishes.
+- Update the scroll effect to wait until loading is complete and the day refs are rendered before attempting to scroll.
+- Include loading/day changes in the effect dependencies so it retries after data loads.
+- Scroll today into a clear visible position, preferably centered or near the left with padding, instead of relying on an early one-time left-edge calculation.
+- Ensure pressing the Today button still forces a fresh snap.
 
-### 2. Make `MobileTabBar` self-hide on native
-`src/components/planner/mobile/MobileTabBar.tsx`
-- Inside the component, call `useIsNativeApp()` and `return null` when native.
+Technical notes
+- No new database table should be needed. The existing `tasks.recurrence_parent_id` and `tasks.recurrence_exception_dates` fields can support one-off recurring occurrence overrides.
+- Changes will be focused in:
+  - `src/pages/Planner.tsx`
+  - `src/components/planner/PlannerWeekBoardView.tsx`
+  - `src/components/planner/PlannerTaskDialog.tsx`
+- I will not edit the auto-generated backend client/type files.
 
-`MobileDashboard` and `MobilePlanner` already gate it, but a defensive guard inside the component itself catches any other current/future render sites and matches the user's report that it's still showing.
-
-### 3. Prevent iOS input-zoom
-Two complementary fixes:
-
-a. `index.html` viewport meta — add `viewport-fit=cover` and keep `initial-scale=1`. (Do not add `user-scalable=no` — bad for accessibility and not needed once fonts are sized correctly.)
-
-b. `src/index.css` — add a global rule so all form controls render at ≥16px on small screens, which is what stops iOS Safari / WKWebView from auto-zooming on focus:
-
-```css
-@media (max-width: 768px) {
-  input, select, textarea {
-    font-size: 16px;
-  }
-}
-```
-
-This fixes the `/auth` sign-in fields and every other form in the app without changing desktop typography.
-
-## Files touched
-- `src/components/layout/TopBar.tsx` — early return on native+mobile
-- `src/components/planner/mobile/MobileTabBar.tsx` — early return on native
-- `src/index.css` — mobile input font-size rule
-- `index.html` — minor viewport meta tweak
-
-## Out of scope
-- No changes to `ProjectLayout` / `AdminLayout` structure (TopBar handles its own visibility).
-- No changes to the FAB or safe-area padding (already handled via `env(safe-area-inset-*)`).
+After implementation, I’ll verify the intended flows:
+- Checking a weekly recurring task marks only that date done.
+- Future/past recurring instances remain unchanged.
+- New task creation shows subtasks and saves them with the created task.
+- Weekly view snaps to today after loading and when Today is clicked.
