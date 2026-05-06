@@ -301,7 +301,7 @@ export const PlannerTaskDialog = ({
       }
       // else: no dates at all — all null
 
-      await onSubmit({
+      const result = await onSubmit({
         title: toTitleCase(title),
         description: description.trim(),
         task_type: "task",
@@ -315,6 +315,25 @@ export const PlannerTaskDialog = ({
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
+
+      // If we just created the task and there are buffered local subtasks, persist them.
+      if (!editTask && typeof result === "string" && subtasks.length > 0) {
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData.user?.id;
+        const local = subtasks.filter(s => s._local);
+        if (uid && local.length > 0) {
+          await supabase.from("subtasks").insert(
+            local.map((s, i) => ({
+              task_id: result,
+              user_id: uid,
+              title: s.title,
+              completed: s.completed,
+              position: i,
+            })) as any
+          );
+        }
+      }
+
       onOpenChange(false);
     } catch {} finally {
       setIsSubmitting(false);
