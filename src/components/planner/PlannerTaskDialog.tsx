@@ -365,7 +365,19 @@ export const PlannerTaskDialog = ({
 
   // --- Subtask CRUD ---
   const addSubtask = async () => {
-    if (!editTask || !newSubtaskTitle.trim()) return;
+    if (!newSubtaskTitle.trim()) return;
+    if (!editTask) {
+      // Buffer locally; flush after task is created.
+      setSubtasks(prev => [...prev, {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        title: toTitleCase(newSubtaskTitle),
+        completed: false,
+        position: prev.length,
+        _local: true,
+      }]);
+      setNewSubtaskTitle("");
+      return;
+    }
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;
     const { error } = await supabase.from("subtasks").insert({
@@ -380,11 +392,20 @@ export const PlannerTaskDialog = ({
   };
 
   const toggleSubtask = async (st: Subtask) => {
+    if (st._local) {
+      setSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s));
+      return;
+    }
     await supabase.from("subtasks").update({ completed: !st.completed }).eq("id", st.id);
     setSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s));
   };
 
   const deleteSubtask = async (id: string) => {
+    const target = subtasks.find(s => s.id === id);
+    if (target?._local) {
+      setSubtasks(prev => prev.filter(s => s.id !== id));
+      return;
+    }
     await supabase.from("subtasks").delete().eq("id", id);
     if (editTask) fetchSubtasks(editTask.id);
   };
