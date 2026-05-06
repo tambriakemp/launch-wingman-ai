@@ -86,14 +86,15 @@ export interface PlannerTask {
 
 interface Subtask {
   id: string;
-  task_id: string;
-  user_id: string;
+  task_id?: string;
+  user_id?: string;
   title: string;
   completed: boolean;
   position: number;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  _local?: boolean;
 }
 
 const STATUSES = [
