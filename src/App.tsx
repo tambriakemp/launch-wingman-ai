@@ -13,6 +13,12 @@ import { initGA, trackPageView } from "@/lib/analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
+
+function PushRegistrar() {
+  usePushRegistration();
+  return null;
+}
 
 const Auth = lazy(() => import("./pages/Auth"));
 const Checkout = lazy(() => import("./pages/Checkout"));
