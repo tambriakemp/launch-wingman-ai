@@ -59,6 +59,10 @@ project_id = "ydhagqgurqhlguxkkppb"
     verify_jwt = false
   [functions.delete-my-account]
     verify_jwt = false
+  [functions.dispatch-push]
+    verify_jwt = false
+  [functions.enqueue-reminders]
+    verify_jwt = false
   [functions.elevenlabs-tts]
     verify_jwt = false
   [functions.export-my-data]
