@@ -341,10 +341,6 @@ export const PlannerWeekBoardView = ({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
-                                    if ((task as any)._isVirtualRecurrence) {
-                                      toast.error("Can't complete a recurring instance — edit the series instead");
-                                      return;
-                                    }
                                     onToggleComplete?.(task);
                                   }}
                                   aria-label={isDone ? "Mark as not done" : "Mark as done"}
