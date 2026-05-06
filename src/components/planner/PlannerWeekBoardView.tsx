@@ -97,31 +97,41 @@ export const PlannerWeekBoardView = ({
 
   useLayoutEffect(() => {
     if (!anchorKey) return;
+    if (isLoading) return; // wait for content to render before measuring
+    if (!days || days.length === 0) return;
     const snap = (behavior: ScrollBehavior) => {
       const el = dayRefs.current[anchorKey];
       const container = scrollContainerRef.current;
       if (!el || !container) return false;
-      // Use bounding rects so we don't depend on offsetParent positioning.
+      // Center the anchor day within the visible scroll area.
       const elRect = el.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-      const target = Math.max(0, container.scrollLeft + (elRect.left - containerRect.left));
+      const offset = elRect.left - containerRect.left;
+      const target = Math.max(
+        0,
+        container.scrollLeft + offset - (container.clientWidth - el.clientWidth) / 2
+      );
       container.scrollTo({ left: target, behavior });
       return true;
     };
-    // Try immediately, then on next frame, then after a short delay to catch async layout.
-    snap("auto");
-    const raf1 = requestAnimationFrame(() => {
-      snap("auto");
-      const raf2 = requestAnimationFrame(() => snap(scrollToAnchorNonce ? "smooth" : "auto"));
-      (snap as any)._raf2 = raf2;
-    });
-    const t = window.setTimeout(() => snap(scrollToAnchorNonce ? "smooth" : "auto"), 120);
+    // Try immediately, on next frames, and after short delays to catch async layout.
+    let cancelled = false;
+    const tryUntilReady = (attempt = 0) => {
+      if (cancelled) return;
+      const ok = snap(attempt === 0 && !scrollToAnchorNonce ? "auto" : scrollToAnchorNonce ? "smooth" : "auto");
+      if (!ok && attempt < 20) {
+        window.setTimeout(() => tryUntilReady(attempt + 1), 50);
+      }
+    };
+    tryUntilReady();
+    const raf = requestAnimationFrame(() => tryUntilReady());
+    const t = window.setTimeout(() => tryUntilReady(), 120);
     return () => {
-      cancelAnimationFrame(raf1);
-      if ((snap as any)._raf2) cancelAnimationFrame((snap as any)._raf2);
+      cancelled = true;
+      cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [anchorKey, scrollToAnchorNonce]);
+  }, [anchorKey, scrollToAnchorNonce, isLoading, days.length]);
 
   const rangeStart = days[0];
   const rangeEnd = days[days.length - 1];
