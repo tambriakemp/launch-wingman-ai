@@ -212,6 +212,54 @@ const Planner = () => {
   };
 
   const handleToggleComplete = async (task: PlannerTask) => {
+    // Recurring virtual instance: materialize a real "done" occurrence for that single date.
+    if ((task as any)._isVirtualRecurrence) {
+      const parentId = (task as any)._parentId as string;
+      const occurrenceDate = (task as any)._occurrenceDate as string; // YYYY-MM-DD
+      const parent = tasks.find(t => t.id === parentId);
+      if (!parent || !user) return;
+
+      const { error: insertErr } = await supabase.from("tasks").insert({
+        project_id: parent.project_id,
+        user_id: user.id,
+        title: parent.title,
+        description: parent.description || null,
+        column_id: "done",
+        task_origin: parent.task_origin || "user",
+        task_scope: parent.task_scope || "planner",
+        task_type: parent.task_type || "task",
+        category: parent.category || null,
+        priority: (parent as any).priority || "normal",
+        due_at: task.due_at,
+        start_at: task.start_at,
+        end_at: task.end_at,
+        location: parent.location || null,
+        position: 0,
+        recurrence_rule: null,
+        recurrence_parent_id: parentId,
+        space_id: (parent as any).space_id || null,
+      } as any);
+
+      if (insertErr) {
+        console.error(insertErr);
+        toast.error("Failed to complete occurrence");
+        return;
+      }
+
+      const existingExceptions = parent.recurrence_exception_dates || [];
+      if (!existingExceptions.includes(occurrenceDate)) {
+        const { error: updErr } = await supabase
+          .from("tasks")
+          .update({ recurrence_exception_dates: [...existingExceptions, occurrenceDate] } as any)
+          .eq("id", parentId);
+        if (updErr) {
+          console.error(updErr);
+        }
+      }
+      fetchTasks();
+      return;
+    }
+
     const newStatus = task.column_id === "done" ? "todo" : "done";
     const { error } = await supabase
       .from("tasks")
