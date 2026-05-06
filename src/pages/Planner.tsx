@@ -636,7 +636,7 @@ const Planner = () => {
       <PlannerTaskDialog
         open={dialogOpen}
         onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
-        onSubmit={async (d) => { if (editingTask) await handleUpdateTask(d); else await handleCreateTask(d); }}
+        onSubmit={async (d) => { if (editingTask) { await handleUpdateTask(d); } else { return await handleCreateTask(d); } }}
         editTask={editingTask}
         defaultDueAt={defaultDueAt}
         spaces={spaces}
