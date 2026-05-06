@@ -657,71 +657,71 @@ export const PlannerTaskDialog = ({
               />
             </div>
 
-            {/* Subtasks — only when editing, with more spacing */}
-            {editTask && (
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Subtasks</span>
-                    {subtasks.length > 0 && (
-                      <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
-                    )}
-                  </div>
-                </div>
-
-                {subtasks.length > 0 && (
-                  <Progress value={progressPct} className="h-1.5" />
-                )}
-
-                <div className="space-y-1">
-                  {subtasks.map(st => (
-                    <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <Checkbox
-                        checked={st.completed}
-                        onCheckedChange={() => toggleSubtask(st)}
-                        className="shrink-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => openSubtaskDetail(st)}
-                        className={cn(
-                          "flex-1 text-left text-sm truncate",
-                          st.completed && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {st.title}
-                      </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
-                </div>
-
+            {/* Subtasks */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Input
-                    value={newSubtaskTitle}
-                    onChange={e => setNewSubtaskTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
-                    placeholder="Add a subtask..."
-                    className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                  {newSubtaskTitle.trim() && (
-                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                  <ListChecks className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Subtasks</span>
+                  {subtasks.length > 0 && (
+                    <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
                   )}
                 </div>
               </div>
-            )}
+
+              {subtasks.length > 0 && (
+                <Progress value={progressPct} className="h-1.5" />
+              )}
+
+              <div className="space-y-1">
+                {subtasks.map(st => (
+                  <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      checked={st.completed}
+                      onCheckedChange={() => toggleSubtask(st)}
+                      className="shrink-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => editTask && !st._local ? openSubtaskDetail(st) : undefined}
+                      className={cn(
+                        "flex-1 text-left text-sm truncate",
+                        st.completed && "line-through text-muted-foreground"
+                      )}
+                    >
+                      {st.title}
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {editTask && !st._local && (
+                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  value={newSubtaskTitle}
+                  onChange={e => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
+                  placeholder="Add a subtask..."
+                  className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                {newSubtaskTitle.trim() && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                )}
+              </div>
+            </div>
           </div>
 
           <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
