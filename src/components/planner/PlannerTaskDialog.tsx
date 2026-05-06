@@ -116,7 +116,7 @@ const PRIORITIES = [
 interface PlannerTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
+  onSubmit: (data: Partial<PlannerTask>) => Promise<string | void | undefined>;
   editTask?: PlannerTask | null;
   defaultDueAt?: Date | null;
   spaces?: PlannerSpace[];
