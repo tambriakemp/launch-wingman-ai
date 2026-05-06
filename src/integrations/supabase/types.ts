@@ -2357,6 +2357,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json
+          deeplink: string | null
+          delivered_at: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          scheduled_for: string
+          source_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          deeplink?: string | null
+          delivered_at?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          scheduled_for?: string
+          source_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          deeplink?: string | null
+          delivered_at?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          scheduled_for?: string
+          source_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oauth_state: {
         Row: {
           code_verifier: string
@@ -2857,6 +2905,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_devices: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          disabled_at: string | null
+          id: string
+          last_seen_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          disabled_at?: string | null
+          id?: string
+          last_seen_at?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          disabled_at?: string | null
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       sales_page_copy: {
         Row: {
