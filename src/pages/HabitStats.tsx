@@ -217,8 +217,8 @@ const HabitStats = () => {
               })
             )}
 
-            {/* Floating add button — Habits tab only, sticks to bottom */}
-            <div className="sticky bottom-4 flex justify-center pointer-events-none z-30 pt-4">
+            {/* Floating add button — Habits tab only, fixed to viewport bottom */}
+            <div className="fixed left-0 right-0 md:left-[72px] flex justify-center pointer-events-none z-30" style={{ bottom: "30px" }}>
               <button
                 onClick={() => { setActiveHabit(null); setSheetOpen(true); }}
                 className="pointer-events-auto w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
