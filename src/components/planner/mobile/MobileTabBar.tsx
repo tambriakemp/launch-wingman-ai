@@ -3,10 +3,10 @@ import { Home, Calendar, Sparkles, Target, User } from "lucide-react";
 import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 const TABS = [
-  { id: "home", label: "Today", icon: Home, to: "/dashboard" },
-  { id: "plan", label: "Plan", icon: Calendar, to: "/planner" },
+  { id: "home", label: "Launch", icon: Home, to: "/dashboard" },
+  { id: "plan", label: "Planner", icon: Calendar, to: "/planner-hub" },
   { id: "craft", label: "AI Studio", icon: Sparkles, to: "/app/ai-studio" },
-  { id: "campaigns", label: "Campaigns", icon: Target, to: "/marketing-hub/campaigns" },
+  { id: "campaigns", label: "Marketing", icon: Target, to: "/marketing-hub/campaigns" },
   { id: "me", label: "Me", icon: User, to: "/settings" },
 ];
 
