@@ -301,7 +301,7 @@ const HabitTracker = () => {
         </div>
 
         {/* Floating add button — sticky inside content column, centered */}
-        <div className="sticky bottom-6 z-30 flex justify-center pointer-events-none mt-32">
+        <div className="sticky bottom-6 z-30 flex justify-center pointer-events-none mt-[400px]">
           <button
             onClick={() => { setActiveHabit(null); setSheetOpen(true); }}
             className="pointer-events-auto w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
