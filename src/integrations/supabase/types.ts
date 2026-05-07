@@ -1850,13 +1850,17 @@ export type Database = {
           color: string
           created_at: string
           description: string | null
+          duration_minutes: number | null
           frequency: string
           frequency_days: string[] | null
           icon: string
           id: string
           is_archived: boolean
           name: string
+          notes: string | null
+          reminder_times: string[]
           target_per_week: number | null
+          time_of_day: string[]
           updated_at: string
           user_id: string
         }
@@ -1865,13 +1869,17 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
           frequency?: string
           frequency_days?: string[] | null
           icon?: string
           id?: string
           is_archived?: boolean
           name: string
+          notes?: string | null
+          reminder_times?: string[]
           target_per_week?: number | null
+          time_of_day?: string[]
           updated_at?: string
           user_id: string
         }
@@ -1880,13 +1888,17 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
           frequency?: string
           frequency_days?: string[] | null
           icon?: string
           id?: string
           is_archived?: boolean
           name?: string
+          notes?: string | null
+          reminder_times?: string[]
           target_per_week?: number | null
+          time_of_day?: string[]
           updated_at?: string
           user_id?: string
         }
