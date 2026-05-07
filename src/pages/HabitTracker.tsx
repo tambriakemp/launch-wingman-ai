@@ -60,7 +60,14 @@ const HabitTracker = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
-  const [activeSlot, setActiveSlot] = useState<HabitSlot>("all_day");
+  const getCurrentSlot = (): HabitSlot => {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return "morning";
+    if (h >= 12 && h < 17) return "afternoon";
+    if (h >= 17) return "evening";
+    return "morning";
+  };
+  const [activeSlot, setActiveSlot] = useState<HabitSlot>(() => getCurrentSlot());
 
   const fetchHabits = useCallback(async () => {
     if (!userId) return;
