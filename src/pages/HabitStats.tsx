@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,9 +6,12 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ProductivityGauge } from "@/components/habits/ProductivityGauge";
-import { ChevronLeft, Flame, TrendingUp } from "lucide-react";
+import { HabitDetailSheet } from "@/components/habits/HabitDetailSheet";
+import { HabitStatsRow } from "@/components/habits/HabitStatsRow";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { ChevronLeft, Flame, TrendingUp, Plus } from "lucide-react";
 import { format, eachDayOfInterval, subDays, startOfDay } from "date-fns";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Habit, HabitCompletion } from "@/pages/HabitTracker";
 
 const WEEKDAY_MAP = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
@@ -26,18 +29,74 @@ const HabitStats = () => {
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (!user) return;
-    (async () => {
-      const [{ data: h }, { data: c }] = await Promise.all([
-        supabase.from("habits" as any).select("*").eq("user_id", user.id).eq("is_archived", false),
-        supabase.from("habit_completions" as any).select("*").eq("user_id", user.id),
-      ]);
-      setHabits((h as unknown as Habit[]) || []);
-      setCompletions((c as unknown as HabitCompletion[]) || []);
-    })();
+    const [{ data: h }, { data: c }] = await Promise.all([
+      supabase.from("habits" as any).select("*").eq("user_id", user.id).eq("is_archived", false),
+      supabase.from("habit_completions" as any).select("*").eq("user_id", user.id),
+    ]);
+    setHabits((h as unknown as Habit[]) || []);
+    setCompletions((c as unknown as HabitCompletion[]) || []);
   }, [user]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleSaveHabit = async (data: Partial<Habit>) => {
+    if (!user) return;
+    if (activeHabit) {
+      const { error } = await supabase.from("habits" as any).update({
+        name: data.name,
+        description: data.description ?? null,
+        category: data.category,
+        color: data.color,
+        icon: data.icon ?? "circle",
+        frequency: data.frequency,
+        frequency_days: data.frequency_days ?? null,
+        time_of_day: data.time_of_day ?? [],
+        duration_minutes: data.duration_minutes ?? null,
+        reminder_times: data.reminder_times ?? [],
+        notes: data.notes ?? null,
+      }).eq("id", activeHabit.id);
+      if (error) { toast.error("Failed to update habit"); return; }
+      toast.success("Habit updated");
+    } else {
+      const { error } = await supabase.from("habits" as any).insert({
+        user_id: user.id,
+        name: data.name!,
+        description: data.description ?? null,
+        category: data.category || "personal",
+        color: data.color || "#0ea572",
+        icon: data.icon || "circle",
+        frequency: data.frequency || "daily",
+        frequency_days: data.frequency_days ?? null,
+        time_of_day: data.time_of_day ?? [],
+        duration_minutes: data.duration_minutes ?? null,
+        reminder_times: data.reminder_times ?? [],
+        notes: data.notes ?? null,
+      });
+      if (error) { toast.error("Failed to create habit"); return; }
+      toast.success("Habit created");
+    }
+    fetchAll();
+  };
+
+  const handleArchiveHabit = async (habitId: string) => {
+    await supabase.from("habits" as any).update({ is_archived: true }).eq("id", habitId);
+    toast.success("Habit deleted");
+    setSheetOpen(false);
+    setActiveHabit(null);
+    fetchAll();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await handleArchiveHabit(deleteId);
+    setDeleteId(null);
+  };
 
   const today = startOfDay(new Date());
   const todayStr = format(today, "yyyy-MM-dd");
@@ -48,7 +107,6 @@ const HabitStats = () => {
   ).length;
   const productivity = todaysHabits.length > 0 ? (todayDone / todaysHabits.length) * 100 : 0;
 
-  // Best current streak across all habits
   const streaks = habits.map(h => {
     const dates = new Set(completions.filter(c => c.habit_id === h.id).map(c => c.completed_date));
     let streak = 0;
@@ -104,7 +162,6 @@ const HabitStats = () => {
           </TabsList>
 
           <TabsContent value="summary" className="space-y-4 pt-4">
-            {/* Productivity */}
             <div className="rounded-2xl border border-border bg-card p-6">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-semibold text-foreground">Today's productivity</h2>
@@ -118,10 +175,7 @@ const HabitStats = () => {
                 {last7Rates.map(({ date, rate }) => (
                   <div key={date.toISOString()} className="flex flex-col items-center gap-1">
                     <div className="h-16 w-full bg-muted rounded-md overflow-hidden flex items-end">
-                      <div
-                        className="w-full bg-primary transition-all"
-                        style={{ height: `${Math.max(rate, 3)}%` }}
-                      />
+                      <div className="w-full bg-primary transition-all" style={{ height: `${Math.max(rate, 3)}%` }} />
                     </div>
                     <span className="text-[10px] text-muted-foreground uppercase">{format(date, "EEEEE")}</span>
                   </div>
@@ -129,7 +183,6 @@ const HabitStats = () => {
               </div>
             </div>
 
-            {/* Streaks */}
             <div className="rounded-2xl border border-border bg-card p-6">
               <h2 className="text-sm font-semibold text-foreground mb-3">Streaks</h2>
               <div className="flex flex-col items-center text-center py-4">
@@ -141,11 +194,19 @@ const HabitStats = () => {
           </TabsContent>
 
           <TabsContent value="habits" className="space-y-2 pt-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">
+                {habits.length} {habits.length === 1 ? "habit" : "habits"}
+                <span className="hidden sm:inline"> · swipe left on mobile to edit or delete</span>
+              </p>
+              <Button size="sm" onClick={() => { setActiveHabit(null); setSheetOpen(true); }} className="gap-1.5">
+                <Plus className="w-4 h-4" /> New habit
+              </Button>
+            </div>
             {streaks.length === 0 ? (
               <div className="text-center py-12 text-sm text-muted-foreground">No habits to show.</div>
             ) : (
               streaks.map(({ habit, streak }) => {
-                // 30-day rate
                 const days30 = eachDayOfInterval({ start: subDays(today, 29), end: today });
                 const scheduled = days30.filter(d => isHabitScheduledOn(habit, d));
                 const done = scheduled.filter(d =>
@@ -153,33 +214,37 @@ const HabitStats = () => {
                 ).length;
                 const rate = scheduled.length ? Math.round((done / scheduled.length) * 100) : 0;
                 return (
-                  <div key={habit.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-                    <div
-                      className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
-                      style={{ background: `${habit.color}20` }}
-                    >
-                      <div className="w-4 h-4 rounded-full" style={{ background: habit.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{habit.name}</p>
-                      <p className="text-xs text-muted-foreground">{habit.category}</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="flex items-center gap-1 text-xs font-semibold text-primary">
-                        <Flame className="w-3.5 h-3.5" />
-                        {streak}
-                      </div>
-                      <span className={cn("text-xs font-semibold tabular-nums", rate >= 70 ? "text-primary" : "text-muted-foreground")}>
-                        {rate}%
-                      </span>
-                    </div>
-                  </div>
+                  <HabitStatsRow
+                    key={habit.id}
+                    habit={habit}
+                    streak={streak}
+                    rate={rate}
+                    onEdit={() => { setActiveHabit(habit); setSheetOpen(true); }}
+                    onDelete={() => setDeleteId(habit.id)}
+                  />
                 );
               })
             )}
           </TabsContent>
         </Tabs>
       </div>
+
+      <HabitDetailSheet
+        open={sheetOpen}
+        onOpenChange={(o) => { setSheetOpen(o); if (!o) setActiveHabit(null); }}
+        habit={activeHabit}
+        completions={completions}
+        onSubmit={handleSaveHabit}
+        onArchive={handleArchiveHabit}
+      />
+
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(o) => { if (!o) setDeleteId(null); }}
+        onConfirm={confirmDelete}
+        title="Delete habit?"
+        description="This will remove the habit from your tracker. Type DELETE to confirm."
+      />
     </ProjectLayout>
   );
 };
