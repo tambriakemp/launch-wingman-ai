@@ -60,7 +60,14 @@ const HabitTracker = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
-  const [activeSlot, setActiveSlot] = useState<HabitSlot>("all_day");
+  const getCurrentSlot = (): HabitSlot => {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return "morning";
+    if (h >= 12 && h < 17) return "afternoon";
+    if (h >= 17) return "evening";
+    return "morning";
+  };
+  const [activeSlot, setActiveSlot] = useState<HabitSlot>(() => getCurrentSlot());
 
   const fetchHabits = useCallback(async () => {
     if (!userId) return;
@@ -169,10 +176,21 @@ const HabitTracker = () => {
     return c;
   }, [scheduledHabits]);
 
-  const visibleHabits = useMemo(() => {
+  const slotHabits = useMemo(() => {
+    if (activeSlot === "all_day") {
+      return scheduledHabits.filter(h => {
+        const slots = h.time_of_day && h.time_of_day.length ? h.time_of_day : ["all_day"];
+        return slots.includes("all_day");
+      });
+    }
+    return scheduledHabits.filter(h => (h.time_of_day || []).includes(activeSlot));
+  }, [scheduledHabits, activeSlot]);
+
+  const allDayExtras = useMemo(() => {
+    if (activeSlot === "all_day") return [];
     return scheduledHabits.filter(h => {
       const slots = h.time_of_day && h.time_of_day.length ? h.time_of_day : ["all_day"];
-      return slots.includes(activeSlot);
+      return slots.includes("all_day");
     });
   }, [scheduledHabits, activeSlot]);
 
@@ -232,23 +250,53 @@ const HabitTracker = () => {
                 <Plus className="w-4 h-4" /> Create First Habit
               </Button>
             </div>
-          ) : visibleHabits.length === 0 ? (
+          ) : slotHabits.length === 0 && allDayExtras.length === 0 ? (
             <div className="text-center py-12 text-sm text-muted-foreground">
               No habits in this slot.
             </div>
           ) : (
-            visibleHabits.map(h => {
-              const isDone = completions.some(c => c.habit_id === h.id && c.completed_date === selectedDateStr);
-              return (
-                <HabitRow
-                  key={h.id}
-                  habit={h}
-                  isDone={isDone}
-                  onToggle={() => toggleCompletion(h.id)}
-                  onOpen={() => { setActiveHabit(h); setSheetOpen(true); }}
-                />
-              );
-            })
+            <>
+              {activeSlot !== "all_day" && (
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1 pt-1">
+                  {activeSlot}
+                </h3>
+              )}
+              {slotHabits.length === 0 ? (
+                <p className="text-xs text-muted-foreground px-1 py-2">Nothing scheduled for {activeSlot}.</p>
+              ) : (
+                slotHabits.map(h => {
+                  const isDone = completions.some(c => c.habit_id === h.id && c.completed_date === selectedDateStr);
+                  return (
+                    <HabitRow
+                      key={h.id}
+                      habit={h}
+                      isDone={isDone}
+                      onToggle={() => toggleCompletion(h.id)}
+                      onOpen={() => { setActiveHabit(h); setSheetOpen(true); }}
+                    />
+                  );
+                })
+              )}
+              {allDayExtras.length > 0 && (
+                <>
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1 pt-4">
+                    All day
+                  </h3>
+                  {allDayExtras.map(h => {
+                    const isDone = completions.some(c => c.habit_id === h.id && c.completed_date === selectedDateStr);
+                    return (
+                      <HabitRow
+                        key={h.id}
+                        habit={h}
+                        isDone={isDone}
+                        onToggle={() => toggleCompletion(h.id)}
+                        onOpen={() => { setActiveHabit(h); setSheetOpen(true); }}
+                      />
+                    );
+                  })}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
