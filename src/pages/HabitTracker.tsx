@@ -299,20 +299,21 @@ const HabitTracker = () => {
             </>
           )}
         </div>
-      </div>
 
-      {/* Floating add button */}
-      <button
-        onClick={() => { setActiveHabit(null); setSheetOpen(true); }}
-        className={cn(
-          "fixed bottom-24 md:bottom-8 right-6 md:left-1/2 md:-translate-x-1/2 md:right-auto",
-          "w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg",
-          "flex items-center justify-center hover:scale-105 transition-transform z-30",
-        )}
-        aria-label="New habit"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+        {/* Floating add button — centered within content column */}
+        <div className="sticky bottom-6 flex justify-center pointer-events-none z-30 -mt-8">
+          <button
+            onClick={() => { setActiveHabit(null); setSheetOpen(true); }}
+            className={cn(
+              "pointer-events-auto w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg",
+              "flex items-center justify-center hover:scale-105 transition-transform",
+            )}
+            aria-label="New habit"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
 
       <HabitDetailSheet
         open={sheetOpen}
