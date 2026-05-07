@@ -194,10 +194,6 @@ const HabitStats = () => {
           </TabsContent>
 
           <TabsContent value="habits" className="space-y-2 pt-4">
-            <p className="text-xs text-muted-foreground mb-1 px-1">
-              {habits.length} {habits.length === 1 ? "habit" : "habits"}
-              <span className="hidden sm:inline"> · swipe left on mobile to edit or delete</span>
-            </p>
             {streaks.length === 0 ? (
               <div className="text-center py-12 text-sm text-muted-foreground">No habits to show.</div>
             ) : (
