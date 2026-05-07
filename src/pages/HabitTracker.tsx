@@ -176,10 +176,21 @@ const HabitTracker = () => {
     return c;
   }, [scheduledHabits]);
 
-  const visibleHabits = useMemo(() => {
+  const slotHabits = useMemo(() => {
+    if (activeSlot === "all_day") {
+      return scheduledHabits.filter(h => {
+        const slots = h.time_of_day && h.time_of_day.length ? h.time_of_day : ["all_day"];
+        return slots.includes("all_day");
+      });
+    }
+    return scheduledHabits.filter(h => (h.time_of_day || []).includes(activeSlot));
+  }, [scheduledHabits, activeSlot]);
+
+  const allDayExtras = useMemo(() => {
+    if (activeSlot === "all_day") return [];
     return scheduledHabits.filter(h => {
       const slots = h.time_of_day && h.time_of_day.length ? h.time_of_day : ["all_day"];
-      return slots.includes(activeSlot);
+      return slots.includes("all_day");
     });
   }, [scheduledHabits, activeSlot]);
 
