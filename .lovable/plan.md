@@ -1,23 +1,14 @@
-## Smart default slot + All Day section
+## Move Add button further below the habit list
 
-### Behavior
-- On first render of `/habits`, auto-select the slot matching the user's local time:
-  - 5:00–11:59 → Morning
-  - 12:00–16:59 → Afternoon
-  - 17:00–23:59 → Evening
-  - 0:00–4:59 → Morning (or keep last)
-- User can still tap any slot to override (no auto-switching after manual change).
-- When the active slot is Morning / Afternoon / Evening, render two sections in the habit list:
-  1. **{Slot name}** — habits whose `time_of_day` includes that slot
-  2. **All day** — habits with empty `time_of_day` or that include `all_day`
-- When active slot is **All Day**, behave as today (single list, no extra section).
-- Empty-state copy adjusts: if both the slot section and all-day section are empty, show "No habits in this slot."; if only the slot section is empty, still show the All Day section with a small muted "Nothing scheduled for {slot}" note above it.
+The button still appears just under the list because the page content is short and doesn't scroll, so the `sticky bottom-6` value never engages — the button sits at its natural position right after the list with only `mt-32` (128px) of spacing.
 
-### Files
-- `src/pages/HabitTracker.tsx`
-  - Add `getCurrentSlot()` helper using `new Date().getHours()`.
-  - Initialize `activeSlot` state with `useState<HabitSlot>(() => getCurrentSlot())`.
-  - Split `visibleHabits` into `slotHabits` and `allDayHabits` memos.
-  - Render two grouped sections with small section headers (`text-xs font-medium text-muted-foreground uppercase tracking-wide px-1`) when `activeSlot !== "all_day"`.
+### Change
 
-No schema, API, or other component changes.
+In both `src/pages/HabitTracker.tsx` (line ~304) and `src/pages/HabitStats.tsx` (line ~221):
+
+- Change the wrapper's top margin from `mt-32` to `mt-[400px]` to push the Add button ~400px below the last list item.
+- Keep `sticky bottom-6` so once the page does grow tall enough to scroll, the button still pins 24px above the viewport bottom.
+- Keep `flex justify-center` so it stays horizontally centered on the content column (already correctly aligned with the list above it).
+- No other changes — the button itself, sizing, color, and click behavior stay identical.
+
+That's it — single class swap on each of the two files.
