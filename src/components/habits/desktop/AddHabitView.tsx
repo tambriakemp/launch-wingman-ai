@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
-import { Bell, Link2 } from "lucide-react";
+import { Bell, Link2, Settings2 } from "lucide-react";
 import type { Habit } from "@/hooks/useHabitsData";
 import { toast } from "sonner";
+import { useHabitTags } from "@/hooks/useHabitTags";
+import { ManageTagsDialog } from "../ManageTagsDialog";
 
 interface Props {
   habits: Habit[];
@@ -17,13 +19,10 @@ const CADENCES = [
   { id: "3xweek", label: "3 × per week" },
   { id: "custom", label: "Custom days…" },
 ];
-const TAG_COLORS: Record<string, string> = {
-  Care: "#C65A3E",
-  Body: "#4F6B52",
-  Mind: "#4F6B52",
-  Rhythm: "#6B3A5C",
-  Launch: "#C48B2E",
-};
+const DAYS = [
+  { id: "MO", label: "M" }, { id: "TU", label: "T" }, { id: "WE", label: "W" },
+  { id: "TH", label: "T" }, { id: "FR", label: "F" }, { id: "SA", label: "S" }, { id: "SU", label: "S" },
+];
 
 function Pill({ children, active, color, onClick }: { children: React.ReactNode; active?: boolean; color?: string; onClick?: () => void }) {
   return (
@@ -44,10 +43,13 @@ function Pill({ children, active, color, onClick }: { children: React.ReactNode;
   );
 }
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Field({ label, children, hint, action }: { label: string; children: React.ReactNode; hint?: string; action?: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 22 }}>
-      <div className="hb-eyebrow" style={{ marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div className="hb-eyebrow">{label}</div>
+        {action}
+      </div>
       {children}
       {hint && <div className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute-soft)", marginTop: 6 }}>{hint}</div>}
     </div>
@@ -55,32 +57,41 @@ function Field({ label, children, hint }: { label: string; children: React.React
 }
 
 export function AddHabitView({ habits, onSubmit, onCancel }: Props) {
+  const { tags, colorFor } = useHabitTags();
   const [name, setName] = useState("Walk after dinner");
   const [time, setTime] = useState("evening");
   const [cadence, setCadence] = useState("daily");
+  const [customDays, setCustomDays] = useState<string[]>(["MO", "WE", "FR"]);
   const [pairWith, setPairWith] = useState<string>("");
   const [reminderTime, setReminderTime] = useState("19:30");
-  const [tag, setTag] = useState("Body");
+  const [tag, setTag] = useState(tags[0]?.name || "Body");
   const [saving, setSaving] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
-  const previewColor = TAG_COLORS[tag] || "#4F6B52";
+  const previewColor = colorFor(tag);
   const pairName = useMemo(
     () => habits.find((h) => h.id === pairWith)?.name || null,
     [habits, pairWith]
   );
 
+  const toggleDay = (d: string) => {
+    setCustomDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]);
+  };
+
   const save = async () => {
     if (!name.trim()) { toast.error("Give the habit a name"); return; }
+    if (cadence === "custom" && customDays.length === 0) { toast.error("Pick at least one day"); return; }
     setSaving(true);
     try {
       const freq = cadence === "3xweek" ? "custom" : cadence === "custom" ? "custom" : cadence;
+      const days = cadence === "3xweek" ? ["MO", "WE", "FR"] : cadence === "custom" ? customDays : null;
       await onSubmit({
         name: name.trim(),
         category: "personal",
         color: previewColor,
         icon: "circle",
         frequency: freq,
-        frequency_days: cadence === "3xweek" ? ["MO", "WE", "FR"] : null,
+        frequency_days: days,
         time_of_day: time === "anytime" ? [] : [time],
         reminder_times: [],
         pair_with_habit_id: pairWith || null,
@@ -134,6 +145,27 @@ export function AddHabitView({ habits, onSubmit, onCancel }: Props) {
               <Pill key={c.id} active={cadence === c.id} onClick={() => setCadence(c.id)}>{c.label}</Pill>
             ))}
           </div>
+          {cadence === "custom" && (
+            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              {DAYS.map((d) => {
+                const active = customDays.includes(d.id);
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => toggleDay(d.id)}
+                    aria-label={d.id}
+                    style={{
+                      width: 40, height: 40, borderRadius: "50%",
+                      border: `1px solid ${active ? "var(--hb-ink)" : "var(--hb-line)"}`,
+                      background: active ? "var(--hb-ink)" : "var(--hb-paper)",
+                      color: active ? "var(--hb-cream)" : "var(--hb-ink)",
+                      fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    }}
+                  >{d.label}</button>
+                );
+              })}
+            </div>
+          )}
         </Field>
 
         <Field label="Pair with (optional)" hint="Anchor this habit to one you already do.">
@@ -173,11 +205,24 @@ export function AddHabitView({ habits, onSubmit, onCancel }: Props) {
           </div>
         </Field>
 
-        <Field label="Tag">
+        <Field
+          label="Tag"
+          action={
+            <button
+              onClick={() => setTagsOpen(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 500, color: "var(--hb-mute)", background: "transparent", border: "none", cursor: "pointer" }}
+            >
+              <Settings2 className="w-3.5 h-3.5" /> Manage
+            </button>
+          }
+        >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {Object.keys(TAG_COLORS).map((t) => (
-              <Pill key={t} color={TAG_COLORS[t]} active={tag === t} onClick={() => setTag(t)}>{t}</Pill>
+            {tags.map((t) => (
+              <Pill key={t.name} color={t.color} active={tag === t.name} onClick={() => setTag(t.name)}>{t.name}</Pill>
             ))}
+            {tags.length === 0 && (
+              <span className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute)" }}>No tags — add one via Manage.</span>
+            )}
           </div>
         </Field>
 
@@ -221,7 +266,9 @@ export function AddHabitView({ habits, onSubmit, onCancel }: Props) {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 500, color: "var(--hb-ink)" }}>{name || "New habit"}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
-              <span style={{ fontSize: 11, color: "var(--hb-mute)" }}>{CADENCES.find(c => c.id === cadence)?.label || "Daily"}</span>
+              <span style={{ fontSize: 11, color: "var(--hb-mute)" }}>
+                {cadence === "custom" ? `${customDays.length} day${customDays.length === 1 ? "" : "s"}/wk` : (CADENCES.find(c => c.id === cadence)?.label || "Daily")}
+              </span>
               {pairName && (
                 <>
                   <span style={{ width: 2, height: 2, borderRadius: "50%", background: "var(--hb-cream-deep)" }} />
@@ -234,23 +281,9 @@ export function AddHabitView({ habits, onSubmit, onCancel }: Props) {
           </div>
           <div style={{ width: 26, height: 26, borderRadius: "50%", border: "1.5px solid var(--hb-cream-deep)" }} />
         </div>
-
-        {pairName && (
-          <div style={{
-            background: "var(--hb-terracotta-bg)", border: "1px solid var(--hb-terracotta-border)",
-            borderRadius: 14, padding: 18, display: "flex", gap: 12, alignItems: "flex-start",
-          }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%", background: "var(--hb-terracotta)",
-              color: "var(--hb-cream)", display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--hb-display)", fontStyle: "italic", fontWeight: 500, fontSize: 14, flexShrink: 0,
-            }}>L</div>
-            <div className="hb-italic" style={{ fontSize: 14, color: "var(--hb-terracotta-deep)", lineHeight: 1.45 }}>
-              Pairing with "{pairName}" gives this a built-in cue. I'll start tracking tonight.
-            </div>
-          </div>
-        )}
       </div>
+
+      <ManageTagsDialog open={tagsOpen} onOpenChange={setTagsOpen} />
     </div>
   );
 }
