@@ -163,13 +163,33 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
         style={{
           position: "fixed",
           inset: 0,
+          height: viewportHeight,
           zIndex: 90,
           display: "flex",
           flexDirection: "column",
           background: mounted ? "rgba(31,27,23,0.40)" : "rgba(31,27,23,0)",
           transition: "background 240ms ease",
+          touchAction: "none",
+          overscrollBehavior: "contain",
         }}
       >
+        <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
+
+        <div
+          className="hb-theme"
+          style={{
+            background: PAPER,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            boxShadow: "0 -10px 40px rgba(31,27,23,0.18)",
+            maxHeight: "92%",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            transform: mounted ? "translateY(0)" : "translateY(100%)",
+            transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+          }}
+        >
         <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
 
         <div
