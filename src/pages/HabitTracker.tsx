@@ -38,6 +38,8 @@ const HabitTracker = () => {
   const { userId, habits, completions, shields, loading, refetch, setCompletions } = useHabitsData();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileEditHabit, setMobileEditHabit] = useState<Habit | null>(null);
 
   // Sync native reminders when habits change
   useEffect(() => {
