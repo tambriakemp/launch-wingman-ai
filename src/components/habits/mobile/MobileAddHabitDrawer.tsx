@@ -364,7 +364,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                   </span>
                 </div>
                 <div className="hb-italic" style={{ fontSize: 15, lineHeight: 1.4, marginTop: 8, position: "relative" }}>
-                  Pairing this with "{pairName}" gives it a built-in cue — you almost always remember the first one.
+                  Pairing this with "{pairName}" is smart — you almost always do {pairName}, so this gets a built-in cue.
                 </div>
               </div>
             )}
