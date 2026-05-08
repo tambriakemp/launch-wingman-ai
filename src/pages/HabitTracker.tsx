@@ -200,7 +200,7 @@ const HabitTracker = () => {
       )}
 
       {groups.map(g => g.items.length > 0 && (
-        <div key={g.time} style={{ marginTop: 24, padding: "0 24px" }}>
+        <div key={g.time} style={{ marginTop: 22, padding: "0 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
             <div className="hb-eyebrow">{g.time}</div>
             <div className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute-soft)" }}>
