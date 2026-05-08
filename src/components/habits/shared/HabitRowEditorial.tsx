@@ -8,7 +8,9 @@ interface Props {
   streak: number;
   pairName?: string | null;
   onToggle: () => void;
-  onOpen: () => void;
+  onOpen?: () => void;
+  /** When true, clicking the row body does nothing (only the check toggles). */
+  readOnly?: boolean;
 }
 
 /**
