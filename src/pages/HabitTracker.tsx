@@ -213,7 +213,7 @@ const HabitTracker = () => {
               const pair = h.pair_with_habit_id ? habitMap.get(h.pair_with_habit_id)?.name ?? null : null;
               return (
                 <HabitRowEditorial key={h.id} habit={h} done={done} streak={getStreak(h, completions, shields)} pairName={pair}
-                  onToggle={() => toggleCompletion(h.id)} onOpen={() => openHabit(h)} />
+                  onToggle={() => toggleCompletion(h.id)} onOpen={() => { setMobileEditHabit(h); setMobileDrawerOpen(true); }} />
               );
             })}
           </div>
