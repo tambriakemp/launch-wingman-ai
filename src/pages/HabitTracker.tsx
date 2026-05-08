@@ -10,6 +10,8 @@ import { HabitsTableView } from "@/components/habits/desktop/HabitsTableView";
 import { StatsView } from "@/components/habits/desktop/StatsView";
 import { AddHabitView } from "@/components/habits/desktop/AddHabitView";
 import { HabitDetailSheet } from "@/components/habits/HabitDetailSheet";
+import { MobileAddHabitDrawer } from "@/components/habits/mobile/MobileAddHabitDrawer";
+import { MobileStatsScreen } from "@/components/habits/mobile/MobileStatsScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHabitsData, type Habit } from "@/hooks/useHabitsData";
 import { supabase } from "@/integrations/supabase/client";
