@@ -148,7 +148,7 @@ const HabitTracker = () => {
 
   const renderMobile = () => (
     <div style={{ background: "var(--hb-cream)", minHeight: "100vh", paddingBottom: 110 }}>
-      <div style={{ padding: "20px 24px 0" }}>
+      <div style={{ padding: "16px 16px 0" }}>
         <div className="hb-eyebrow">{format(new Date(), "EEEE · MMM d")}</div>
         <div className="hb-display" style={{ fontWeight: 500, fontSize: 36, color: "var(--hb-ink)", letterSpacing: "-0.025em", lineHeight: 1.05, marginTop: 6 }}>
           Good {(() => { const h = new Date().getHours(); return h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"; })()},<br />
