@@ -115,10 +115,13 @@ const HabitTracker = () => {
       return <TodayView habits={habits} completions={completions} shields={shields} onToggle={toggleCompletion} onOpen={openHabit} />;
     }
     if (activeTab === "Habits") {
-      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} onNew={() => openHabit(null)} />;
+      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} onNew={() => setActiveTab("Add habit")} />;
     }
     if (activeTab === "Statistics") {
       return <StatsView habits={habits} completions={completions} shields={shields} />;
+    }
+    if (activeTab === "Add habit") {
+      return <AddHabitView habits={habits} onSubmit={handleSaveHabit} onCancel={() => setActiveTab("Today")} />;
     }
     return null;
   };
@@ -153,10 +156,17 @@ const HabitTracker = () => {
 
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <button onClick={() => navigate("/habits?tab=Statistics")} style={{ flex: 1, padding: "10px 12px", background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 12, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <BarChart3 className="w-4 h-4" style={{ color: "var(--hb-terracotta)" }} />
+            <Flame className="w-4 h-4" style={{ color: "var(--hb-terracotta)" }} />
             <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: "var(--hb-ink)" }}>Statistics</div>
               <div style={{ fontSize: 10, color: "var(--hb-mute-soft)" }}>26 weeks · streaks</div>
+            </div>
+          </button>
+          <button onClick={() => navigate("/habits/review")} style={{ flex: 1, padding: "10px 12px", background: "var(--hb-ink)", border: "none", borderRadius: 12, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <Sparkles className="w-4 h-4" style={{ color: "var(--hb-terracotta-glow)" }} />
+            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+              <div className="hb-italic" style={{ fontSize: 13, fontWeight: 500, color: "var(--hb-cream)" }}>Sunday review</div>
+              <div style={{ fontSize: 10, color: "var(--hb-cream-deep)" }}>weekly snapshot</div>
             </div>
           </button>
         </div>
