@@ -169,11 +169,9 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           flexDirection: "column",
           background: mounted ? "rgba(31,27,23,0.40)" : "rgba(31,27,23,0)",
           transition: "background 240ms ease",
-          touchAction: "none",
-          overscrollBehavior: "contain",
         }}
       >
-        <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
+        <div onClick={() => onOpenChange(false)} style={{ flex: 1, touchAction: "none" }} />
 
         <div
           className="hb-theme"
