@@ -55,6 +55,46 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const [saving, setSaving] = useState(false);
   const [picker, setPicker] = useState<Picker>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [fieldFocused, setFieldFocused] = useState(false);
+  const [viewportKeyboardOpen, setViewportKeyboardOpen] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const [visualHeight, setVisualHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") return;
+
+    let raf = 0;
+    const updateKeyboardMetrics = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => {
+        const vv = window.visualViewport;
+        const layoutHeight = window.innerHeight;
+        const visibleHeight = vv?.height ?? layoutHeight;
+        const inset = vv ? Math.max(0, layoutHeight - visibleHeight - vv.offsetTop) : 0;
+        const keyboardOpen = inset > 80 || (vv ? visibleHeight < layoutHeight * 0.82 : false);
+
+        setKeyboardInset(keyboardOpen ? Math.round(inset) : 0);
+        setViewportKeyboardOpen(keyboardOpen);
+        setVisualHeight(Math.round(visibleHeight));
+      });
+    };
+
+    updateKeyboardMetrics();
+    window.visualViewport?.addEventListener("resize", updateKeyboardMetrics);
+    window.visualViewport?.addEventListener("scroll", updateKeyboardMetrics);
+    window.addEventListener("resize", updateKeyboardMetrics);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener("resize", updateKeyboardMetrics);
+      window.visualViewport?.removeEventListener("scroll", updateKeyboardMetrics);
+      window.removeEventListener("resize", updateKeyboardMetrics);
+      setFieldFocused(false);
+      setViewportKeyboardOpen(false);
+      setKeyboardInset(0);
+      setVisualHeight(null);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +124,10 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const tagColor = colorFor(tag);
   const otherHabits = habits.filter(h => !habit || h.id !== habit.id);
   const pairName = useMemo(() => habits.find(h => h.id === pairWith)?.name || null, [habits, pairWith]);
+  const keyboardActive = fieldFocused || viewportKeyboardOpen;
+  const drawerHeight = keyboardActive && visualHeight
+    ? `${Math.max(320, visualHeight - 10)}px`
+    : "min(92dvh, 720px)";
 
   const cadenceLabel = cadence === "custom"
     ? `${customDays.length} day${customDays.length === 1 ? "" : "s"}/wk`
@@ -124,10 +168,21 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="border-0 p-0 rounded-t-[24px] overflow-hidden"
-        style={{ background: "var(--hb-cream)", maxHeight: "92vh" }}
+        style={{ background: "var(--hb-cream)", height: drawerHeight, maxHeight: drawerHeight, bottom: keyboardInset ? `${keyboardInset}px` : 0 }}
       >
         <div
           className="hb-theme"
+          onFocusCapture={(event) => {
+            const el = event.target as HTMLElement;
+            if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) setFieldFocused(true);
+          }}
+          onBlurCapture={() => {
+            if (typeof window === "undefined") return;
+            window.setTimeout(() => {
+              const active = document.activeElement as HTMLElement | null;
+              setFieldFocused(!!active && ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+            }, 0);
+          }}
           style={{
             display: "flex", flexDirection: "column",
             height: "100%", overflow: "hidden",
@@ -154,7 +209,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 16, WebkitOverflowScrolling: "touch" }}>
+          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: keyboardActive ? 28 : 0, WebkitOverflowScrolling: "touch" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
@@ -368,30 +423,28 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Bottom action bar (in-flow, not floating) */}
-          <div style={{
-            padding: "12px 16px",
-            paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-            background: "var(--hb-cream)",
-            borderTop: "0.5px solid rgba(31,27,23,0.08)",
-            display: "flex", gap: 10,
-            flexShrink: 0,
-          }}>
-            <button
-              onClick={save} disabled={saving}
-              style={{
-                flex: 1, height: 48, borderRadius: 14, background: "var(--hb-ink)",
-                color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                border: "none", cursor: "pointer",
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {saving ? "Saving…" : isEdit ? "Save habit" : "Add habit"}
-              {!saving && <Plus className="w-4 h-4" />}
-            </button>
+            {/* Bottom action bar (scrolls with content, not sticky) */}
+            <div style={{
+              padding: "12px 16px",
+              paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+              background: "var(--hb-cream)",
+              borderTop: "0.5px solid rgba(31,27,23,0.08)",
+              display: "flex", gap: 10,
+            }}>
+              <button
+                onClick={save} disabled={saving}
+                style={{
+                  flex: 1, height: 48, borderRadius: 14, background: "var(--hb-ink)",
+                  color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  border: "none", cursor: "pointer",
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? "Saving…" : isEdit ? "Save habit" : "Add habit"}
+                {!saving && <Plus className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </DrawerContent>
