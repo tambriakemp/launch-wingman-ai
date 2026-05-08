@@ -64,6 +64,26 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const [picker, setPicker] = useState<Picker>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number>(typeof window !== "undefined" ? window.innerHeight : 800);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    const update = () => setViewportHeight(vv ? vv.height : window.innerHeight);
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    // Lock body scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -143,6 +163,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
         style={{
           position: "fixed",
           inset: 0,
+          height: viewportHeight,
           zIndex: 90,
           display: "flex",
           flexDirection: "column",
@@ -150,7 +171,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           transition: "background 240ms ease",
         }}
       >
-        <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
+        <div onClick={() => onOpenChange(false)} style={{ flex: 1, touchAction: "none" }} />
 
         <div
           className="hb-theme"
@@ -162,6 +183,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             maxHeight: "92%",
             display: "flex",
             flexDirection: "column",
+            minHeight: 0,
             transform: mounted ? "translateY(0)" : "translateY(100%)",
             transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
           }}
@@ -191,7 +213,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", flex: 1, paddingTop: 4, paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}>
+          <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", flex: 1, minHeight: 0, paddingTop: 4, paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
