@@ -123,15 +123,16 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        className="border-0 p-0"
-        style={{ background: "var(--hb-cream)", maxHeight: "100vh", height: "100vh" }}
+        className="border-0 p-0 rounded-t-[24px] overflow-hidden"
+        style={{ background: "var(--hb-cream)", maxHeight: "92vh" }}
       >
         <div
           className="hb-theme"
           style={{
             display: "flex", flexDirection: "column",
-            height: "100%",
+            height: "100%", overflow: "hidden",
             background: "var(--hb-cream)",
+            borderTopLeftRadius: 24, borderTopRightRadius: 24,
           }}
         >
           {/* Header */}
