@@ -369,15 +369,14 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             )}
           </div>
 
-          {/* Sticky bottom bar */}
+          {/* Bottom action bar (in-flow, not floating) */}
           <div style={{
             padding: "12px 16px",
-            paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-            background: "rgba(251,247,241,0.92)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+            background: "var(--hb-cream)",
             borderTop: "0.5px solid rgba(31,27,23,0.08)",
             display: "flex", gap: 10,
+            flexShrink: 0,
           }}>
             <button
               onClick={save} disabled={saving}
@@ -386,7 +385,6 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                 color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 border: "none", cursor: "pointer",
-                boxShadow: "0 4px 14px -4px rgba(31,27,23,0.4)",
                 opacity: saving ? 0.6 : 1,
               }}
             >
