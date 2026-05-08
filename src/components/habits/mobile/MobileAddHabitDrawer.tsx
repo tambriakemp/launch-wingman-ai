@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import { Bell, Link2, Plus, Clock, Calendar, Tag as TagIcon, ChevronRight, Check, Settings2 } from "lucide-react";
+import { Bell, Link2, Clock, Calendar, ChevronRight, Check, Settings2 } from "lucide-react";
 import type { Habit } from "@/hooks/useHabitsData";
 import { toast } from "sonner";
 import { useHabitTags } from "@/hooks/useHabitTags";
@@ -31,6 +30,15 @@ const DAYS = [
   { id: "TH", label: "T" }, { id: "FR", label: "F" }, { id: "SA", label: "S" }, { id: "SU", label: "S" },
 ];
 
+const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
+const SERIF = '"Fraunces", "New York", Georgia, serif';
+const TERRACOTTA = "#C65A3E";
+const PAPER = "#FBF7F1";
+const INK = "#1F1B17";
+const INK_60 = "rgba(31,27,23,0.62)";
+const INK_40 = "rgba(31,27,23,0.42)";
+const INK_20 = "rgba(31,27,23,0.20)";
+
 type Picker = null | "time" | "cadence" | "reminder" | "pair" | "tag";
 
 function formatTime12(t: string) {
@@ -55,49 +63,13 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const [saving, setSaving] = useState(false);
   const [picker, setPicker] = useState<Picker>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
-  const [fieldFocused, setFieldFocused] = useState(false);
-  const [viewportKeyboardOpen, setViewportKeyboardOpen] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
-  const [visualHeight, setVisualHeight] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!open || typeof window === "undefined") return;
-
-    let raf = 0;
-    const updateKeyboardMetrics = () => {
-      window.cancelAnimationFrame(raf);
-      raf = window.requestAnimationFrame(() => {
-        const vv = window.visualViewport;
-        const layoutHeight = window.innerHeight;
-        const visibleHeight = vv?.height ?? layoutHeight;
-        const inset = vv ? Math.max(0, layoutHeight - visibleHeight - vv.offsetTop) : 0;
-        const keyboardOpen = inset > 80 || (vv ? visibleHeight < layoutHeight * 0.82 : false);
-
-        setKeyboardInset(keyboardOpen ? Math.round(inset) : 0);
-        setViewportKeyboardOpen(keyboardOpen);
-        setVisualHeight(Math.round(visibleHeight));
-      });
-    };
-
-    updateKeyboardMetrics();
-    window.visualViewport?.addEventListener("resize", updateKeyboardMetrics);
-    window.visualViewport?.addEventListener("scroll", updateKeyboardMetrics);
-    window.addEventListener("resize", updateKeyboardMetrics);
-
-    return () => {
-      window.cancelAnimationFrame(raf);
-      window.visualViewport?.removeEventListener("resize", updateKeyboardMetrics);
-      window.visualViewport?.removeEventListener("scroll", updateKeyboardMetrics);
-      window.removeEventListener("resize", updateKeyboardMetrics);
-      setFieldFocused(false);
-      setViewportKeyboardOpen(false);
-      setKeyboardInset(0);
-      setVisualHeight(null);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setMounted(false);
+      return;
+    }
     setPicker(null);
     if (habit) {
       setName(habit.name);
@@ -118,16 +90,13 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
       setReminderTime("19:30");
       setTag(tags[0]?.name || "Body");
     }
+    requestAnimationFrame(() => setMounted(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, habit]);
 
   const tagColor = colorFor(tag);
   const otherHabits = habits.filter(h => !habit || h.id !== habit.id);
   const pairName = useMemo(() => habits.find(h => h.id === pairWith)?.name || null, [habits, pairWith]);
-  const keyboardActive = fieldFocused || viewportKeyboardOpen;
-  const drawerHeight = keyboardActive && visualHeight
-    ? `${Math.max(320, visualHeight - 10)}px`
-    : "min(92dvh, 720px)";
 
   const cadenceLabel = cadence === "custom"
     ? `${customDays.length} day${customDays.length === 1 ? "" : "s"}/wk`
@@ -137,6 +106,8 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const toggleDay = (d: string) => {
     setCustomDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
   };
+
+  const isComposer = name.trim().length === 0;
 
   const save = async () => {
     if (!name.trim()) { toast.error("Give the habit a name"); return; }
@@ -164,61 +135,72 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent
-        className="border-0 p-0 rounded-t-[24px] overflow-hidden"
-        style={{ background: "var(--hb-cream)", height: drawerHeight, maxHeight: drawerHeight, bottom: keyboardInset ? `${keyboardInset}px` : 0 }}
+    <>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 90,
+          display: "flex",
+          flexDirection: "column",
+          background: mounted ? "rgba(31,27,23,0.40)" : "rgba(31,27,23,0)",
+          transition: "background 240ms ease",
+        }}
       >
+        <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
+
         <div
           className="hb-theme"
-          onFocusCapture={(event) => {
-            const el = event.target as HTMLElement;
-            if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) setFieldFocused(true);
-          }}
-          onBlurCapture={() => {
-            if (typeof window === "undefined") return;
-            window.setTimeout(() => {
-              const active = document.activeElement as HTMLElement | null;
-              setFieldFocused(!!active && ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
-            }, 0);
-          }}
           style={{
-            display: "flex", flexDirection: "column",
-            height: "100%", overflow: "hidden",
-            background: "var(--hb-cream)",
-            borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            background: PAPER,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            boxShadow: "0 -10px 40px rgba(31,27,23,0.18)",
+            maxHeight: "92%",
+            display: "flex",
+            flexDirection: "column",
+            transform: mounted ? "translateY(0)" : "translateY(100%)",
+            transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
           }}
         >
+          {/* drag handle */}
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
+            <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
+          </div>
+
           {/* Header */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "8px 18px 14px",
+            padding: "8px 18px 12px",
           }}>
             <button
               onClick={() => onOpenChange(false)}
-              style={{ fontSize: 15, color: "var(--hb-mute)", fontWeight: 500, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}
+              style={{ background: "transparent", border: 0, padding: 0, fontFamily: SF, fontSize: 15.5, color: INK_60, fontWeight: 500, letterSpacing: -0.2, cursor: "pointer" }}
             >Cancel</button>
-            <div className="hb-italic" style={{ fontWeight: 500, fontSize: 18, color: "var(--hb-ink)" }}>
+            <div style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 500, fontSize: 18, letterSpacing: -0.4, color: INK }}>
               {isEdit ? "Edit habit" : "New habit"}
             </div>
             <button
-              onClick={save} disabled={saving}
-              style={{ fontSize: 15, color: "var(--hb-terracotta)", fontWeight: 700, background: "transparent", border: "none", cursor: "pointer", padding: 4, opacity: saving ? 0.5 : 1 }}
+              onClick={save}
+              disabled={isComposer || saving}
+              style={{ background: "transparent", border: 0, padding: 0, fontFamily: SF, fontSize: 15.5, color: isComposer ? INK_40 : TERRACOTTA, fontWeight: 700, letterSpacing: -0.2, cursor: isComposer ? "default" : "pointer" }}
             >Save</button>
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: keyboardActive ? 28 : 0, WebkitOverflowScrolling: "touch" }}>
+          <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", flex: 1, paddingTop: 4, paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
-                background: "var(--hb-paper)", borderRadius: 18,
+                background: "#fff", borderRadius: 18,
                 border: "1.5px solid rgba(198,90,62,0.45)",
                 padding: "14px 16px",
                 boxShadow: "0 0 0 4px rgba(198,90,62,0.10)",
               }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--hb-terracotta)", marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: TERRACOTTA, marginBottom: 6, fontFamily: SF }}>
                   What's the habit?
                 </div>
                 <input
@@ -229,11 +211,11 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                   style={{
                     width: "100%", border: "none", background: "transparent",
                     outline: "none", padding: 0,
-                    fontFamily: "var(--hb-display)", fontWeight: 400, fontSize: 19,
-                    letterSpacing: "-0.4px", color: "var(--hb-ink)", lineHeight: 1.3,
+                    fontFamily: SERIF, fontWeight: 400, fontSize: 19,
+                    letterSpacing: -0.4, color: INK, lineHeight: 1.3,
                   }}
                 />
-                <div className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute-soft)", marginTop: 6 }}>
+                <div style={{ fontSize: 13, color: "rgba(31,27,23,0.5)", marginTop: 6, fontFamily: SERIF, fontStyle: "italic" }}>
                   Keep it small enough that you'll do it on a hard day.
                 </div>
               </div>
@@ -288,9 +270,9 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                             aria-label={d.id}
                             style={{
                               width: 38, height: 38, borderRadius: "50%",
-                              border: `1px solid ${active ? "var(--hb-ink)" : "var(--hb-line)"}`,
-                              background: active ? "var(--hb-ink)" : "var(--hb-paper)",
-                              color: active ? "var(--hb-cream)" : "var(--hb-ink)",
+                              border: `1px solid ${active ? INK : "rgba(31,27,23,0.15)"}`,
+                              background: active ? INK : "#fff",
+                              color: active ? PAPER : INK,
                               fontSize: 13, fontWeight: 500, cursor: "pointer",
                             }}
                           >{d.label}</button>
@@ -317,8 +299,8 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                     onChange={(e) => setReminderTime(e.target.value)}
                     style={{
                       padding: "10px 14px", fontSize: 15,
-                      fontFamily: "var(--hb-body)", color: "var(--hb-ink)",
-                      background: "var(--hb-paper)", border: "1px solid var(--hb-line)",
+                      fontFamily: SF, color: INK,
+                      background: "#fff", border: "1px solid rgba(31,27,23,0.15)",
                       borderRadius: 10, outline: "none",
                     }}
                   />
@@ -369,7 +351,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
               right={
                 <button
                   onClick={() => setTagsOpen(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: "var(--hb-mute)", background: "transparent", border: "none", cursor: "pointer", letterSpacing: "0.6px", textTransform: "uppercase" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: INK_60, background: "transparent", border: "none", cursor: "pointer", letterSpacing: 0.6, textTransform: "uppercase", fontFamily: SF }}
                 >
                   <Settings2 className="w-3 h-3" /> Manage
                 </button>
@@ -394,7 +376,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                     ))}
                   </ChipRow>
                   {tags.length === 0 && (
-                    <div className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute)" }}>No tags — tap Manage to add one.</div>
+                    <div style={{ fontSize: 13, color: INK_60, fontFamily: SERIF, fontStyle: "italic" }}>No tags — tap Manage to add one.</div>
                   )}
                 </PickerBody>
               )}
@@ -404,7 +386,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             {pairName && (
               <div style={{
                 margin: "14px 16px 0", padding: "14px 16px",
-                background: "var(--hb-ink)", color: "var(--hb-cream)", borderRadius: 16,
+                background: INK, color: PAPER, borderRadius: 16,
                 position: "relative", overflow: "hidden",
               }}>
                 <div style={{
@@ -413,44 +395,22 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                   background: "radial-gradient(circle, rgba(198,90,62,0.30), transparent 70%)",
                 }} />
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, position: "relative" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--hb-terracotta)" }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--hb-terracotta-glow)" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: TERRACOTTA }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: "#E68A6E", fontFamily: SF }}>
                     I noticed
                   </span>
                 </div>
-                <div className="hb-italic" style={{ fontSize: 15, lineHeight: 1.4, marginTop: 8, position: "relative" }}>
+                <div style={{ fontSize: 15, lineHeight: 1.4, marginTop: 8, position: "relative", fontFamily: SERIF, fontStyle: "italic" }}>
                   Pairing this with "{pairName}" is smart — you almost always do {pairName}, so this gets a built-in cue.
                 </div>
               </div>
             )}
-            {/* Bottom action bar (scrolls with content, not sticky) */}
-            <div style={{
-              padding: "12px 16px",
-              paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-              background: "var(--hb-cream)",
-              borderTop: "0.5px solid rgba(31,27,23,0.08)",
-              display: "flex", gap: 10,
-            }}>
-              <button
-                onClick={save} disabled={saving}
-                style={{
-                  flex: 1, height: 48, borderRadius: 14, background: "var(--hb-ink)",
-                  color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  border: "none", cursor: "pointer",
-                  opacity: saving ? 0.6 : 1,
-                }}
-              >
-                {saving ? "Saving…" : isEdit ? "Save habit" : "Add habit"}
-                {!saving && <Plus className="w-4 h-4" />}
-              </button>
-            </div>
           </div>
         </div>
-      </DrawerContent>
+      </div>
 
       <ManageTagsDialog open={tagsOpen} onOpenChange={setTagsOpen} />
-    </Drawer>
+    </>
   );
 }
 
@@ -462,7 +422,7 @@ function SectionHeader({ children, right }: { children: React.ReactNode; right?:
       padding: "12px 22px 6px",
       display: "flex", alignItems: "center", justifyContent: "space-between",
     }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", textTransform: "uppercase", color: "var(--hb-mute)" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase", color: INK_60, fontFamily: SF }}>
         {children}
       </div>
       {right}
@@ -473,7 +433,7 @@ function SectionHeader({ children, right }: { children: React.ReactNode; right?:
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      background: "var(--hb-paper)", borderRadius: 16, margin: "0 16px 12px",
+      background: "#fff", borderRadius: 16, margin: "0 16px 12px",
       boxShadow: "0 1px 2px rgba(31,27,23,0.04)", overflow: "hidden",
     }}>{children}</div>
   );
@@ -497,7 +457,7 @@ function Row({
       style={{
         width: "100%", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
         borderBottom: divider ? "0.5px solid rgba(31,27,23,0.08)" : "none",
-        background: expanded ? "var(--hb-warm)" : "transparent",
+        background: expanded ? "rgba(198,90,62,0.06)" : "transparent",
         border: "none", cursor: "pointer", textAlign: "left",
       }}
     >
@@ -507,12 +467,12 @@ function Row({
       }}>
         {icon}
       </div>
-      <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--hb-ink)", letterSpacing: "-0.2px" }}>
+      <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: INK, letterSpacing: -0.2, fontFamily: SF }}>
         {label}
       </div>
       <div style={{
         display: "inline-flex", alignItems: "center", gap: 6,
-        fontSize: 14, color: placeholder ? "var(--hb-mute-soft)" : "var(--hb-ink)",
+        fontSize: 14, color: placeholder ? INK_40 : INK, fontFamily: SF,
       }}>
         {value}
         <ChevronRight className="w-[13px] h-[13px]" style={{ color: "#B3AAA0", transform: expanded ? "rotate(90deg)" : "none", transition: "transform 150ms ease" }} />
@@ -526,7 +486,7 @@ function PickerBody({ children }: { children: React.ReactNode }) {
     <div style={{
       padding: "10px 14px 14px",
       borderTop: "0.5px solid rgba(31,27,23,0.08)",
-      background: "var(--hb-warm)",
+      background: "rgba(198,90,62,0.04)",
     }}>
       {children}
     </div>
@@ -543,10 +503,11 @@ function Chip({ children, active, color, onClick }: { children: React.ReactNode;
       onClick={onClick}
       style={{
         padding: "8px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500,
-        border: `1px solid ${active ? "var(--hb-ink)" : "var(--hb-line)"}`,
-        background: active ? "var(--hb-ink)" : "var(--hb-paper)",
-        color: active ? "var(--hb-cream)" : "var(--hb-ink)",
+        border: `1px solid ${active ? INK : "rgba(31,27,23,0.15)"}`,
+        background: active ? INK : "#fff",
+        color: active ? PAPER : INK,
         display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
+        fontFamily: SF,
       }}
     >
       {color && <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />}
@@ -561,16 +522,16 @@ function PairOption({ active, label, color, onClick }: { active?: boolean; label
       onClick={onClick}
       style={{
         width: "100%", padding: "10px 12px", borderRadius: 10,
-        background: active ? "var(--hb-paper)" : "transparent",
-        border: active ? "1px solid var(--hb-line)" : "1px solid transparent",
+        background: active ? "#fff" : "transparent",
+        border: active ? "1px solid rgba(31,27,23,0.10)" : "1px solid transparent",
         display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "left",
       }}
     >
       {color
         ? <span style={{ width: 10, height: 10, borderRadius: "50%", background: color }} />
         : <span style={{ width: 10 }} />}
-      <span style={{ flex: 1, fontSize: 14, color: "var(--hb-ink)" }}>{label}</span>
-      {active && <Check className="w-4 h-4" style={{ color: "var(--hb-terracotta)" }} />}
+      <span style={{ flex: 1, fontSize: 14, color: INK, fontFamily: SF }}>{label}</span>
+      {active && <Check className="w-4 h-4" style={{ color: TERRACOTTA }} />}
     </button>
   );
 }

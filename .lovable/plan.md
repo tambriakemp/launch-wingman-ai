@@ -1,39 +1,39 @@
-## Comparison: reference HTML vs. current `MobileAddHabitDrawer.tsx`
+## Goal
 
-I extracted the visible content + structure from `Add_Habit_Bottom_Drawer.html` and walked it against the current JSX. The structure matches well — same sections in the same order, same labels, same italic helper, same "I noticed" callout, same in-flow Add button. A few small things are off and worth fixing in the same pass as the corner-radius bug.
+The Add Habit drawer on mobile has two problems:
+1. The big "Add habit" button at the bottom acts sticky/floating and covers fields when the keyboard opens.
+2. When focusing the name field after closing the keyboard, the drawer collapses awkwardly (screenshot 1) instead of showing the form properly.
 
-### Findings
+The Create Task sheet (`MobileAddTaskSheet`) already solves both of these. We'll rebuild the habit drawer to match its pattern.
 
-| Reference | Current JSX | Status |
-|---|---|---|
-| Drawer top is rounded (sits a bit below the status bar) | `height: 100vh` makes drawer flush to top, hiding `rounded-t-[10px]` | **Bug — fix** |
-| Top edge has visible drag handle | Vaul renders it but it sits on cream bg, low contrast | Minor — bump opacity |
-| Header: Cancel · *New habit* · Save | ✓ Matches | OK |
-| Habit input card with terracotta border + glow + italic helper | ✓ Matches | OK |
-| WHEN section: Time / Cadence / Reminder rows | ✓ Matches | OK |
-| Time labels include `Morning / All day / Evening / Anytime` | ✓ Matches | OK |
-| Reminder shows `7:30pm` formatted | ✓ Matches (`formatTime12`) | OK |
-| PAIR WITH: After → habit name | ✓ Matches | OK |
-| TAG: small dot + tag name + "Change" | ✓ Matches | OK |
-| "I noticed" copy is specific ("…you almost always log dinner, so the walk has a built-in cue") | Generic ("…you almost always remember the first one") | Minor copy tweak |
-| Add button is in-flow at the bottom of the drawer | ✓ Matches (just fixed) | OK |
-| Default new-habit time = Evening | ✓ Matches | OK |
+## Changes (single file: `src/components/habits/mobile/MobileAddHabitDrawer.tsx`)
 
-### Plan
+1. **Replace the shadcn `Drawer` with the same custom fixed-overlay pattern used in `MobileAddTaskSheet`:**
+   - `position: fixed; inset: 0` container with a fade-in scrim and a translateY slide-up panel.
+   - `maxHeight: 92%` panel, `borderTopLeftRadius/RightRadius: 28` (matches the task sheet, fixes the squared top corners issue).
+   - Drag-handle pill at the top.
+   - No `visualViewport` / keyboard-inset math — let the browser handle it like the task sheet does (it works correctly there).
 
-1. **Fix top corners (primary bug).**
-   - Change `MobileAddHabitDrawer` `DrawerContent` from `height: 100vh / maxHeight: 100vh` to `maxHeight: 92vh` (matches the project's other drawer at `h-[90vh]`). This restores the visible curve and leaves space for the drag handle.
-   - Add `className="rounded-t-[24px]"` to `DrawerContent` so the curve reads as editorial (the base `rounded-t-[10px]` is too subtle for this design).
-   - Add `overflow-hidden` on the inner `.hb-theme` container so the cream background doesn't square off the corners.
+2. **Move "Save" into the header (top-right), remove the bottom "Add habit" button entirely.**
+   - Header layout: `Cancel` | `New habit / Edit habit` | `Save` (terracotta, bold), exactly like the task sheet.
+   - This eliminates the sticky-button problem completely — there is no bottom button to be covered by the keyboard.
 
-2. **Drag handle polish.** In `MobileAddHabitDrawer` only, nudge the handle: render a thin custom handle inside the drawer at the top with `width: 36px; height: 4px; bg: rgba(31,27,23,0.18); margin: 8px auto 0`. Hide vaul's default handle for this drawer (it's already auto-rendered, so we can leave it and just adjust spacing — pick the simpler of the two when implementing).
+3. **Scroll body:** the WHEN / PAIR WITH / TAG sections and the AI nudge live inside the same `overflow-y: auto` scroller used in the task sheet, with normal bottom padding (no keyboard-conditional padding, no floating bar).
 
-3. **AI nudge copy.** Update the fallback text to reference the paired habit by name and the "built-in cue" framing from the reference, e.g. *"Pairing this with "{pairName}" is smart — you almost always do {pairName}, so this gets a built-in cue."*
+4. **Keep all existing habit fields and pickers intact:**
+   - Name input card, Time of day, Cadence (+ custom days), Reminder, Pair with, Tag, Manage tags button, AI "I noticed" nudge, save logic — none of the form behavior or data model changes.
+   - Remove the now-unused `fieldFocused`, `viewportKeyboardOpen`, `keyboardInset`, `visualHeight` state and the `visualViewport` effect.
 
-4. **No structural changes** to sections, fields, icons, picker bodies, footer button, or the ManageTags entry point — they already match the reference.
+5. **Delete-confirm dialog / ManageTagsDialog** stay as-is.
 
-### Files to edit
+## Out of scope
 
-- `src/components/habits/mobile/MobileAddHabitDrawer.tsx` — height/radius/overflow on `DrawerContent`, drag-handle tweak, copy update.
+- No backend / hook / data changes.
+- No changes to `MobileAddTaskSheet` or shared `Drawer` primitive.
+- No changes to the desktop habit dialog.
 
-No DB, hook, or schema changes.
+## Result
+
+- Drawer top corners are rounded (28px) like every other sheet.
+- Save lives in the header — never hidden by the keyboard.
+- Focusing the name field no longer triggers the collapsed/floating-button layout from screenshot 1; the drawer behaves exactly like the create-task sheet.
