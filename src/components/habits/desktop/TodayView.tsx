@@ -139,7 +139,7 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
                     streak={getStreak(h, completions, shields)}
                     pairName={pair}
                     onToggle={() => onToggle(h.id)}
-                    onOpen={() => onOpen(h)}
+                    readOnly
                   />
                 );
               })}
