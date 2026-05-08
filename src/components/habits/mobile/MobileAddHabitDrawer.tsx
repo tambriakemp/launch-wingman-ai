@@ -153,7 +153,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 100 }}>
+          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 16, WebkitOverflowScrolling: "touch" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
