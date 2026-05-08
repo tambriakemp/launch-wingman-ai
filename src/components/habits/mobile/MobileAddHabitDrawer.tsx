@@ -55,6 +55,46 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const [saving, setSaving] = useState(false);
   const [picker, setPicker] = useState<Picker>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [fieldFocused, setFieldFocused] = useState(false);
+  const [viewportKeyboardOpen, setViewportKeyboardOpen] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const [visualHeight, setVisualHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") return;
+
+    let raf = 0;
+    const updateKeyboardMetrics = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => {
+        const vv = window.visualViewport;
+        const layoutHeight = window.innerHeight;
+        const visibleHeight = vv?.height ?? layoutHeight;
+        const inset = vv ? Math.max(0, layoutHeight - visibleHeight - vv.offsetTop) : 0;
+        const keyboardOpen = inset > 80 || (vv ? visibleHeight < layoutHeight * 0.82 : false);
+
+        setKeyboardInset(keyboardOpen ? Math.round(inset) : 0);
+        setViewportKeyboardOpen(keyboardOpen);
+        setVisualHeight(Math.round(visibleHeight));
+      });
+    };
+
+    updateKeyboardMetrics();
+    window.visualViewport?.addEventListener("resize", updateKeyboardMetrics);
+    window.visualViewport?.addEventListener("scroll", updateKeyboardMetrics);
+    window.addEventListener("resize", updateKeyboardMetrics);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener("resize", updateKeyboardMetrics);
+      window.visualViewport?.removeEventListener("scroll", updateKeyboardMetrics);
+      window.removeEventListener("resize", updateKeyboardMetrics);
+      setFieldFocused(false);
+      setViewportKeyboardOpen(false);
+      setKeyboardInset(0);
+      setVisualHeight(null);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +124,10 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const tagColor = colorFor(tag);
   const otherHabits = habits.filter(h => !habit || h.id !== habit.id);
   const pairName = useMemo(() => habits.find(h => h.id === pairWith)?.name || null, [habits, pairWith]);
+  const keyboardActive = fieldFocused || viewportKeyboardOpen;
+  const drawerHeight = keyboardActive && visualHeight
+    ? `${Math.max(320, visualHeight - 10)}px`
+    : "min(92dvh, 720px)";
 
   const cadenceLabel = cadence === "custom"
     ? `${customDays.length} day${customDays.length === 1 ? "" : "s"}/wk`
@@ -124,10 +168,21 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="border-0 p-0 rounded-t-[24px] overflow-hidden"
-        style={{ background: "var(--hb-cream)", maxHeight: "92vh" }}
+        style={{ background: "var(--hb-cream)", height: drawerHeight, maxHeight: drawerHeight, bottom: keyboardInset ? `${keyboardInset}px` : 0 }}
       >
         <div
           className="hb-theme"
+          onFocusCapture={(event) => {
+            const el = event.target as HTMLElement;
+            if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) setFieldFocused(true);
+          }}
+          onBlurCapture={() => {
+            if (typeof window === "undefined") return;
+            window.setTimeout(() => {
+              const active = document.activeElement as HTMLElement | null;
+              setFieldFocused(!!active && ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+            }, 0);
+          }}
           style={{
             display: "flex", flexDirection: "column",
             height: "100%", overflow: "hidden",
