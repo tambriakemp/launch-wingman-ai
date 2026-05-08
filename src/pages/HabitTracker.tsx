@@ -15,7 +15,7 @@ import { useHabitsData, type Habit } from "@/hooks/useHabitsData";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Flame, BarChart3, Sparkles } from "lucide-react";
+import { Plus, Flame, Sparkles } from "lucide-react";
 import { HabitRowEditorial } from "@/components/habits/shared/HabitRowEditorial";
 import { isHabitScheduledOn, getStreak } from "@/lib/habits/streak";
 import { lightHaptic, successHaptic, syncHabitReminders } from "@/lib/habits/notifications";
