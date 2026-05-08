@@ -309,7 +309,51 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
               </div>
             </Field>
 
-            {/* Stats / Notes */}
+            {/* Tag */}
+            <Field label="Tag">
+              <div className="flex flex-wrap gap-1.5">
+                {TAGS.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTag(tag === t ? "" : t)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                      tag === t
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    )}
+                  >{t}</button>
+                ))}
+              </div>
+            </Field>
+
+            {/* Pair with */}
+            {habits.filter(h => !habit || h.id !== habit.id).length > 0 && (
+              <Field label="Pair with (after…)">
+                <Select value={pairWith || "none"} onValueChange={v => setPairWith(v === "none" ? "" : v)}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Choose a habit" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
+                    {habits.filter(h => !habit || h.id !== habit.id).map(h => (
+                      <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+
+            {/* Single reminder time (native notification) */}
+            <Field label="Daily reminder time">
+              <Input
+                type="time"
+                value={reminderTime}
+                onChange={e => setReminderTime(e.target.value)}
+                className="h-10"
+              />
+              <p className="text-[11px] text-muted-foreground">Used for native push reminders.</p>
+            </Field>
+
             {isEdit && (
               <Tabs defaultValue="stats" className="pt-2">
                 <TabsList className="grid w-full grid-cols-2">
