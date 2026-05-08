@@ -10,6 +10,8 @@ import { HabitsTableView } from "@/components/habits/desktop/HabitsTableView";
 import { StatsView } from "@/components/habits/desktop/StatsView";
 import { AddHabitView } from "@/components/habits/desktop/AddHabitView";
 import { HabitDetailSheet } from "@/components/habits/HabitDetailSheet";
+import { MobileAddHabitDrawer } from "@/components/habits/mobile/MobileAddHabitDrawer";
+import { MobileStatsScreen } from "@/components/habits/mobile/MobileStatsScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHabitsData, type Habit } from "@/hooks/useHabitsData";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,8 @@ const HabitTracker = () => {
   const { userId, habits, completions, shields, loading, refetch, setCompletions } = useHabitsData();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileEditHabit, setMobileEditHabit] = useState<Habit | null>(null);
 
   // Sync native reminders when habits change
   useEffect(() => {
@@ -209,7 +213,7 @@ const HabitTracker = () => {
               const pair = h.pair_with_habit_id ? habitMap.get(h.pair_with_habit_id)?.name ?? null : null;
               return (
                 <HabitRowEditorial key={h.id} habit={h} done={done} streak={getStreak(h, completions, shields)} pairName={pair}
-                  onToggle={() => toggleCompletion(h.id)} onOpen={() => openHabit(h)} />
+                  onToggle={() => toggleCompletion(h.id)} onOpen={() => { setMobileEditHabit(h); setMobileDrawerOpen(true); }} />
               );
             })}
           </div>
@@ -224,7 +228,7 @@ const HabitTracker = () => {
       )}
 
       <button
-        onClick={() => openHabit(null)}
+        onClick={() => { setMobileEditHabit(null); setMobileDrawerOpen(true); }}
         style={{
           position: "fixed", bottom: "calc(28px + env(safe-area-inset-bottom))", right: 24,
           width: 56, height: 56, borderRadius: "50%",
@@ -239,6 +243,13 @@ const HabitTracker = () => {
     </div>
   );
 
+  const renderMobileContent = () => {
+    if (activeTab === "Statistics") {
+      return <MobileStatsScreen habits={habits} completions={completions} shields={shields} onBack={() => setActiveTab("Today")} />;
+    }
+    return renderMobile();
+  };
+
   return (
     <ProjectLayout>
       <HabitsThemeShell>
@@ -246,7 +257,7 @@ const HabitTracker = () => {
         {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
         {!isMobile ? (
           <div style={{ height: "calc(100vh - 140px)" }}>{renderDesktop()}</div>
-        ) : renderMobile()}
+        ) : renderMobileContent()}
       </HabitsThemeShell>
 
       <HabitDetailSheet
@@ -257,6 +268,24 @@ const HabitTracker = () => {
         completions={completions}
         onSubmit={handleSaveHabit}
         onArchive={handleArchiveHabit}
+      />
+
+      <MobileAddHabitDrawer
+        open={mobileDrawerOpen}
+        onOpenChange={(o) => { setMobileDrawerOpen(o); if (!o) setMobileEditHabit(null); }}
+        habits={habits}
+        habit={mobileEditHabit}
+        onSubmit={async (data) => {
+          if (mobileEditHabit) {
+            // Edit path: update through activeHabit-style flow
+            const { error } = await supabase.from("habits" as any).update(data).eq("id", mobileEditHabit.id);
+            if (error) { toast.error("Failed to update habit"); return; }
+            toast.success("Habit updated");
+            refetch();
+          } else {
+            await handleSaveHabit(data);
+          }
+        }}
       />
     </ProjectLayout>
   );
