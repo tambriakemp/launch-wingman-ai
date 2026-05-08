@@ -123,15 +123,16 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        className="border-0 p-0"
-        style={{ background: "var(--hb-cream)", maxHeight: "100vh", height: "100vh" }}
+        className="border-0 p-0 rounded-t-[24px] overflow-hidden"
+        style={{ background: "var(--hb-cream)", maxHeight: "92vh" }}
       >
         <div
           className="hb-theme"
           style={{
             display: "flex", flexDirection: "column",
-            height: "100%",
+            height: "100%", overflow: "hidden",
             background: "var(--hb-cream)",
+            borderTopLeftRadius: 24, borderTopRightRadius: 24,
           }}
         >
           {/* Header */}
@@ -363,7 +364,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                   </span>
                 </div>
                 <div className="hb-italic" style={{ fontSize: 15, lineHeight: 1.4, marginTop: 8, position: "relative" }}>
-                  Pairing this with "{pairName}" gives it a built-in cue — you almost always remember the first one.
+                  Pairing this with "{pairName}" is smart — you almost always do {pairName}, so this gets a built-in cue.
                 </div>
               </div>
             )}
