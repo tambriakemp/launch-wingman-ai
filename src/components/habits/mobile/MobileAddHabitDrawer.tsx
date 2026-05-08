@@ -209,7 +209,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 16, WebkitOverflowScrolling: "touch" }}>
+          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: keyboardActive ? 28 : 0, WebkitOverflowScrolling: "touch" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
@@ -423,30 +423,28 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Bottom action bar (in-flow, not floating) */}
-          <div style={{
-            padding: "12px 16px",
-            paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-            background: "var(--hb-cream)",
-            borderTop: "0.5px solid rgba(31,27,23,0.08)",
-            display: "flex", gap: 10,
-            flexShrink: 0,
-          }}>
-            <button
-              onClick={save} disabled={saving}
-              style={{
-                flex: 1, height: 48, borderRadius: 14, background: "var(--hb-ink)",
-                color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                border: "none", cursor: "pointer",
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {saving ? "Saving…" : isEdit ? "Save habit" : "Add habit"}
-              {!saving && <Plus className="w-4 h-4" />}
-            </button>
+            {/* Bottom action bar (scrolls with content, not sticky) */}
+            <div style={{
+              padding: "12px 16px",
+              paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+              background: "var(--hb-cream)",
+              borderTop: "0.5px solid rgba(31,27,23,0.08)",
+              display: "flex", gap: 10,
+            }}>
+              <button
+                onClick={save} disabled={saving}
+                style={{
+                  flex: 1, height: 48, borderRadius: 14, background: "var(--hb-ink)",
+                  color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  border: "none", cursor: "pointer",
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? "Saving…" : isEdit ? "Save habit" : "Add habit"}
+                {!saving && <Plus className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </DrawerContent>
