@@ -34,6 +34,8 @@ const SLOTS = [
   { id: "all_day", label: "All day" },
 ];
 
+const TAGS = ["Care", "Body", "Mind", "Rhythm", "Launch"];
+
 interface HabitDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,9 +43,10 @@ interface HabitDetailSheetProps {
   completions: HabitCompletion[];
   onSubmit: (data: Partial<Habit>) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
+  habits?: Habit[];
 }
 
-export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSubmit, onArchive }: HabitDetailSheetProps) {
+export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSubmit, onArchive, habits = [] }: HabitDetailSheetProps) {
   const isEdit = !!habit;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -56,6 +59,9 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
   const [duration, setDuration] = useState<string>("");
   const [reminders, setReminders] = useState<string[]>([]);
   const [newReminder, setNewReminder] = useState("");
+  const [pairWith, setPairWith] = useState<string>("");
+  const [tag, setTag] = useState<string>("");
+  const [reminderTime, setReminderTime] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -71,11 +77,15 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
       setTimeOfDay(habit.time_of_day || []);
       setDuration(habit.duration_minutes ? String(habit.duration_minutes) : "");
       setReminders(habit.reminder_times || []);
+      setPairWith(habit.pair_with_habit_id || "");
+      setTag(habit.tag || "");
+      setReminderTime(habit.reminder_time ? habit.reminder_time.slice(0, 5) : "");
     } else {
       setName(""); setDescription(""); setNotes("");
       setCategory("personal"); setColor("#0ea572");
       setFrequency("daily"); setFrequencyDays([]);
       setTimeOfDay([]); setDuration(""); setReminders([]);
+      setPairWith(""); setTag(""); setReminderTime("");
     }
   }, [habit, open]);
 
@@ -108,6 +118,9 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
         time_of_day: timeOfDay,
         duration_minutes: duration ? parseInt(duration, 10) : null,
         reminder_times: reminders,
+        pair_with_habit_id: pairWith || null,
+        tag: tag || null,
+        reminder_time: reminderTime ? `${reminderTime}:00` : null,
       });
       onOpenChange(false);
     } finally {
