@@ -1,12 +1,11 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
-import { Flame, Shield } from "lucide-react";
+import { Flame, Shield, Check } from "lucide-react";
 import type { Habit, HabitCompletion, StreakShield } from "@/hooks/useHabitsData";
 import { getStreak, isHabitScheduledOn } from "@/lib/habits/streak";
 import { HabitRowEditorial } from "../shared/HabitRowEditorial";
 import { AINudgeCard } from "../shared/AINudgeCard";
 import { useHabitNudge } from "@/hooks/useHabitNudge";
-import { useNavigate } from "react-router-dom";
 
 interface Props {
   habits: Habit[];
@@ -22,7 +21,6 @@ const WEEK = [
 ];
 
 export function TodayView({ habits, completions, shields, onToggle, onOpen }: Props) {
-  const navigate = useNavigate();
   const nudge = useHabitNudge(habits, completions, "daily");
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
@@ -113,9 +111,8 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
               body={nudge.loading
                 ? "Reading your week…"
                 : (nudge.message || "A small promise, kept again, is what makes it a habit.")}
-              primaryLabel="Sunday review"
-              secondaryLabel="Dismiss"
-              onPrimary={() => navigate("/habits/review")}
+              primaryLabel="Pair them"
+              secondaryLabel="Maybe later"
             />
           </div>
         )}
@@ -195,6 +192,36 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
             <Shield className="w-4 h-4" style={{ color: "var(--hb-sage)" }} />
             <div style={{ fontSize: 12, color: "var(--hb-ink-soft)", flex: 1 }}>1 streak shield available</div>
             <div style={{ fontSize: 11, color: "var(--hb-mute)" }}>resets monthly</div>
+          </div>
+        </div>
+
+        {/* Today's chain */}
+        <div style={{ background: "var(--hb-warm)", borderRadius: 14, padding: 20 }}>
+          <div className="hb-eyebrow" style={{ marginBottom: 12 }}>Today's chain</div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {scheduled.length === 0 && (
+              <div style={{ fontSize: 13, color: "var(--hb-mute)" }}>Add habits to see today's chain.</div>
+            )}
+            {scheduled.map((h) => {
+              const done = completions.some((c) => c.habit_id === h.id && c.completed_date === todayStr);
+              return (
+                <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0" }}>
+                  <div style={{
+                    width: 14, height: 14, borderRadius: "50%",
+                    background: done ? "var(--hb-sage)" : "transparent",
+                    border: done ? "none" : "1.5px solid var(--hb-cream-deep)",
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {done && <Check className="w-2.5 h-2.5" style={{ color: "var(--hb-cream)" }} />}
+                  </div>
+                  <span style={{
+                    fontSize: 13, color: done ? "var(--hb-mute-soft)" : "var(--hb-ink)",
+                    textDecoration: done ? "line-through" : "none",
+                    opacity: done ? 0.6 : 1,
+                  }}>{h.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
