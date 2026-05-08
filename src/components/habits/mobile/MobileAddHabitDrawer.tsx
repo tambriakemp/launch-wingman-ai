@@ -120,7 +120,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
         className="border-0 p-0"
         style={{ background: "var(--hb-cream)", maxHeight: "92vh" }}
       >
-        <div className="hb-themed" style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "92vh" }}>
+        <div className="hb-theme" style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "92vh" }}>
           {/* Header */}
           <div style={{ padding: "8px 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
