@@ -230,7 +230,7 @@ const HabitTracker = () => {
       <button
         onClick={() => { setMobileEditHabit(null); setMobileDrawerOpen(true); }}
         style={{
-          position: "fixed", bottom: "calc(28px + env(safe-area-inset-bottom))", right: 24,
+          position: "fixed", bottom: "calc(28px + env(safe-area-inset-bottom))", right: 16,
           width: 56, height: 56, borderRadius: "50%",
           background: "var(--hb-ink)", color: "var(--hb-cream)", border: "none",
           display: "flex", alignItems: "center", justifyContent: "center",
