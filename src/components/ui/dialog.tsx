@@ -56,7 +56,7 @@ const DialogContent = React.forwardRef<
             <span className="block h-[5px] w-9 rounded-full bg-[hsl(var(--ink-900)/0.18)]" />
           </div>
         )}
-        <div className="overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="overflow-y-auto p-[3px]" style={{ WebkitOverflowScrolling: "touch" }}>
           {children}
         </div>
         <DialogPrimitive.Close
