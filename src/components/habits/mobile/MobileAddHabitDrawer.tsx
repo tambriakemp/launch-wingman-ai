@@ -191,7 +191,6 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           }}
         >
           {/* drag handle */}
-          {/* drag handle */}
           <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
             <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
           </div>
