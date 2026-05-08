@@ -63,23 +63,23 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
   return (
     <div
       style={{
-        height: "100%", overflowY: "auto", padding: "32px 56px",
-        display: "grid", gridTemplateColumns: "1fr 360px", gap: 36,
+        height: "100%", overflowY: "auto", padding: "28px 48px 48px",
+        display: "grid", gridTemplateColumns: "1fr 340px", gap: 32,
       }}
     >
-      <div>
-        <div style={{ marginBottom: 24 }}>
-          <div className="hb-display" style={{ fontWeight: 500, fontSize: 56, letterSpacing: "-0.025em", lineHeight: 1.12 }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ marginBottom: 20 }}>
+          <div className="hb-display" style={{ fontWeight: 500, fontSize: 60, letterSpacing: "-0.03em", lineHeight: 1.05 }}>
             Good {greeting()}, <em style={{ color: "var(--hb-terracotta)", fontWeight: 400 }}>there.</em>
           </div>
-          <div className="hb-italic" style={{ fontSize: 22, color: "var(--hb-mute)", marginTop: 20, lineHeight: 1.35, maxWidth: 560 }}>
+          <div className="hb-italic" style={{ fontSize: 18, color: "var(--hb-mute)", marginTop: 14, lineHeight: 1.4, maxWidth: 560 }}>
             {scheduled.length === 0
               ? "No habits scheduled for today — a quiet day."
               : `${scheduled.length - doneCount} small ${scheduled.length - doneCount === 1 ? "thing" : "things"} between you and a day worth keeping.`}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10, marginBottom: 24 }}>
           {WEEK.map((day, i) => {
             const isToday = i === todayDow;
             const dayDate = new Date(monthStart.getTime() + i * 86400000);
@@ -87,27 +87,29 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
               <div
                 key={i}
                 style={{
-                  flex: 1, padding: "14px 0", borderRadius: 12,
+                  padding: "16px 0 14px", borderRadius: 12,
                   background: isToday ? "var(--hb-ink)" : "var(--hb-paper)",
-                  border: isToday ? "none" : "1px solid var(--hb-line)",
+                  border: isToday ? "1px solid var(--hb-ink)" : "1px solid var(--hb-line)",
                   color: isToday ? "var(--hb-cream)" : "var(--hb-ink)",
                   textAlign: "center",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  minHeight: 88,
                 }}
               >
-                <div className="hb-eyebrow" style={{ color: isToday ? "var(--hb-cream-deep)" : "var(--hb-mute-soft)", marginBottom: 6 }}>
-                  {day.d}
+                <div className="hb-eyebrow" style={{ color: isToday ? "var(--hb-cream-deep)" : "var(--hb-mute-soft)", fontSize: 10, marginBottom: 8 }}>
+                  {day.d.toUpperCase()}
                 </div>
-                <div className="hb-display" style={{ fontSize: 24, fontWeight: 500 }}>{dayDate.getDate()}</div>
-                {isToday && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--hb-terracotta)", margin: "6px auto 0" }} />}
+                <div className="hb-display" style={{ fontSize: 28, fontWeight: 500, lineHeight: 1 }}>{dayDate.getDate()}</div>
+                {isToday && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--hb-terracotta)", marginTop: 8 }} />}
               </div>
             );
           })}
         </div>
 
         {scheduled.length > 0 && (
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ marginBottom: 24 }}>
             <AINudgeCard
-              eyebrow={nudge.eyebrow}
+              eyebrow="Pattern noticed"
               body={nudge.loading
                 ? "Reading your week…"
                 : (nudge.message || "A small promise, kept again, is what makes it a habit.")}

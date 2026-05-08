@@ -27,19 +27,18 @@ export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onO
         background: done ? "var(--hb-stone)" : "var(--hb-paper)",
         border: "1px solid var(--hb-line)",
         borderRadius: 12,
-        padding: "14px 16px",
+        padding: "14px 18px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
+        gap: 14,
         cursor: "pointer",
         transition: "all 200ms ease",
       }}
     >
       <div
         style={{
-          width: 36, height: 36, borderRadius: 8,
-          background: `${habit.color}1F`,
-          border: `1.5px solid ${habit.color}55`,
+          width: 38, height: 38, borderRadius: 9,
+          background: `${habit.color}33`,
           display: "flex", alignItems: "center", justifyContent: "center",
           flexShrink: 0,
         }}
@@ -56,15 +55,15 @@ export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onO
         >
           {habit.name}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
           {streak > 0 && (
             <span style={{ fontSize: 11, color: habit.color, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 3 }}>
               <Flame className="w-3 h-3" /> {streak}
             </span>
           )}
-          <span style={{ fontSize: 11, color: "var(--hb-mute)" }}>{cadenceLabel(habit.frequency)}</span>
+          <span style={{ fontSize: 12, color: "var(--hb-mute)" }}>{cadenceLabel(habit.frequency)}</span>
           {pairName && (
-            <span className="hb-italic" style={{ fontSize: 11, color: "var(--hb-plum)", display: "inline-flex", alignItems: "center", gap: 3 }}>
+            <span className="hb-italic" style={{ fontSize: 12, color: "var(--hb-plum)", display: "inline-flex", alignItems: "center", gap: 3 }}>
               <Link2 className="w-3 h-3" /> after {pairName}
             </span>
           )}
@@ -74,7 +73,7 @@ export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onO
         onClick={handleToggle}
         aria-label={done ? "Mark not done" : "Mark done"}
         style={{
-          width: 26, height: 26, borderRadius: "50%",
+          width: 28, height: 28, borderRadius: "50%",
           background: done ? "var(--hb-sage)" : "transparent",
           border: done ? "none" : "1.5px solid var(--hb-cream-deep)",
           display: "flex", alignItems: "center", justifyContent: "center",
