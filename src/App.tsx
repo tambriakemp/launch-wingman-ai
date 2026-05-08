@@ -84,6 +84,7 @@ const OutfitSwap = lazy(() => import("./pages/OutfitSwap"));
 const Planner = lazy(() => import("./pages/Planner"));
 const PlannerHub = lazy(() => import("./pages/PlannerHub"));
 const HabitTracker = lazy(() => import("./pages/HabitTracker"));
+const HabitReview = lazy(() => import("./pages/HabitReview"));
 const HabitStats = lazy(() => import("./pages/HabitStats"));
 const DailyPage = lazy(() => import("./pages/DailyPage"));
 const Goals = lazy(() => import("./pages/Goals"));
@@ -671,6 +672,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <HabitStats />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/habits/review"
+              element={
+                <ProtectedRoute>
+                  <HabitReview />
                 </ProtectedRoute>
               }
             />

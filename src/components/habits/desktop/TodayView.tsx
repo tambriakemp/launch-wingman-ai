@@ -5,6 +5,8 @@ import type { Habit, HabitCompletion, StreakShield } from "@/hooks/useHabitsData
 import { getStreak, isHabitScheduledOn } from "@/lib/habits/streak";
 import { HabitRowEditorial } from "../shared/HabitRowEditorial";
 import { AINudgeCard } from "../shared/AINudgeCard";
+import { useHabitNudge } from "@/hooks/useHabitNudge";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   habits: Habit[];
@@ -20,6 +22,8 @@ const WEEK = [
 ];
 
 export function TodayView({ habits, completions, shields, onToggle, onOpen }: Props) {
+  const navigate = useNavigate();
+  const nudge = useHabitNudge(habits, completions, "daily");
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1;
@@ -105,10 +109,13 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
         {scheduled.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <AINudgeCard
-              eyebrow="Pattern noticed"
-              body="Your morning habits land most often when the day starts before 7am. Want me to nudge you tomorrow?"
-              primaryLabel="Set it"
-              secondaryLabel="Maybe later"
+              eyebrow={nudge.eyebrow}
+              body={nudge.loading
+                ? "Reading your week…"
+                : (nudge.message || "A small promise, kept again, is what makes it a habit.")}
+              primaryLabel="Sunday review"
+              secondaryLabel="Dismiss"
+              onPrimary={() => navigate("/habits/review")}
             />
           </div>
         )}
