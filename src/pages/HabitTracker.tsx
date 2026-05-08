@@ -243,6 +243,13 @@ const HabitTracker = () => {
     </div>
   );
 
+  const renderMobileContent = () => {
+    if (activeTab === "Statistics") {
+      return <MobileStatsScreen habits={habits} completions={completions} shields={shields} onBack={() => setActiveTab("Today")} />;
+    }
+    return renderMobile();
+  };
+
   return (
     <ProjectLayout>
       <HabitsThemeShell>
@@ -250,7 +257,7 @@ const HabitTracker = () => {
         {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
         {!isMobile ? (
           <div style={{ height: "calc(100vh - 140px)" }}>{renderDesktop()}</div>
-        ) : renderMobile()}
+        ) : renderMobileContent()}
       </HabitsThemeShell>
 
       <HabitDetailSheet
@@ -261,6 +268,24 @@ const HabitTracker = () => {
         completions={completions}
         onSubmit={handleSaveHabit}
         onArchive={handleArchiveHabit}
+      />
+
+      <MobileAddHabitDrawer
+        open={mobileDrawerOpen}
+        onOpenChange={(o) => { setMobileDrawerOpen(o); if (!o) setMobileEditHabit(null); }}
+        habits={habits}
+        habit={mobileEditHabit}
+        onSubmit={async (data) => {
+          if (mobileEditHabit) {
+            // Edit path: update through activeHabit-style flow
+            const { error } = await supabase.from("habits" as any).update(data).eq("id", mobileEditHabit.id);
+            if (error) { toast.error("Failed to update habit"); return; }
+            toast.success("Habit updated");
+            refetch();
+          } else {
+            await handleSaveHabit(data);
+          }
+        }}
       />
     </ProjectLayout>
   );
