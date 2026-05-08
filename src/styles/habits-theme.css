@@ -1,0 +1,47 @@
+/* Launchely Habits — editorial theme (scoped via .hb-theme) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter+Tight:wght@400;500;600;700&display=swap');
+
+.hb-theme {
+  --hb-cream: #FBF7F1;
+  --hb-paper: #FFFFFF;
+  --hb-ink: #1F1B17;
+  --hb-ink-soft: #4A423A;
+  --hb-mute: #6B6058;
+  --hb-mute-soft: #8F857B;
+  --hb-line: #E8D9C6;
+  --hb-line-soft: #F1EBE1;
+  --hb-stone: #F2E9DC;
+  --hb-warm: #F7F1E8;
+  --hb-terracotta: #C65A3E;
+  --hb-terracotta-glow: #E08F72;
+  --hb-terracotta-deep: #5E2313;
+  --hb-terracotta-bg: #FAEDE7;
+  --hb-terracotta-border: #F3D4C7;
+  --hb-sage: #4F6B52;
+  --hb-plum: #6B3A5C;
+  --hb-amber: #C48B2E;
+  --hb-cream-deep: #C9AE8F;
+  --hb-display: 'Fraunces', Georgia, serif;
+  --hb-body: 'Inter Tight', -apple-system, system-ui, sans-serif;
+
+  font-family: var(--hb-body);
+  color: var(--hb-ink);
+  background: var(--hb-cream);
+  -webkit-font-smoothing: antialiased;
+}
+
+.hb-theme .hb-display { font-family: var(--hb-display); }
+.hb-theme .hb-italic  { font-family: var(--hb-display); font-style: italic; font-weight: 400; }
+.hb-theme .hb-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--hb-mute);
+}
+
+/* Heat scale (5 steps) */
+.hb-theme .hb-heat-0 { background: #F1EBE1; }
+.hb-theme .hb-heat-1 { background: #E8C9B5; }
+.hb-theme .hb-heat-2 { background: #DD9874; }
+.hb-theme .hb-heat-3 { background: #C65A3E; }
+
+/* Reset shadcn input look inside theme */
+.hb-theme input:focus, .hb-theme textarea:focus { outline: none; }

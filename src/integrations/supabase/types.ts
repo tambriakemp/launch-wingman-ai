@@ -1844,6 +1844,71 @@ export type Database = {
           },
         ]
       }
+      habit_reviews: {
+        Row: {
+          ai_suggestion: string | null
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          summary: string | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          ai_suggestion?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          summary?: string | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          ai_suggestion?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          summary?: string | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      habit_streak_shields: {
+        Row: {
+          created_at: string
+          habit_id: string
+          id: string
+          month_key: string
+          used_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          habit_id: string
+          id?: string
+          month_key: string
+          used_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          habit_id?: string
+          id?: string
+          month_key?: string
+          used_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_streak_shields_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habits: {
         Row: {
           category: string
@@ -1858,7 +1923,10 @@ export type Database = {
           is_archived: boolean
           name: string
           notes: string | null
+          pair_with_habit_id: string | null
+          reminder_time: string | null
           reminder_times: string[]
+          tag: string | null
           target_per_week: number | null
           time_of_day: string[]
           updated_at: string
@@ -1877,7 +1945,10 @@ export type Database = {
           is_archived?: boolean
           name: string
           notes?: string | null
+          pair_with_habit_id?: string | null
+          reminder_time?: string | null
           reminder_times?: string[]
+          tag?: string | null
           target_per_week?: number | null
           time_of_day?: string[]
           updated_at?: string
@@ -1896,13 +1967,24 @@ export type Database = {
           is_archived?: boolean
           name?: string
           notes?: string | null
+          pair_with_habit_id?: string | null
+          reminder_time?: string | null
           reminder_times?: string[]
+          tag?: string | null
           target_per_week?: number | null
           time_of_day?: string[]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "habits_pair_with_habit_id_fkey"
+            columns: ["pair_with_habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       idea_bank: {
         Row: {
