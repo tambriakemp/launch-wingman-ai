@@ -88,6 +88,9 @@ const HabitTracker = () => {
       duration_minutes: data.duration_minutes ?? null,
       reminder_times: data.reminder_times ?? [],
       notes: data.notes ?? null,
+      pair_with_habit_id: data.pair_with_habit_id ?? null,
+      tag: data.tag ?? null,
+      reminder_time: data.reminder_time ?? null,
     };
     if (activeHabit) {
       const { error } = await supabase.from("habits" as any).update(payload).eq("id", activeHabit.id);
@@ -244,6 +247,7 @@ const HabitTracker = () => {
         open={sheetOpen}
         onOpenChange={(o) => { setSheetOpen(o); if (!o) setActiveHabit(null); }}
         habit={activeHabit}
+        habits={habits}
         completions={completions}
         onSubmit={handleSaveHabit}
         onArchive={handleArchiveHabit}
