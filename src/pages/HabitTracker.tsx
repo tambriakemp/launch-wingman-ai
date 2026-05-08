@@ -148,7 +148,7 @@ const HabitTracker = () => {
 
   const renderMobile = () => (
     <div style={{ background: "var(--hb-cream)", minHeight: "100vh", paddingBottom: 110 }}>
-      <div style={{ padding: "20px 24px 0" }}>
+      <div style={{ padding: "16px 16px 0" }}>
         <div className="hb-eyebrow">{format(new Date(), "EEEE · MMM d")}</div>
         <div className="hb-display" style={{ fontWeight: 500, fontSize: 36, color: "var(--hb-ink)", letterSpacing: "-0.025em", lineHeight: 1.05, marginTop: 6 }}>
           Good {(() => { const h = new Date().getHours(); return h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"; })()},<br />
@@ -177,7 +177,7 @@ const HabitTracker = () => {
       </div>
 
       {scheduled.length > 0 && (
-        <div style={{ margin: "20px 24px 0", padding: 18, background: "var(--hb-ink)", color: "var(--hb-cream)", borderRadius: 14 }}>
+        <div style={{ margin: "16px 16px 0", padding: 16, background: "var(--hb-ink)", color: "var(--hb-cream)", borderRadius: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ position: "relative", width: 56, height: 56 }}>
               <svg width="56" height="56" viewBox="0 0 56 56">
@@ -200,7 +200,7 @@ const HabitTracker = () => {
       )}
 
       {groups.map(g => g.items.length > 0 && (
-        <div key={g.time} style={{ marginTop: 24, padding: "0 24px" }}>
+        <div key={g.time} style={{ marginTop: 22, padding: "0 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
             <div className="hb-eyebrow">{g.time}</div>
             <div className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute-soft)" }}>
@@ -213,7 +213,7 @@ const HabitTracker = () => {
               const pair = h.pair_with_habit_id ? habitMap.get(h.pair_with_habit_id)?.name ?? null : null;
               return (
                 <HabitRowEditorial key={h.id} habit={h} done={done} streak={getStreak(h, completions, shields)} pairName={pair}
-                  onToggle={() => toggleCompletion(h.id)} onOpen={() => { setMobileEditHabit(h); setMobileDrawerOpen(true); }} />
+                  onToggle={() => toggleCompletion(h.id)} readOnly />
               );
             })}
           </div>
@@ -221,7 +221,7 @@ const HabitTracker = () => {
       ))}
 
       {scheduled.length === 0 && habits.length === 0 && (
-        <div style={{ padding: "60px 24px", textAlign: "center" }}>
+        <div style={{ padding: "60px 16px", textAlign: "center" }}>
           <Flame className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--hb-terracotta)" }} />
           <div className="hb-italic" style={{ fontSize: 16, color: "var(--hb-mute)" }}>No habits yet — tap + to start.</div>
         </div>
@@ -230,7 +230,7 @@ const HabitTracker = () => {
       <button
         onClick={() => { setMobileEditHabit(null); setMobileDrawerOpen(true); }}
         style={{
-          position: "fixed", bottom: "calc(28px + env(safe-area-inset-bottom))", right: 24,
+          position: "fixed", bottom: "calc(28px + env(safe-area-inset-bottom))", right: 16,
           width: 56, height: 56, borderRadius: "50%",
           background: "var(--hb-ink)", color: "var(--hb-cream)", border: "none",
           display: "flex", alignItems: "center", justifyContent: "center",
