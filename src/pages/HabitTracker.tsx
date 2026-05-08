@@ -221,7 +221,7 @@ const HabitTracker = () => {
       ))}
 
       {scheduled.length === 0 && habits.length === 0 && (
-        <div style={{ padding: "60px 24px", textAlign: "center" }}>
+        <div style={{ padding: "60px 16px", textAlign: "center" }}>
           <Flame className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--hb-terracotta)" }} />
           <div className="hb-italic" style={{ fontSize: 16, color: "var(--hb-mute)" }}>No habits yet — tap + to start.</div>
         </div>
