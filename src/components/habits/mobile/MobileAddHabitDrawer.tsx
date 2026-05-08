@@ -64,6 +64,26 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
   const [picker, setPicker] = useState<Picker>(null);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number>(typeof window !== "undefined" ? window.innerHeight : 800);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    const update = () => setViewportHeight(vv ? vv.height : window.innerHeight);
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    // Lock body scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
