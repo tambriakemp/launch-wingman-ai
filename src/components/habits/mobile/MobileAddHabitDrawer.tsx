@@ -124,13 +124,13 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="border-0 p-0"
-        style={{ background: "var(--hb-cream)", maxHeight: "94vh" }}
+        style={{ background: "var(--hb-cream)", maxHeight: "100vh", height: "100vh" }}
       >
         <div
           className="hb-theme"
           style={{
             display: "flex", flexDirection: "column",
-            height: "100%", maxHeight: "94vh",
+            height: "100%",
             background: "var(--hb-cream)",
           }}
         >
