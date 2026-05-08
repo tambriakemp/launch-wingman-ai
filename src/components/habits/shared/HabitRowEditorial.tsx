@@ -16,15 +16,16 @@ interface Props {
 /**
  * Editorial habit row — used by Today (desktop + mobile).
  */
-export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onOpen }: Props) {
+export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onOpen, readOnly }: Props) {
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     lightHaptic();
     onToggle();
   };
+  const clickable = !readOnly && !!onOpen;
   return (
     <div
-      onClick={onOpen}
+      onClick={clickable ? onOpen : undefined}
       style={{
         background: done ? "var(--hb-stone)" : "var(--hb-paper)",
         border: "1px solid var(--hb-line)",
@@ -33,7 +34,7 @@ export function HabitRowEditorial({ habit, done, streak, pairName, onToggle, onO
         display: "flex",
         alignItems: "center",
         gap: 14,
-        cursor: "pointer",
+        cursor: clickable ? "pointer" : "default",
         transition: "all 200ms ease",
       }}
     >
