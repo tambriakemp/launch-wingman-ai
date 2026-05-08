@@ -738,65 +738,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
             </div>
           )}
 
-          <div style={{ height: 100 }} />
-        </div>
-
-        {/* sticky bottom */}
-        <div
-          style={{
-            padding: "12px 16px",
-            paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-            background: "rgba(251,247,241,0.92)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            borderTop: `0.5px solid ${HAIRLINE}`,
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-          }}
-        >
-          <button
-            type="button"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              border: 0,
-              background: "rgba(31,27,23,0.06)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            aria-label="Note"
-          >
-            <StickyNote size={18} color={INK} strokeWidth={1.8} />
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isComposer || submitting}
-            style={{
-              flex: 1,
-              height: 44,
-              borderRadius: 14,
-              border: 0,
-              background: isComposer ? "rgba(31,27,23,0.20)" : INK,
-              color: PAPER,
-              fontFamily: SF,
-              fontSize: 15.5,
-              fontWeight: 600,
-              letterSpacing: -0.2,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              cursor: isComposer ? "default" : "pointer",
-              boxShadow: isComposer ? "none" : "0 4px 14px -4px rgba(31,27,23,0.4)",
-            }}
-          >
-            {isComposer ? "Type to add task" : submitting ? (isEdit ? "Saving…" : "Adding…") : (isEdit ? "Save changes" : "Add task")}
-            {!isComposer && !submitting && <ArrowRight size={16} color={PAPER} strokeWidth={2.4} />}
-          </button>
+          <div style={{ height: "calc(20px + env(safe-area-inset-bottom))" }} />
         </div>
       </div>
 
