@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import { Bell, Link2, X } from "lucide-react";
+import { Bell, Link2, X, Settings2 } from "lucide-react";
 import type { Habit } from "@/hooks/useHabitsData";
 import { toast } from "sonner";
+import { useHabitTags } from "@/hooks/useHabitTags";
+import { ManageTagsDialog } from "../ManageTagsDialog";
 
 interface Props {
   open: boolean;
@@ -20,13 +22,10 @@ const CADENCES = [
   { id: "3xweek", label: "3 × per week" },
   { id: "custom", label: "Custom" },
 ];
-const TAG_COLORS: Record<string, string> = {
-  Care: "#C65A3E",
-  Body: "#4F6B52",
-  Mind: "#4F6B52",
-  Rhythm: "#6B3A5C",
-  Launch: "#C48B2E",
-};
+const DAYS = [
+  { id: "MO", label: "M" }, { id: "TU", label: "T" }, { id: "WE", label: "W" },
+  { id: "TH", label: "T" }, { id: "FR", label: "F" }, { id: "SA", label: "S" }, { id: "SU", label: "S" },
+];
 
 function Pill({ children, active, color, onClick }: { children: React.ReactNode; active?: boolean; color?: string; onClick?: () => void }) {
   return (
@@ -47,10 +46,13 @@ function Pill({ children, active, color, onClick }: { children: React.ReactNode;
   );
 }
 
-function Section({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Section({ label, children, hint, action }: { label: string; children: React.ReactNode; hint?: string; action?: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 22 }}>
-      <div className="hb-eyebrow" style={{ marginBottom: 10 }}>{label}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div className="hb-eyebrow">{label}</div>
+        {action}
+      </div>
       {children}
       {hint && <div className="hb-italic" style={{ fontSize: 12, color: "var(--hb-mute-soft)", marginTop: 6 }}>{hint}</div>}
     </div>
@@ -59,49 +61,62 @@ function Section({ label, children, hint }: { label: string; children: React.Rea
 
 export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubmit }: Props) {
   const isEdit = !!habit;
+  const { tags, colorFor } = useHabitTags();
   const [name, setName] = useState("");
   const [time, setTime] = useState("morning");
   const [cadence, setCadence] = useState("daily");
+  const [customDays, setCustomDays] = useState<string[]>(["MO", "WE", "FR"]);
   const [pairWith, setPairWith] = useState<string>("");
   const [reminderTime, setReminderTime] = useState("08:00");
-  const [tag, setTag] = useState("Body");
+  const [tag, setTag] = useState(tags[0]?.name || "Body");
   const [saving, setSaving] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     if (habit) {
       setName(habit.name);
       setTime(habit.time_of_day?.[0] || "anytime");
-      setCadence(habit.frequency === "custom" && habit.frequency_days?.length === 3 ? "3xweek" : habit.frequency || "daily");
+      const isThree = habit.frequency === "custom" && habit.frequency_days?.length === 3
+        && ["MO", "WE", "FR"].every(d => habit.frequency_days?.includes(d));
+      setCadence(isThree ? "3xweek" : habit.frequency || "daily");
+      setCustomDays(habit.frequency === "custom" && !isThree ? (habit.frequency_days || []) : ["MO", "WE", "FR"]);
       setPairWith(habit.pair_with_habit_id || "");
       setReminderTime(habit.reminder_time?.slice(0, 5) || "08:00");
-      setTag(habit.tag || "Body");
+      setTag(habit.tag || tags[0]?.name || "Body");
     } else {
       setName("");
       setTime("morning");
       setCadence("daily");
+      setCustomDays(["MO", "WE", "FR"]);
       setPairWith("");
       setReminderTime("08:00");
-      setTag("Body");
+      setTag(tags[0]?.name || "Body");
     }
   }, [open, habit]);
 
-  const previewColor = TAG_COLORS[tag] || "#4F6B52";
+  const previewColor = colorFor(tag);
   const pairName = useMemo(() => habits.find(h => h.id === pairWith)?.name || null, [habits, pairWith]);
   const otherHabits = habits.filter(h => !habit || h.id !== habit.id);
 
+  const toggleDay = (d: string) => {
+    setCustomDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  };
+
   const save = async () => {
     if (!name.trim()) { toast.error("Give the habit a name"); return; }
+    if (cadence === "custom" && customDays.length === 0) { toast.error("Pick at least one day"); return; }
     setSaving(true);
     try {
       const freq = cadence === "3xweek" ? "custom" : cadence;
+      const days = cadence === "3xweek" ? ["MO", "WE", "FR"] : cadence === "custom" ? customDays : null;
       await onSubmit({
         name: name.trim(),
         category: "personal",
         color: previewColor,
         icon: "circle",
         frequency: freq,
-        frequency_days: cadence === "3xweek" ? ["MO", "WE", "FR"] : null,
+        frequency_days: days,
         time_of_day: time === "anytime" ? [] : [time],
         reminder_times: [],
         pair_with_habit_id: pairWith || null,
@@ -122,7 +137,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
       >
         <div className="hb-theme" style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "92vh" }}>
           {/* Header */}
-          <div style={{ padding: "8px 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ padding: "8px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div className="hb-eyebrow">{isEdit ? "Edit" : "New"}</div>
               <div className="hb-display" style={{ fontWeight: 500, fontSize: 26, letterSpacing: "-0.02em", lineHeight: 1.1, marginTop: 2 }}>
@@ -139,7 +154,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Live preview */}
-          <div style={{ margin: "0 20px 16px", padding: "12px 14px", background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 12, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ margin: "0 16px 14px", padding: "12px 14px", background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 12, display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 8,
               background: `${previewColor}20`, border: `1.5px solid ${previewColor}55`,
@@ -152,7 +167,9 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                 {name || "New habit"}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-                <span style={{ fontSize: 11, color: "var(--hb-mute)" }}>{CADENCES.find(c => c.id === cadence)?.label}</span>
+                <span style={{ fontSize: 11, color: "var(--hb-mute)" }}>
+                  {cadence === "custom" ? `${customDays.length} day${customDays.length === 1 ? "" : "s"}/wk` : CADENCES.find(c => c.id === cadence)?.label}
+                </span>
                 {pairName && (
                   <span className="hb-italic" style={{ fontSize: 11, color: "var(--hb-plum)", display: "inline-flex", alignItems: "center", gap: 3 }}>
                     <Link2 className="w-3 h-3" /> after {pairName}
@@ -164,7 +181,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable form */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 24px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 16px 24px" }}>
             <Section label="What's the habit?" hint='Action-first. e.g. "Read for 20 minutes."'>
               <input
                 type="text" value={name} onChange={(e) => setName(e.target.value)}
@@ -188,6 +205,27 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {CADENCES.map(c => <Pill key={c.id} active={cadence === c.id} onClick={() => setCadence(c.id)}>{c.label}</Pill>)}
               </div>
+              {cadence === "custom" && (
+                <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {DAYS.map((d) => {
+                    const active = customDays.includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => toggleDay(d.id)}
+                        aria-label={d.id}
+                        style={{
+                          width: 38, height: 38, borderRadius: "50%",
+                          border: `1px solid ${active ? "var(--hb-ink)" : "var(--hb-line)"}`,
+                          background: active ? "var(--hb-ink)" : "var(--hb-paper)",
+                          color: active ? "var(--hb-cream)" : "var(--hb-ink)",
+                          fontSize: 13, fontWeight: 500, cursor: "pointer",
+                        }}
+                      >{d.label}</button>
+                    );
+                  })}
+                </div>
+              )}
             </Section>
 
             {otherHabits.length > 0 && (
@@ -229,18 +267,31 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
               </div>
             </Section>
 
-            <Section label="Tag">
+            <Section
+              label="Tag"
+              action={
+                <button
+                  onClick={() => setTagsOpen(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 500, color: "var(--hb-mute)", background: "transparent", border: "none", cursor: "pointer" }}
+                >
+                  <Settings2 className="w-3.5 h-3.5" /> Manage
+                </button>
+              }
+            >
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {Object.keys(TAG_COLORS).map(t => (
-                  <Pill key={t} color={TAG_COLORS[t]} active={tag === t} onClick={() => setTag(t)}>{t}</Pill>
+                {tags.map(t => (
+                  <Pill key={t.name} color={t.color} active={tag === t.name} onClick={() => setTag(t.name)}>{t.name}</Pill>
                 ))}
+                {tags.length === 0 && (
+                  <span className="hb-italic" style={{ fontSize: 13, color: "var(--hb-mute)" }}>No tags — add one via Manage.</span>
+                )}
               </div>
             </Section>
           </div>
 
           {/* Sticky CTA */}
           <div style={{
-            padding: "14px 20px calc(18px + env(safe-area-inset-bottom))",
+            padding: "14px 16px calc(18px + env(safe-area-inset-bottom))",
             borderTop: "1px solid var(--hb-line)", background: "var(--hb-cream)",
             display: "flex", gap: 10,
           }}>
@@ -266,6 +317,8 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
         </div>
       </DrawerContent>
+
+      <ManageTagsDialog open={tagsOpen} onOpenChange={setTagsOpen} />
     </Drawer>
   );
 }
