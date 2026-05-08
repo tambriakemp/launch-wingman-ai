@@ -242,9 +242,10 @@ const HabitTracker = () => {
   return (
     <ProjectLayout>
       <HabitsThemeShell>
+        {!isMobile && <TopMetaStrip />}
         {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
         {!isMobile ? (
-          <div style={{ height: "calc(100vh - 60px)" }}>{renderDesktop()}</div>
+          <div style={{ height: "calc(100vh - 140px)" }}>{renderDesktop()}</div>
         ) : renderMobile()}
       </HabitsThemeShell>
 
