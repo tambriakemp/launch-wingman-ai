@@ -177,7 +177,7 @@ const HabitTracker = () => {
       </div>
 
       {scheduled.length > 0 && (
-        <div style={{ margin: "20px 24px 0", padding: 18, background: "var(--hb-ink)", color: "var(--hb-cream)", borderRadius: 14 }}>
+        <div style={{ margin: "16px 16px 0", padding: 16, background: "var(--hb-ink)", color: "var(--hb-cream)", borderRadius: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ position: "relative", width: 56, height: 56 }}>
               <svg width="56" height="56" viewBox="0 0 56 56">
