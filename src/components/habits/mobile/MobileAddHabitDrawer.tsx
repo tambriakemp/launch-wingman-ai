@@ -124,13 +124,13 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="border-0 p-0"
-        style={{ background: "var(--hb-cream)", maxHeight: "94vh" }}
+        style={{ background: "var(--hb-cream)", maxHeight: "100vh", height: "100vh" }}
       >
         <div
           className="hb-theme"
           style={{
             display: "flex", flexDirection: "column",
-            height: "100%", maxHeight: "94vh",
+            height: "100%",
             background: "var(--hb-cream)",
           }}
         >
@@ -153,7 +153,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
           </div>
 
           {/* Scrollable body */}
-          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 100 }}>
+          <div style={{ overflowY: "auto", flex: 1, paddingTop: 6, paddingBottom: 16, WebkitOverflowScrolling: "touch" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
@@ -369,15 +369,14 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             )}
           </div>
 
-          {/* Sticky bottom bar */}
+          {/* Bottom action bar (in-flow, not floating) */}
           <div style={{
             padding: "12px 16px",
-            paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-            background: "rgba(251,247,241,0.92)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+            background: "var(--hb-cream)",
             borderTop: "0.5px solid rgba(31,27,23,0.08)",
             display: "flex", gap: 10,
+            flexShrink: 0,
           }}>
             <button
               onClick={save} disabled={saving}
@@ -386,7 +385,6 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
                 color: "var(--hb-cream)", fontSize: 15.5, fontWeight: 600,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 border: "none", cursor: "pointer",
-                boxShadow: "0 4px 14px -4px rgba(31,27,23,0.4)",
                 opacity: saving ? 0.6 : 1,
               }}
             >
