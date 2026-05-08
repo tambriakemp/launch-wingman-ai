@@ -18,7 +18,7 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
         <ProjectSidebar />
         <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
-          <main className="flex-1 px-2.5 py-4 md:px-8 md:py-6 overflow-auto">{children}</main>
+          <main className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0">{children}</main>
         </div>
       </div>
     </MobileSidebarProvider>
