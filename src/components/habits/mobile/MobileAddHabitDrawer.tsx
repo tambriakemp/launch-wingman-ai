@@ -190,22 +190,7 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
           }}
         >
-        <div onClick={() => onOpenChange(false)} style={{ flex: 1 }} />
-
-        <div
-          className="hb-theme"
-          style={{
-            background: PAPER,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            boxShadow: "0 -10px 40px rgba(31,27,23,0.18)",
-            maxHeight: "92%",
-            display: "flex",
-            flexDirection: "column",
-            transform: mounted ? "translateY(0)" : "translateY(100%)",
-            transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-          }}
-        >
+          {/* drag handle */}
           {/* drag handle */}
           <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
             <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
