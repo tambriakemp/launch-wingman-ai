@@ -312,6 +312,10 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           maxHeight: "92%",
           display: "flex",
           flexDirection: "column",
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+            minHeight: 0,
           transform: mounted ? "translateY(0)" : "translateY(100%)",
           transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
         }}
@@ -488,9 +492,6 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
         {/* fields scroller */}
         <div
           style={{
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            flex: 1,
             paddingTop: 18,
           }}
         >
