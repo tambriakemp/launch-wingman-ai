@@ -549,12 +549,12 @@ export const UserActivityDialog = ({ open, onOpenChange, user, accessToken }: Us
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="h-[90vh]">
+        <DrawerContent className="h-[90vh] overflow-y-auto">
           <DrawerHeader className="text-left">
             <DrawerTitle className="text-base">{title}</DrawerTitle>
             <p className="text-sm text-muted-foreground">{description}</p>
           </DrawerHeader>
-          <div className="px-4 pb-4 flex-1 overflow-hidden">
+          <div className="px-4 pb-4">
             <ActivityContent
               user={user}
               accessToken={accessToken}

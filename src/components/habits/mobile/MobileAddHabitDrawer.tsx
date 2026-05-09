@@ -184,6 +184,9 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
             transform: mounted ? "translateY(0)" : "translateY(100%)",
             transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
           }}
@@ -212,8 +215,8 @@ export function MobileAddHabitDrawer({ open, onOpenChange, habits, habit, onSubm
             >Save</button>
           </div>
 
-          {/* Scrollable body */}
-          <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", flex: 1, minHeight: 0, paddingTop: 4, paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}>
+          {/* Drawer content */}
+          <div style={{ paddingTop: 4, paddingBottom: "calc(20px + env(safe-area-inset-bottom))" }}>
             {/* Habit name input — focused card */}
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{
