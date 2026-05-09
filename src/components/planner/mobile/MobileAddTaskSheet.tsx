@@ -1043,7 +1043,7 @@ function PickerSheet({ title, children, onClose }: { title: string; children: Re
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "rgba(31,27,23,0.40)" }}>
       <div onClick={onClose} style={{ flex: 1 }} />
-      <div style={{ background: PAPER, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: "calc(16px + env(safe-area-inset-bottom))", maxHeight: "70%", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: PAPER, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: "calc(16px + env(safe-area-inset-bottom))", maxHeight: "70%", display: "flex", flexDirection: "column", overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
         <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
           <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
         </div>
@@ -1054,7 +1054,7 @@ function PickerSheet({ title, children, onClose }: { title: string; children: Re
             <X size={14} color={INK} strokeWidth={2.2} />
           </button>
         </div>
-        <div style={{ overflowY: "auto", padding: "0 12px 12px" }}>{children}</div>
+        <div style={{ padding: "0 12px 12px" }}>{children}</div>
       </div>
     </div>
   );
