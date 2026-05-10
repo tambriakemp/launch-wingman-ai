@@ -42,8 +42,11 @@ interface Props {
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onCreateCategory?: (spaceId: string, name: string, color?: string) => Promise<SpaceCategory | null>;
+  onCreateSpace?: (name: string, color?: string) => Promise<PlannerSpace | null>;
   editTask?: PlannerTask | null;
 }
+
+const SPACE_PALETTE = ["#C65A3E", "#E0B341", "#7E906E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
 
 const CATEGORY_PALETTE = ["#E0B341", "#7E906E", "#C65A3E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
 
