@@ -77,6 +77,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const [categoryQuery, setCategoryQuery] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const categorySearchRef = useRef<HTMLInputElement>(null);
+  const [spaceQuery, setSpaceQuery] = useState("");
+  const [creatingSpace, setCreatingSpace] = useState(false);
+  const spaceSearchRef = useRef<HTMLInputElement>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
