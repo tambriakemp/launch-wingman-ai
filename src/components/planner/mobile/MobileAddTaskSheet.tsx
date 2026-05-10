@@ -42,8 +42,11 @@ interface Props {
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
   onCreateCategory?: (spaceId: string, name: string, color?: string) => Promise<SpaceCategory | null>;
+  onCreateSpace?: (name: string, color?: string) => Promise<PlannerSpace | null>;
   editTask?: PlannerTask | null;
 }
+
+const SPACE_PALETTE = ["#C65A3E", "#E0B341", "#7E906E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
 
 const CATEGORY_PALETTE = ["#E0B341", "#7E906E", "#C65A3E", "#7C6FB3", "#5B8FB9", "#D08AA1", "#4FAF8C", "#E08A3F"];
 
@@ -56,7 +59,7 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, editTask }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, onCreateSpace, editTask }: Props) {
   const isEdit = !!editTask;
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -74,6 +77,9 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const [categoryQuery, setCategoryQuery] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const categorySearchRef = useRef<HTMLInputElement>(null);
+  const [spaceQuery, setSpaceQuery] = useState("");
+  const [creatingSpace, setCreatingSpace] = useState(false);
+  const spaceSearchRef = useRef<HTMLInputElement>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
@@ -109,6 +115,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
       setPicker(null);
       setSuggestions([]);
       setCategoryQuery("");
+      setSpaceQuery("");
       setNewSubtaskTitle("");
       requestAnimationFrame(() => setMounted(true));
       if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
@@ -751,20 +758,127 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           : picker === "priority" ? "Priority"
           : "Due date"
         }>
-          {picker === "space" && (
-            <>
-              <PickerRow active={spaceId === null} label="No space" onClick={() => { setSpaceId(null); setCategoryId(null); setPicker(null); }} />
-              {spaces.map((s) => (
-                <PickerRow
-                  key={s.id}
-                  active={spaceId === s.id}
-                  label={s.name}
-                  dot={s.color}
-                  onClick={() => { setSpaceId(s.id); setCategoryId(null); setPicker(null); }}
-                />
-              ))}
-            </>
-          )}
+          {picker === "space" && (() => {
+            const q = spaceQuery.trim();
+            const qLower = q.toLowerCase();
+            const filtered = q ? spaces.filter(s => s.name.toLowerCase().includes(qLower)) : spaces;
+            const exactMatch = spaces.some(s => s.name.toLowerCase() === qLower);
+            const canCreate = q.length > 0 && q.length <= 40 && !exactMatch && !!onCreateSpace;
+            const handleCreate = async () => {
+              if (!canCreate || creatingSpace) return;
+              setCreatingSpace(true);
+              try {
+                const name = toTitleCase(q);
+                const color = SPACE_PALETTE[spaces.length % SPACE_PALETTE.length];
+                const created = await onCreateSpace!(name, color);
+                if (created) {
+                  try { (navigator as any).vibrate?.(8); } catch {}
+                  setSpaceId(created.id);
+                  setCategoryId(null);
+                  setSpaceQuery("");
+                  setPicker(null);
+                }
+              } finally {
+                setCreatingSpace(false);
+              }
+            };
+            return (
+              <>
+                <div style={{ position: "sticky", top: 0, background: PAPER, paddingBottom: 8, zIndex: 1 }}>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Search size={15} color={INK_40} strokeWidth={2} style={{ position: "absolute", left: 12, pointerEvents: "none" }} />
+                    <input
+                      ref={spaceSearchRef}
+                      autoFocus
+                      value={spaceQuery}
+                      onChange={(e) => setSpaceQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (filtered.length > 0) {
+                            setSpaceId(filtered[0].id);
+                            setCategoryId(null);
+                            setPicker(null);
+                          } else if (canCreate) {
+                            handleCreate();
+                          }
+                        }
+                      }}
+                      placeholder={onCreateSpace ? "Search or create space" : "Search spaces"}
+                      inputMode="search"
+                      enterKeyHint="done"
+                      autoCapitalize="words"
+                      autoCorrect="off"
+                      style={{
+                        width: "100%",
+                        height: 40,
+                        borderRadius: 12,
+                        border: `1px solid ${HAIRLINE}`,
+                        background: "#fff",
+                        padding: "0 36px 0 34px",
+                        fontFamily: SF,
+                        fontSize: 16,
+                        color: INK,
+                        outline: "none",
+                        WebkitAppearance: "none",
+                      }}
+                    />
+                    {spaceQuery && (
+                      <button
+                        type="button"
+                        onClick={() => { setSpaceQuery(""); spaceSearchRef.current?.focus(); }}
+                        aria-label="Clear search"
+                        style={{ position: "absolute", right: 8, width: 24, height: 24, borderRadius: 999, border: 0, background: "rgba(31,27,23,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                      >
+                        <X size={12} color={INK} strokeWidth={2.4} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {!q && <PickerRow active={spaceId === null} label="No space" onClick={() => { setSpaceId(null); setCategoryId(null); setPicker(null); }} />}
+                {filtered.map((s) => (
+                  <PickerRow
+                    key={s.id}
+                    active={spaceId === s.id}
+                    label={s.name}
+                    dot={s.color}
+                    onClick={() => { setSpaceId(s.id); setCategoryId(null); setPicker(null); }}
+                  />
+                ))}
+                {canCreate && (
+                  <button
+                    onClick={handleCreate}
+                    disabled={creatingSpace}
+                    style={{
+                      width: "100%",
+                      background: "rgba(198,90,62,0.08)",
+                      border: `1px dashed rgba(198,90,62,0.35)`,
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      marginTop: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ width: 18, height: 18, borderRadius: 999, background: TERRACOTTA, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {creatingSpace ? <Loader2 size={11} color={PAPER} className="animate-spin" /> : <Plus size={12} color={PAPER} strokeWidth={2.6} />}
+                    </span>
+                    <span style={{ flex: 1, fontFamily: SF, fontSize: 15, fontWeight: 500, color: INK, letterSpacing: -0.2 }}>
+                      Create "<span style={{ color: TERRACOTTA, fontWeight: 600 }}>{toTitleCase(q)}</span>"
+                    </span>
+                  </button>
+                )}
+                {q && filtered.length === 0 && !canCreate && (
+                  <div style={{ padding: 16, fontFamily: SF, fontSize: 13, color: INK_60, textAlign: "center" }}>
+                    No matches.
+                  </div>
+                )}
+              </>
+            );
+          })()}
           {picker === "category" && (() => {
             const q = categoryQuery.trim();
             const qLower = q.toLowerCase();
