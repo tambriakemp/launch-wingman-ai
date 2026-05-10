@@ -115,6 +115,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
       setPicker(null);
       setSuggestions([]);
       setCategoryQuery("");
+      setSpaceQuery("");
       setNewSubtaskTitle("");
       requestAnimationFrame(() => setMounted(true));
       if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
