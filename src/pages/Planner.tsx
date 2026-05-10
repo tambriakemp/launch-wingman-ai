@@ -437,6 +437,7 @@ const Planner = () => {
           categories={categories}
           selectedSpaceId={selectedSpaceId}
           onCreateCategory={createCategory}
+          onCreateSpace={createSpace}
           editTask={mobileEditing}
         />
       </>
