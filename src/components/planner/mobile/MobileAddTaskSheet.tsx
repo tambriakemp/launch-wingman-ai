@@ -59,7 +59,7 @@ const PRIORITIES = [
 
 type PickerType = null | "space" | "category" | "priority" | "due";
 
-export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, editTask }: Props) {
+export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete, spaces, categories, selectedSpaceId, onCreateCategory, onCreateSpace, editTask }: Props) {
   const isEdit = !!editTask;
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
