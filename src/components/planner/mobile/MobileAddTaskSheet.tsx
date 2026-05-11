@@ -1154,21 +1154,38 @@ function FieldGroup({ children }: { children: React.ReactNode }) {
 }
 
 function PickerSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  const [vh, setVh] = useState<number>(typeof window !== "undefined" ? (window.visualViewport?.height ?? window.innerHeight) : 800);
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    const update = () => setVh(vv ? vv.height : window.innerHeight);
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.body.style.overflow = prev;
+    };
+  }, []);
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "rgba(31,27,23,0.40)" }}>
-      <div onClick={onClose} style={{ flex: 1 }} />
-      <div style={{ background: PAPER, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: "calc(16px + env(safe-area-inset-bottom))", maxHeight: "70%", display: "flex", flexDirection: "column", overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
-        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
+    <div style={{ position: "fixed", left: 0, top: 0, right: 0, height: vh, zIndex: 100, display: "flex", flexDirection: "column", background: "rgba(31,27,23,0.40)" }}>
+      <div onClick={onClose} style={{ flex: 1, touchAction: "none" }} />
+      <div style={{ background: PAPER, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: "calc(16px + env(safe-area-inset-bottom))", maxHeight: "85%", display: "flex", flexDirection: "column", minHeight: 0, overscrollBehavior: "contain" }}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px", flexShrink: 0 }}>
           <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px 12px", flexShrink: 0 }}>
           <div style={{ width: 28 }} />
           <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 17, fontWeight: 500, color: INK }}>{title}</div>
           <button onClick={onClose} aria-label="Close" style={{ width: 28, height: 28, border: 0, borderRadius: 999, background: "rgba(31,27,23,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={14} color={INK} strokeWidth={2.2} />
           </button>
         </div>
-        <div style={{ padding: "0 12px 12px" }}>{children}</div>
+        <div style={{ padding: "0 12px 12px", overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", flex: 1, minHeight: 0 }}>{children}</div>
       </div>
     </div>
   );
