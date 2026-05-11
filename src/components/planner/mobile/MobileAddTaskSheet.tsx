@@ -319,26 +319,24 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           maxHeight: "92%",
           display: "flex",
           flexDirection: "column",
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            overscrollBehavior: "contain",
-            minHeight: 0,
           transform: mounted ? "translateY(0)" : "translateY(100%)",
           transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
         }}
       >
         {/* drag handle */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px", flexShrink: 0 }}>
           <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
         </div>
 
-        {/* header */}
+        {/* sticky header */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "8px 18px 12px",
+            flexShrink: 0,
+            background: PAPER,
           }}
         >
           <button
@@ -388,17 +386,27 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           </button>
         </div>
 
-        {/* AI composer */}
-        <div style={{ padding: "4px 16px 0" }}>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 18,
-              border: `1.5px solid ${isComposer ? "rgba(198,90,62,0.45)" : HAIRLINE}`,
-              padding: "14px 16px",
-              boxShadow: isComposer ? "0 0 0 4px rgba(198,90,62,0.10)" : "0 1px 2px rgba(31,27,23,0.04)",
-            }}
-          >
+        {/* scrollable content */}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
+          {/* AI composer */}
+          <div style={{ padding: "4px 16px 0" }}>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 18,
+                border: `1.5px solid ${isComposer ? "rgba(198,90,62,0.45)" : HAIRLINE}`,
+                padding: "14px 16px",
+                boxShadow: isComposer ? "0 0 0 4px rgba(198,90,62,0.10)" : "0 1px 2px rgba(31,27,23,0.04)",
+              }}
+            >
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
               <Sparkles size={14} color={TERRACOTTA} strokeWidth={2.2} />
               <span
