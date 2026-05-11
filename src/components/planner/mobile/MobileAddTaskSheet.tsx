@@ -725,38 +725,10 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
             </div>
           </div>
 
-          {isEdit && onDelete && (
-            <div style={{ padding: "20px 16px 4px" }}>
-              <button
-                type="button"
-                onClick={handleDeleteTask}
-                style={{
-                  width: "100%",
-                  background: "rgba(198,90,62,0.08)",
-                  color: TERRACOTTA,
-                  border: 0,
-                  borderRadius: 14,
-                  padding: "12px 14px",
-                  fontFamily: SF,
-                  fontSize: 14.5,
-                  fontWeight: 600,
-                  letterSpacing: -0.2,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <Trash2 size={15} color={TERRACOTTA} strokeWidth={2} />
-                Delete task
-              </button>
-            </div>
-          )}
-
           <div style={{ height: "calc(20px + env(safe-area-inset-bottom))" }} />
         </div>
       </div>
+    </div>
 
       {/* Pickers */}
       {picker && (
