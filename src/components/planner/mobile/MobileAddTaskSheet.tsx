@@ -1306,14 +1306,43 @@ function SubtaskRow({
   isLast,
   onToggle,
   onDelete,
+  onRename,
 }: {
   subtask: Subtask;
   isLast: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onRename: (next: string) => void;
 }) {
   const [swiped, setSwiped] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(subtask.title);
+  const inputRef = useRef<HTMLInputElement>(null);
   const startX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(subtask.title);
+  }, [subtask.title, editing]);
+
+  useEffect(() => {
+    if (editing) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (!next) {
+      setDraft(subtask.title);
+    } else if (next !== subtask.title) {
+      onRename(next);
+    }
+    setEditing(false);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (startX.current == null) return;
@@ -1369,16 +1398,45 @@ function SubtaskRow({
         >
           {done && <Check color="#fff" size={11} strokeWidth={3.5} />}
         </button>
-        <span
-          style={{
-            flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
-            color: done ? INK_40 : INK, letterSpacing: -0.2,
-            textDecoration: done ? "line-through" : "none",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}
-        >
-          {subtask.title}
-        </span>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commit(); }
+              else if (e.key === "Escape") { e.preventDefault(); setDraft(subtask.title); setEditing(false); }
+            }}
+            enterKeyHint="done"
+            autoCapitalize="sentences"
+            style={{
+              flex: 1,
+              border: 0,
+              outline: "none",
+              background: "transparent",
+              fontFamily: SF,
+              fontSize: 14.5,
+              fontWeight: 500,
+              color: INK,
+              letterSpacing: -0.2,
+              padding: 0,
+            }}
+          />
+        ) : (
+          <span
+            onClick={() => setEditing(true)}
+            style={{
+              flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
+              color: done ? INK_40 : INK, letterSpacing: -0.2,
+              textDecoration: done ? "line-through" : "none",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              cursor: "text",
+            }}
+          >
+            {subtask.title}
+          </span>
+        )}
       </div>
     </div>
   );
