@@ -316,7 +316,8 @@ export const PlannerTaskDialog = ({
         location: null,
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
-      });
+        ...(scope ? { _scope: scope } : {}),
+      } as any);
 
       // If we just created the task and there are buffered local subtasks, persist them.
       if (!editTask && typeof result === "string" && subtasks.length > 0) {
