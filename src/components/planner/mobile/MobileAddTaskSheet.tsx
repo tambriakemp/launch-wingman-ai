@@ -125,12 +125,74 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
       setCategoryQuery("");
       setSpaceQuery("");
       setNewSubtaskTitle("");
+      skipAutosaveRef.current = true;
+      setAutosaveStatus("idle");
       requestAnimationFrame(() => setMounted(true));
       if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
+      setDraftId(null);
+      skipAutosaveRef.current = true;
+      if (autosaveTimerRef.current) { clearTimeout(autosaveTimerRef.current); autosaveTimerRef.current = null; }
     }
   }, [open, selectedSpaceId, editTask, fetchSubtasks]);
+
+  // Create a draft task on open in create mode so all subsequent edits autosave.
+  useEffect(() => {
+    if (!open || editTask || draftId || draftCreatingRef.current) return;
+    draftCreatingRef.current = true;
+    (async () => {
+      try {
+        const newId = await onCreate({
+          title: "Untitled",
+          column_id: "todo",
+          task_type: "task",
+          priority: "normal",
+          ...(({ space_id: selectedSpaceId, _silent: true } as any)),
+        } as any);
+        if (typeof newId === "string") setDraftId(newId);
+      } catch (e: any) {
+        toast.error("Couldn't start task", { description: e?.message });
+      } finally {
+        draftCreatingRef.current = false;
+      }
+    })();
+  }, [open, editTask, draftId, onCreate, selectedSpaceId]);
+
+  // Debounced autosave — runs whenever a watched field changes after the sheet is settled.
+  useEffect(() => {
+    if (!open || !activeTaskId) return;
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    setAutosaveStatus("saving");
+    autosaveTimerRef.current = setTimeout(async () => {
+      try {
+        const dueIso = dueAt ? dueAt.toISOString() : null;
+        const trimmedTitle = title.trim();
+        const safeTitle = trimmedTitle.length > 0 ? toTitleCase(trimmedTitle) : "Untitled";
+        const payload: Partial<PlannerTask> = {
+          title: safeTitle,
+          description: notes.trim() || "",
+          task_type: "task",
+          priority,
+          category: categoryId,
+          due_at: dueIso,
+          start_at: dueIso,
+          end_at: dueIso,
+          ...(({ space_id: spaceId } as any)),
+        };
+        if (onUpdate) await onUpdate(activeTaskId, payload);
+        setAutosaveStatus("saved");
+      } catch (e: any) {
+        setAutosaveStatus("error");
+        toast.error("Couldn't save", { description: e?.message });
+      }
+    }, 600);
+    return () => { if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current); };
+  }, [title, notes, priority, categoryId, dueAt, spaceId, activeTaskId, open, onUpdate]);
 
   // Debounced AI suggestions while typing (only in create mode).
   useEffect(() => {
