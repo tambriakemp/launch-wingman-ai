@@ -310,20 +310,19 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const addSubtask = async () => {
     const t = newSubtaskTitle.trim();
     if (!t) return;
-    if (isEdit && editTask) {
+    if (activeTaskId) {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
       const { error } = await supabase.from("subtasks").insert({
-        task_id: editTask.id,
+        task_id: activeTaskId,
         user_id: userData.user.id,
         title: toTitleCase(t),
         position: subtasks.length,
       });
       if (error) { toast.error("Failed to add subtask"); return; }
       setNewSubtaskTitle("");
-      fetchSubtasks(editTask.id);
+      fetchSubtasks(activeTaskId);
     } else {
-      // Buffer locally; flush on save
       setSubtasks((prev) => [...prev, {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
         title: toTitleCase(t),
@@ -336,7 +335,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   };
 
   const toggleSubtask = async (st: Subtask) => {
-    if (st._local || !isEdit) {
+    if (st._local || !activeTaskId) {
       setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
       return;
     }
@@ -345,12 +344,22 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   };
 
   const deleteSubtask = async (st: Subtask) => {
-    if (st._local || !isEdit) {
+    if (st._local || !activeTaskId) {
       setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
       return;
     }
     setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
     await supabase.from("subtasks").delete().eq("id", st.id);
+  };
+
+  const renameSubtask = async (st: Subtask, nextTitle: string) => {
+    const trimmed = nextTitle.trim();
+    if (!trimmed || trimmed === st.title) return;
+    const titled = toTitleCase(trimmed);
+    setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, title: titled } : s));
+    if (st._local || !activeTaskId) return;
+    const { error } = await supabase.from("subtasks").update({ title: titled }).eq("id", st.id);
+    if (error) toast.error("Couldn't rename subtask");
   };
 
   const handleDeleteTask = async () => {
@@ -362,6 +371,24 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
     } catch (e: any) {
       toast.error("Couldn't delete task", { description: e?.message });
     }
+  };
+
+  // Close handler — discards untouched draft tasks, otherwise just closes (autosave already persisted).
+  const handleClose = async () => {
+    if (autosaveTimerRef.current) { clearTimeout(autosaveTimerRef.current); autosaveTimerRef.current = null; }
+    if (isDraftMode && draftId) {
+      const untouched =
+        title.trim().length === 0 &&
+        notes.trim().length === 0 &&
+        !dueAt &&
+        !categoryId &&
+        priority === "normal" &&
+        subtasks.length === 0;
+      if (untouched && onDelete) {
+        try { await onDelete(draftId); } catch { /* ignore */ }
+      }
+    }
+    onClose();
   };
 
   if (!open) return null;
