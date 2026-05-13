@@ -762,6 +762,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
                 isLast={i === subtasks.length - 1}
                 onToggle={() => toggleSubtask(st)}
                 onDelete={() => deleteSubtask(st)}
+                onRename={(next) => renameSubtask(st, next)}
               />
             ))}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
