@@ -59,6 +59,7 @@ const Planner = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
+  const [editingOccurrenceDate, setEditingOccurrenceDate] = useState<string | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const { syncTask, hasConnections } = useCalendarSync();
