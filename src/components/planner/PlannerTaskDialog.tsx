@@ -188,6 +188,7 @@ export const PlannerTaskDialog = ({
     if (!open) {
       setActiveSubtask(null);
       setShowRepeat(false);
+      setScopePromptOpen(false);
       return;
     }
     if (editTask) {
