@@ -64,6 +64,28 @@ const Planner = () => {
   const { syncTask, hasConnections } = useCalendarSync();
   const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
+  // Local visibility filters for List view (spaces + categories)
+  const [spaceVisibility, setSpaceVisibility] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("planner_space_visibility") || "{}"); } catch { return {}; }
+  });
+  const toggleSpaceVisibility = useCallback((id: string) => {
+    setSpaceVisibility(prev => {
+      const next = { ...prev, [id]: prev[id] === false ? true : false };
+      localStorage.setItem("planner_space_visibility", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+  const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("planner_category_visibility") || "{}"); } catch { return {}; }
+  });
+  const toggleCategoryVisibility = useCallback((id: string) => {
+    setCategoryVisibility(prev => {
+      const next = { ...prev, [id]: prev[id] === false ? true : false };
+      localStorage.setItem("planner_category_visibility", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const {
     spaces,
     categories,
