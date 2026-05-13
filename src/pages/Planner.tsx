@@ -364,12 +364,14 @@ const Planner = () => {
       const parent = tasks.find(t => t.id === parentId);
       if (parent) {
         setEditingTask(parent);
+        setEditingOccurrenceDate((task as any)._occurrenceDate || null);
         setDefaultDueAt(null);
         setDialogOpen(true);
       }
       return;
     }
     setEditingTask(task);
+    setEditingOccurrenceDate(null);
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
