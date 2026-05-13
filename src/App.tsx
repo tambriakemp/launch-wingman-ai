@@ -9,6 +9,7 @@ import { TikTokEnvironmentProvider } from "@/contexts/TikTokEnvironmentContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import ScrollToTop from "@/components/ScrollToTop";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { NativeBridge } from "@/components/NativeBridge";
 import { initGA, trackPageView } from "@/lib/analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -133,6 +134,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TikTokEnvironmentProvider>
+          <NativeBridge />
           <PushRegistrar />
           <PageViewTracker />
           <ScrollToTop />

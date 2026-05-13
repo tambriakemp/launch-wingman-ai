@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.launchely.app"],
+        "components": [
+          {
+            "/": "/checkout/success",
+            "comment": "Stripe Checkout success — Universal Link returns user to native app"
+          },
+          {
+            "/": "/checkout/canceled",
+            "comment": "Stripe Checkout cancel — Universal Link returns user to native app"
+          },
+          {
+            "/": "/auth/return*",
+            "comment": "Auth-bridge Universal Link returns (reserved)"
+          }
+        ]
+      }
+    ]
+  }
+}

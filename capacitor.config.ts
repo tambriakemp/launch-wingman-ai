@@ -7,8 +7,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const isDev = process.env.CAP_DEV === 'true';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.d0ceac0b3c74405598f172d36eaf2f91',
-  appName: 'launch-wingman-ai',
+  appId: 'com.launchely.app',
+  appName: 'Launchely',
   webDir: 'dist',
   ...(isDev && {
     server: {
