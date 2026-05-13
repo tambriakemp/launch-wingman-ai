@@ -735,8 +735,39 @@ export const PlannerTaskDialog = ({
                 Unschedule
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editTask ? "Update" : "Create"}</Button>
+            <Button type="button" variant="outline" onClick={() => { setScopePromptOpen(false); onOpenChange(false); }}>Cancel</Button>
+            {editTask && editTask.recurrence_rule ? (
+              scopePromptOpen ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto">
+                  <span className="text-xs text-amber-700 dark:text-amber-500 font-medium sm:mr-1">
+                    Recurring task — apply changes to:
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isSubmitting}
+                    onClick={(e) => handleSubmit(e as any, "single")}
+                  >
+                    This task only
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isSubmitting}
+                    onClick={(e) => handleSubmit(e as any, "series")}
+                  >
+                    Entire series
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" disabled={isSubmitting} onClick={() => setScopePromptOpen(true)}>
+                  {isSubmitting ? "Saving..." : "Update"}
+                </Button>
+              )
+            ) : (
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editTask ? "Update" : "Create"}</Button>
+            )}
           </SheetFooter>
         </form>
       </SheetContent>
