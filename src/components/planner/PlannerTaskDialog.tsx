@@ -262,7 +262,7 @@ export const PlannerTaskDialog = ({
     }
   }, [editTask, open, defaultDueAt, selectedSpaceId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, scope?: "single" | "series") => {
     e.preventDefault();
     if (!title.trim()) { toast.error("Title is required"); return; }
 
