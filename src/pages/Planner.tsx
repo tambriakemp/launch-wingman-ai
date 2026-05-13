@@ -129,9 +129,25 @@ const Planner = () => {
     }
     if (sunsamaView === "list") {
       result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
+      result = result.filter(t => {
+        const sid = (t as any).space_id;
+        if (!sid) return true;
+        return spaceVisibility[sid] !== false;
+      });
+      result = result.filter(t => {
+        const cid = (t as any).category;
+        if (!cid) return categoryVisibility["__none__"] !== false;
+        return categoryVisibility[cid] !== false;
+      });
     }
     return result;
-  }, [tasks, selectedSpaceId, isVisible, sunsamaView]);
+  }, [tasks, selectedSpaceId, isVisible, sunsamaView, spaceVisibility, categoryVisibility]);
+
+  // Week board hides abandoned entirely
+  const weekBoardTasks = useMemo(
+    () => filteredTasks.filter(t => t.column_id !== "abandoned"),
+    [filteredTasks]
+  );
 
   const activeCategories = useMemo(() => {
     return getCategoriesForSpace(selectedSpaceId);
