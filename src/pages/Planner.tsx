@@ -593,7 +593,16 @@ const Planner = () => {
 
 
               {sunsamaView === "list" && (
-                <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+                <StatusVisibilitySettings
+                  visibility={visibility}
+                  onToggle={toggleVisibility}
+                  spaces={spaces}
+                  categories={selectedSpaceId ? activeCategories : categories}
+                  spaceVisibility={spaceVisibility}
+                  onToggleSpace={toggleSpaceVisibility}
+                  categoryVisibility={categoryVisibility}
+                  onToggleCategory={toggleCategoryVisibility}
+                />
               )}
 
               {/* Primary action — terracotta-like rounded pill */}
