@@ -164,7 +164,7 @@ const Planner = () => {
       return;
     }
 
-    toast.success("Task created");
+    if (!(data as any)._silent) toast.success("Task created");
     if (inserted?.id) {
       syncTask(inserted.id, "create");
     }
