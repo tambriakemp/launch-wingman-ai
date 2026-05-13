@@ -672,7 +672,7 @@ const Planner = () => {
             <>
               <div className="flex-1 min-w-0 overflow-hidden">
                 <PlannerWeekBoardView
-                  tasks={filteredTasks}
+                  tasks={weekBoardTasks}
                   days={weekDays}
                   anchorDate={anchorDate}
                   scrollToAnchorNonce={scrollNonce}
