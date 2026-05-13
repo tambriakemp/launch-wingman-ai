@@ -82,6 +82,14 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const spaceSearchRef = useRef<HTMLInputElement>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipAutosaveRef = useRef(true);
+  const draftCreatingRef = useRef(false);
+
+  const activeTaskId = editTask?.id || draftId;
+  const isDraftMode = !editTask && !!draftId;
 
   const fetchSubtasks = useCallback(async (taskId: string) => {
     const { data } = await supabase
