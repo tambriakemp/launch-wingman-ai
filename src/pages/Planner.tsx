@@ -220,6 +220,62 @@ const Planner = () => {
       finalEndAt = null;
     }
 
+    const scope = (data as any)._scope as "single" | "series" | undefined;
+    const isRecurring = !!editingTask.recurrence_rule;
+
+    // Recurring + "single" → materialize new standalone task for that occurrence + add exception
+    if (isRecurring && scope === "single" && user) {
+      const occurrenceDate =
+        editingOccurrenceDate ||
+        (editingTask.due_at ? editingTask.due_at.slice(0, 10) : null) ||
+        (editingTask.start_at ? editingTask.start_at.slice(0, 10) : null);
+      if (!occurrenceDate) {
+        toast.error("Could not determine occurrence date");
+        return;
+      }
+
+      const { error: insertErr } = await supabase.from("tasks").insert({
+        project_id: editingTask.project_id,
+        user_id: user.id,
+        title: data.title,
+        description: data.description || null,
+        column_id: data.column_id || "todo",
+        task_origin: editingTask.task_origin || "user",
+        task_scope: editingTask.task_scope || "planner",
+        task_type: data.task_type || "task",
+        category: data.category || null,
+        priority: (data as any).priority || "normal",
+        due_at: data.due_at !== undefined ? (data.due_at || null) : null,
+        start_at: finalStartAt,
+        end_at: finalEndAt,
+        location: data.location || null,
+        position: 0,
+        recurrence_rule: null,
+        recurrence_parent_id: editingTask.id,
+        space_id: (data as any).space_id !== undefined ? (data as any).space_id : (editingTask as any).space_id,
+      } as any);
+
+      if (insertErr) {
+        console.error(insertErr);
+        toast.error("Failed to save occurrence");
+        return;
+      }
+
+      const existing = editingTask.recurrence_exception_dates || [];
+      if (!existing.includes(occurrenceDate)) {
+        await supabase
+          .from("tasks")
+          .update({ recurrence_exception_dates: [...existing, occurrenceDate] } as any)
+          .eq("id", editingTask.id);
+      }
+
+      toast.success("Occurrence updated");
+      setEditingTask(null);
+      setEditingOccurrenceDate(null);
+      fetchTasks();
+      return;
+    }
+
     const { error } = await supabase
       .from("tasks")
       .update({
@@ -244,9 +300,10 @@ const Planner = () => {
       return;
     }
 
-    toast.success("Task updated");
+    toast.success(isRecurring ? "Series updated" : "Task updated");
     syncTask(editingTask.id, "update");
     setEditingTask(null);
+    setEditingOccurrenceDate(null);
     fetchTasks();
   };
 
