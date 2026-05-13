@@ -82,6 +82,14 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const spaceSearchRef = useRef<HTMLInputElement>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipAutosaveRef = useRef(true);
+  const draftCreatingRef = useRef(false);
+
+  const activeTaskId = editTask?.id || draftId;
+  const isDraftMode = !editTask && !!draftId;
 
   const fetchSubtasks = useCallback(async (taskId: string) => {
     const { data } = await supabase
@@ -117,12 +125,74 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
       setCategoryQuery("");
       setSpaceQuery("");
       setNewSubtaskTitle("");
+      skipAutosaveRef.current = true;
+      setAutosaveStatus("idle");
       requestAnimationFrame(() => setMounted(true));
       if (!editTask) setTimeout(() => inputRef.current?.focus(), 240);
     } else {
       setMounted(false);
+      setDraftId(null);
+      skipAutosaveRef.current = true;
+      if (autosaveTimerRef.current) { clearTimeout(autosaveTimerRef.current); autosaveTimerRef.current = null; }
     }
   }, [open, selectedSpaceId, editTask, fetchSubtasks]);
+
+  // Create a draft task on open in create mode so all subsequent edits autosave.
+  useEffect(() => {
+    if (!open || editTask || draftId || draftCreatingRef.current) return;
+    draftCreatingRef.current = true;
+    (async () => {
+      try {
+        const newId = await onCreate({
+          title: "Untitled",
+          column_id: "todo",
+          task_type: "task",
+          priority: "normal",
+          ...(({ space_id: selectedSpaceId, _silent: true } as any)),
+        } as any);
+        if (typeof newId === "string") setDraftId(newId);
+      } catch (e: any) {
+        toast.error("Couldn't start task", { description: e?.message });
+      } finally {
+        draftCreatingRef.current = false;
+      }
+    })();
+  }, [open, editTask, draftId, onCreate, selectedSpaceId]);
+
+  // Debounced autosave — runs whenever a watched field changes after the sheet is settled.
+  useEffect(() => {
+    if (!open || !activeTaskId) return;
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    setAutosaveStatus("saving");
+    autosaveTimerRef.current = setTimeout(async () => {
+      try {
+        const dueIso = dueAt ? dueAt.toISOString() : null;
+        const trimmedTitle = title.trim();
+        const safeTitle = trimmedTitle.length > 0 ? toTitleCase(trimmedTitle) : "Untitled";
+        const payload: Partial<PlannerTask> = {
+          title: safeTitle,
+          description: notes.trim() || "",
+          task_type: "task",
+          priority,
+          category: categoryId,
+          due_at: dueIso,
+          start_at: dueIso,
+          end_at: dueIso,
+          ...(({ space_id: spaceId } as any)),
+        };
+        if (onUpdate) await onUpdate(activeTaskId, payload);
+        setAutosaveStatus("saved");
+      } catch (e: any) {
+        setAutosaveStatus("error");
+        toast.error("Couldn't save", { description: e?.message });
+      }
+    }, 600);
+    return () => { if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current); };
+  }, [title, notes, priority, categoryId, dueAt, spaceId, activeTaskId, open, onUpdate]);
 
   // Debounced AI suggestions while typing (only in create mode).
   useEffect(() => {
@@ -240,20 +310,19 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   const addSubtask = async () => {
     const t = newSubtaskTitle.trim();
     if (!t) return;
-    if (isEdit && editTask) {
+    if (activeTaskId) {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
       const { error } = await supabase.from("subtasks").insert({
-        task_id: editTask.id,
+        task_id: activeTaskId,
         user_id: userData.user.id,
         title: toTitleCase(t),
         position: subtasks.length,
       });
       if (error) { toast.error("Failed to add subtask"); return; }
       setNewSubtaskTitle("");
-      fetchSubtasks(editTask.id);
+      fetchSubtasks(activeTaskId);
     } else {
-      // Buffer locally; flush on save
       setSubtasks((prev) => [...prev, {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
         title: toTitleCase(t),
@@ -266,7 +335,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   };
 
   const toggleSubtask = async (st: Subtask) => {
-    if (st._local || !isEdit) {
+    if (st._local || !activeTaskId) {
       setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, completed: !s.completed } : s));
       return;
     }
@@ -275,12 +344,22 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
   };
 
   const deleteSubtask = async (st: Subtask) => {
-    if (st._local || !isEdit) {
+    if (st._local || !activeTaskId) {
       setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
       return;
     }
     setSubtasks((prev) => prev.filter((s) => s.id !== st.id));
     await supabase.from("subtasks").delete().eq("id", st.id);
+  };
+
+  const renameSubtask = async (st: Subtask, nextTitle: string) => {
+    const trimmed = nextTitle.trim();
+    if (!trimmed || trimmed === st.title) return;
+    const titled = toTitleCase(trimmed);
+    setSubtasks((prev) => prev.map((s) => s.id === st.id ? { ...s, title: titled } : s));
+    if (st._local || !activeTaskId) return;
+    const { error } = await supabase.from("subtasks").update({ title: titled }).eq("id", st.id);
+    if (error) toast.error("Couldn't rename subtask");
   };
 
   const handleDeleteTask = async () => {
@@ -292,6 +371,24 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
     } catch (e: any) {
       toast.error("Couldn't delete task", { description: e?.message });
     }
+  };
+
+  // Close handler — discards untouched draft tasks, otherwise just closes (autosave already persisted).
+  const handleClose = async () => {
+    if (autosaveTimerRef.current) { clearTimeout(autosaveTimerRef.current); autosaveTimerRef.current = null; }
+    if (isDraftMode && draftId) {
+      const untouched =
+        title.trim().length === 0 &&
+        notes.trim().length === 0 &&
+        !dueAt &&
+        !categoryId &&
+        priority === "normal" &&
+        subtasks.length === 0;
+      if (untouched && onDelete) {
+        try { await onDelete(draftId); } catch { /* ignore */ }
+      }
+    }
+    onClose();
   };
 
   if (!open) return null;
@@ -308,7 +405,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
         transition: "background 240ms ease",
       }}
     >
-      <div onClick={onClose} style={{ flex: 1 }} />
+      <div onClick={handleClose} style={{ flex: 1 }} />
 
       <div
         style={{
@@ -340,20 +437,20 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           }}
         >
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: "transparent",
               border: 0,
               padding: 0,
               fontFamily: SF,
               fontSize: 15.5,
-              color: INK_60,
-              fontWeight: 500,
+              color: INK,
+              fontWeight: 600,
               letterSpacing: -0.2,
               cursor: "pointer",
             }}
           >
-            Cancel
+            Done
           </button>
           <div
             style={{
@@ -367,23 +464,26 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           >
             {isEdit ? "Edit task" : "New task"}
           </div>
-          <button
-            onClick={handleSave}
-            disabled={isComposer || submitting}
+          <div
             style={{
-              background: "transparent",
-              border: 0,
-              padding: 0,
               fontFamily: SF,
-              fontSize: 15.5,
-              color: isComposer ? INK_40 : TERRACOTTA,
-              fontWeight: 700,
-              letterSpacing: -0.2,
-              cursor: isComposer ? "default" : "pointer",
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: -0.1,
+              color: autosaveStatus === "error" ? TERRACOTTA : INK_40,
+              minWidth: 56,
+              textAlign: "right",
             }}
+            aria-live="polite"
           >
-            Save
-          </button>
+            {autosaveStatus === "saving" && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Loader2 size={11} className="animate-spin" /> Saving
+              </span>
+            )}
+            {autosaveStatus === "saved" && "Saved"}
+            {autosaveStatus === "error" && "Retry"}
+          </div>
         </div>
 
         {/* scrollable content */}
@@ -662,6 +762,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
                 isLast={i === subtasks.length - 1}
                 onToggle={() => toggleSubtask(st)}
                 onDelete={() => deleteSubtask(st)}
+                onRename={(next) => renameSubtask(st, next)}
               />
             ))}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -1205,14 +1306,43 @@ function SubtaskRow({
   isLast,
   onToggle,
   onDelete,
+  onRename,
 }: {
   subtask: Subtask;
   isLast: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onRename: (next: string) => void;
 }) {
   const [swiped, setSwiped] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(subtask.title);
+  const inputRef = useRef<HTMLInputElement>(null);
   const startX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(subtask.title);
+  }, [subtask.title, editing]);
+
+  useEffect(() => {
+    if (editing) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      });
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (!next) {
+      setDraft(subtask.title);
+    } else if (next !== subtask.title) {
+      onRename(next);
+    }
+    setEditing(false);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => { startX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (startX.current == null) return;
@@ -1268,16 +1398,45 @@ function SubtaskRow({
         >
           {done && <Check color="#fff" size={11} strokeWidth={3.5} />}
         </button>
-        <span
-          style={{
-            flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
-            color: done ? INK_40 : INK, letterSpacing: -0.2,
-            textDecoration: done ? "line-through" : "none",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}
-        >
-          {subtask.title}
-        </span>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commit(); }
+              else if (e.key === "Escape") { e.preventDefault(); setDraft(subtask.title); setEditing(false); }
+            }}
+            enterKeyHint="done"
+            autoCapitalize="sentences"
+            style={{
+              flex: 1,
+              border: 0,
+              outline: "none",
+              background: "transparent",
+              fontFamily: SF,
+              fontSize: 14.5,
+              fontWeight: 500,
+              color: INK,
+              letterSpacing: -0.2,
+              padding: 0,
+            }}
+          />
+        ) : (
+          <span
+            onClick={() => setEditing(true)}
+            style={{
+              flex: 1, fontFamily: SF, fontSize: 14.5, fontWeight: 500,
+              color: done ? INK_40 : INK, letterSpacing: -0.2,
+              textDecoration: done ? "line-through" : "none",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              cursor: "text",
+            }}
+          >
+            {subtask.title}
+          </span>
+        )}
       </div>
     </div>
   );

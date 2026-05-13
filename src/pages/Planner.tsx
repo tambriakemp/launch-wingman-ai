@@ -164,7 +164,7 @@ const Planner = () => {
       return;
     }
 
-    toast.success("Task created");
+    if (!(data as any)._silent) toast.success("Task created");
     if (inserted?.id) {
       syncTask(inserted.id, "create");
     }
@@ -431,7 +431,27 @@ const Planner = () => {
             setDefaultDueAt(null);
           }}
           onCreate={handleCreateTask}
-          onUpdate={async (_id, d) => { await handleUpdateTask(d); }}
+          onUpdate={async (id, d) => {
+            const dueIso = d.due_at !== undefined ? (d.due_at || null) : undefined;
+            const startIso = d.start_at !== undefined ? (d.start_at || null) : undefined;
+            const endIso = d.end_at !== undefined ? (d.end_at || null) : undefined;
+            const payload: any = {};
+            if (d.title !== undefined) payload.title = d.title;
+            if (d.description !== undefined) payload.description = d.description || null;
+            if (d.column_id !== undefined) payload.column_id = d.column_id;
+            if (d.task_type !== undefined) payload.task_type = d.task_type;
+            if (d.category !== undefined) payload.category = d.category || null;
+            if ((d as any).priority !== undefined) payload.priority = (d as any).priority;
+            if (dueIso !== undefined) payload.due_at = dueIso;
+            if (startIso !== undefined) payload.start_at = startIso;
+            if (endIso !== undefined) payload.end_at = endIso;
+            if (d.location !== undefined) payload.location = d.location || null;
+            if ((d as any).space_id !== undefined) payload.space_id = (d as any).space_id;
+            const { error } = await supabase.from("tasks").update(payload).eq("id", id);
+            if (error) { toast.error("Failed to save"); return; }
+            syncTask(id, "update");
+            fetchTasks();
+          }}
           onDelete={handleDeleteTask}
           spaces={spaces}
           categories={categories}
