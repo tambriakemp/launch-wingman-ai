@@ -434,3 +434,15 @@
   border-radius: 0.75rem;
   box-shadow: 0 1px 1px rgba(31, 27, 23, 0.04), 0 8px 24px -8px rgba(31, 27, 23, 0.06);
 }
+
+/* Prevent iOS focus-zoom on inputs (must be ≥16px) and disable text size adjust on rotation. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+}
