@@ -437,20 +437,20 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           }}
         >
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: "transparent",
               border: 0,
               padding: 0,
               fontFamily: SF,
               fontSize: 15.5,
-              color: INK_60,
-              fontWeight: 500,
+              color: INK,
+              fontWeight: 600,
               letterSpacing: -0.2,
               cursor: "pointer",
             }}
           >
-            Cancel
+            Done
           </button>
           <div
             style={{
@@ -464,23 +464,26 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
           >
             {isEdit ? "Edit task" : "New task"}
           </div>
-          <button
-            onClick={handleSave}
-            disabled={isComposer || submitting}
+          <div
             style={{
-              background: "transparent",
-              border: 0,
-              padding: 0,
               fontFamily: SF,
-              fontSize: 15.5,
-              color: isComposer ? INK_40 : TERRACOTTA,
-              fontWeight: 700,
-              letterSpacing: -0.2,
-              cursor: isComposer ? "default" : "pointer",
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: -0.1,
+              color: autosaveStatus === "error" ? TERRACOTTA : INK_40,
+              minWidth: 56,
+              textAlign: "right",
             }}
+            aria-live="polite"
           >
-            Save
-          </button>
+            {autosaveStatus === "saving" && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Loader2 size={11} className="animate-spin" /> Saving
+              </span>
+            )}
+            {autosaveStatus === "saved" && "Saved"}
+            {autosaveStatus === "error" && "Retry"}
+          </div>
         </div>
 
         {/* scrollable content */}
