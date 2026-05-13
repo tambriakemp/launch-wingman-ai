@@ -405,7 +405,7 @@ export function MobileAddTaskSheet({ open, onClose, onCreate, onUpdate, onDelete
         transition: "background 240ms ease",
       }}
     >
-      <div onClick={onClose} style={{ flex: 1 }} />
+      <div onClick={handleClose} style={{ flex: 1 }} />
 
       <div
         style={{
