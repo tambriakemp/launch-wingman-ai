@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useHaptics } from "@/hooks/useHaptics";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   PreviewCampaigns,
   PreviewAnalytics,
@@ -132,6 +133,11 @@ const MarketingHub = () => {
   return (
     <ProjectLayout>
       <div className="max-w-2xl mx-auto pb-12">
+        {/* Mobile-only top row — desktop's TopBar already has the bell. */}
+        <div className="md:hidden flex justify-end px-4 pt-3">
+          <NotificationBell />
+        </div>
+
         {/* Title block */}
         <header style={{ padding: "4px 22px 18px" }}>
           <div className="eyebrow">Marketing</div>

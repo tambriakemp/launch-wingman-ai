@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow, differenceInDays, isPast } from "date-fns";
-import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
+import { ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useCheckIn } from "@/hooks/useCheckIn";
-import { useNotifications } from "@/hooks/useNotifications";
-import { NotificationsSheet } from "@/components/notifications/NotificationsSheet";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
@@ -645,9 +644,7 @@ export const MobileDashboard = ({
   const navigate = useNavigate();
   const { id: projectId } = useParams();
   const { trigger: haptic } = useHaptics();
-  const { unreadCount } = useNotifications();
   const [scrolled, setScrolled] = useState(false);
-  const [notifsOpen, setNotifsOpen] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   const navigateWithHaptic = (href: string) => {
@@ -682,31 +679,7 @@ export const MobileDashboard = ({
             Today
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => setNotifsOpen(true)}
-              style={{ width: 36, height: 36, borderRadius: 999, border: 0, background: scrolled ? "rgba(31,27,23,0.06)" : "rgba(255,255,255,0.5)", display: "inline-flex", alignItems: "center", justifyContent: "center", position: "relative", cursor: "pointer" }}
-              aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
-            >
-              <Bell size={17} color={INK} strokeWidth={1.8} />
-              {unreadCount > 0 && (
-                <span
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: 7,
-                    right: 8,
-                    minWidth: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    background: TERRACOTTA,
-                    border: `1.5px solid ${scrolled ? "rgba(251,247,241,1)" : "rgba(255,255,255,0.9)"}`,
-                  }}
-                />
-              )}
-            </button>
-            <Link to="/settings" style={{ width: 36, height: 36, borderRadius: 999, background: INK, color: PAPER, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: SERIF, fontWeight: 500, fontSize: 14, letterSpacing: -0.3, textDecoration: "none" }}>
-              {initials || (firstName?.[0]?.toUpperCase() ?? "Y")}
-            </Link>
+            <NotificationBell showBackground={scrolled} />
           </div>
         </div>
       </div>
@@ -752,8 +725,6 @@ export const MobileDashboard = ({
         <CheckInBanner onStart={onStartCheckIn} />
         <BringingForward activePhase={activePhase} stepIndex={stepIndex} stepTotal={stepTotal} />
       </div>
-
-      <NotificationsSheet open={notifsOpen} onOpenChange={setNotifsOpen} />
 
     </div>
   );

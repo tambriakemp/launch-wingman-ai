@@ -12,6 +12,7 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useHaptics } from "@/hooks/useHaptics";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { TIER_DISPLAY_NAMES } from "@/lib/subscriptionTiers";
 import { openExternalUrl } from "@/lib/nativeBridge";
@@ -120,6 +121,11 @@ const MeHub = () => {
   return (
     <ProjectLayout>
       <div className="max-w-2xl mx-auto px-4 md:px-0 py-6 md:py-0 space-y-9">
+        {/* Mobile-only top row — desktop's TopBar already has the bell. */}
+        <div className="md:hidden flex justify-end -mt-3 -mr-2">
+          <NotificationBell />
+        </div>
+
         {/* Header — avatar + greeting + tier */}
         <header className="space-y-4">
           <p className="eyebrow">Account</p>
