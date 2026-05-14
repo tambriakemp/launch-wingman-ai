@@ -18,7 +18,12 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
         <ProjectSidebar />
         <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
-          <main className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0">{children}</main>
+          <main
+            className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0 pt-safe-t md:pt-6"
+            style={{ paddingBottom: "var(--native-tabbar-h, 0px)" }}
+          >
+            {children}
+          </main>
         </div>
       </div>
     </MobileSidebarProvider>

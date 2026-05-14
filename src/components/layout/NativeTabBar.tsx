@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Sparkles, Target, User } from "lucide-react";
+import { Compass, CalendarDays, Sparkles, Megaphone, User } from "lucide-react";
 import { isNativeApp } from "@/lib/nativeBridge";
 import { useHaptics } from "@/hooks/useHaptics";
 
@@ -8,7 +9,7 @@ type TabId = "launch" | "planner" | "studio" | "marketing" | "me";
 interface Tab {
   id: TabId;
   label: string;
-  icon: typeof Home;
+  icon: typeof Compass;
   to: string;
   // Path prefixes that should activate this tab when the user is anywhere
   // under that section's sub-pages.
@@ -19,14 +20,14 @@ const TABS: Tab[] = [
   {
     id: "launch",
     label: "Launch",
-    icon: Home,
+    icon: Compass,
     to: "/app",
     match: ["/app", "/projects", "/dashboard", "/playbook"],
   },
   {
     id: "planner",
     label: "Planner",
-    icon: Calendar,
+    icon: CalendarDays,
     to: "/planner-hub",
     match: [
       "/planner-hub",
@@ -48,7 +49,7 @@ const TABS: Tab[] = [
   {
     id: "marketing",
     label: "Marketing",
-    icon: Target,
+    icon: Megaphone,
     to: "/marketing-hub/campaigns",
     match: ["/marketing-hub"],
   },
@@ -101,8 +102,25 @@ export function NativeTabBar() {
   const location = useLocation();
   const { trigger: haptic } = useHaptics();
 
-  if (!isNativeApp()) return null;
-  if (isChromelessPath(location.pathname)) return null;
+  const native = isNativeApp();
+  const chromeless = isChromelessPath(location.pathname);
+  const shouldRender = native && !chromeless;
+
+  // Publish the tab bar's reserved height so page layouts (e.g. ProjectLayout)
+  // can pad content out from underneath the fixed bar. Variable is unset on
+  // web and chromeless routes, so consumers fall through to their default.
+  useEffect(() => {
+    if (!shouldRender) return;
+    document.documentElement.style.setProperty(
+      "--native-tabbar-h",
+      "calc(60px + env(safe-area-inset-bottom))"
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--native-tabbar-h");
+    };
+  }, [shouldRender]);
+
+  if (!shouldRender) return null;
 
   const active = matchActiveTab(location.pathname);
 
