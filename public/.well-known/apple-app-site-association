@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["TEAMID.com.launchely.app"],
+        "appIDs": ["NY2NX4AY4Z.com.launchely.app"],
         "components": [
           {
             "/": "/checkout/success",
