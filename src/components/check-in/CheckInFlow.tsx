@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -33,11 +33,22 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
 
   // First-time check-in: show the Welcome step. Repeat users go straight to
   // Reflection — the framing copy is for newcomers; seasoned users want to
-  // get on with it.
+  // get on with it. We only run this initializer once per open, because
+  // submitting a check-in updates preferences.last_check_in_at, which would
+  // otherwise re-trigger this effect mid-flow and bounce the user back to
+  // the reflection screen.
+  const initializedForOpenRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedForOpenRef.current = false;
+      return;
+    }
+    if (initializedForOpenRef.current) return;
+    // Wait for the query to settle (undefined while loading).
+    if (preferences === undefined) return;
     setStep(preferences?.last_check_in_at ? "reflection" : "welcome");
-  }, [open, preferences?.last_check_in_at]);
+    initializedForOpenRef.current = true;
+  }, [open, preferences]);
 
   const handleStart = () => {
     setStep("reflection");
