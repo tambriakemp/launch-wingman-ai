@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Settings, Shield, LogOut, Menu, ArrowLeftCircle, BookOpen, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,8 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
+import { useNotifications } from "@/hooks/useNotifications";
+import { NotificationsSheet } from "@/components/notifications/NotificationsSheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +27,8 @@ export const TopBar = () => {
   const isMobile = useIsMobile();
   const isNative = useIsNativeApp();
   const { toggle } = useMobileSidebar();
+  const { unreadCount } = useNotifications();
+  const [notifsOpen, setNotifsOpen] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -95,10 +100,17 @@ export const TopBar = () => {
         </Link>
         <button
           type="button"
-          className="hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors"
-          aria-label="Notifications"
+          onClick={() => setNotifsOpen(true)}
+          className="relative hidden sm:inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-colors"
+          aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
         >
           <Bell className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span
+              aria-hidden
+              className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[hsl(var(--terracotta-500))] ring-2 ring-background"
+            />
+          )}
         </button>
 
         <DropdownMenu>
@@ -178,6 +190,7 @@ export const TopBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </nav>
+      <NotificationsSheet open={notifsOpen} onOpenChange={setNotifsOpen} />
     </header>
   );
 };
