@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { addDays, format, isToday, isPast, parseISO, startOfDay, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
-import { Plus, Filter, Check, Trash2, Flame, X } from "lucide-react";
+import { Plus, Check, Trash2, Flame } from "lucide-react";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+import { SpacePicker } from "@/components/planner/SpacePicker";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
 const SERIF = '"Fraunces", "New York", Georgia, serif';
@@ -24,7 +25,10 @@ interface Props {
   spaces: PlannerSpace[];
   categories: SpaceCategory[];
   selectedSpaceId: string | null;
+  selectedCategoryIds: string[];
   onSelectSpace: (id: string | null) => void;
+  onToggleCategory: (id: string) => void;
+  onClearCategories: () => void;
   onEditTask: (task: PlannerTask) => void;
   onToggleComplete: (task: PlannerTask) => void;
   onDeleteTask: (id: string) => void;
@@ -426,7 +430,10 @@ export const MobilePlanner = ({
   spaces,
   categories = [],
   selectedSpaceId,
+  selectedCategoryIds,
   onSelectSpace,
+  onToggleCategory,
+  onClearCategories,
   onEditTask,
   onToggleComplete,
   onDeleteTask,
@@ -447,14 +454,7 @@ export const MobilePlanner = ({
   }, [searchParams]);
 
   const [scrolled, setScrolled] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const scrollerRef = useRef<HTMLDivElement>(null);
-
-  // Reset category selection when space changes (categories are space-scoped)
-  useEffect(() => {
-    setSelectedCategoryIds([]);
-  }, [selectedSpaceId]);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -618,28 +618,17 @@ export const MobilePlanner = ({
             >
               {dateLine}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <button
-                onClick={() => setFilterOpen(true)}
-                style={{
-                  position: "relative",
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  border: 0,
-                  background: selectedCategoryIds.length > 0 ? "rgba(198,90,62,0.12)" : "transparent",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-                aria-label="Filter by category"
-              >
-                <Filter size={18} color={selectedCategoryIds.length > 0 ? TERRACOTTA : INK} strokeWidth={1.8} />
-                {selectedCategoryIds.length > 0 && (
-                  <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: 999, background: TERRACOTTA, border: `1.5px solid ${PAPER}` }} />
-                )}
-              </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <SpacePicker
+                spaces={spaces}
+                categories={categories}
+                tasks={tasks as any}
+                selectedSpaceId={selectedSpaceId}
+                selectedCategoryIds={selectedCategoryIds}
+                onSelectSpace={onSelectSpace}
+                onToggleCategory={onToggleCategory}
+                onClearCategories={onClearCategories}
+              />
               <button
                 onClick={onAddTask}
                 style={{
@@ -750,64 +739,6 @@ export const MobilePlanner = ({
           </div>
         </div>
 
-        {/* Spaces chips */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            padding: "14px 16px 4px",
-            overflowX: "auto",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          {[{ id: null as string | null, name: "All", count: openCount, color: null as string | null }, ...spaceCounts.map((s) => ({ id: s.space.id, name: s.space.name, count: s.count, color: s.space.color || "#94a3b8" }))].map((s) => {
-            const active = selectedSpaceId === s.id;
-            return (
-              <button
-                key={s.id ?? "all"}
-                onClick={() => onSelectSpace(s.id)}
-                style={{
-                  flexShrink: 0,
-                  background: active ? INK : "#fff",
-                  border: active ? 0 : `1px solid ${HAIRLINE}`,
-                  borderRadius: 999,
-                  padding: "7px 13px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  cursor: "pointer",
-                }}
-              >
-                {s.color && (
-                  <span style={{ width: 7, height: 7, borderRadius: 999, background: s.color }} />
-                )}
-                <span
-                  style={{
-                    fontFamily: SF,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    letterSpacing: -0.2,
-                    color: active ? PAPER : INK,
-                  }}
-                >
-                  {s.name}
-                </span>
-                <span
-                  style={{
-                    fontFamily: SF,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    letterSpacing: -0.1,
-                    color: active ? "rgba(251,247,241,0.6)" : INK_40,
-                  }}
-                >
-                  {s.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         {overdue.length > 0 && <OverdueCard count={overdue.length} />}
 
         <Section
@@ -902,143 +833,6 @@ export const MobilePlanner = ({
       </button>
 
 
-      {filterOpen && (
-        <CategoryFilterDrawer
-          categories={spaceCategories}
-          selectedIds={selectedCategoryIds}
-          spaceName={spaces.find((s) => s.id === selectedSpaceId)?.name || null}
-          onToggle={(id) =>
-            setSelectedCategoryIds((prev) =>
-              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-            )
-          }
-          onClear={() => setSelectedCategoryIds([])}
-          onClose={() => setFilterOpen(false)}
-        />
-      )}
     </div>
   );
 };
-
-function CategoryFilterDrawer({
-  categories,
-  selectedIds,
-  spaceName,
-  onToggle,
-  onClear,
-  onClose,
-}: {
-  categories: SpaceCategory[];
-  selectedIds: string[];
-  spaceName: string | null;
-  onToggle: (id: string) => void;
-  onClear: () => void;
-  onClose: () => void;
-}) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { requestAnimationFrame(() => setMounted(true)); }, []);
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 100,
-        display: "flex",
-        flexDirection: "column",
-        background: mounted ? "rgba(31,27,23,0.40)" : "rgba(31,27,23,0)",
-        transition: "background 240ms ease",
-      }}
-    >
-      <div onClick={onClose} style={{ flex: 1 }} />
-      <div
-        style={{
-          background: PAPER,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-          maxHeight: "75%",
-          display: "flex",
-          flexDirection: "column",
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",
-          overscrollBehavior: "contain",
-          transform: mounted ? "translateY(0)" : "translateY(100%)",
-          transition: "transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-          boxShadow: "0 -10px 40px rgba(31,27,23,0.18)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 4px" }}>
-          <div style={{ width: 36, height: 5, borderRadius: 999, background: INK_20 }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px 12px" }}>
-          <button
-            onClick={onClear}
-            disabled={selectedIds.length === 0}
-            style={{
-              background: "transparent",
-              border: 0,
-              padding: 0,
-              fontFamily: SF,
-              fontSize: 14.5,
-              color: selectedIds.length === 0 ? INK_40 : TERRACOTTA,
-              fontWeight: 500,
-              letterSpacing: -0.2,
-              cursor: selectedIds.length === 0 ? "default" : "pointer",
-            }}
-          >
-            Clear
-          </button>
-          <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 17, fontWeight: 500, color: INK }}>
-            Filter by category
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{ width: 28, height: 28, border: 0, borderRadius: 999, background: "rgba(31,27,23,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          >
-            <X size={14} color={INK} strokeWidth={2.2} />
-          </button>
-        </div>
-        {spaceName && (
-          <div style={{ padding: "0 22px 10px", fontFamily: SF, fontSize: 12, fontWeight: 600, color: INK_60, letterSpacing: 0.5, textTransform: "uppercase" }}>
-            {spaceName}
-          </div>
-        )}
-        <div style={{ padding: "0 12px 12px" }}>
-          {categories.length === 0 ? (
-            <div style={{ padding: "32px 16px", textAlign: "center", fontFamily: SF, fontSize: 14, color: INK_60 }}>
-              {spaceName ? "No categories in this space yet." : "Pick a space first to filter by category."}
-            </div>
-          ) : (
-            categories.map((c) => {
-              const active = selectedIds.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => onToggle(c.id)}
-                  style={{
-                    width: "100%",
-                    background: active ? "rgba(198,90,62,0.08)" : "#fff",
-                    border: 0,
-                    borderRadius: 12,
-                    padding: "12px 14px",
-                    marginTop: 6,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ width: 10, height: 10, borderRadius: 999, background: c.color || INK_40 }} />
-                  <span style={{ flex: 1, fontFamily: SF, fontSize: 15, fontWeight: 500, color: INK, letterSpacing: -0.2 }}>{c.name}</span>
-                  {active && <Check size={16} color={TERRACOTTA} strokeWidth={2.4} />}
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}

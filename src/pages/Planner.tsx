@@ -30,9 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
-import { SpacesFilterDropdown } from "@/components/planner/SpacesFilterDropdown";
-import { PlannerWeekRail } from "@/components/planner/PlannerWeekRail";
+import { SpacePicker } from "@/components/planner/SpacePicker";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
@@ -61,31 +59,44 @@ const Planner = () => {
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [editingOccurrenceDate, setEditingOccurrenceDate] = useState<string | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const { syncTask, hasConnections } = useCalendarSync();
-  const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
+  // Unified space + category filter (replaces the old multi-source
+  // spaceVisibility / categoryVisibility / selectedSpaceId trio). Both
+  // persist so the user's filter survives reload and view switches.
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(() => {
+    try { return localStorage.getItem("planner_selected_space_id"); } catch { return null; }
+  });
+  const handleSelectSpace = useCallback((id: string | null) => {
+    setSelectedSpaceId(id);
+    try {
+      if (id) localStorage.setItem("planner_selected_space_id", id);
+      else localStorage.removeItem("planner_selected_space_id");
+    } catch { /* storage unavailable */ }
+  }, []);
 
-  // Local visibility filters for List view (spaces + categories)
-  const [spaceVisibility, setSpaceVisibility] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem("planner_space_visibility") || "{}"); } catch { return {}; }
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("planner_selected_category_ids");
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
   });
-  const toggleSpaceVisibility = useCallback((id: string) => {
-    setSpaceVisibility(prev => {
-      const next = { ...prev, [id]: prev[id] === false ? true : false };
-      localStorage.setItem("planner_space_visibility", JSON.stringify(next));
+  const persistCategoryIds = useCallback((next: string[]) => {
+    try { localStorage.setItem("planner_selected_category_ids", JSON.stringify(next)); }
+    catch { /* storage unavailable */ }
+  }, []);
+  const handleToggleCategory = useCallback((id: string) => {
+    setSelectedCategoryIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      persistCategoryIds(next);
       return next;
     });
-  }, []);
-  const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem("planner_category_visibility") || "{}"); } catch { return {}; }
-  });
-  const toggleCategoryVisibility = useCallback((id: string) => {
-    setCategoryVisibility(prev => {
-      const next = { ...prev, [id]: prev[id] === false ? true : false };
-      localStorage.setItem("planner_category_visibility", JSON.stringify(next));
-      return next;
-    });
-  }, []);
+  }, [persistCategoryIds]);
+  const handleClearCategories = useCallback(() => {
+    setSelectedCategoryIds([]);
+    persistCategoryIds([]);
+  }, [persistCategoryIds]);
+
+  const { syncTask } = useCalendarSync();
+  const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
   const {
     spaces,
@@ -122,27 +133,26 @@ const Planner = () => {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Filter tasks by selected space — status visibility ONLY applies in List view
+  // Filter tasks by selected space + categories. Status visibility ONLY
+  // applies in List view (separate from space/category filtering).
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (selectedSpaceId) {
-      result = result.filter(t => (t as any).space_id === selectedSpaceId);
+      result = result.filter((t) => (t as any).space_id === selectedSpaceId);
+      if (selectedCategoryIds.length > 0) {
+        result = result.filter((t) => {
+          const cid = (t as any).category;
+          return cid && selectedCategoryIds.includes(cid);
+        });
+      }
     }
     if (sunsamaView === "list") {
-      result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
-      result = result.filter(t => {
-        const sid = (t as any).space_id;
-        if (!sid) return true;
-        return spaceVisibility[sid] !== false;
-      });
-      result = result.filter(t => {
-        const cid = (t as any).category;
-        if (!cid) return categoryVisibility["__none__"] !== false;
-        return categoryVisibility[cid] !== false;
-      });
+      result = result.filter((t) =>
+        isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo"))
+      );
     }
     return result;
-  }, [tasks, selectedSpaceId, isVisible, sunsamaView, spaceVisibility, categoryVisibility]);
+  }, [tasks, selectedSpaceId, selectedCategoryIds, isVisible, sunsamaView]);
 
   // Week board hides abandoned entirely
   const weekBoardTasks = useMemo(
@@ -514,7 +524,10 @@ const Planner = () => {
           spaces={spaces}
           categories={categories}
           selectedSpaceId={selectedSpaceId}
-          onSelectSpace={setSelectedSpaceId}
+          selectedCategoryIds={selectedCategoryIds}
+          onSelectSpace={handleSelectSpace}
+          onToggleCategory={handleToggleCategory}
+          onClearCategories={handleClearCategories}
           onEditTask={handleEditTask}
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
@@ -573,15 +586,6 @@ const Planner = () => {
             <span className="text-foreground font-semibold">Calendar</span>
           </div>
           <div className="flex-1" />
-          {hasConnections && (
-            <div
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold tracking-wide"
-              style={{ background: "rgba(126,144,110,0.12)", color: "#475838" }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#7E906E" }} />
-              Synced with Google Calendar
-            </div>
-          )}
         </div>
 
         <div className="px-6 md:px-8 pt-7 pb-6 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
@@ -596,8 +600,18 @@ const Planner = () => {
               </h1>
             </div>
 
-            {/* Right cluster: prev/today/next pill, view toggle, action */}
+            {/* Right cluster: space picker, prev/today/next pill, view toggle, action */}
             <div className="flex items-center gap-3 flex-wrap">
+              <SpacePicker
+                spaces={spaces}
+                categories={categories}
+                tasks={tasks as any}
+                selectedSpaceId={selectedSpaceId}
+                selectedCategoryIds={selectedCategoryIds}
+                onSelectSpace={handleSelectSpace}
+                onToggleCategory={handleToggleCategory}
+                onClearCategories={handleClearCategories}
+              />
               {/* Date nav pill */}
               <div className="inline-flex items-center bg-card border border-border rounded-full p-0.5">
                 <button
@@ -653,15 +667,12 @@ const Planner = () => {
 
 
               {sunsamaView === "list" && (
+                // Status-only — space/category filtering is handled by the
+                // SpacePicker above. The component already makes those props
+                // optional and conditionally hides those sections.
                 <StatusVisibilitySettings
                   visibility={visibility}
                   onToggle={toggleVisibility}
-                  spaces={spaces}
-                  categories={selectedSpaceId ? activeCategories : categories}
-                  spaceVisibility={spaceVisibility}
-                  onToggleSpace={toggleSpaceVisibility}
-                  categoryVisibility={categoryVisibility}
-                  onToggleCategory={toggleCategoryVisibility}
                 />
               )}
 
@@ -691,21 +702,6 @@ const Planner = () => {
               spaces={spaces}
               allTasks={tasks}
               lockedView="month"
-              sidebarTopSlot={
-                <SpacesSidebar
-                  embedded
-                  spaces={spaces}
-                  categories={categories}
-                  tasks={tasks}
-                  selectedSpaceId={selectedSpaceId}
-                  onSelectSpace={setSelectedSpaceId}
-                  onCreateSpace={createSpace}
-                  onUpdateSpace={updateSpace}
-                  onDeleteSpace={deleteSpace}
-                  onCreateCategory={createCategory}
-                  onDeleteCategory={deleteCategory}
-                />
-              }
             />
           ) : sunsamaView === "list" ? (
             <div className="flex-1 overflow-hidden">
@@ -729,34 +725,21 @@ const Planner = () => {
               />
             </div>
           ) : (
-            <>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <PlannerWeekBoardView
-                  tasks={weekBoardTasks}
-                  days={weekDays}
-                  anchorDate={anchorDate}
-                  scrollToAnchorNonce={scrollNonce}
-                  isLoading={isLoading}
-                  spaces={spaces}
-                  categories={activeCategories}
-                  onEditTask={handleEditTask}
-                  onCreateTask={handleQuickCreate}
-                  onToggleComplete={handleToggleComplete}
-                  onTasksChanged={fetchTasks}
-                />
-              </div>
-              <aside className="hidden lg:block w-[300px] shrink-0 border-l border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))] overflow-y-auto">
-                <PlannerWeekRail
-                  tasks={tasks}
-                  weekStart={weekStart}
-                  weekEnd={weekEnd}
-                  spaces={spaces}
-                  categories={activeCategories}
-                  selectedSpaceId={selectedSpaceId}
-                  onSelectSpace={setSelectedSpaceId}
-                />
-              </aside>
-            </>
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <PlannerWeekBoardView
+                tasks={weekBoardTasks}
+                days={weekDays}
+                anchorDate={anchorDate}
+                scrollToAnchorNonce={scrollNonce}
+                isLoading={isLoading}
+                spaces={spaces}
+                categories={activeCategories}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onTasksChanged={fetchTasks}
+              />
+            </div>
           )}
         </div>
       </div>
