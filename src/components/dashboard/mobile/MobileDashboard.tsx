@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
-import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Plus, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket } from "lucide-react";
+import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Plus, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { MobileTabBar } from "@/components/planner/mobile/MobileTabBar";
 import { useIsNativeApp } from "@/hooks/useIsNativeApp";
+import { useHaptics } from "@/hooks/useHaptics";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
@@ -248,6 +249,80 @@ const UpcomingList = ({ items, onTap }: { items: ContentItem[]; onTap: () => voi
   );
 };
 
+// Native-only Launch section navigation. On desktop the same destinations
+// live in ProjectSidebar; mobile/native hides that sidebar and there's no
+// other entry point, so we surface them here.
+const ProjectTools = ({
+  projectId,
+  onNavigate,
+}: {
+  projectId: string | undefined;
+  onNavigate: (href: string) => void;
+}) => {
+  const tools = [
+    { id: "tasks", label: "Launch Tasks", description: "Plan and execute every step", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : null },
+    { id: "offer", label: "Offer", description: "Shape what you're selling", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : null },
+    { id: "summary", label: "Launch Brief", description: "Project snapshot at a glance", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : null },
+    { id: "playbook", label: "Playbook", description: "Your launch system", icon: BookOpen, href: "/playbook" },
+    { id: "assessments", label: "Assessments", description: "Coach + launch readiness", icon: ClipboardCheck, href: "/assessments" },
+  ].filter((t): t is { id: string; label: string; description: string; icon: typeof Kanban; href: string } => t.href !== null);
+
+  if (tools.length === 0) return null;
+
+  return (
+    <div>
+      <SectionHeader title="Project Tools" />
+      <div style={{ background: "#fff", borderRadius: 16, margin: "0 16px", boxShadow: "0 1px 2px rgba(31,27,23,0.04)", overflow: "hidden" }}>
+        {tools.map((t, i) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onNavigate(t.href)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "14px 16px",
+                borderTop: i === 0 ? 0 : `0.5px solid ${HAIRLINE}`,
+                background: "#fff",
+                border: 0,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  flexShrink: 0,
+                  background: "rgba(198,90,62,0.10)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon size={18} color={TERRACOTTA} strokeWidth={2} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: SF, fontSize: 15, fontWeight: 600, color: INK, letterSpacing: -0.3, lineHeight: 1.25 }}>
+                  {t.label}
+                </div>
+                <div style={{ fontFamily: SF, fontSize: 12.5, color: INK_60, marginTop: 2, letterSpacing: -0.1 }}>
+                  {t.description}
+                </div>
+              </div>
+              <ChevronRight size={16} color={INK_40} strokeWidth={2} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const CheckInBanner = ({ onStart }: { onStart: () => void }) => (
   <div style={{ margin: "20px 16px 0" }}>
     <div style={{ background: "linear-gradient(135deg, #F8E9C5, #F2D9A8)", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -285,9 +360,16 @@ export const MobileDashboard = ({
   onStartCheckIn, onStuck, initials,
 }: MobileDashboardProps) => {
   const navigate = useNavigate();
+  const { id: projectId } = useParams();
+  const { trigger: haptic } = useHaptics();
   const isNative = useIsNativeApp();
   const [scrolled, setScrolled] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  const navigateWithHaptic = (href: string) => {
+    haptic("selection");
+    navigate(href);
+  };
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -342,6 +424,7 @@ export const MobileDashboard = ({
           onStart={() => nextBestTask && navigate(nextBestTask.route)}
         />
         <PhaseCarousel phaseStatuses={phaseStatuses} activePhase={activePhase} activePct={activePct} />
+        <ProjectTools projectId={projectId} onNavigate={navigateWithHaptic} />
         <TodayWidget dueToday={dueToday} upcomingPlanner={upcomingPlanner} onTap={() => navigate("/planner")} />
         <UpcomingList items={upcomingContent} onTap={() => navigate("/planner")} />
         <CheckInBanner onStart={onStartCheckIn} />
@@ -361,7 +444,7 @@ export const MobileDashboard = ({
         onClick={() => navigate("/planner")}
         aria-label="New task"
         style={{
-          position: "absolute", right: 18, bottom: isNative ? 24 : 92, zIndex: 35,
+          position: "absolute", right: 18, bottom: isNative ? "calc(var(--native-tabbar-h, 24px) + 16px)" : 92, zIndex: 35,
           width: 56, height: 56, borderRadius: 18, border: 0,
           background: TERRACOTTA, color: "#fff", cursor: "pointer",
           display: "inline-flex", alignItems: "center", justifyContent: "center",
