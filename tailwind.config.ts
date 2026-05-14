@@ -16,6 +16,14 @@ export default {
       fontSize: {
         'xs': ['0.8125rem', { lineHeight: '1.25rem' }], // 13px instead of default 12px
       },
+      spacing: {
+        // Safe-area-inset values for native (Capacitor) builds with viewport-fit=cover.
+        // Evaluate to 0 on web/desktop where env() insets aren't reported.
+        'safe-t': 'env(safe-area-inset-top)',
+        'safe-b': 'env(safe-area-inset-bottom)',
+        'safe-l': 'env(safe-area-inset-left)',
+        'safe-r': 'env(safe-area-inset-right)',
+      },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
         serif: ['"Playfair Display"', '"Iowan Old Style"', '"Apple Garamond"', "Georgia", '"Times New Roman"', "serif"],

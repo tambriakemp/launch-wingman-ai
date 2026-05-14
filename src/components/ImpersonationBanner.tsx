@@ -10,7 +10,7 @@ const ImpersonationBanner = () => {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-amber-950 px-4 py-2">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-amber-950 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />

@@ -25,13 +25,12 @@ export const MobileTabBar = ({ active }: { active?: string }) => {
 
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 z-40 md:hidden"
+      className="fixed left-0 right-0 bottom-0 z-40 md:hidden pb-safe-b"
       style={{
         background: "rgba(251,247,241,0.84)",
         backdropFilter: "blur(28px) saturate(180%)",
         WebkitBackdropFilter: "blur(28px) saturate(180%)",
         borderTop: `0.5px solid ${HAIRLINE}`,
-        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       <div className="flex justify-around pt-1 pb-0">

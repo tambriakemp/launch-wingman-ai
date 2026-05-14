@@ -9,7 +9,11 @@
     })(window,document,'script','dataLayer','GTM-W4ZXQ7ZM');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Allow user zoom on web for accessibility (WCAG 1.4.4). On native, zoom is
+         blocked at the gesture-event level in src/main.tsx; user-scalable=no is
+         unreliable in iOS WebViews anyway. viewport-fit=cover is required so
+         env(safe-area-inset-*) values report correctly. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
     <meta name="theme-color" content="#0F172A" />
     <title>Launchely - Launch Planning for Digital Marketers & Coaches</title>

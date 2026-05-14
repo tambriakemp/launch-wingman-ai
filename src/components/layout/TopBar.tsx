@@ -50,7 +50,7 @@ export const TopBar = () => {
 
   return (
     <header
-      className="sticky top-0 z-40 flex items-center justify-between gap-3 px-3 md:px-10 py-3 border-b border-[hsl(var(--hairline))] backdrop-blur-md"
+      className="sticky top-0 z-40 flex items-center justify-between gap-3 px-3 md:px-10 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-[hsl(var(--hairline))] backdrop-blur-md"
       style={{ backgroundColor: "rgba(251, 247, 241, 0.85)" }}
     >
       {/* Left: hamburger (mobile) or date eyebrow (desktop) */}

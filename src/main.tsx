@@ -1,10 +1,13 @@
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
+import { Capacitor } from "@capacitor/core";
 import App from "./App.tsx";
 import "./index.css";
 
-// Block iOS Safari pinch-to-zoom and double-tap zoom (user-scalable=no is unreliable on iOS).
-if (typeof document !== "undefined") {
+// Block iOS pinch-to-zoom and double-tap zoom *only* on native, where this
+// matches native-app conventions. On web we leave browser zoom alone so users
+// who need to enlarge text can (WCAG 1.4.4).
+if (typeof document !== "undefined" && Capacitor.isNativePlatform()) {
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("gesturechange", (e) => e.preventDefault());
   document.addEventListener("gestureend", (e) => e.preventDefault());
