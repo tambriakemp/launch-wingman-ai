@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Compass, CalendarDays, Sparkles, Megaphone, User } from "lucide-react";
+import { Compass, CalendarDays, Megaphone, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHaptics } from "@/hooks/useHaptics";
 
-type TabId = "launch" | "planner" | "studio" | "marketing" | "me";
+type TabId = "launch" | "planner" | "marketing" | "me";
 
 interface Tab {
   id: TabId;
@@ -40,18 +40,13 @@ const TABS: Tab[] = [
     ],
   },
   {
-    id: "studio",
-    label: "AI Studio",
-    icon: Sparkles,
-    to: "/app/ai-studio",
-    match: ["/app/ai-studio", "/carousel-builder"],
-  },
-  {
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
     to: "/marketing-hub/campaigns",
-    match: ["/marketing-hub"],
+    // AI Studio + Carousel Builder live under Marketing (matches the desktop
+    // sidebar grouping) so this tab activates for any of their routes.
+    match: ["/marketing-hub", "/app/ai-studio", "/carousel-builder"],
   },
   {
     id: "me",
