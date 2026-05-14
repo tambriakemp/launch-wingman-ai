@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
-import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
+import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
@@ -325,10 +325,10 @@ const CheckInBanner = ({ onStart }: { onStart: () => void }) => (
   <div style={{ margin: "20px 16px 0" }}>
     <div style={{ background: "linear-gradient(135deg, #F8E9C5, #F2D9A8)", borderRadius: 18, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
       <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: "rgba(31,27,23,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <Mic size={20} color={INK} strokeWidth={2} />
+        <MessageSquare size={20} color={INK} strokeWidth={2} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 16, letterSpacing: -0.3, color: INK, lineHeight: 1.15 }}>Quick voice check-in?</div>
+        <div style={{ fontFamily: SERIF, fontWeight: 500, fontSize: 16, letterSpacing: -0.3, color: INK, lineHeight: 1.15 }}>Quick check-in</div>
         <div style={{ fontFamily: SF, fontSize: 12.5, color: "rgba(31,27,23,0.7)", marginTop: 2, letterSpacing: -0.1 }}>Three questions. Keeps momentum honest.</div>
       </div>
       <button onClick={onStart} style={{ background: INK, color: PAPER, border: 0, borderRadius: 999, padding: "8px 14px", fontFamily: SF, fontSize: 13, fontWeight: 600, letterSpacing: -0.2, flexShrink: 0, cursor: "pointer" }}>Start</button>

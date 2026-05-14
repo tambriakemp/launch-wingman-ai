@@ -8,6 +8,8 @@ import { CheckInComplete } from "./CheckInComplete";
 import { useCheckIn, OrientationChoice } from "@/hooks/useCheckIn";
 import { useToneLearning } from "@/hooks/useToneLearning";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CheckInFlowProps {
   open: boolean;
@@ -18,9 +20,10 @@ type Step = "welcome" | "reflection" | "orientation" | "complete";
 
 export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects } = useCheckIn();
   const { recordCheckInUncertainty } = useToneLearning();
-  
+
   const [step, setStep] = useState<Step>("welcome");
   const [reflectionResponse, setReflectionResponse] = useState("");
   const [orientationChoice, setOrientationChoice] = useState<OrientationChoice | null>(null);
@@ -41,12 +44,12 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
 
   const handleOrientationSelect = async (choice: OrientationChoice) => {
     setOrientationChoice(choice);
-    
+
     // Record uncertainty signal for tone learning (highly restricted)
     if (reflectionResponse) {
       recordCheckInUncertainty(reflectionResponse);
     }
-    
+
     // Submit the check-in
     await submitCheckIn({
       reflectionPrompt: currentPrompt,
@@ -96,68 +99,84 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
     resetFlow();
   };
 
+  const flowContent = (
+    <AnimatePresence mode="wait">
+      {step === "welcome" && (
+        <motion.div
+          key="welcome"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <CheckInWelcome onStart={handleStart} onSkip={handleSkip} />
+        </motion.div>
+      )}
+
+      {step === "reflection" && (
+        <motion.div
+          key="reflection"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <CheckInReflection
+            prompt={currentPrompt}
+            response={reflectionResponse}
+            onResponseChange={setReflectionResponse}
+            onNext={handleReflectionNext}
+            onSkip={handleReflectionNext}
+          />
+        </motion.div>
+      )}
+
+      {step === "orientation" && (
+        <motion.div
+          key="orientation"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <CheckInOrientation
+            onSelect={handleOrientationSelect}
+            isSubmitting={isSubmitting}
+            hasPastProjects={hasPastProjects}
+          />
+        </motion.div>
+      )}
+
+      {step === "complete" && (
+        <motion.div
+          key="complete"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <CheckInComplete onClose={handleClose} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  // On mobile, render as a bottom sheet (vaul Drawer) — native iOS pattern,
+  // drag-to-dismiss. On desktop, keep the centered dialog.
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={(o) => (o ? onOpenChange(true) : handleClose())}>
+        <DrawerContent className="pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="max-w-lg mx-auto w-full">{flowContent}</div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-        <AnimatePresence mode="wait">
-          {step === "welcome" && (
-            <motion.div
-              key="welcome"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <CheckInWelcome onStart={handleStart} onSkip={handleSkip} />
-            </motion.div>
-          )}
-          
-          {step === "reflection" && (
-            <motion.div
-              key="reflection"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <CheckInReflection
-                prompt={currentPrompt}
-                response={reflectionResponse}
-                onResponseChange={setReflectionResponse}
-                onNext={handleReflectionNext}
-                onSkip={handleReflectionNext}
-              />
-            </motion.div>
-          )}
-          
-          {step === "orientation" && (
-            <motion.div
-              key="orientation"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-            <CheckInOrientation
-                onSelect={handleOrientationSelect}
-                isSubmitting={isSubmitting}
-                hasPastProjects={hasPastProjects}
-              />
-            </motion.div>
-          )}
-          
-          {step === "complete" && (
-            <motion.div
-              key="complete"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <CheckInComplete onClose={handleClose} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {flowContent}
       </DialogContent>
     </Dialog>
   );
