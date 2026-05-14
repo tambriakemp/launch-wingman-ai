@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { format, parseISO, isToday, isTomorrow, differenceInDays } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, differenceInDays, isPast } from "date-fns";
 import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useCheckIn } from "@/hooks/useCheckIn";
@@ -38,6 +38,7 @@ export interface MobileDashboardProps {
   firstName?: string | null;
   projectName?: string;
   projectState?: string;
+  launchDate?: string | null;
   nextBestTask?: {
     title: string;
     whyItMatters: string;
@@ -66,9 +67,50 @@ const SectionHeader = ({ title, action, onAction }: { title: string; action?: st
   </div>
 );
 
-const Greeting = ({ firstName, projectName, projectState }: { firstName?: string | null; projectName?: string; projectState?: string }) => {
+const Greeting = ({
+  firstName,
+  projectName,
+  projectState,
+  launchDate,
+  projectId,
+}: {
+  firstName?: string | null;
+  projectName?: string;
+  projectState?: string;
+  launchDate?: string | null;
+  projectId?: string;
+}) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  // If a launch date is set and in the future, surface a countdown in the
+  // pill instead of the generic project state. Past launches and missing
+  // dates fall back to the existing state label.
+  const launchLabel = (() => {
+    if (!launchDate) return null;
+    try {
+      const d = parseISO(launchDate);
+      if (isPast(d) && !isToday(d)) return null;
+      const days = differenceInDays(d, new Date());
+      if (days === 0 || isToday(d)) return "Launch day";
+      if (days === 1) return "1 day to launch";
+      return `${days} days to launch`;
+    } catch {
+      return null;
+    }
+  })();
+
+  const trailing = launchLabel ?? (projectState || "in progress").replace(/_/g, " ");
+
+  const pillBody = (
+    <>
+      <span style={{ width: 6, height: 6, borderRadius: 999, background: "#4F6B52" }} />
+      <span style={{ fontFamily: SF, fontSize: 13, fontWeight: 500, color: "#354A38", letterSpacing: -0.1 }}>
+        {projectName} · {trailing}
+      </span>
+    </>
+  );
+
   return (
     <div style={{ padding: "4px 22px 2px" }}>
       <div style={{ fontFamily: SF, fontSize: 13, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: INK_60 }}>
@@ -78,24 +120,30 @@ const Greeting = ({ firstName, projectName, projectState }: { firstName?: string
         {greeting},<br />
         <em style={{ color: TERRACOTTA, fontWeight: 400 }}>{firstName || "friend"}</em>.
       </h1>
-      {projectName && (
+      {projectName && (projectId ? (
+        <Link
+          to={`/projects/${projectId}/summary`}
+          style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 8px", borderRadius: 999, background: "rgba(220,229,220,0.7)", textDecoration: "none" }}
+          aria-label={`Open ${projectName} launch brief`}
+        >
+          {pillBody}
+        </Link>
+      ) : (
         <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 8px", borderRadius: 999, background: "rgba(220,229,220,0.7)" }}>
-          <span style={{ width: 6, height: 6, borderRadius: 999, background: "#4F6B52" }} />
-          <span style={{ fontFamily: SF, fontSize: 13, fontWeight: 500, color: "#354A38", letterSpacing: -0.1 }}>
-            {projectName} · {(projectState || "in progress").replace(/_/g, " ")}
-          </span>
+          {pillBody}
         </div>
-      )}
+      ))}
     </div>
   );
 };
 
-const NextStepHero = ({ task, phaseLabel, stepIndex, stepTotal, onStart }: {
+const NextStepHero = ({ task, phaseLabel, stepIndex, stepTotal, onStart, onStuck }: {
   task: MobileDashboardProps["nextBestTask"];
   phaseLabel: string;
   stepIndex: number;
   stepTotal: number;
   onStart: () => void;
+  onStuck: () => void;
 }) => {
   if (!task) return null;
   return (
@@ -146,15 +194,37 @@ const NextStepHero = ({ task, phaseLabel, stepIndex, stepTotal, onStart }: {
             <Sparkles size={13} strokeWidth={1.8} /> AI helps
           </span>
         </div>
+        <button
+          onClick={onStuck}
+          style={{
+            marginTop: 14,
+            width: "100%",
+            background: "transparent",
+            border: 0,
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontSize: 13.5,
+            color: "rgba(31,27,23,0.55)",
+            letterSpacing: -0.1,
+            cursor: "pointer",
+            position: "relative",
+          }}
+        >
+          Stuck on this step?{" "}
+          <span style={{ color: TERRACOTTA, borderBottom: `1px solid ${TERRACOTTA}`, paddingBottom: 1 }}>
+            Get help →
+          </span>
+        </button>
       </div>
     </div>
   );
 };
 
-const PhaseCarousel = ({ phaseStatuses, activePhase, activePct }: {
+const PhaseCarousel = ({ phaseStatuses, activePhase, activePct, onTapPhase }: {
   phaseStatuses: Record<Phase, PhaseStatus>;
   activePhase: Phase;
   activePct: number;
+  onTapPhase: (phase: Phase) => void;
 }) => (
   <div>
     <SectionHeader title="Launch timeline" action={`${VISIBLE_PHASES.length} phases`} />
@@ -165,14 +235,22 @@ const PhaseCarousel = ({ phaseStatuses, activePhase, activePct }: {
         const isActive = ph === activePhase && !isDone;
         const Icon = PHASE_ICONS[ph];
         return (
-          <div key={ph} style={{
-            flexShrink: 0, width: 140, scrollSnapAlign: "start",
-            background: isActive ? INK : "#fff",
-            color: isActive ? PAPER : INK,
-            borderRadius: 18, padding: "14px 14px 16px",
-            border: isActive ? 0 : `1px solid ${HAIRLINE}`,
-            boxShadow: "0 1px 2px rgba(31,27,23,0.04)",
-          }}>
+          <button
+            key={ph}
+            type="button"
+            onClick={() => onTapPhase(ph)}
+            aria-label={`Open ${PHASE_LABELS[ph]} tasks`}
+            style={{
+              flexShrink: 0, width: 140, scrollSnapAlign: "start",
+              background: isActive ? INK : "#fff",
+              color: isActive ? PAPER : INK,
+              borderRadius: 18, padding: "14px 14px 16px",
+              border: isActive ? 0 : `1px solid ${HAIRLINE}`,
+              boxShadow: "0 1px 2px rgba(31,27,23,0.04)",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Icon size={16} color={isActive ? TERRACOTTA : isDone ? "#4F6B52" : INK_60} strokeWidth={1.8} />
               {isDone && (
@@ -188,7 +266,7 @@ const PhaseCarousel = ({ phaseStatuses, activePhase, activePct }: {
             <div style={{ marginTop: 12, height: 3, borderRadius: 999, background: isActive ? "rgba(251,247,241,0.18)" : isDone ? "#4F6B52" : "rgba(31,27,23,0.08)", overflow: "hidden" }}>
               {isActive && <div style={{ width: `${activePct}%`, height: "100%", background: TERRACOTTA }} />}
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -557,7 +635,7 @@ const BringingForward = ({
 };
 
 export const MobileDashboard = ({
-  firstName, projectName, projectState,
+  firstName, projectName, projectState, launchDate,
   nextBestTask, activePhase, phaseStatuses, activePct, stepIndex, stepTotal,
   dueToday, upcomingPlanner, upcomingContent,
   onStartCheckIn, onStuck, initials,
@@ -617,15 +695,29 @@ export const MobileDashboard = ({
         paddingBottom: "var(--mobile-tabbar-h, 24px)",
         WebkitOverflowScrolling: "touch",
       }}>
-        <Greeting firstName={firstName} projectName={projectName} projectState={projectState} />
+        <Greeting
+          firstName={firstName}
+          projectName={projectName}
+          projectState={projectState}
+          launchDate={launchDate}
+          projectId={projectId}
+        />
         <NextStepHero
           task={nextBestTask}
           phaseLabel={phaseLabel}
           stepIndex={stepIndex}
           stepTotal={stepTotal}
           onStart={() => nextBestTask && navigate(nextBestTask.route)}
+          onStuck={onStuck}
         />
-        <PhaseCarousel phaseStatuses={phaseStatuses} activePhase={activePhase} activePct={activePct} />
+        <PhaseCarousel
+          phaseStatuses={phaseStatuses}
+          activePhase={activePhase}
+          activePct={activePct}
+          onTapPhase={(ph) => {
+            if (projectId) navigate(`/projects/${projectId}/tasks?phase=${ph}`);
+          }}
+        />
         <ProjectTools projectId={projectId} onNavigate={navigateWithHaptic} />
         <TodayWidget
           dueToday={dueToday}
@@ -636,14 +728,6 @@ export const MobileDashboard = ({
         <UpcomingList items={upcomingContent} onTap={() => navigate("/planner")} />
         <CheckInBanner onStart={onStartCheckIn} />
         <BringingForward activePhase={activePhase} stepIndex={stepIndex} stepTotal={stepTotal} />
-        <div style={{ textAlign: "center", padding: "32px 24px 24px" }}>
-          <button onClick={onStuck} style={{ background: "transparent", border: 0, fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: INK_60, cursor: "pointer" }}>
-            Feeling stuck?{" "}
-            <span style={{ color: TERRACOTTA, borderBottom: `1px solid ${TERRACOTTA}`, paddingBottom: 1 }}>
-              Get help with this step →
-            </span>
-          </button>
-        </div>
       </div>
 
     </div>

@@ -779,6 +779,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           firstName={profile?.first_name}
           projectName={project?.name}
           projectState={projectState}
+          launchDate={snapshotData?.launchDate ?? null}
           nextBestTask={nextBestTask ? {
             title: nextBestTask.title,
             whyItMatters: nextBestTask.whyItMatters,
