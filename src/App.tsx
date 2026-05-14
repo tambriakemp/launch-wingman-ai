@@ -52,6 +52,7 @@ const UTMRedirect = lazy(() => import("./pages/UTMRedirect"));
 const CampaignAnalytics = lazy(() => import("./pages/CampaignAnalytics"));
 const CampaignPlanner = lazy(() => import("./pages/CampaignPlanner"));
 const MarketingHub = lazy(() => import("./pages/MarketingHub"));
+const MeHub = lazy(() => import("./pages/MeHub"));
 const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
 const SocialPlanner = lazy(() => import("./pages/SocialPlanner"));
 
@@ -320,6 +321,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ContentVaultCategory />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Me hub — mobile tab destination for account, resources, and help */}
+            <Route
+              path="/me"
+              element={
+                <ProtectedRoute>
+                  <MeHub />
                 </ProtectedRoute>
               }
             />

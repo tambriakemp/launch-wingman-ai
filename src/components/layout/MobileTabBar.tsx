@@ -52,8 +52,10 @@ const TABS: Tab[] = [
     id: "me",
     label: "Me",
     icon: User,
-    to: "/settings",
-    match: ["/settings", "/help", "/content-vault", "/assessments"],
+    to: "/me",
+    // Activates whenever the user is in their account surface or one of the
+    // hub's destinations. Assessments stay in the Launch tab match list.
+    match: ["/me", "/settings", "/help", "/content-vault", "/check-ins"],
   },
 ];
 
