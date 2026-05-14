@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
-import { MobileTabBar } from "@/components/planner/mobile/MobileTabBar";
-import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 import { useHaptics } from "@/hooks/useHaptics";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
@@ -362,7 +360,6 @@ export const MobileDashboard = ({
   const navigate = useNavigate();
   const { id: projectId } = useParams();
   const { trigger: haptic } = useHaptics();
-  const isNative = useIsNativeApp();
   const [scrolled, setScrolled] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -412,7 +409,7 @@ export const MobileDashboard = ({
       <div ref={scrollerRef} style={{
         position: "absolute", inset: 0, overflowY: "auto",
         paddingTop: "calc(env(safe-area-inset-top) + 50px)",
-        paddingBottom: isNative ? "var(--native-tabbar-h, 24px)" : 88,
+        paddingBottom: "var(--mobile-tabbar-h, 24px)",
         WebkitOverflowScrolling: "touch",
       }}>
         <Greeting firstName={firstName} projectName={projectName} projectState={projectState} />
@@ -439,7 +436,6 @@ export const MobileDashboard = ({
         </div>
       </div>
 
-      {!isNative && <MobileTabBar active="home" />}
     </div>
   );
 };

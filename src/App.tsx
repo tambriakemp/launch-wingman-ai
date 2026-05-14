@@ -10,7 +10,7 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 import ScrollToTop from "@/components/ScrollToTop";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { NativeBridge } from "@/components/NativeBridge";
-import { NativeTabBar } from "@/components/layout/NativeTabBar";
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { initGA, trackPageView } from "@/lib/analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -141,7 +141,7 @@ const App = () => (
           <ScrollToTop />
           <ImpersonationBanner />
           <Suspense fallback={<RouteFallback />}>
-          <NativeTabBar />
+          <MobileTabBar />
           <Routes>
             {/* Public auth + utility routes */}
             <Route path="/" element={<Navigate to="/auth" replace />} />

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Compass, CalendarDays, Sparkles, Megaphone, User } from "lucide-react";
-import { isNativeApp } from "@/lib/nativeBridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useHaptics } from "@/hooks/useHaptics";
 
 type TabId = "launch" | "planner" | "studio" | "marketing" | "me";
@@ -98,25 +98,25 @@ const matchActiveTab = (pathname: string): Tab => {
   return best?.tab ?? TABS[0];
 };
 
-export function NativeTabBar() {
+export function MobileTabBar() {
   const location = useLocation();
   const { trigger: haptic } = useHaptics();
+  const isMobile = useIsMobile();
 
-  const native = isNativeApp();
   const chromeless = isChromelessPath(location.pathname);
-  const shouldRender = native && !chromeless;
+  const shouldRender = isMobile && !chromeless;
 
   // Publish the tab bar's reserved height so page layouts (e.g. ProjectLayout)
   // can pad content out from underneath the fixed bar. Variable is unset on
-  // web and chromeless routes, so consumers fall through to their default.
+  // desktop and chromeless routes, so consumers fall through to their default.
   useEffect(() => {
     if (!shouldRender) return;
     document.documentElement.style.setProperty(
-      "--native-tabbar-h",
+      "--mobile-tabbar-h",
       "calc(60px + env(safe-area-inset-bottom))"
     );
     return () => {
-      document.documentElement.style.removeProperty("--native-tabbar-h");
+      document.documentElement.style.removeProperty("--mobile-tabbar-h");
     };
   }, [shouldRender]);
 

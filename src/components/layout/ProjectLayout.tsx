@@ -20,7 +20,7 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
           <TopBar />
           <main
             className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0 pt-safe-t md:pt-6"
-            style={{ paddingBottom: "var(--native-tabbar-h, 0px)" }}
+            style={{ paddingBottom: "var(--mobile-tabbar-h, 0px)" }}
           >
             {children}
           </main>

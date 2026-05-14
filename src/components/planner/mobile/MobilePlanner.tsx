@@ -3,8 +3,6 @@ import { format, isToday, isPast, parseISO, startOfWeek, endOfWeek, isWithinInte
 import { Plus, Filter, Check, Trash2, Flame, X } from "lucide-react";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
-import { MobileTabBar } from "./MobileTabBar";
-import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
 const SERIF = '"Fraunces", "New York", Georgia, serif';
@@ -431,7 +429,6 @@ export const MobilePlanner = ({
   onDeleteTask,
   onAddTask,
 }: Props) => {
-  const isNative = useIsNativeApp();
   const [filter, setFilter] = useState<FilterId>("open");
   const [scrolled, setScrolled] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -559,7 +556,7 @@ export const MobilePlanner = ({
           inset: 0,
           overflowY: "auto",
           paddingTop: "env(safe-area-inset-top)",
-          paddingBottom: isNative ? "var(--native-tabbar-h, 8px)" : 64,
+          paddingBottom: "var(--mobile-tabbar-h, 8px)",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -848,7 +845,7 @@ export const MobilePlanner = ({
         style={{
           position: "absolute",
           right: 18,
-          bottom: isNative ? 24 : 92,
+          bottom: "calc(var(--mobile-tabbar-h, 24px) + 16px)",
           zIndex: 35,
           width: 56,
           height: 56,
@@ -867,7 +864,6 @@ export const MobilePlanner = ({
         <Plus size={26} color="#fff" strokeWidth={2.4} />
       </button>
 
-      {!isNative && <MobileTabBar active="plan" />}
 
       {filterOpen && (
         <CategoryFilterDrawer

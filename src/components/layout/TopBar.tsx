@@ -46,7 +46,8 @@ export const TopBar = () => {
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
-  if (isNative && isMobile) return null;
+  // Hidden on all mobile (web + native) — MobileTabBar handles navigation.
+  if (isMobile) return null;
 
   return (
     <header
