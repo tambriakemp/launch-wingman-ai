@@ -559,7 +559,7 @@ export const MobilePlanner = ({
           inset: 0,
           overflowY: "auto",
           paddingTop: "env(safe-area-inset-top)",
-          paddingBottom: isNative ? 8 : 64,
+          paddingBottom: isNative ? "var(--native-tabbar-h, 8px)" : 64,
           WebkitOverflowScrolling: "touch",
         }}
       >

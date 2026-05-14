@@ -330,7 +330,7 @@ export const MobileDashboard = ({
       <div ref={scrollerRef} style={{
         position: "absolute", inset: 0, overflowY: "auto",
         paddingTop: "calc(env(safe-area-inset-top) + 50px)",
-        paddingBottom: isNative ? 24 : 88,
+        paddingBottom: isNative ? "var(--native-tabbar-h, 24px)" : 88,
         WebkitOverflowScrolling: "touch",
       }}>
         <Greeting firstName={firstName} projectName={projectName} projectState={projectState} />
