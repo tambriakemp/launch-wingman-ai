@@ -597,7 +597,7 @@ export const MobilePlanner = ({
         }}
       >
         {/* Greeting + inline actions */}
-        <div style={{ padding: "4px 22px 0" }}>
+        <div style={{ padding: "16px 22px 0" }}>
           <div
             style={{
               display: "flex",
@@ -618,35 +618,16 @@ export const MobilePlanner = ({
             >
               {dateLine}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <SpacePicker
-                spaces={spaces}
-                categories={categories}
-                tasks={tasks as any}
-                selectedSpaceId={selectedSpaceId}
-                selectedCategoryIds={selectedCategoryIds}
-                onSelectSpace={onSelectSpace}
-                onToggleCategory={onToggleCategory}
-                onClearCategories={onClearCategories}
-              />
-              <button
-                onClick={onAddTask}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  border: 0,
-                  background: "transparent",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-                aria-label="Add task"
-              >
-                <Plus size={20} color={INK} strokeWidth={2.2} />
-              </button>
-            </div>
+            <SpacePicker
+              spaces={spaces}
+              categories={categories}
+              tasks={tasks as any}
+              selectedSpaceId={selectedSpaceId}
+              selectedCategoryIds={selectedCategoryIds}
+              onSelectSpace={onSelectSpace}
+              onToggleCategory={onToggleCategory}
+              onClearCategories={onClearCategories}
+            />
           </div>
           <h1
             style={{
