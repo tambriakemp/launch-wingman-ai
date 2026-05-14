@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { format, parseISO, isToday, isTomorrow } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
+import { useCheckIn } from "@/hooks/useCheckIn";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
@@ -346,20 +347,214 @@ const CheckInBanner = ({ onStart }: { onStart: () => void }) => (
   </div>
 );
 
-const AINudge = () => (
-  <div style={{ margin: "24px 16px 0" }}>
-    <div style={{ background: INK, color: PAPER, borderRadius: 22, padding: "20px 22px 22px", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(198,90,62,0.35), transparent 70%)" }} />
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 7, position: "relative" }}>
-        <Sparkles size={14} color={TERRACOTTA} strokeWidth={2.2} />
-        <span style={{ fontFamily: SF, fontSize: 12, fontWeight: 700, color: TERRACOTTA, letterSpacing: 0.6, textTransform: "uppercase" }}>From your AI team</span>
-      </div>
-      <div style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 400, fontSize: 19, lineHeight: 1.35, marginTop: 12, letterSpacing: -0.3, position: "relative", color: PAPER }}>
-        "Your last titles leaned into curiosity. Try one that names the outcome directly — it tends to land better with this audience."
-      </div>
+// Editorial micro-prompts surfaced when there's no recent check-in and no
+// active project state to draw from. Day-of-year picks one deterministically
+// so the same prompt holds for the whole day.
+const LIBRARY_PROMPTS = [
+  "What's the one thing that would change the next thirty minutes?",
+  "If you could only finish one thing today, which would matter most?",
+  "What are you avoiding right now?",
+  "What feels alive in this project?",
+  "When did you last feel proud of this work?",
+  "What would make tomorrow easier?",
+  "What's the simplest version of this you haven't tried?",
+  "What story are you telling yourself about your audience?",
+];
+
+interface NudgeContent {
+  eyebrow: string;
+  prompt: string | null;
+  body: string;
+  meta: string | null;
+  href: string | null;
+  isQuote: boolean;
+}
+
+interface RecentCheckIn {
+  created_at: string;
+  reflection_prompt: string | null;
+  reflection_response: string | null;
+}
+
+const TRUNCATE_AT = 200;
+
+const timeFrameLabel = (daysAgo: number): string => {
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  if (daysAgo < 7) return `${daysAgo} days ago`;
+  if (daysAgo < 14) return "Last week";
+  if (daysAgo < 30) return `${Math.floor(daysAgo / 7)} weeks ago`;
+  return "A few weeks ago";
+};
+
+const pickNudge = (
+  recent: RecentCheckIn | null,
+  activePhase: Phase,
+  stepIndex: number,
+  stepTotal: number
+): NudgeContent => {
+  // Source 1: recent check-in (within 60 days, has a written response).
+  if (recent?.reflection_response && recent.created_at) {
+    const daysAgo = differenceInDays(new Date(), parseISO(recent.created_at));
+    if (daysAgo <= 60) {
+      const trimmed = recent.reflection_response.trim();
+      const body = trimmed.length > TRUNCATE_AT ? `${trimmed.slice(0, TRUNCATE_AT).trim()}…` : trimmed;
+      return {
+        eyebrow: "Bringing forward",
+        prompt: recent.reflection_prompt,
+        body,
+        meta: `${timeFrameLabel(daysAgo)} · How are you with this now?`,
+        href: "/check-ins",
+        isQuote: true,
+      };
+    }
+  }
+
+  // Source 2: project state — what's left in the current phase.
+  if (stepTotal > 0) {
+    const stepsRemaining = Math.max(0, stepTotal - stepIndex);
+    const phaseLabel = PHASE_LABELS[activePhase];
+    let body: string;
+    if (stepsRemaining === 0) {
+      body = `Nice — ${phaseLabel} is wrapped. Take a breath.`;
+    } else if (stepsRemaining === 1) {
+      body = `One step left in ${phaseLabel}. Then a phase shift.`;
+    } else {
+      body = `${stepsRemaining} steps left in ${phaseLabel}. Pick the one that'll move you most.`;
+    }
+    return {
+      eyebrow: "Worth noting",
+      prompt: null,
+      body,
+      meta: null,
+      href: null,
+      isQuote: false,
+    };
+  }
+
+  // Source 3: rotating editorial library.
+  const yearStart = new Date(new Date().getFullYear(), 0, 0).getTime();
+  const dayOfYear = Math.floor((Date.now() - yearStart) / (24 * 60 * 60 * 1000));
+  const prompt = LIBRARY_PROMPTS[dayOfYear % LIBRARY_PROMPTS.length];
+  return {
+    eyebrow: "Worth noting",
+    prompt: null,
+    body: prompt,
+    meta: null,
+    href: null,
+    isQuote: false,
+  };
+};
+
+const BringingForward = ({
+  activePhase,
+  stepIndex,
+  stepTotal,
+}: {
+  activePhase: Phase;
+  stepIndex: number;
+  stepTotal: number;
+}) => {
+  const { checkIns } = useCheckIn();
+  const navigate = useNavigate();
+  const nudge = pickNudge((checkIns?.[0] as RecentCheckIn | undefined) ?? null, activePhase, stepIndex, stepTotal);
+
+  const handleClick = nudge.href ? () => navigate(nudge.href!) : undefined;
+  const Container: any = handleClick ? "button" : "div";
+
+  return (
+    <div style={{ margin: "24px 16px 0" }}>
+      <Container
+        onClick={handleClick}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          border: 0,
+          background: INK,
+          color: PAPER,
+          borderRadius: 22,
+          padding: "20px 22px 22px",
+          position: "relative",
+          overflow: "hidden",
+          cursor: handleClick ? "pointer" : "default",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -30,
+            right: -30,
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(198,90,62,0.35), transparent 70%)",
+          }}
+        />
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, position: "relative" }}>
+          <Sparkles size={14} color={TERRACOTTA} strokeWidth={2.2} />
+          <span
+            style={{
+              fontFamily: SF,
+              fontSize: 12,
+              fontWeight: 700,
+              color: TERRACOTTA,
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+            }}
+          >
+            {nudge.eyebrow}
+          </span>
+        </div>
+        {nudge.prompt && (
+          <div
+            style={{
+              fontFamily: SERIF,
+              fontStyle: "italic",
+              fontWeight: 400,
+              fontSize: 15,
+              lineHeight: 1.3,
+              marginTop: 12,
+              letterSpacing: -0.2,
+              position: "relative",
+              color: "rgba(251,247,241,0.62)",
+            }}
+          >
+            {nudge.prompt}
+          </div>
+        )}
+        <div
+          style={{
+            fontFamily: SERIF,
+            fontStyle: "italic",
+            fontWeight: 400,
+            fontSize: 19,
+            lineHeight: 1.35,
+            marginTop: nudge.prompt ? 6 : 12,
+            letterSpacing: -0.3,
+            position: "relative",
+            color: PAPER,
+          }}
+        >
+          {nudge.isQuote ? `"${nudge.body}"` : nudge.body}
+        </div>
+        {nudge.meta && (
+          <div
+            style={{
+              fontFamily: SF,
+              fontSize: 12,
+              color: "rgba(251,247,241,0.55)",
+              marginTop: 12,
+              letterSpacing: -0.1,
+              position: "relative",
+            }}
+          >
+            {nudge.meta}
+          </div>
+        )}
+      </Container>
     </div>
-  </div>
-);
+  );
+};
 
 export const MobileDashboard = ({
   firstName, projectName, projectState,
@@ -440,7 +635,7 @@ export const MobileDashboard = ({
         />
         <UpcomingList items={upcomingContent} onTap={() => navigate("/planner")} />
         <CheckInBanner onStart={onStartCheckIn} />
-        <AINudge />
+        <BringingForward activePhase={activePhase} stepIndex={stepIndex} stepTotal={stepTotal} />
         <div style={{ textAlign: "center", padding: "32px 24px 24px" }}>
           <button onClick={onStuck} style={{ background: "transparent", border: 0, fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: INK_60, cursor: "pointer" }}>
             Feeling stuck?{" "}
