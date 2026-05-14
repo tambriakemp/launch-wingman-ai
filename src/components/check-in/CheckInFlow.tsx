@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { CheckInWelcome } from "./CheckInWelcome";
 import { CheckInReflection } from "./CheckInReflection";
 import { CheckInOrientation } from "./CheckInOrientation";
 import { CheckInComplete } from "./CheckInComplete";
+import { PastProjectPicker } from "./PastProjectPicker";
 import { useCheckIn, OrientationChoice } from "@/hooks/useCheckIn";
 import { useToneLearning } from "@/hooks/useToneLearning";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -16,7 +18,7 @@ interface CheckInFlowProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "welcome" | "reflection" | "orientation" | "complete";
+type Step = "welcome" | "reflection" | "orientation" | "picker-revisit" | "picker-relaunch" | "complete";
 
 export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   const navigate = useNavigate();
@@ -59,42 +61,57 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
       recordCheckInUncertainty(reflectionResponse);
     }
 
-    // Submit the check-in
+    // Submit the check-in so the data lands regardless of what step comes next.
     await submitCheckIn({
       reflectionPrompt: currentPrompt,
       reflectionResponse,
       orientationChoice: choice,
     });
 
-    // Navigate based on choice
-    handleRedirect(choice);
+    handleOrientationFollowup(choice);
   };
 
-  const handleRedirect = (choice: OrientationChoice) => {
-    onOpenChange(false);
-    resetFlow();
-
+  // What the user sees after picking an orientation. Each branch tries to
+  // deliver a concrete next move — not just close the modal.
+  const handleOrientationFollowup = (choice: OrientationChoice) => {
     switch (choice) {
       case "continue_current":
-        // Stay on dashboard (do nothing special)
-        break;
+        // Stay on the dashboard. Briefly affirm the choice.
+        toast.success("Stay with it.", {
+          description: "Back to where you were.",
+        });
+        closeAndReset();
+        return;
       case "revisit_past":
-        // Navigate to projects list filtered by completed
-        navigate("/app?filter=completed");
-        break;
+        setStep("picker-revisit");
+        return;
       case "plan_relaunch":
-        // Navigate to projects to select one for relaunch
-        navigate("/app?action=relaunch");
-        break;
+        setStep("picker-relaunch");
+        return;
       case "start_new":
-        // Navigate to create new project
-        navigate("/app?action=new");
-        break;
+        closeAndReset();
+        // AppRedirect reads `?new=1` (not `?action=new`) to surface the
+        // create-project UI.
+        navigate("/app?new=1");
+        return;
       case "not_sure":
-        // Just close, show gentle message handled by complete step
         setStep("complete");
         return;
     }
+  };
+
+  const handlePickerSelect = (projectId: string) => {
+    const dest =
+      step === "picker-relaunch"
+        ? `/projects/${projectId}/relaunch`
+        : `/projects/${projectId}/dashboard`;
+    closeAndReset();
+    navigate(dest);
+  };
+
+  const closeAndReset = () => {
+    onOpenChange(false);
+    resetFlow();
   };
 
   const resetFlow = () => {
@@ -104,8 +121,7 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   };
 
   const handleClose = () => {
-    onOpenChange(false);
-    resetFlow();
+    closeAndReset();
   };
 
   const flowContent = (
@@ -152,6 +168,23 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
             onSelect={handleOrientationSelect}
             isSubmitting={isSubmitting}
             hasPastProjects={hasPastProjects}
+          />
+        </motion.div>
+      )}
+
+      {(step === "picker-revisit" || step === "picker-relaunch") && (
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <PastProjectPicker
+            mode={step === "picker-relaunch" ? "relaunch" : "revisit"}
+            onSelect={handlePickerSelect}
+            onBack={() => setStep("orientation")}
+            onClose={handleClose}
           />
         </motion.div>
       )}
