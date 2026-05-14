@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useCheckIn, CheckInCadence } from "@/hooks/useCheckIn";
@@ -73,13 +74,21 @@ export function CheckInSettings() {
         </RadioGroup>
       </div>
 
-      <button
-        onClick={handleSnoozeIndefinitely}
-        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        disabled={isLoading}
-      >
-        Start without using check-ins
-      </button>
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <Link
+          to="/check-ins"
+          className="text-sm text-[hsl(var(--terracotta-500))] hover:underline transition-colors"
+        >
+          View past check-ins →
+        </Link>
+        <button
+          onClick={handleSnoozeIndefinitely}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          disabled={isLoading}
+        >
+          Pause indefinitely
+        </button>
+      </div>
     </div>
   );
 }

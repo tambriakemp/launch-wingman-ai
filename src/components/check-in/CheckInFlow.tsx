@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { CheckInWelcome } from "./CheckInWelcome";
@@ -21,12 +21,21 @@ type Step = "welcome" | "reflection" | "orientation" | "complete";
 export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects } = useCheckIn();
+  const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects, preferences } =
+    useCheckIn();
   const { recordCheckInUncertainty } = useToneLearning();
 
   const [step, setStep] = useState<Step>("welcome");
   const [reflectionResponse, setReflectionResponse] = useState("");
   const [orientationChoice, setOrientationChoice] = useState<OrientationChoice | null>(null);
+
+  // First-time check-in: show the Welcome step. Repeat users go straight to
+  // Reflection — the framing copy is for newcomers; seasoned users want to
+  // get on with it.
+  useEffect(() => {
+    if (!open) return;
+    setStep(preferences?.last_check_in_at ? "reflection" : "welcome");
+  }, [open, preferences?.last_check_in_at]);
 
   const handleStart = () => {
     setStep("reflection");

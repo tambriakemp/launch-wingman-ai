@@ -75,6 +75,7 @@ const Playbook = lazy(() => import("./pages/project/Playbook"));
 const ProjectContent = lazy(() => import("./pages/project/ProjectContent"));
 const ContentVault = lazy(() => import("./pages/ContentVault"));
 const ContentVaultCategory = lazy(() => import("./pages/ContentVaultCategory"));
+const CheckIns = lazy(() => import("./pages/CheckIns"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const HelpSupportTicket = lazy(() => import("./pages/HelpSupportTicket"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -318,6 +319,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ContentVaultCategory />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Check-in journal */}
+            <Route
+              path="/check-ins"
+              element={
+                <ProtectedRoute>
+                  <CheckIns />
                 </ProtectedRoute>
               }
             />
