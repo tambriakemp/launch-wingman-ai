@@ -12,6 +12,7 @@ import {
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useHaptics } from "@/hooks/useHaptics";
 import { supabase } from "@/integrations/supabase/client";
 import { TIER_DISPLAY_NAMES } from "@/lib/subscriptionTiers";
 import { openExternalUrl } from "@/lib/nativeBridge";
@@ -52,7 +53,15 @@ const MeHub = () => {
   const firstName = profile?.first_name ?? "";
   const lastName = profile?.last_name ?? "";
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || user?.email || "Friend";
-  const initial = firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "Y";
+  // Prefer two-letter initials (TK) over a single letter — closer to native
+  // iOS Settings + reads as identity rather than placeholder.
+  const initials = (() => {
+    const a = firstName?.[0]?.toUpperCase();
+    const b = lastName?.[0]?.toUpperCase();
+    if (a && b) return `${a}${b}`;
+    if (a) return a;
+    return user?.email?.[0]?.toUpperCase() || "Y";
+  })();
   const tierLabel = TIER_DISPLAY_NAMES[tier] ?? "Free";
 
   const handleManageSubscription = async () => {
@@ -131,11 +140,11 @@ const MeHub = () => {
                 color: "hsl(var(--paper-100))",
                 fontFamily: '"Fraunces", Georgia, serif',
                 fontWeight: 500,
-                fontSize: 26,
+                fontSize: 24,
                 letterSpacing: -0.5,
               }}
             >
-              {initial}
+              {initials}
             </div>
             <div className="min-w-0 flex-1 pt-1">
               <h1 className="font-serif text-2xl md:text-3xl font-medium text-foreground tracking-tight leading-snug truncate">
@@ -163,85 +172,111 @@ const MeHub = () => {
         ))}
 
         {/* Sign out — destructive, lives alone at the bottom */}
-        <section className="pt-2">
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-card border border-[hsl(var(--border-hairline))] transition-colors active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]"
-          >
-            <div
-              className="shrink-0 inline-flex items-center justify-center rounded-xl"
-              style={{
-                width: 38,
-                height: 38,
-                background: "hsl(var(--destructive)/0.10)",
-              }}
-            >
-              <LogOut size={18} strokeWidth={2} color="hsl(var(--destructive))" />
-            </div>
-            <span className="flex-1 text-left font-medium text-[15px] text-[hsl(var(--destructive))] tracking-tight">
-              Sign out
-            </span>
-          </button>
-        </section>
+        <SignOutCard onSignOut={signOut} />
       </div>
     </ProjectLayout>
   );
 };
 
-const NavGroupSection = ({ group }: { group: NavGroup }) => (
-  <section className="space-y-3">
-    <p className="eyebrow px-1">{group.eyebrow}</p>
-    <div className="rounded-2xl bg-card border border-[hsl(var(--border-hairline))] overflow-hidden">
-      {group.items.map((item, i) => {
-        const Icon = item.icon;
-        const sharedClass =
-          "w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-colors active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]";
-        const sharedStyle = {
-          borderTop: i === 0 ? 0 : `0.5px solid hsl(var(--border-hairline))`,
-        };
-        const inner = (
-          <>
-            <div
-              className="shrink-0 inline-flex items-center justify-center rounded-xl"
-              style={{
-                width: 38,
-                height: 38,
-                background: "rgba(198,90,62,0.10)",
-              }}
-            >
-              <Icon size={18} strokeWidth={2} color="hsl(var(--terracotta-500))" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground text-[15px] leading-snug tracking-tight">
-                {item.label}
+const NavGroupSection = ({ group }: { group: NavGroup }) => {
+  const { trigger: haptic } = useHaptics();
+  return (
+    <section className="space-y-3">
+      <p className="eyebrow px-1">{group.eyebrow}</p>
+      <div
+        className="rounded-2xl bg-card overflow-hidden"
+        style={{ boxShadow: "0 1px 2px rgba(31,27,23,0.04)" }}
+      >
+        {group.items.map((item, i) => {
+          const Icon = item.icon;
+          const sharedClass =
+            "w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-[transform,background-color] duration-150 active:scale-[0.985] active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]";
+          const sharedStyle = {
+            borderTop: i === 0 ? 0 : `0.5px solid hsl(var(--border-hairline))`,
+          };
+          const inner = (
+            <>
+              <div
+                className="shrink-0 inline-flex items-center justify-center rounded-xl"
+                style={{
+                  width: 38,
+                  height: 38,
+                  background: "rgba(198,90,62,0.10)",
+                }}
+              >
+                <Icon size={18} strokeWidth={2} color="hsl(var(--terracotta-500))" />
               </div>
-              <div className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
-                {item.description}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground text-[15px] leading-snug tracking-tight">
+                  {item.label}
+                </div>
+                <div className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
+                  {item.description}
+                </div>
               </div>
-            </div>
-            <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
-          </>
-        );
+              <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+            </>
+          );
 
-        return item.href ? (
-          <Link key={item.label} to={item.href} className={sharedClass} style={sharedStyle}>
-            {inner}
-          </Link>
-        ) : (
-          <button
-            key={item.label}
-            type="button"
-            onClick={item.onClick}
-            className={sharedClass}
-            style={sharedStyle}
-          >
-            {inner}
-          </button>
-        );
-      })}
-    </div>
-  </section>
-);
+          return item.href ? (
+            <Link
+              key={item.label}
+              to={item.href}
+              onClick={() => haptic("selection")}
+              className={sharedClass}
+              style={sharedStyle}
+            >
+              {inner}
+            </Link>
+          ) : (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => {
+                haptic("selection");
+                item.onClick?.();
+              }}
+              className={sharedClass}
+              style={sharedStyle}
+            >
+              {inner}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
+const SignOutCard = ({ onSignOut }: { onSignOut: () => void }) => {
+  const { trigger: haptic } = useHaptics();
+  return (
+    <section className="pt-2">
+      <button
+        type="button"
+        onClick={() => {
+          haptic("medium");
+          onSignOut();
+        }}
+        className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-card transition-[transform,background-color] duration-150 active:scale-[0.985] active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]"
+        style={{ boxShadow: "0 1px 2px rgba(31,27,23,0.04)" }}
+      >
+        <div
+          className="shrink-0 inline-flex items-center justify-center rounded-xl"
+          style={{
+            width: 38,
+            height: 38,
+            background: "hsl(var(--destructive)/0.10)",
+          }}
+        >
+          <LogOut size={18} strokeWidth={2} color="hsl(var(--destructive))" />
+        </div>
+        <span className="flex-1 text-left font-medium text-[15px] text-[hsl(var(--destructive))] tracking-tight">
+          Sign out
+        </span>
+      </button>
+    </section>
+  );
+};
 
 export default MeHub;

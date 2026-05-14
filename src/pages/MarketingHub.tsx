@@ -12,6 +12,7 @@ import {
   Package,
 } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { useHaptics } from "@/hooks/useHaptics";
 
 interface Tool {
   label: string;
@@ -121,45 +122,52 @@ const MarketingHub = () => {
   );
 };
 
-const ToolGroupSection = ({ group }: { group: ToolGroup }) => (
-  <section className="space-y-3">
-    <p className="eyebrow px-1">{group.eyebrow}</p>
-    <div className="rounded-2xl bg-card border border-[hsl(var(--border-hairline))] overflow-hidden">
-      {group.tools.map((tool, i) => {
-        const Icon = tool.icon;
-        return (
-          <Link
-            key={tool.label}
-            to={tool.href}
-            className="w-full flex items-center gap-3.5 px-4 py-3.5 transition-colors active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]"
-            style={{
-              borderTop: i === 0 ? 0 : `0.5px solid hsl(var(--border-hairline))`,
-            }}
-          >
-            <div
-              className="shrink-0 inline-flex items-center justify-center rounded-xl"
+const ToolGroupSection = ({ group }: { group: ToolGroup }) => {
+  const { trigger: haptic } = useHaptics();
+  return (
+    <section className="space-y-3">
+      <p className="eyebrow px-1">{group.eyebrow}</p>
+      <div
+        className="rounded-2xl bg-card overflow-hidden"
+        style={{ boxShadow: "0 1px 2px rgba(31,27,23,0.04)" }}
+      >
+        {group.tools.map((tool, i) => {
+          const Icon = tool.icon;
+          return (
+            <Link
+              key={tool.label}
+              to={tool.href}
+              onClick={() => haptic("selection")}
+              className="w-full flex items-center gap-3.5 px-4 py-3.5 transition-[transform,background-color] duration-150 active:scale-[0.985] active:bg-[hsl(var(--paper-100))] hover:bg-[hsl(var(--paper-50))]"
               style={{
-                width: 38,
-                height: 38,
-                background: "rgba(198,90,62,0.10)",
+                borderTop: i === 0 ? 0 : `0.5px solid hsl(var(--border-hairline))`,
               }}
             >
-              <Icon size={18} strokeWidth={2} color="hsl(var(--terracotta-500))" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-foreground text-[15px] leading-snug tracking-tight">
-                {tool.label}
+              <div
+                className="shrink-0 inline-flex items-center justify-center rounded-xl"
+                style={{
+                  width: 38,
+                  height: 38,
+                  background: "rgba(198,90,62,0.10)",
+                }}
+              >
+                <Icon size={18} strokeWidth={2} color="hsl(var(--terracotta-500))" />
               </div>
-              <div className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
-                {tool.description}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground text-[15px] leading-snug tracking-tight">
+                  {tool.label}
+                </div>
+                <div className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
+                  {tool.description}
+                </div>
               </div>
-            </div>
-            <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
-          </Link>
-        );
-      })}
-    </div>
-  </section>
-);
+              <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 export default MarketingHub;
