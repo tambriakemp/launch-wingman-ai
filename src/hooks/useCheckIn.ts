@@ -91,10 +91,16 @@ export function useCheckIn() {
     enabled: !!user,
   });
 
-  // Compute hasPastProjects (projects that are completed/archived/launched OR more than 1 project)
-  const hasPastProjects = projects.some(p => 
+  // True only when the user has a finished project (completed, archived, or
+  // launched). Drives whether the orientation step offers "Revisit a past
+  // project" / "Plan a relaunch" — both of which require something to
+  // actually revisit or relaunch from. The previous version also returned
+  // true if the user had more than one project regardless of status, which
+  // surfaced those options with no targets and routed users into an
+  // empty-state screen.
+  const hasPastProjects = projects.some(p =>
     ['completed', 'archived', 'launched'].includes(p.status)
-  ) || projects.length > 1;
+  );
 
   // Create or update preferences
   const updatePreferencesMutation = useMutation({
