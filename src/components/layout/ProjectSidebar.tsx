@@ -112,7 +112,8 @@ const createSections = (projectId?: string): Section[] => [
     label: "Planner",
     icon: CalendarCheck,
     items: [
-      { id: "planner-hub", label: "My Planner", icon: LayoutDashboard, href: "/planner-hub" },
+      // "My Planner" hub is mobile-only — the desktop sidebar lists every
+      // sub-page directly below, so the hub entry was a redundant tap.
       { id: "calendar", label: "Calendar", icon: CalendarCheck, href: "/planner", isProOnly: true },
       { id: "daily", label: "Daily Page", icon: BookOpen, href: "/daily", isProOnly: true },
       { id: "habits", label: "Habits", icon: Flame, href: "/habits", isProOnly: true },
