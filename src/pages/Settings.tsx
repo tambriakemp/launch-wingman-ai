@@ -29,6 +29,8 @@ import { CalendarIntegrationsCard } from "@/components/settings/CalendarIntegrat
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCheckoutEntry } from "@/hooks/useCheckoutEntry";
+import { openExternalUrl } from "@/lib/nativeBridge";
 import {
   User,
   CreditCard,
@@ -106,6 +108,7 @@ const Settings = () => {
     return !GATED_PLATFORMS.includes(platform);
   };
   const navigate = useNavigate();
+  const { goToCheckout } = useCheckoutEntry();
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -380,7 +383,7 @@ const Settings = () => {
   };
 
   const handleUpgrade = () => {
-    navigate("/checkout?upgrade=true");
+    goToCheckout({ upgrade: true });
   };
 
   const handleManageSubscription = async () => {
@@ -389,7 +392,7 @@ const Settings = () => {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        await openExternalUrl(data.url);
       }
     } catch (error) {
       console.error('Portal error:', error);
@@ -1001,7 +1004,7 @@ const Settings = () => {
                               <span className="text-muted-foreground">/month</span>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">Access exclusive templates, swipe files, and resources.</p>
-                            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => navigate("/checkout?tier=content_vault")}>
+                            <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => goToCheckout({ tier: "content_vault" })}>
                               Get Vault Access <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
                           </div>
@@ -1015,7 +1018,7 @@ const Settings = () => {
                               <span className="text-muted-foreground">/month</span>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">Full access to all features including Content Vault.</p>
-                            <Button className="w-full" onClick={() => navigate("/checkout?tier=pro")}>
+                            <Button className="w-full" onClick={() => goToCheckout({ tier: "pro" })}>
                               Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
                           </div>

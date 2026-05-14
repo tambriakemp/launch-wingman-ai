@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Crown, Check, ArrowRight } from "lucide-react";
+import { useCheckoutEntry } from "@/hooks/useCheckoutEntry";
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -42,17 +42,16 @@ const advancedFeatures = [
 ];
 
 export const UpgradeDialog = ({ open, onOpenChange, feature, targetTier = 'pro' }: UpgradeDialogProps) => {
-  const navigate = useNavigate();
+  const { goToCheckout } = useCheckoutEntry();
 
   const isAdvanced = targetTier === 'advanced';
   const features = isAdvanced ? advancedFeatures : proFeatures;
   const price = isAdvanced ? 49 : 25;
   const tierName = isAdvanced ? 'Advanced' : 'Pro';
-  const checkoutLink = isAdvanced ? '/checkout?tier=advanced' : '/checkout?tier=pro';
 
   const handleUpgrade = () => {
     onOpenChange(false);
-    navigate(checkoutLink);
+    goToCheckout({ tier: isAdvanced ? 'advanced' : 'pro' });
   };
 
   return (

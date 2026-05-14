@@ -6,6 +6,7 @@ import { Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useCheckoutEntry } from "@/hooks/useCheckoutEntry";
 
 
 const signInSchema = z.object({
@@ -90,6 +91,7 @@ const Auth = () => {
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const { goToCheckout } = useCheckoutEntry();
   const [searchParams] = useSearchParams();
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
@@ -686,9 +688,13 @@ const Auth = () => {
                       <div className="txt">
                         Want the <strong>Advanced</strong> plan — full marketing suite + AI Studio? Upgrade at checkout.
                       </div>
-                      <Link to="/checkout?tier=advanced" className="link">
+                      <button
+                        type="button"
+                        className="link"
+                        onClick={() => goToCheckout({ tier: "advanced" })}
+                      >
                         Subscribe
-                      </Link>
+                      </button>
                     </div>
                   </form>
                 ) : (

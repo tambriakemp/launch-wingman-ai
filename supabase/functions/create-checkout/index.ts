@@ -7,6 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Tier → Stripe price ID. Pro is the only fully-configured hosted-checkout
+// tier today; content_vault and advanced run through the embedded Elements
+// flow on web and need price IDs filled in here before they can be opened
+// via Stripe Hosted Checkout from native.
+const TIER_PRICE_MAP: Record<string, string> = {
+  pro: "price_1SipMGF2gaEq7adwAGMICdO5",
+  // content_vault: "price_...",
+  // advanced: "price_...",
+};
+const DEFAULT_TIER = "pro";
+
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
@@ -25,14 +36,24 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Parse request body for optional coupon code
+    // Parse request body
     let couponCode: string | undefined;
+    let tier: string = DEFAULT_TIER;
+    let successUrlOverride: string | undefined;
+    let cancelUrlOverride: string | undefined;
     try {
       const body = await req.json();
       couponCode = body?.coupon_code;
+      if (typeof body?.tier === "string" && TIER_PRICE_MAP[body.tier]) {
+        tier = body.tier;
+      }
+      successUrlOverride = body?.success_url;
+      cancelUrlOverride = body?.cancel_url;
     } catch {
-      // No body or invalid JSON, that's fine
+      // No body or invalid JSON, that's fine — defaults apply
     }
+    const priceId = TIER_PRICE_MAP[tier];
+    logStep("Resolved tier", { tier, priceId });
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -68,20 +89,16 @@ serve(async (req) => {
       }
     }
 
+    const origin = req.headers.get("origin") || "";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price: "price_1SipMGF2gaEq7adwAGMICdO5",
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       discounts,
       allow_promotion_codes: !discounts, // Allow promo codes only if no coupon pre-applied
-      success_url: `${req.headers.get("origin")}/projects?checkout=success`,
-      cancel_url: `${req.headers.get("origin")}/settings?canceled=true`,
+      success_url: successUrlOverride || `${origin}/projects?checkout=success`,
+      cancel_url: cancelUrlOverride || `${origin}/settings?canceled=true`,
     });
 
     logStep("Checkout session created", { sessionId: session.id, hasDiscount: !!discounts });
