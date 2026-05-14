@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
-import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Plus, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
+import { Bell, ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, Mic, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { MobileTabBar } from "@/components/planner/mobile/MobileTabBar";
 import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 import { useHaptics } from "@/hooks/useHaptics";
@@ -438,21 +438,6 @@ export const MobileDashboard = ({
           </button>
         </div>
       </div>
-
-      {/* FAB */}
-      <button
-        onClick={() => navigate("/planner")}
-        aria-label="New task"
-        style={{
-          position: "absolute", right: 18, bottom: isNative ? "calc(var(--native-tabbar-h, 24px) + 16px)" : 92, zIndex: 35,
-          width: 56, height: 56, borderRadius: 18, border: 0,
-          background: TERRACOTTA, color: "#fff", cursor: "pointer",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 24px -4px rgba(198,90,62,0.55), 0 2px 6px rgba(31,27,23,0.18)",
-        }}
-      >
-        <Plus size={26} color="#fff" strokeWidth={2.4} />
-      </button>
 
       {!isNative && <MobileTabBar active="home" />}
     </div>
