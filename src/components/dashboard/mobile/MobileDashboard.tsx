@@ -230,7 +230,7 @@ const PhaseCarousel = ({ phaseStatuses, activePhase, activePct, onTapPhase }: {
 }) => (
   <div>
     <SectionHeader title="Launch timeline" action={`${VISIBLE_PHASES.length} phases`} />
-    <div style={{ display: "flex", gap: 10, padding: "4px 16px 8px", overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}>
+    <div className="scrollbar-hide" style={{ display: "flex", gap: 10, padding: "4px 16px 8px", overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}>
       {VISIBLE_PHASES.map((ph) => {
         const status = phaseStatuses[ph];
         const isDone = status === "complete";
