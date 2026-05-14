@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronRight,
-  Package,
   MessageSquare,
   Settings as SettingsIcon,
   HelpCircle,
@@ -21,7 +20,7 @@ import { toast } from "sonner";
 interface NavItem {
   label: string;
   description: string;
-  icon: typeof Package;
+  icon: typeof MessageSquare;
   href?: string;
   onClick?: () => void;
 }
@@ -79,14 +78,8 @@ const MeHub = () => {
 
   const groups: NavGroup[] = [
     {
-      eyebrow: "Resources",
+      eyebrow: "Reflection",
       items: [
-        {
-          label: "Content Vault",
-          description: "Templates, swipes, and saved drafts",
-          icon: Package,
-          href: "/content-vault",
-        },
         {
           label: "Check-In Journal",
           description: "Past reflections, in your own words",
