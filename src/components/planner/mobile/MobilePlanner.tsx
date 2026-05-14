@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { format, isToday, isPast, parseISO, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { useSearchParams } from "react-router-dom";
+import { addDays, format, isToday, isPast, parseISO, startOfDay, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { Plus, Filter, Check, Trash2, Flame, X } from "lucide-react";
 import type { PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
@@ -14,7 +15,9 @@ const INK_40 = "rgba(31,27,23,0.42)";
 const INK_20 = "rgba(31,27,23,0.20)";
 const HAIRLINE = "rgba(31,27,23,0.10)";
 
-type FilterId = "open" | "overdue" | "today" | "done";
+type FilterId = "open" | "overdue" | "today" | "upcoming" | "done";
+const VALID_FILTERS: ReadonlyArray<FilterId> = ["open", "overdue", "today", "upcoming", "done"];
+const UPCOMING_WINDOW_DAYS = 14;
 
 interface Props {
   tasks: PlannerTask[];
@@ -429,7 +432,20 @@ export const MobilePlanner = ({
   onDeleteTask,
   onAddTask,
 }: Props) => {
-  const [filter, setFilter] = useState<FilterId>("open");
+  // Seed from ?filter=… so links from the dashboard (Due Today / Upcoming
+  // cards) land on the correct chip. Keep state in sync if the URL changes
+  // while the page is mounted.
+  const [searchParams] = useSearchParams();
+  const initialFilter = (() => {
+    const f = searchParams.get("filter") as FilterId | null;
+    return f && VALID_FILTERS.includes(f) ? f : ("open" as FilterId);
+  })();
+  const [filter, setFilter] = useState<FilterId>(initialFilter);
+  useEffect(() => {
+    const f = searchParams.get("filter") as FilterId | null;
+    if (f && VALID_FILTERS.includes(f)) setFilter(f);
+  }, [searchParams]);
+
   const [scrolled, setScrolled] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
@@ -474,6 +490,16 @@ export const MobilePlanner = ({
         const d = t.due_at || t.start_at;
         return d && isToday(parseISO(d)) && t.column_id !== "done";
       });
+    else if (filter === "upcoming") {
+      const tomorrowStart = startOfDay(addDays(new Date(), 1));
+      const upcomingEnd = addDays(tomorrowStart, UPCOMING_WINDOW_DAYS);
+      list = list.filter((t) => {
+        const d = t.due_at || t.start_at;
+        if (!d || t.column_id === "done") return false;
+        const p = parseISO(d);
+        return p >= tomorrowStart && p < upcomingEnd;
+      });
+    }
     return list;
   }, [tasks, selectedSpaceId, filter, selectedCategoryIds]);
 
@@ -520,6 +546,16 @@ export const MobilePlanner = ({
     const p = parseISO(d);
     return isPast(p) && !isToday(p);
   }).length;
+  const upcomingCount = useMemo(() => {
+    const tomorrowStart = startOfDay(addDays(new Date(), 1));
+    const upcomingEnd = addDays(tomorrowStart, UPCOMING_WINDOW_DAYS);
+    return tasks.filter((t) => {
+      const d = t.due_at || t.start_at;
+      if (!d || t.column_id === "done") return false;
+      const p = parseISO(d);
+      return p >= tomorrowStart && p < upcomingEnd;
+    }).length;
+  }, [tasks]);
 
   // Spaces chips with counts
   const spaceCounts = useMemo(() => {
@@ -667,6 +703,7 @@ export const MobilePlanner = ({
               { id: "open" as FilterId, label: "Open", count: openCount },
               { id: "overdue" as FilterId, label: "Overdue", count: overdueCount },
               { id: "today" as FilterId, label: "Today", count: todayCount },
+              { id: "upcoming" as FilterId, label: "Upcoming", count: upcomingCount },
               { id: "done" as FilterId, label: "Done" },
             ]).map((it) => {
               const active = filter === it.id;

@@ -194,18 +194,28 @@ const PhaseCarousel = ({ phaseStatuses, activePhase, activePct }: {
   </div>
 );
 
-const TodayWidget = ({ dueToday, upcomingPlanner, onTap }: { dueToday: number; upcomingPlanner: number; onTap: () => void }) => (
+const TodayWidget = ({
+  dueToday,
+  upcomingPlanner,
+  onTapToday,
+  onTapUpcoming,
+}: {
+  dueToday: number;
+  upcomingPlanner: number;
+  onTapToday: () => void;
+  onTapUpcoming: () => void;
+}) => (
   <div>
-    <SectionHeader title="Today" action="Plan ›" onAction={onTap} />
+    <SectionHeader title="Today" action="Plan ›" onAction={onTapToday} />
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 16px" }}>
-      <button onClick={onTap} style={{ textAlign: "left", border: 0, background: "#fff", borderRadius: 18, padding: "14px 16px 16px", boxShadow: "0 1px 2px rgba(31,27,23,0.04)", cursor: "pointer" }}>
+      <button onClick={onTapToday} style={{ textAlign: "left", border: 0, background: "#fff", borderRadius: 18, padding: "14px 16px 16px", boxShadow: "0 1px 2px rgba(31,27,23,0.04)", cursor: "pointer" }}>
         <div style={{ fontFamily: SF, fontSize: 12, fontWeight: 600, color: INK_60, letterSpacing: -0.1 }}>Due today</div>
         <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 44, lineHeight: 1, letterSpacing: -2, color: INK, marginTop: 6 }}>{dueToday}</div>
         <div style={{ fontFamily: SF, fontSize: 12, color: INK_40, marginTop: 4, letterSpacing: -0.1 }}>
           {dueToday === 0 ? "Nothing overdue — breathe." : "Tap to focus."}
         </div>
       </button>
-      <button onClick={onTap} style={{ textAlign: "left", border: 0, background: "#fff", borderRadius: 18, padding: "14px 16px 16px", boxShadow: "0 1px 2px rgba(31,27,23,0.04)", cursor: "pointer" }}>
+      <button onClick={onTapUpcoming} style={{ textAlign: "left", border: 0, background: "#fff", borderRadius: 18, padding: "14px 16px 16px", boxShadow: "0 1px 2px rgba(31,27,23,0.04)", cursor: "pointer" }}>
         <div style={{ fontFamily: SF, fontSize: 12, fontWeight: 600, color: INK_60, letterSpacing: -0.1 }}>Upcoming</div>
         <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 44, lineHeight: 1, letterSpacing: -2, color: INK, marginTop: 6 }}>{upcomingPlanner}</div>
         <div style={{ fontFamily: SF, fontSize: 12, color: TERRACOTTA, marginTop: 4, fontWeight: 500, letterSpacing: -0.1 }}>On deck →</div>
@@ -422,7 +432,12 @@ export const MobileDashboard = ({
         />
         <PhaseCarousel phaseStatuses={phaseStatuses} activePhase={activePhase} activePct={activePct} />
         <ProjectTools projectId={projectId} onNavigate={navigateWithHaptic} />
-        <TodayWidget dueToday={dueToday} upcomingPlanner={upcomingPlanner} onTap={() => navigate("/planner")} />
+        <TodayWidget
+          dueToday={dueToday}
+          upcomingPlanner={upcomingPlanner}
+          onTapToday={() => navigate("/planner?filter=today")}
+          onTapUpcoming={() => navigate("/planner?filter=upcoming")}
+        />
         <UpcomingList items={upcomingContent} onTap={() => navigate("/planner")} />
         <CheckInBanner onStart={onStartCheckIn} />
         <AINudge />
