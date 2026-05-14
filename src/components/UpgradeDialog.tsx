@@ -13,13 +13,15 @@ interface UpgradeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   feature?: string;
+  // Retained for backward compat with callers passing 'advanced' before the
+  // 3-tier consolidation. Both values now route to the Pro upsell.
   targetTier?: 'pro' | 'advanced';
 }
 
 const proFeatures = [
   "Unlimited projects",
   "Unlimited AI content ideas",
-  "Unlimited saved drafts", 
+  "Unlimited saved drafts",
   "Full sales copy builder",
   "Multiple offers per sales page",
   "Relaunch mode",
@@ -28,30 +30,19 @@ const proFeatures = [
   "Content Vault access",
   "Social media scheduling",
   "Cross-project content visibility",
+  "Campaigns manager",
+  "Social Planner",
+  "AI Studio",
+  "Marketing Analytics",
   "Priority support",
 ];
 
-const advancedFeatures = [
-  "Everything in Pro",
-  "Campaigns manager",
-  "Social Planner",
-  
-  "AI Studio",
-  "Marketing Analytics",
-  "Advanced marketing tools",
-];
-
-export const UpgradeDialog = ({ open, onOpenChange, feature, targetTier = 'pro' }: UpgradeDialogProps) => {
+export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProps) => {
   const { goToCheckout } = useCheckoutEntry();
-
-  const isAdvanced = targetTier === 'advanced';
-  const features = isAdvanced ? advancedFeatures : proFeatures;
-  const price = isAdvanced ? 49 : 25;
-  const tierName = isAdvanced ? 'Advanced' : 'Pro';
 
   const handleUpgrade = () => {
     onOpenChange(false);
-    goToCheckout({ tier: isAdvanced ? 'advanced' : 'pro' });
+    goToCheckout({ tier: 'pro' });
   };
 
   return (
@@ -61,24 +52,23 @@ export const UpgradeDialog = ({ open, onOpenChange, feature, targetTier = 'pro' 
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
             <Crown className="w-6 h-6 text-primary" />
           </div>
-          <DialogTitle className="text-xl">Upgrade to {tierName}</DialogTitle>
+          <DialogTitle className="text-xl">Upgrade to Pro</DialogTitle>
           <DialogDescription>
-            {feature 
-              ? `${feature} is ${isAdvanced ? 'an Advanced' : 'a Pro'} feature. Upgrade to unlock it and more!`
-              : `Unlock all ${isAdvanced ? 'marketing tools and ' : ''}features and take your launches to the next level.`
-            }
+            {feature
+              ? `${feature} is a Pro feature. Upgrade to unlock it and the full launch + marketing suite.`
+              : "Unlock every feature — projects, AI, marketing, the full launch suite — at one price."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Pricing Display */}
           <div className="flex items-baseline justify-center gap-2">
-            <span className="text-4xl font-bold text-foreground">${price}</span>
+            <span className="text-4xl font-bold text-foreground">$49</span>
             <span className="text-muted-foreground">/month</span>
           </div>
 
           <ul className="space-y-2">
-            {features.map((item, i) => (
+            {proFeatures.map((item, i) => (
               <li key={i} className="flex items-center gap-2 text-sm">
                 <Check className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-foreground">{item}</span>

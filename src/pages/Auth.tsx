@@ -686,12 +686,12 @@ const Auth = () => {
 
                     <div className="pro-upsell">
                       <div className="txt">
-                        Want the <strong>Advanced</strong> plan — full marketing suite + AI Studio? Upgrade at checkout.
+                        Want unlimited projects, AI Studio, and the full marketing suite? <strong>Upgrade to Pro</strong>.
                       </div>
                       <button
                         type="button"
                         className="link"
-                        onClick={() => goToCheckout({ tier: "advanced" })}
+                        onClick={() => goToCheckout({ tier: "pro" })}
                       >
                         Subscribe
                       </button>

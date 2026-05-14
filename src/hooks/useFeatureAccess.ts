@@ -29,7 +29,10 @@ export const FREE_PLAN_LIMITS = {
   salesCopySections: ['headline', 'core_promise', 'cta'], // Limited sections
 };
 
-// Pro features list (available to Pro, Advanced, Admin)
+// Pro features list (available to Pro and Admin). After the 3-tier
+// consolidation, the previously Advanced-only features (campaigns,
+// ideas_bank, ai_studio, marketing_analytics, social_planner) all live
+// here — Pro is now the full-featured paid plan.
 export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_projects',
   'relaunch_mode',
@@ -41,10 +44,6 @@ export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_ideas',
   'unlimited_drafts',
   'social_calendar',
-];
-
-// Advanced-only features (Marketing section — only Advanced and Admin)
-export const ADVANCED_ONLY_FEATURES: FeatureKey[] = [
   'campaigns',
   'ideas_bank',
   'ai_studio',
@@ -97,23 +96,17 @@ export const useFeatureAccess = () => {
   const hasAccess = (feature: FeatureKey): boolean => {
     // Admins and managers always have full access
     if (hasAdminAccess) return true;
-    
-    // Advanced users have access to everything
-    if (tier === 'advanced') return true;
-    
-    // Pro users have access to PRO_FEATURES but NOT ADVANCED_ONLY_FEATURES
-    if (tier === 'pro') {
-      if (ADVANCED_ONLY_FEATURES.includes(feature)) return false;
-      return true;
-    }
-    
+
+    // Pro users get every paid feature
+    if (tier === 'pro') return true;
+
     // Content Vault users only get content_vault feature
     if (tier === 'content_vault') {
       return CONTENT_VAULT_FEATURES.includes(feature);
     }
-    
-    // Free users don't have access to Pro, Advanced, or Content Vault features
-    return !PRO_FEATURES.includes(feature) && !ADVANCED_ONLY_FEATURES.includes(feature) && !CONTENT_VAULT_FEATURES.includes(feature);
+
+    // Free users don't have access to Pro or Content Vault features
+    return !PRO_FEATURES.includes(feature) && !CONTENT_VAULT_FEATURES.includes(feature);
   };
 
   // Get limits for free plan (returns null for Pro/Advanced/Admin/Manager users = unlimited)

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeApp, openExternalUrl } from "@/lib/nativeBridge";
 
-export type CheckoutTier = "content_vault" | "pro" | "advanced";
+export type CheckoutTier = "content_vault" | "pro";
 
 interface CheckoutEntryOptions {
   tier?: CheckoutTier;
@@ -15,9 +15,8 @@ interface CheckoutEntryOptions {
 const NATIVE_RETURN_BASE = "https://app.launchely.com";
 
 // Tiers Stripe Hosted Checkout can serve from native today. Keep in sync with
-// TIER_PRICE_MAP in supabase/functions/create-checkout/index.ts. Until other
-// tiers are added there, native flows fall back to Pro.
-const NATIVE_HOSTED_TIERS = new Set<CheckoutTier>(["pro"]);
+// TIER_PRICE_MAP in supabase/functions/create-checkout/index.ts.
+const NATIVE_HOSTED_TIERS = new Set<CheckoutTier>(["pro", "content_vault"]);
 
 export function useCheckoutEntry() {
   const navigate = useNavigate();

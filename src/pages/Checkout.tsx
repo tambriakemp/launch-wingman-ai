@@ -47,7 +47,7 @@ interface CouponInfo {
   original_price: number;
 }
 
-type PlanId = "content_vault" | "pro" | "advanced";
+type PlanId = "content_vault" | "pro";
 
 interface PlanDef {
   id: PlanId;
@@ -82,35 +82,20 @@ const PLANS: PlanDef[] = [
   {
     id: "pro",
     name: "Pro",
-    tag: "Everything you need to launch",
-    price: 25,
+    tag: "Everything you need to launch and grow",
+    price: 49,
     headline: (
       <>
         Start your <em className="not-italic font-light text-terracotta italic">Pro</em> journey.
       </>
     ),
-    lede: "Unlimited projects, AI content, and the full launch playbook — one quiet step at a time.",
+    lede: "The full launch playbook plus the marketing suite — every feature, no gates.",
     feats: [
       "Everything in Vault",
       "Unlimited projects & drafts",
       "Unlimited AI content ideas",
       "Social media scheduling",
       "Insights & analytics",
-    ],
-  },
-  {
-    id: "advanced",
-    name: "Advanced",
-    tag: "Full marketing suite",
-    price: 49,
-    headline: (
-      <>
-        Start your <em className="not-italic font-light text-terracotta italic">Advanced</em> journey.
-      </>
-    ),
-    lede: "The full marketing suite — for launches that keep growing after launch day.",
-    feats: [
-      "Everything in Pro",
       "Campaigns manager",
       "Social planner",
       "AI Studio — avatar video",
@@ -130,12 +115,10 @@ const Checkout = () => {
   const initialTier: PlanId =
     tierParam && PLANS.some((p) => p.id === tierParam)
       ? tierParam
-      : isUpgrade
-      ? "advanced"
       : "pro";
 
   const [selectedTier, setSelectedTier] = useState<PlanId>(initialTier);
-  const recommendedTier: PlanId = "advanced";
+  const recommendedTier: PlanId = "pro";
   const planConfig = PLANS.find((p) => p.id === selectedTier)!;
 
   // Form state

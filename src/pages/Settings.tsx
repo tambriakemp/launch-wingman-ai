@@ -1014,10 +1014,10 @@ const Settings = () => {
                               <span className="font-semibold text-foreground">Pro Plan</span>
                             </div>
                             <div className="flex items-baseline gap-1 mb-4">
-                              <span className="text-3xl font-bold text-foreground">$25</span>
+                              <span className="text-3xl font-bold text-foreground">$49</span>
                               <span className="text-muted-foreground">/month</span>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-4">Full access to all features including Content Vault.</p>
+                            <p className="text-sm text-muted-foreground mb-4">Every feature — launches, projects, AI Studio, and the full marketing suite.</p>
                             <Button className="w-full" onClick={() => goToCheckout({ tier: "pro" })}>
                               Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>

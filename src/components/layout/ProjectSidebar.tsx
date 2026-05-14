@@ -149,7 +149,7 @@ interface NavRowProps {
   hasAdminAccess: boolean;
   collapsed: boolean;
   onNavigate: (href: string) => void;
-  onUpgradeClick: (feature: string, targetTier?: "pro" | "advanced") => void;
+  onUpgradeClick: (feature: string) => void;
 }
 
 const NavRow = ({
@@ -170,7 +170,7 @@ const NavRow = ({
   const handleClick = () => {
     if (disabled) return;
     if (locked) {
-      onUpgradeClick(item.label, isAdvancedLocked ? "advanced" : "pro");
+      onUpgradeClick(item.label);
       return;
     }
     onNavigate(item.href);
@@ -249,7 +249,7 @@ const SectionBlock = ({
   isAdvanced: boolean;
   hasAdminAccess: boolean;
   onNavigate: (href: string) => void;
-  onUpgradeClick: (feature: string, targetTier?: "pro" | "advanced") => void;
+  onUpgradeClick: (feature: string) => void;
 }) => {
   const SectionIcon = section.icon;
   return (
@@ -300,15 +300,16 @@ export const ProjectSidebar = () => {
   const { id: projectId } = useParams();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
-  const [upgradeTargetTier, setUpgradeTargetTier] = useState<"pro" | "advanced">("pro");
+  // Tier consolidation removed the Advanced upsell variant; every gated
+  // section now upsells to Pro.
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const { collapsed, toggle } = useSidebarCollapsed();
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
 
-  const isPro = tier === "pro" || tier === "advanced" || tier === "admin";
-  const isAdvanced = tier === "advanced" || tier === "admin";
+  const isPro = tier === "pro" || tier === "admin";
+  const isAdvanced = isPro; // Retained name during migration — Pro is now the all-features tier.
 
   // ── Stored project id ──
   const [storedProjectId, setStoredProjectId] = useState<string | undefined>();
@@ -394,9 +395,8 @@ export const ProjectSidebar = () => {
   );
 
   const handleUpgradeClick = useCallback(
-    (feature: string, targetTier?: "pro" | "advanced") => {
+    (feature: string) => {
       setUpgradeFeature(feature);
-      setUpgradeTargetTier(targetTier || "pro");
       setShowUpgradeDialog(true);
     },
     []
@@ -412,9 +412,7 @@ export const ProjectSidebar = () => {
   );
 
   const tierLabel =
-    tier === "advanced"
-      ? "Advanced plan"
-      : tier === "pro"
+    tier === "pro"
       ? "Pro plan"
       : tier === "admin"
       ? "Admin"
@@ -550,7 +548,6 @@ export const ProjectSidebar = () => {
           open={showUpgradeDialog}
           onOpenChange={setShowUpgradeDialog}
           feature={upgradeFeature}
-          targetTier={upgradeTargetTier}
         />
       </TooltipProvider>
     );
@@ -571,7 +568,6 @@ export const ProjectSidebar = () => {
         open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
         feature={upgradeFeature}
-        targetTier={upgradeTargetTier}
       />
     </TooltipProvider>
   );

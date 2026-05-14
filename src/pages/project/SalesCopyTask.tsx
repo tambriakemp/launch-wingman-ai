@@ -22,7 +22,9 @@ export default function SalesCopyTask() {
   const { user } = useAuth();
   const taskId = 'messaging_sales_copy';
   const { tier, hasAdminAccess } = useFeatureAccess();
-  const isAdvanced = tier === 'advanced' || hasAdminAccess;
+  // Previously gated Advanced-only behavior; after the 3-tier consolidation
+  // those features moved into Pro.
+  const isAdvanced = tier === 'pro' || hasAdminAccess;
   
   const [completedCriteria, setCompletedCriteria] = useState<string[]>([]);
   const [salesCopyCount, setSalesCopyCount] = useState(0);
