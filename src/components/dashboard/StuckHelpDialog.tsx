@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Sparkles, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -76,17 +76,14 @@ export const StuckHelpDialog = ({
   const body = (
     <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
       <div className="space-y-2">
-        <p className="eyebrow">Stuck Help</p>
-        <h2 className="font-serif text-2xl font-medium text-foreground tracking-tight flex items-baseline gap-2">
-          <Sparkles className="w-5 h-5 self-center text-[hsl(var(--terracotta-500))]" />
-          <span>
-            What's <em className="italic text-[hsl(var(--terracotta-500))]">blocking</em> you right now?
-          </span>
+        <p className="eyebrow">Stuck help</p>
+        <h2 className="font-serif text-2xl font-medium text-foreground tracking-tight leading-snug">
+          What's <em className="italic text-[hsl(var(--terracotta-500))]">blocking</em> you right now?
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           {response
             ? "Here's a way through. Take what helps; leave the rest."
-            : "Describe what you're struggling with, and I'll help break it down into manageable steps."}
+            : "Describe what you're struggling with — we'll break it down into manageable steps."}
         </p>
       </div>
 
@@ -101,28 +98,30 @@ export const StuckHelpDialog = ({
             </div>
           </div>
 
-          <Textarea
-            placeholder="e.g., I'm not sure how to describe my ideal client, I keep getting stuck on who to target..."
-            value={blockingIssue}
-            onChange={(e) => setBlockingIssue(e.target.value)}
-            rows={5}
-            className="resize-none rounded-[14px] bg-[hsl(var(--paper-50))] text-[16px] border-[hsl(var(--border-hairline))] focus-visible:border-[hsl(var(--terracotta-500))] focus-visible:ring-0"
-          />
+          {/* Paper-style textarea — matches CheckInReflection: borderless feel,
+              terracotta focus, italic placeholder, 16px (no iOS focus-zoom). */}
+          <div className="rounded-2xl bg-[hsl(var(--paper-50))] border border-[hsl(var(--border-hairline))] focus-within:border-[hsl(var(--terracotta-500))] transition-colors">
+            <Textarea
+              placeholder="e.g., I'm not sure how to describe my ideal client, I keep getting stuck on who to target…"
+              value={blockingIssue}
+              onChange={(e) => setBlockingIssue(e.target.value)}
+              rows={5}
+              className="resize-none border-0 bg-transparent shadow-none px-4 py-3.5 text-[16px] leading-relaxed text-foreground placeholder:italic placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleGetHelp}
-              disabled={isLoading}
-              size="lg"
-              className="rounded-full bg-[hsl(var(--ink-900))] text-[hsl(var(--paper-100))] hover:bg-[hsl(var(--ink-900)/0.9)]"
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleClose}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              Cancel
+            </button>
+            <Button onClick={handleGetHelp} disabled={isLoading} size="lg">
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Thinking...
+                  Thinking…
                 </>
               ) : (
                 "Get help"
@@ -168,11 +167,7 @@ export const StuckHelpDialog = ({
             </p>
           </div>
 
-          <Button
-            onClick={handleClose}
-            size="lg"
-            className="w-full rounded-full bg-[hsl(var(--ink-900))] text-[hsl(var(--paper-100))] hover:bg-[hsl(var(--ink-900)/0.9)]"
-          >
+          <Button onClick={handleClose} size="lg" className="w-full">
             Got it, let's go
           </Button>
         </>
