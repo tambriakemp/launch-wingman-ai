@@ -43,7 +43,7 @@ const TABS: Tab[] = [
     id: "marketing",
     label: "Marketing",
     icon: Megaphone,
-    to: "/marketing-hub/campaigns",
+    to: "/marketing-hub",
     // AI Studio + Carousel Builder live under Marketing (matches the desktop
     // sidebar grouping) so this tab activates for any of their routes.
     match: ["/marketing-hub", "/app/ai-studio", "/carousel-builder"],

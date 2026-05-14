@@ -51,6 +51,7 @@ const UTMBuilder = lazy(() => import("./pages/UTMBuilder"));
 const UTMRedirect = lazy(() => import("./pages/UTMRedirect"));
 const CampaignAnalytics = lazy(() => import("./pages/CampaignAnalytics"));
 const CampaignPlanner = lazy(() => import("./pages/CampaignPlanner"));
+const MarketingHub = lazy(() => import("./pages/MarketingHub"));
 const CampaignDetail = lazy(() => import("./pages/CampaignDetail"));
 const SocialPlanner = lazy(() => import("./pages/SocialPlanner"));
 
@@ -527,6 +528,17 @@ const App = () => (
                 <ProtectedAdminRoute>
                   <AdminLayout><AdminVideoInstructions /></AdminLayout>
                 </ProtectedAdminRoute>
+              }
+            />
+            {/* Marketing hub landing — mobile tab destination, surfaces the
+                full Marketing suite (campaigns, analytics, AI tools, social,
+                content). Sub-pages live at their existing routes below. */}
+            <Route
+              path="/marketing-hub"
+              element={
+                <ProtectedRoute>
+                  <MarketingHub />
+                </ProtectedRoute>
               }
             />
             <Route
