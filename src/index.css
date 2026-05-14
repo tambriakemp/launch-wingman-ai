@@ -2,8 +2,16 @@
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
-/* Editorial display + mono fonts for Launch Tasks design system */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
+/* Editorial display + mono fonts — self-hosted via fontsource so native
+   WebView and offline web users aren't blocked on Google Fonts. */
+@import "@fontsource/fraunces/300.css";
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/400-italic.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
 
 
 @tailwind base;
@@ -22,69 +30,69 @@
 
 @layer base {
   :root {
-    /* Light Theme - Clean SaaS Dashboard */
-    --background: 220 20% 97%;
-    --foreground: 240 10% 10%;
+    /* === Editorial Cream + Terracotta — canonical Launchely design system === */
+
+    /* Shadcn semantic tokens (cream-mapped) */
+    --background: 35 50% 96%;
+    --foreground: 30 9% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 30 9% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover-foreground: 30 9% 10%;
 
-    /* Dark Primary (matching sidebar) */
-    --primary: 40 6% 10%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 30 9% 10%;
+    --primary-foreground: 35 50% 96%;
 
-    /* Teal/Mint Secondary */
-    --secondary: 168 76% 42%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 35 28% 92%;
+    --secondary-foreground: 30 9% 10%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 35 30% 94%;
+    --muted-foreground: 30 9% 33%;
 
-    --accent: 47 96% 53%;
-    --accent-foreground: 40 6% 7%;
+    --accent: 13 56% 51%;          /* terracotta */
+    --accent-foreground: 0 0% 100%;
 
-    /* Toolbar active state */
-    --highlight: 47 96% 53%;
-    --highlight-foreground: 40 6% 7%;
+    /* Toolbar / active-state highlight — terracotta in the cream system */
+    --highlight: 13 56% 51%;
+    --highlight-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 40 6% 10%;
+    --border: 35 28% 87%;
+    --input: 35 28% 87%;
+    --ring: 13 56% 51%;
 
     --radius: 0.75rem;
 
-    /* Sidebar - Dark theme like OttoKit */
-    --sidebar-background: 40 6% 7%;
-    --sidebar-foreground: 40 6% 70%;
-    --sidebar-primary: 47 96% 53%;
-    --sidebar-primary-foreground: 40 6% 7%;
-    --sidebar-accent: 40 6% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 40 6% 15%;
-    --sidebar-ring: 47 96% 53%;
+    /* Sidebar — light cream (was dark "OttoKit"-style; replaced for editorial coherence) */
+    --sidebar-background: 38 60% 98%;
+    --sidebar-foreground: 30 9% 33%;
+    --sidebar-primary: 13 56% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 35 35% 92%;
+    --sidebar-accent-foreground: 30 9% 10%;
+    --sidebar-border: 35 28% 87%;
+    --sidebar-ring: 13 56% 51%;
 
-    /* Custom Launchely tokens */
-    --success: 168 76% 42%;
+    /* Status colors — moss for success (on-brand vs the old teal), amber, info-blue */
+    --success: 96 30% 38%;         /* moss-500 */
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
 
-    /* Callout boxes - black with gold accent */
-    --callout: 40 6% 10%;
+    /* Callout boxes — deep ink + warm gold accent */
+    --callout: 30 9% 10%;
     --callout-foreground: 0 0% 100%;
-    --callout-accent: 45 90% 45%;
+    --callout-accent: 38 60% 56%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(40 6% 20%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(168 76% 42%) 0%, hsl(180 76% 50%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(47 96% 53%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(30 9% 10%) 0%, hsl(30 9% 22%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(13 56% 51%) 0%, hsl(13 56% 62%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(35 50% 96%) 0%, hsl(13 56% 51%) 100%);
 
     /* === Editorial palette (Launch Tasks design system) === */
     /* Paper / canvas backgrounds */
@@ -124,6 +132,19 @@
     --plum-100: 290 28% 92%;
     --plum-700: 290 38% 36%;
 
+    /* === Backward-compat aliases ===
+       Previously defined inside the now-retired .app-cream scope. Components
+       across goals/, dashboard/, Auth, etc. still reference these names. */
+    --hairline: 35 28% 87%;          /* alias of --border-hairline */
+    --terracotta: 13 56% 51%;        /* alias of --terracotta-500 */
+    --terracotta-700: 13 56% 38%;
+    --ink-700: 30 9% 28%;
+    --fg-subtle: 30 9% 70%;
+    --border-default: 35 22% 80%;
+    --warm-gold: 38 60% 56%;
+    --terracotta-soft: 13 56% 95%;
+    --terracotta-50: 13 56% 95%;
+
     /* Editorial typography stacks */
     --font-display: "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, "Times New Roman", serif;
     --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
@@ -140,57 +161,8 @@
     --shadow-glow: 0 0 20px hsl(47 96% 53% / 0.3);
   }
 
-  .dark {
-    --background: 240 10% 8%;
-    --foreground: 0 0% 95%;
-
-    --card: 240 10% 12%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 240 10% 12%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 262 83% 65%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 168 76% 50%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 240 6% 20%;
-    --muted-foreground: 220 9% 60%;
-
-    --accent: 262 50% 20%;
-    --accent-foreground: 262 83% 75%;
-
-    /* Toolbar active state (keep yellow in dark mode too) */
-    --highlight: 47 96% 53%;
-    --highlight-foreground: 40 6% 7%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 6% 20%;
-    --input: 240 6% 20%;
-    --ring: 262 83% 65%;
-
-    --sidebar-background: 240 10% 10%;
-    --sidebar-foreground: 220 9% 60%;
-    --sidebar-primary: 262 83% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 262 50% 20%;
-    --sidebar-accent-foreground: 262 83% 75%;
-    --sidebar-border: 240 6% 20%;
-    --sidebar-ring: 262 83% 65%;
-
-    --success: 168 76% 50%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 0 0% 100%;
-    --info: 217 91% 65%;
-    --info-foreground: 0 0% 100%;
-
-    --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.2);
-    --shadow-glow: 0 0 30px hsl(262 83% 65% / 0.4);
-  }
+  /* Dark mode tokens were removed alongside the SaaS-blue palette in the
+     cream/terracotta canonicalization. Launchely is a light-mode-only app. */
 }
 
 @layer base {
@@ -338,99 +310,29 @@
 }
 
 /* ============================================================
- * Editorial Cream + Terracotta theme — scoped to app shell
- * (Restored from removed landing-theme.css; tokens used across
- *  ProjectLayout, AdminLayout, Auth, Goals, planner pages, etc.)
+ * Editorial utilities — previously scoped under .app-cream while the
+ * cream palette was opt-in. Now global since cream/terracotta is the
+ * canonical (and only) palette.
  * ============================================================ */
-.app-cream {
-  /* raw palette */
-  --bg: 35 50% 96%;
-  --ink: 30 9% 10%;
-  --muted-ink: 30 9% 33%;
-  --hairline: 35 28% 87%;
-  --card-ink: 0 0% 100%;
-  --terracotta: 13 56% 51%;
-  --terracotta-soft: 13 56% 95%;
-  --warm-gold: 38 60% 56%;
-  --clay-200: 30 38% 84%;
-  --paper-50: 38 60% 98%;
-  --paper-100: 35 45% 94%;
-  --paper-200: 35 38% 90%;
-
-  /* extended */
-  --ink-100: 30 9% 92%;
-  --ink-300: 30 9% 70%;
-  --ink-700: 30 9% 28%;
-  --ink-800: 30 9% 20%;
-  --ink-900: 30 9% 10%;
-  --terracotta-50: 13 56% 95%;
-  --terracotta-500: 13 56% 51%;
-  --terracotta-600: 13 56% 44%;
-  --terracotta-700: 13 56% 38%;
-  --moss-100: 110 22% 90%;
-  --moss-500: 130 28% 42%;
-  --moss-700: 130 30% 28%;
-  --fg-muted: 30 9% 50%;
-  --fg-secondary: 30 9% 33%;
-  --fg-subtle: 30 9% 70%;
-  --border-hairline: 35 28% 87%;
-  --border-default: 35 22% 80%;
-  --font-display: "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, "Times New Roman", serif;
-  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* shadcn semantic overrides within the cream scope */
-  --background: 35 50% 96%;
-  --foreground: 30 9% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 30 9% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 30 9% 10%;
-  --primary: 30 9% 10%;
-  --primary-foreground: 35 50% 96%;
-  --secondary: 35 28% 92%;
-  --secondary-foreground: 30 9% 10%;
-  --muted: 35 30% 94%;
-  --muted-foreground: 30 9% 33%;
-  --accent: 13 56% 51%;
-  --accent-foreground: 0 0% 100%;
-  --border: 35 28% 87%;
-  --input: 35 28% 87%;
-  --ring: 13 56% 51%;
-
-  --sidebar-background: 38 60% 98%;
-  --sidebar-foreground: 30 9% 33%;
-  --sidebar-primary: 13 56% 51%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 35 35% 92%;
-  --sidebar-accent-foreground: 30 9% 10%;
-  --sidebar-border: 35 28% 87%;
-  --sidebar-ring: 13 56% 51%;
-
-  background-color: hsl(var(--bg));
-  color: hsl(var(--ink));
-}
-
-.app-cream .font-serif {
+.font-serif {
   font-family: var(--font-display);
   font-feature-settings: "liga" 1, "kern" 1;
 }
 
-.app-cream .eyebrow {
+.eyebrow {
   font-family: var(--font-body);
   font-size: 0.6875rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 600;
-  color: hsl(var(--terracotta));
+  color: hsl(var(--terracotta-500));
 }
 
-.app-cream .hairline { border-color: hsl(var(--hairline)); }
+.hairline { border-color: hsl(var(--border-hairline)); }
 
-.app-cream .card-soft {
+.card-soft {
   background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--hairline));
+  border: 1px solid hsl(var(--border-hairline));
   border-radius: 0.75rem;
   box-shadow: 0 1px 1px rgba(31, 27, 23, 0.04), 0 8px 24px -8px rgba(31, 27, 23, 0.06);
 }

@@ -273,7 +273,7 @@ const Auth = () => {
       /(Median|MedianJS|gonative|capacitor)/i.test(window.navigator.userAgent));
 
   return (
-    <div className="app-cream min-h-screen">
+    <div className="min-h-screen">
       <style>{`
         .auth-shell { display: grid; grid-template-columns: ${isNativeApp ? "1fr" : "1fr 1.1fr"}; min-height: 100vh; }
         @media (max-width: 920px) {

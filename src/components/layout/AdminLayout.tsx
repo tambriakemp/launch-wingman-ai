@@ -14,7 +14,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <MobileSidebarProvider>
       <ImpersonationBanner />
-      <div className={`app-cream font-sans min-h-screen flex w-full ${isImpersonating ? 'pt-10' : ''}`}>
+      <div className={`font-sans min-h-screen flex w-full ${isImpersonating ? 'pt-10' : ''}`}>
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <TopBar />

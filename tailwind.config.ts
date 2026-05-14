@@ -1,7 +1,9 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  // Dark mode removed alongside the SaaS-blue palette in the cream/terracotta
+  // canonicalization. If dark mode is ever reintroduced, re-add
+  // `darkMode: ["class"]` and restore the corresponding token blocks.
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {

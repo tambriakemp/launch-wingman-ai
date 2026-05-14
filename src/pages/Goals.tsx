@@ -394,7 +394,7 @@ const Goals = () => {
 
   return (
     <ProjectLayout>
-      <div className="app-cream flex-1 overflow-y-auto" style={{ background: "hsl(var(--bg))" }}>
+      <div className="flex-1 overflow-y-auto" style={{ background: "hsl(var(--background))" }}>
         <div
           className="mx-auto"
           style={{ maxWidth: 1240, padding: "36px 40px 96px" }}
