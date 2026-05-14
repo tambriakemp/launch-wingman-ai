@@ -12,11 +12,11 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CREATE-PAYMENT-INTENT-ONLY] ${step}${detailsStr}`);
 };
 
-// Price IDs for subscription tiers
+// Price IDs for subscription tiers (3-tier model after Advanced was folded
+// into Pro at $49)
 const PRICE_IDS: Record<string, string> = {
   content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
-  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
 };
 
 serve(async (req) => {

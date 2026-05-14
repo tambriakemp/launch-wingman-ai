@@ -7,29 +7,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Subscription tier price IDs
+// Subscription tier price IDs (3-tier model: free / content_vault / pro at $49)
 const PRICE_IDS = {
   content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
-  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
 };
+
+// Old $25 Pro price retired in the 3-tier consolidation. Any residual
+// active subscription on it should still resolve to Pro access.
+const LEGACY_PRO_PRICE_ID_25 = 'price_1SipMGF2gaEq7adwAGMICdO5';
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Determine subscription tier from price ID (priority: advanced > pro > content_vault > free)
-const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' | 'advanced' => {
+// Determine subscription tier from price ID
+const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' => {
   if (!priceId) return 'free';
-  if (priceId === PRICE_IDS.advanced) return 'advanced';
   if (priceId === PRICE_IDS.pro) return 'pro';
+  if (priceId === LEGACY_PRO_PRICE_ID_25) return 'pro';
   if (priceId === PRICE_IDS.content_vault) return 'content_vault';
   return 'pro'; // Default to pro for any other paid subscription
 };
 
 // Tier priority for comparison
-const TIER_PRIORITY: Record<string, number> = { free: 0, content_vault: 1, pro: 2, advanced: 3 };
+const TIER_PRIORITY: Record<string, number> = { free: 0, content_vault: 1, pro: 2 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -112,7 +115,7 @@ serve(async (req) => {
       logStep("User has staff role - granting full access", { role: roleData[0].role });
       return new Response(JSON.stringify({
         subscribed: true,
-        subscription_tier: 'advanced',
+        subscription_tier: 'pro',
         subscription_end: null,
         source: "role"
       }), {
@@ -156,7 +159,7 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionEnd: string | null = null;
-    let subscriptionTier: 'free' | 'content_vault' | 'pro' | 'advanced' = 'free';
+    let subscriptionTier: 'free' | 'content_vault' | 'pro' = 'free';
     let priceId: string | null = null;
 
     if (hasActiveSub) {
@@ -177,7 +180,7 @@ serve(async (req) => {
             subscriptionEnd = new Date(periodEnd * 1000).toISOString();
           }
           
-          if (subTier === 'advanced') break; // Advanced is highest tier
+          if (subTier === 'pro') break; // Pro is the highest tier in the 3-tier model
         }
       }
       

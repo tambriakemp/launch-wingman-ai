@@ -7,14 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Tier → Stripe price ID. Pro is the only fully-configured hosted-checkout
-// tier today; content_vault and advanced run through the embedded Elements
-// flow on web and need price IDs filled in here before they can be opened
-// via Stripe Hosted Checkout from native.
+// Tier → Stripe price ID. 3-tier model after Advanced was folded into Pro
+// at $49. Both surfaces (web + native) can drive Stripe Hosted Checkout
+// for either paid tier now.
 const TIER_PRICE_MAP: Record<string, string> = {
-  pro: "price_1SipMGF2gaEq7adwAGMICdO5",
-  // content_vault: "price_...",
-  // advanced: "price_...",
+  pro: "price_1TEznFF2gaEq7adwpTfGefLX",
+  content_vault: "price_1StiayF2gaEq7adwKHe9AbQF",
 };
 const DEFAULT_TIER = "pro";
 

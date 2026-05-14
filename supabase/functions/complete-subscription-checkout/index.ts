@@ -12,8 +12,9 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[COMPLETE-SUBSCRIPTION-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Pro plan price ID
-const PRO_PRICE_ID = "price_1SipMGF2gaEq7adwAGMICdO5";
+// Pro plan price ID (3-tier model: $49 — was the Advanced price before
+// Advanced was folded into Pro)
+const PRO_PRICE_ID = "price_1TEznFF2gaEq7adwpTfGefLX";
 
 /**
  * Best-effort auto-refund for an orphaned PaymentIntent.

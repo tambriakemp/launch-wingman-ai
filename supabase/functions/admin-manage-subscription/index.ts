@@ -58,11 +58,10 @@ serve(async (req) => {
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Price IDs for different tiers
+    // Price IDs for different tiers (3-tier model after Advanced was folded into Pro at $49)
     const PRICE_IDS: Record<string, string> = {
       content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-      pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
-      advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
+      pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
     };
 
     // Helper function to find user's active subscription from Stripe
@@ -253,18 +252,6 @@ serve(async (req) => {
       });
     }
 
-    if (action === 'grant_advanced') {
-      const subscription = await grantSubscription('Advanced', PRICE_IDS.advanced);
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: "Advanced access granted",
-        subscription_id: subscription.id 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     if (action === 'upgrade_to_pro') {
       if (!user_email) throw new Error("User email required to upgrade");
       const existingSub = await findUserSubscription(user_email);
@@ -284,25 +271,6 @@ serve(async (req) => {
       });
     }
 
-    if (action === 'upgrade_to_advanced') {
-      if (!user_email) throw new Error("User email required to upgrade");
-      const existingSub = await findUserSubscription(user_email);
-      if (!existingSub) throw new Error("No active subscription found to upgrade");
-      await stripe.subscriptions.cancel(existingSub.subscriptionId);
-      logStep("Cancelled existing subscription for upgrade to advanced", { subscriptionId: existingSub.subscriptionId });
-      const subscription = await grantSubscription('Advanced', PRICE_IDS.advanced);
-      await supabaseClient.from('admin_action_logs').insert({
-        admin_user_id: adminUser.id,
-        admin_email: adminUser.email,
-        target_email: user_email,
-        action_type: 'upgraded_to_advanced',
-        action_details: { old_subscription_id: existingSub.subscriptionId, new_subscription_id: subscription.id }
-      });
-      return new Response(JSON.stringify({ success: true, message: "Upgraded to Advanced", subscription_id: subscription.id }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-      });
-    }
-
     if (action === 'downgrade_to_vault') {
       if (!user_email) throw new Error("User email required to downgrade");
       const existingSub = await findUserSubscription(user_email);
@@ -318,25 +286,6 @@ serve(async (req) => {
         action_details: { old_subscription_id: existingSub.subscriptionId, new_subscription_id: subscription.id }
       });
       return new Response(JSON.stringify({ success: true, message: "Downgraded to Content Vault", subscription_id: subscription.id }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-      });
-    }
-
-    if (action === 'downgrade_to_pro') {
-      if (!user_email) throw new Error("User email required to downgrade");
-      const existingSub = await findUserSubscription(user_email);
-      if (!existingSub) throw new Error("No active subscription found to downgrade");
-      await stripe.subscriptions.cancel(existingSub.subscriptionId);
-      logStep("Cancelled existing Advanced subscription for downgrade to Pro", { subscriptionId: existingSub.subscriptionId });
-      const subscription = await grantSubscription('Pro', PRICE_IDS.pro);
-      await supabaseClient.from('admin_action_logs').insert({
-        admin_user_id: adminUser.id,
-        admin_email: adminUser.email,
-        target_email: user_email,
-        action_type: 'downgraded_to_pro',
-        action_details: { old_subscription_id: existingSub.subscriptionId, new_subscription_id: subscription.id }
-      });
-      return new Response(JSON.stringify({ success: true, message: "Downgraded to Pro", subscription_id: subscription.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
       });
     }

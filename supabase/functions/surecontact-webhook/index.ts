@@ -18,7 +18,7 @@ interface ContactPayload {
   email: string;
   first_name: string;
   last_name: string;
-  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
+  subscription_status: 'free' | 'content_vault' | 'pro';
   event_type: string;
   stripe_customer_id?: string;
   signup_date?: string;
@@ -214,7 +214,6 @@ const TIER_TAG_MAP: Record<string, string> = {
   free: 'launchely: free-subscriber',
   content_vault: 'launchely: vault-subscriber',
   pro: 'launchely: pro-subscriber',
-  advanced: 'launchely: advanced-subscriber',
 };
 
 const ALL_TIER_TAG_NAMES = Object.values(TIER_TAG_MAP);
@@ -332,14 +331,16 @@ async function addToMasterList(
   return false;
 }
 
-// Price ID to tier mapping (matches subscriptionTiers.ts)
-const PRICE_ID_TO_TIER: Record<string, 'content_vault' | 'pro' | 'advanced'> = {
+// Price ID to tier mapping (matches subscriptionTiers.ts). After the
+// 3-tier consolidation, both the new Pro price and the retired $25 Pro
+// price resolve to 'pro'.
+const PRICE_ID_TO_TIER: Record<string, 'content_vault' | 'pro'> = {
   'price_1StiayF2gaEq7adwKHe9AbQF': 'content_vault',
-  'price_1SipMGF2gaEq7adwAGMICdO5': 'pro',
-  'price_1TEznFF2gaEq7adwpTfGefLX': 'advanced',
+  'price_1TEznFF2gaEq7adwpTfGefLX': 'pro',
+  'price_1SipMGF2gaEq7adwAGMICdO5': 'pro', // legacy $25 Pro price
 };
 
-type SubscriptionTier = 'free' | 'content_vault' | 'pro' | 'advanced';
+type SubscriptionTier = 'free' | 'content_vault' | 'pro';
 
 async function getSubscriptionStatus(
   stripe: Stripe | null,
