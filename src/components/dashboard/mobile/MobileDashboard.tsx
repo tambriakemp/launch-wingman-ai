@@ -4,7 +4,7 @@ import { format, parseISO, isToday, isTomorrow, differenceInDays, isPast } from 
 import { ArrowRight, Calendar as CalendarIcon, Sparkles, Check, ChevronRight, MessageSquare, Compass, MessageCircle, Hammer, PenTool, Megaphone, Rocket, Kanban, ShoppingBag, BookMarked, BookOpen, ClipboardCheck } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useCheckIn } from "@/hooks/useCheckIn";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { PHASE_LABELS, type Phase, type PhaseStatus } from "@/types/tasks";
 
 const SF = '-apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif';
@@ -664,24 +664,25 @@ export const MobileDashboard = ({
 
   return (
     <div className="md:hidden" style={{ position: "fixed", inset: 0, background: PAPER, fontFamily: SF, color: INK, zIndex: 30 }}>
-      {/* Sticky nav */}
+      {/* Sticky nav — wraps the shared MobileTopBar so the bell sits at
+          the same position as the hubs, while keeping the dashboard's
+          scroll-driven backdrop blur + animated "Today" subtitle. */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 30,
-        paddingTop: "calc(env(safe-area-inset-top) + 12px)", paddingBottom: 4,
+        paddingTop: "env(safe-area-inset-top)",
         background: scrolled ? "rgba(251,247,241,0.85)" : "transparent",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         borderBottom: scrolled ? `0.5px solid ${HAIRLINE}` : "0.5px solid transparent",
         transition: "all 240ms cubic-bezier(0.22, 0.61, 0.36, 1)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 22px", height: 36 }}>
-          <div style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 500, fontSize: 22, letterSpacing: -0.5, color: INK, opacity: scrolled ? 1 : 0, transform: scrolled ? "translateY(0)" : "translateY(6px)", transition: "all 200ms ease-out" }}>
-            Today
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <NotificationBell />
-          </div>
-        </div>
+        <MobileTopBar
+          left={
+            <div style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 500, fontSize: 22, letterSpacing: -0.5, color: INK, opacity: scrolled ? 1 : 0, transform: scrolled ? "translateY(0)" : "translateY(6px)", transition: "all 200ms ease-out" }}>
+              Today
+            </div>
+          }
+        />
       </div>
 
       {/* Scroller */}
