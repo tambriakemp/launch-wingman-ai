@@ -103,14 +103,15 @@ export const PlannerWeekBoardView = ({
       const el = dayRefs.current[anchorKey];
       const container = scrollContainerRef.current;
       if (!el || !container) return false;
-      // Center the anchor day within the visible scroll area.
+      // Align the anchor day to the left edge (inside the container's
+      // padding), so today is the first column and previous days only
+      // show when the user scrolls back.
       const elRect = el.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
       const offset = elRect.left - containerRect.left;
-      const target = Math.max(
-        0,
-        container.scrollLeft + offset - (container.clientWidth - el.clientWidth) / 2
-      );
+      const paddingLeft =
+        parseFloat(getComputedStyle(container).paddingLeft) || 0;
+      const target = Math.max(0, container.scrollLeft + offset - paddingLeft);
       container.scrollTo({ left: target, behavior });
       return true;
     };
