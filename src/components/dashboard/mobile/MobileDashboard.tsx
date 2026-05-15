@@ -674,7 +674,7 @@ export const MobileDashboard = ({
         borderBottom: scrolled ? `0.5px solid ${HAIRLINE}` : "0.5px solid transparent",
         transition: "all 240ms cubic-bezier(0.22, 0.61, 0.36, 1)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", height: 36 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 22px", height: 36 }}>
           <div style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 500, fontSize: 22, letterSpacing: -0.5, color: INK, opacity: scrolled ? 1 : 0, transform: scrolled ? "translateY(0)" : "translateY(6px)", transition: "all 200ms ease-out" }}>
             Today
           </div>
@@ -685,9 +685,9 @@ export const MobileDashboard = ({
       </div>
 
       {/* Scroller */}
-      <div ref={scrollerRef} style={{
+      <div ref={scrollerRef} className="scrollbar-hide" style={{
         position: "absolute", inset: 0, overflowY: "auto",
-        paddingTop: "calc(env(safe-area-inset-top) + 58px)",
+        paddingTop: "calc(env(safe-area-inset-top) + 52px)",
         paddingBottom: "var(--mobile-tabbar-h, 24px)",
         WebkitOverflowScrolling: "touch",
       }}>

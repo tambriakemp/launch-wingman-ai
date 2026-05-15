@@ -19,7 +19,7 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
         <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
           <main
-            className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0 pt-safe-t md:pt-6"
+            className="flex-1 md:px-8 md:py-6 overflow-auto px-0 py-0 pt-safe-t md:pt-6 scrollbar-hide"
             style={{ paddingBottom: "var(--mobile-tabbar-h, 0px)" }}
           >
             {children}
