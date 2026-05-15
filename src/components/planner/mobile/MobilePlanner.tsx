@@ -587,7 +587,6 @@ export const MobilePlanner = ({
       {/* Scroller */}
       <div
         ref={scrollerRef}
-        className="scrollbar-hide"
         style={{
           position: "absolute",
           inset: 0,

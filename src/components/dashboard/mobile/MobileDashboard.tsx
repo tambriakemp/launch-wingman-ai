@@ -685,7 +685,7 @@ export const MobileDashboard = ({
       </div>
 
       {/* Scroller */}
-      <div ref={scrollerRef} className="scrollbar-hide" style={{
+      <div ref={scrollerRef} style={{
         position: "absolute", inset: 0, overflowY: "auto",
         paddingTop: "calc(env(safe-area-inset-top) + 52px)",
         paddingBottom: "var(--mobile-tabbar-h, 24px)",

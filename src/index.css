@@ -28,6 +28,25 @@
   }
 }
 
+/* App-wide: hide scrollbar chrome while preserving scroll behavior.
+   Editorial UI reads cleaner without the right-edge gutter — every page
+   inherits this so new surfaces don't need to opt in. Use the
+   `.scrollbar-hide` utility below if you need to enforce it on a
+   nested element with a different stacking context. */
+html,
+body,
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @layer base {
   :root {
     /* === Editorial Cream + Terracotta — canonical Launchely design system === */
