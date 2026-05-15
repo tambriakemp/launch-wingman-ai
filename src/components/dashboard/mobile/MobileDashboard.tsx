@@ -679,7 +679,7 @@ export const MobileDashboard = ({
             Today
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <NotificationBell showBackground={scrolled} />
+            <NotificationBell />
           </div>
         </div>
       </div>
