@@ -667,7 +667,7 @@ export const MobileDashboard = ({
       {/* Sticky nav */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 30,
-        paddingTop: "calc(env(safe-area-inset-top) + 4px)", paddingBottom: 4,
+        paddingTop: "calc(env(safe-area-inset-top) + 12px)", paddingBottom: 4,
         background: scrolled ? "rgba(251,247,241,0.85)" : "transparent",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -687,7 +687,7 @@ export const MobileDashboard = ({
       {/* Scroller */}
       <div ref={scrollerRef} style={{
         position: "absolute", inset: 0, overflowY: "auto",
-        paddingTop: "calc(env(safe-area-inset-top) + 50px)",
+        paddingTop: "calc(env(safe-area-inset-top) + 58px)",
         paddingBottom: "var(--mobile-tabbar-h, 24px)",
         WebkitOverflowScrolling: "touch",
       }}>
