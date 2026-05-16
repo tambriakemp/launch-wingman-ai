@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+  SheetFooter,
+  SheetSectionHead,
+  SheetTokenCell,
+  SheetTitleInput,
+  SheetKbd,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, X, Plus, Flame } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Trash2, Flame, Clock, CalendarRange, Sun, Link2, Hash, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, eachDayOfInterval, subDays } from "date-fns";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
@@ -27,11 +37,23 @@ const CATEGORIES = [
   { id: "relationships", label: "Relationships" },
 ];
 
+const FREQUENCIES = [
+  { id: "daily",    label: "Every day" },
+  { id: "weekdays", label: "Weekdays only" },
+  { id: "weekends", label: "Weekends only" },
+  { id: "custom",   label: "Custom days" },
+];
+
+const DAY_TOGGLES: Array<[string, string]> = [
+  ["SU", "S"], ["MO", "M"], ["TU", "T"], ["WE", "W"],
+  ["TH", "T"], ["FR", "F"], ["SA", "S"],
+];
+
 const SLOTS = [
-  { id: "morning", label: "Morning" },
+  { id: "morning",   label: "Morning" },
   { id: "afternoon", label: "Afternoon" },
-  { id: "evening", label: "Evening" },
-  { id: "all_day", label: "All day" },
+  { id: "evening",   label: "Evening" },
+  { id: "all_day",   label: "All day" },
 ];
 
 const TAGS = ["Care", "Body", "Mind", "Rhythm", "Launch"];
@@ -46,8 +68,11 @@ interface HabitDetailSheetProps {
   habits?: Habit[];
 }
 
-export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSubmit, onArchive, habits = [] }: HabitDetailSheetProps) {
+export function HabitDetailSheet({
+  open, onOpenChange, habit, completions, onSubmit, onArchive, habits = [],
+}: HabitDetailSheetProps) {
   const isEdit = !!habit;
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
@@ -57,8 +82,6 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
   const [frequencyDays, setFrequencyDays] = useState<string[]>([]);
   const [timeOfDay, setTimeOfDay] = useState<string[]>([]);
   const [duration, setDuration] = useState<string>("");
-  const [reminders, setReminders] = useState<string[]>([]);
-  const [newReminder, setNewReminder] = useState("");
   const [pairWith, setPairWith] = useState<string>("");
   const [tag, setTag] = useState<string>("");
   const [reminderTime, setReminderTime] = useState<string>("");
@@ -76,7 +99,6 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
       setFrequencyDays(habit.frequency_days || []);
       setTimeOfDay(habit.time_of_day || []);
       setDuration(habit.duration_minutes ? String(habit.duration_minutes) : "");
-      setReminders(habit.reminder_times || []);
       setPairWith(habit.pair_with_habit_id || "");
       setTag(habit.tag || "");
       setReminderTime(habit.reminder_time ? habit.reminder_time.slice(0, 5) : "");
@@ -84,23 +106,15 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
       setName(""); setDescription(""); setNotes("");
       setCategory("personal"); setColor("#0ea572");
       setFrequency("daily"); setFrequencyDays([]);
-      setTimeOfDay([]); setDuration(""); setReminders([]);
+      setTimeOfDay([]); setDuration("");
       setPairWith(""); setTag(""); setReminderTime("");
     }
   }, [habit, open]);
 
-  const toggleSlot = (slot: string) => {
-    setTimeOfDay(prev => prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]);
-  };
-  const toggleDay = (day: string) => {
-    setFrequencyDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
-  };
-  const addReminder = () => {
-    if (!/^\d{2}:\d{2}$/.test(newReminder)) return;
-    if (reminders.includes(newReminder)) return;
-    setReminders([...reminders, newReminder].sort());
-    setNewReminder("");
-  };
+  const toggleDay = (day: string) =>
+    setFrequencyDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  const toggleSlot = (slot: string) =>
+    setTimeOfDay((prev) => (prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot]));
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -117,7 +131,10 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
         frequency_days: frequency === "custom" ? frequencyDays : null,
         time_of_day: timeOfDay,
         duration_minutes: duration ? parseInt(duration, 10) : null,
-        reminder_times: reminders,
+        // Keep schema column populated; we no longer expose a multi-reminder
+        // UI because nothing reads this array — only `reminder_time` drives
+        // native push. Empty array is the safe default.
+        reminder_times: [],
         pair_with_habit_id: pairWith || null,
         tag: tag || null,
         reminder_time: reminderTime ? `${reminderTime}:00` : null,
@@ -128,9 +145,9 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
     }
   };
 
-  // Stats for edit mode
-  const habitCompletions = habit ? completions.filter(c => c.habit_id === habit.id) : [];
-  const habitDates = new Set(habitCompletions.map(c => c.completed_date));
+  // Stats — edit mode only
+  const habitCompletions = habit ? completions.filter((c) => c.habit_id === habit.id) : [];
+  const habitDates = new Set(habitCompletions.map((c) => c.completed_date));
   let streak = 0;
   if (habit) {
     let checkDate = new Date();
@@ -150,263 +167,319 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
   }
   const last7 = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
 
+  // Cell labels
+  const categoryLabel = CATEGORIES.find((c) => c.id === category)?.label;
+  const frequencyLabel = FREQUENCIES.find((f) => f.id === frequency)?.label;
+  const slotsLabel = timeOfDay.length
+    ? SLOTS.filter((s) => timeOfDay.includes(s.id)).map((s) => s.label).join(", ")
+    : null;
+  const pairLabel = habits.find((h) => h.id === pairWith)?.name;
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-          <SheetHeader className="px-5 py-3.5 border-b border-border flex-row items-center justify-between space-y-0">
-            <SheetTitle>{isEdit ? "Habit" : "New Habit"}</SheetTitle>
-            <div className="flex items-center gap-1">
-              {isEdit && (
-                <Button variant="ghost" size="icon" onClick={() => setDeleteOpen(true)} aria-label="Delete">
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
+        <SheetContent className="overflow-hidden p-0 flex flex-col">
+          {/* HEADER */}
+          <SheetHeader
+            eyebrow={isEdit ? "Editing habit" : "New habit"}
+            className="pr-12 pb-5 pt-7 gap-1.5"
+          >
+            <SheetTitle>
+              {isEdit ? (
+                <>
+                  Editing this{" "}
+                  <em className="font-display italic" style={{ color: "hsl(var(--terracotta-500))" }}>
+                    rhythm
+                  </em>
+                  .
+                </>
+              ) : (
+                <>
+                  One small{" "}
+                  <em className="font-display italic" style={{ color: "hsl(var(--terracotta-500))" }}>
+                    loop
+                  </em>
+                  .
+                </>
               )}
-              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} aria-label="Close">
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            </SheetTitle>
+            <SheetDescription className="max-w-[46ch]">
+              Small consistent loops. That's the whole thing.
+            </SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-            {/* Icon + name */}
-            <div className="flex flex-col items-center text-center gap-3">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: `${color}20` }}
-              >
-                <div className="w-8 h-8 rounded-full" style={{ background: color }} />
+          {/* BODY */}
+          <SheetBody className="flex flex-col gap-0">
+            <SheetTitleInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="What habit are you building?"
+              autoFocus
+            />
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a description…"
+              className="mt-2 h-9 border-0 shadow-none px-0 text-[13px] text-[hsl(var(--fg-secondary))] focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+
+            {/* § 01 · CADENCE */}
+            <SheetSectionHead n="01">Cadence</SheetSectionHead>
+            <div className="grid grid-cols-2 gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<CalendarRange className="h-3.5 w-3.5" />}
+                    label="Frequency"
+                    value={frequencyLabel}
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  <PickerList options={FREQUENCIES} selected={frequency} onPick={setFrequency} />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<Sun className="h-3.5 w-3.5" />}
+                    label="Time of day"
+                    value={slotsLabel}
+                    placeholder="All day"
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  <PickerList options={SLOTS} selected={timeOfDay} onPick={toggleSlot} multi />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {frequency === "custom" && (
+              <div className="mt-2 flex gap-1.5">
+                {DAY_TOGGLES.map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => toggleDay(val)}
+                    className={cn(
+                      "h-8 flex-1 rounded-full border text-xs font-semibold transition-colors",
+                      frequencyDays.includes(val)
+                        ? "bg-[hsl(var(--ink-900))] text-[hsl(var(--paper-100))] border-[hsl(var(--ink-900))]"
+                        : "bg-transparent text-muted-foreground border-[hsl(var(--border-hairline))] hover:border-[hsl(var(--ink-400))]",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <Input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Habit name"
-                className="h-11 text-center text-lg font-semibold border-0 shadow-none focus-visible:ring-0 px-0"
+            )}
+
+            {/* Duration + Push reminder — short labeled inputs */}
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <LabeledFieldInput
+                icon={<Clock className="h-3.5 w-3.5" />}
+                label="Duration"
+                suffix="min"
+                inputType="number"
+                value={duration}
+                onChange={setDuration}
+                placeholder="—"
               />
-              <Input
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Add description..."
-                className="h-9 text-center text-sm border-0 shadow-none focus-visible:ring-0 px-0 text-muted-foreground"
+              <LabeledFieldInput
+                icon={<Clock className="h-3.5 w-3.5" />}
+                label="Push reminder"
+                inputType="time"
+                value={reminderTime}
+                onChange={setReminderTime}
+                placeholder="—"
               />
             </div>
 
-            {/* Frequency */}
-            <Field label="Frequency">
-              <Select value={frequency} onValueChange={setFrequency}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Every day</SelectItem>
-                  <SelectItem value="weekdays">Weekdays only</SelectItem>
-                  <SelectItem value="weekends">Weekends only</SelectItem>
-                  <SelectItem value="custom">Custom days</SelectItem>
-                </SelectContent>
-              </Select>
-              {frequency === "custom" && (
-                <div className="flex gap-1.5 mt-2">
-                  {[["SU","S"],["MO","M"],["TU","T"],["WE","W"],["TH","T"],["FR","F"],["SA","S"]].map(([val, label]) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => toggleDay(val)}
-                      className={cn(
-                        "h-8 flex-1 rounded-full text-xs font-semibold border transition-colors",
-                        frequencyDays.includes(val)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                      )}
-                    >{label}</button>
-                  ))}
-                </div>
-              )}
-            </Field>
+            {/* § 02 · IDENTITY */}
+            <SheetSectionHead n="02">Identity</SheetSectionHead>
+            <div className="grid grid-cols-2 gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    dot={color}
+                    label="Category"
+                    value={categoryLabel}
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  <PickerList options={CATEGORIES} selected={category} onPick={setCategory} />
+                </PopoverContent>
+              </Popover>
 
-            {/* Duration */}
-            <Field label="Duration per day (minutes)">
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={duration}
-                onChange={e => setDuration(e.target.value)}
-                placeholder="e.g. 15"
-                className="h-10"
-              />
-            </Field>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<Hash className="h-3.5 w-3.5" />}
+                    label="Tag"
+                    value={tag || undefined}
+                    placeholder="None"
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  <PickerList
+                    options={TAGS.map((t) => ({ id: t, label: t }))}
+                    selected={tag}
+                    onPick={setTag}
+                    noneOption={{ label: "— None —", value: "" }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-            {/* Time of day */}
-            <Field label="Time of day">
+            {/* Color swatches — full width, dense */}
+            <div className="mt-3 flex items-center gap-3">
+              <div className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[hsl(var(--ink-700))]">
+                <Palette className="h-3.5 w-3.5 text-[hsl(var(--fg-muted))]" />
+                Color
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {SLOTS.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleSlot(s.id)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                      timeOfDay.includes(s.id)
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                  >{s.label}</button>
-                ))}
-              </div>
-              {timeOfDay.length === 0 && (
-                <p className="text-[11px] text-muted-foreground">Defaults to All day if none selected.</p>
-              )}
-            </Field>
-
-            {/* Reminders */}
-            <Field label="Reminder times">
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {reminders.map(t => (
-                  <span key={t} className="flex items-center gap-1 bg-muted text-foreground text-xs font-medium px-2.5 py-1 rounded-full">
-                    {t}
-                    <button onClick={() => setReminders(r => r.filter(x => x !== t))} className="hover:text-destructive">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  type="time"
-                  value={newReminder}
-                  onChange={e => setNewReminder(e.target.value)}
-                  className="h-9 flex-1"
-                />
-                <Button type="button" size="sm" variant="outline" onClick={addReminder} className="gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Add
-                </Button>
-              </div>
-            </Field>
-
-            {/* Category */}
-            <Field label="Category">
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            {/* Color */}
-            <Field label="Color">
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map(c => (
+                {PRESET_COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
+                    aria-label={`Pick color ${c}`}
                     className={cn(
-                      "w-7 h-7 rounded-full border-2 transition-all hover:scale-110",
-                      color === c ? "border-foreground scale-110" : "border-transparent"
+                      "h-6 w-6 rounded-full border-2 transition-all hover:scale-110",
+                      color === c ? "border-[hsl(var(--ink-900))] scale-110" : "border-transparent",
                     )}
                     style={{ background: c }}
                   />
                 ))}
               </div>
-            </Field>
+            </div>
 
-            {/* Tag */}
-            <Field label="Tag">
-              <div className="flex flex-wrap gap-1.5">
-                {TAGS.map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTag(tag === t ? "" : t)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                      tag === t
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                  >{t}</button>
-                ))}
-              </div>
-            </Field>
-
-            {/* Pair with */}
-            {habits.filter(h => !habit || h.id !== habit.id).length > 0 && (
-              <Field label="Pair with (after…)">
-                <Select value={pairWith || "none"} onValueChange={v => setPairWith(v === "none" ? "" : v)}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Choose a habit" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
-                    {habits.filter(h => !habit || h.id !== habit.id).map(h => (
-                      <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+            {/* § 03 · PAIR WITH (only when other habits exist) */}
+            {habits.filter((h) => !habit || h.id !== habit.id).length > 0 && (
+              <>
+                <SheetSectionHead n="03">Pair with</SheetSectionHead>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <SheetTokenCell
+                      icon={<Link2 className="h-3.5 w-3.5" />}
+                      label="After"
+                      value={pairLabel}
+                      placeholder="Choose a habit"
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-64 p-1">
+                    <PickerList
+                      options={habits
+                        .filter((h) => !habit || h.id !== habit.id)
+                        .map((h) => ({ id: h.id, label: h.name }))}
+                      selected={pairWith}
+                      onPick={setPairWith}
+                      noneOption={{ label: "— None —", value: "" }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </>
             )}
 
-            {/* Single reminder time (native notification) */}
-            <Field label="Daily reminder time">
-              <Input
-                type="time"
-                value={reminderTime}
-                onChange={e => setReminderTime(e.target.value)}
-                className="h-10"
-              />
-              <p className="text-[11px] text-muted-foreground">Used for native push reminders.</p>
-            </Field>
-
+            {/* § 04 · NOTES (edit only) */}
             {isEdit && (
-              <Tabs defaultValue="stats" className="pt-2">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="stats">Statistics</TabsTrigger>
-                  <TabsTrigger value="notes">Notes</TabsTrigger>
-                </TabsList>
-                <TabsContent value="stats" className="pt-4">
-                  <div className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center text-center">
-                    <Flame className="w-5 h-5 text-primary mb-1" />
-                    <p className="text-3xl font-bold tabular-nums">{streak}</p>
-                    <p className="text-xs text-muted-foreground">{streak === 1 ? "Day" : "Days"} current streak</p>
-                    <div className="flex gap-1 mt-4">
-                      {last7.map(d => {
-                        const ds = format(d, "yyyy-MM-dd");
-                        const done = habitDates.has(ds);
-                        return (
-                          <div key={ds} className="flex flex-col items-center gap-1">
-                            <span className="text-[10px] text-muted-foreground uppercase">{format(d, "EEEEE")}</span>
-                            <div
-                              className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold",
-                                done ? "text-white" : "bg-muted text-muted-foreground"
-                              )}
-                              style={done ? { background: color } : undefined}
-                            >
-                              {format(d, "d")}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="notes" className="pt-4">
-                  <Textarea
-                    value={notes}
-                    onChange={e => setNotes(e.target.value)}
-                    placeholder="Add a personal note..."
-                    rows={6}
-                    className="resize-none"
-                    maxLength={1000}
-                  />
-                </TabsContent>
-              </Tabs>
+              <>
+                <SheetSectionHead n={habits.filter((h) => !habit || h.id !== habit.id).length > 0 ? "04" : "03"}>
+                  Notes
+                </SheetSectionHead>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="A personal note…"
+                  rows={4}
+                  maxLength={1000}
+                  className="resize-none bg-[hsl(var(--paper-50))] border-[hsl(var(--border-hairline))] rounded-lg text-[13.5px] leading-[1.55]"
+                />
+              </>
             )}
-          </div>
 
-          <div className="px-5 py-3.5 border-t border-border flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-            <Button onClick={handleSave} disabled={isSubmitting || !name.trim()} className="flex-1">
-              {isSubmitting ? "Saving..." : isEdit ? "Save" : "Create"}
-            </Button>
-          </div>
+            {/* § 05 · THIS WEEK (edit only) */}
+            {isEdit && (
+              <>
+                <SheetSectionHead
+                  n={habits.filter((h) => !habit || h.id !== habit.id).length > 0 ? "05" : "04"}
+                >
+                  This week
+                </SheetSectionHead>
+                <div className="flex items-center gap-5 rounded-xl border border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-50))] px-4 py-3.5">
+                  <div className="flex flex-col items-center">
+                    <Flame className="h-5 w-5 text-[hsl(var(--terracotta-500))]" />
+                    <p className="font-display text-2xl font-medium tabular-nums leading-none mt-1">{streak}</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-1">
+                      Day{streak === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 flex-1 justify-end">
+                    {last7.map((d) => {
+                      const ds = format(d, "yyyy-MM-dd");
+                      const done = habitDates.has(ds);
+                      return (
+                        <div key={ds} className="flex flex-col items-center gap-1">
+                          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">
+                            {format(d, "EEEEE")}
+                          </span>
+                          <div
+                            className={cn(
+                              "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold",
+                              done ? "text-white" : "bg-[hsl(var(--ink-900)/0.05)] text-muted-foreground",
+                            )}
+                            style={done ? { background: color } : undefined}
+                          >
+                            {format(d, "d")}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </SheetBody>
+
+          {/* FOOTER */}
+          <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-7 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="hidden md:inline-flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.08em] text-[hsl(var(--fg-muted))]">
+                <SheetKbd>⌘</SheetKbd>
+                <SheetKbd>↵</SheetKbd>
+                <span className="ml-1 font-semibold uppercase">to {isEdit ? "save" : "create"}</span>
+              </div>
+              {isEdit && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteOpen(true)}
+                  className="gap-1.5 text-[hsl(var(--fg-muted))] hover:text-[hsl(var(--destructive))]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-lg border border-[hsl(var(--border-hairline))] bg-transparent px-4 py-2 font-body text-[13px] font-medium text-[hsl(var(--ink-800))] transition-colors hover:bg-[hsl(var(--ink-900)/0.04)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSubmitting || !name.trim()}
+                className="rounded-lg border border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900))] px-4 py-2 font-body text-[13px] font-semibold text-[hsl(var(--paper-100))] transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {isSubmitting ? "Saving…" : isEdit ? "Save" : "Create"}
+              </button>
+            </div>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
 
@@ -414,7 +487,10 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
         <DeleteConfirmationDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          onConfirm={() => { onArchive(habit.id); setDeleteOpen(false); }}
+          onConfirm={() => {
+            onArchive(habit.id);
+            setDeleteOpen(false);
+          }}
           title={`Delete "${habit.name}"?`}
           description="This habit and its history will be archived. Type DELETE to confirm."
         />
@@ -423,11 +499,96 @@ export function HabitDetailSheet({ open, onOpenChange, habit, completions, onSub
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/* Reusable popover option list — collapses each picker dropdown to a few
+   lines. Pass options as `{ id, label }` objects; selected id renders with
+   the accent background; `onPick` returns the chosen id. */
+function PickerList<T extends { id: string; label: string }>({
+  options,
+  selected,
+  onPick,
+  multi,
+  noneOption,
+}: {
+  options: T[];
+  selected: string | string[];
+  onPick: (id: string) => void;
+  multi?: boolean;
+  /** Optional "— None —" item to clear selection. Renders first when set. */
+  noneOption?: { label: string; value: string };
+}) {
+  const isActive = (id: string) =>
+    Array.isArray(selected) ? selected.includes(id) : id === selected;
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-      {children}
-    </div>
+    <>
+      {noneOption && (
+        <button
+          type="button"
+          onClick={() => onPick(noneOption.value)}
+          className={cn(
+            "block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+            isActive(noneOption.value) && "bg-accent",
+          )}
+        >
+          {noneOption.label}
+        </button>
+      )}
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onPick(o.id)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+            isActive(o.id) && "bg-accent",
+          )}
+        >
+          {o.label}
+          {multi && isActive(o.id) && (
+            <span className="text-[hsl(var(--terracotta-500))]">✓</span>
+          )}
+        </button>
+      ))}
+    </>
+  );
+}
+
+/* Small labeled-input cell — for short free-form values that don't fit the
+   TokenCell + popover pattern (e.g. numeric duration, time picker). Visually
+   matches a TokenCell so the field row still reads as one. */
+function LabeledFieldInput({
+  icon,
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputType = "text",
+  suffix,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  inputType?: "text" | "number" | "time";
+  suffix?: string;
+}) {
+  return (
+    <label className="flex w-full items-center gap-2.5 rounded-lg border border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-50))] px-3 py-2 focus-within:border-[hsl(var(--ink-400))]">
+      <span className="inline-flex shrink-0 items-center text-[hsl(var(--fg-muted))]">{icon}</span>
+      <span className="shrink-0 font-body text-[12.5px] font-semibold text-[hsl(var(--ink-700))]">{label}</span>
+      <input
+        type={inputType}
+        inputMode={inputType === "number" ? "numeric" : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 min-w-0 border-0 bg-transparent p-0 text-right font-body text-[13px] tracking-[-0.005em] text-[hsl(var(--ink-900))] placeholder:text-[hsl(var(--fg-muted))] outline-none"
+      />
+      {suffix && (
+        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--fg-muted))]">
+          {suffix}
+        </span>
+      )}
+    </label>
   );
 }
