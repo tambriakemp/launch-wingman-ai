@@ -15,8 +15,11 @@ interface PageContainerProps {
  * app constrains its content to this width so headers, hairlines, tabs,
  * grids, and cards all line up consistently across pages.
  *
- * Width: 1240px max, centered (`mx-auto`).
- * Horizontal gutters: 40px each side (matches the Goals page reference).
+ * Width: 1320px max, centered (`mx-auto`).
+ * Horizontal gutters: 24px each side. ProjectLayout's `<main>` already
+ * adds `md:px-8` (32px) outside this container, so total content inset
+ * from the viewport edge is 56px each side — close to a print column
+ * margin without feeling cramped.
  *
  * Vertical padding is opt-in via props so chrome (page header, tabs) can
  * stack flush at top/bottom while content sections breathe.
@@ -38,11 +41,11 @@ export function PageContainer({
     <div
       className={cn("mx-auto", className)}
       style={{
-        maxWidth: 1240,
+        maxWidth: 1320,
         paddingTop,
         paddingBottom,
-        paddingLeft: 40,
-        paddingRight: 40,
+        paddingLeft: 24,
+        paddingRight: 24,
       }}
     >
       {children}
