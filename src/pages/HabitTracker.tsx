@@ -276,16 +276,29 @@ const HabitTracker = () => {
                 </>
               }
               description={greetingDescription}
+              actions={
+                <button
+                  onClick={() => openHabit(null)}
+                  className="inline-flex items-center gap-2 whitespace-nowrap"
+                  style={{
+                    background: "hsl(var(--ink-900))",
+                    color: "hsl(var(--paper-50))",
+                    border: 0,
+                    borderRadius: 999,
+                    padding: "10px 18px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} /> New habit
+                </button>
+              }
             />
           </div>
         )}
-        {!isMobile && (
-          <DesktopTabs
-            active={activeTab}
-            onChange={setActiveTab}
-            onAddHabit={() => openHabit(null)}
-          />
-        )}
+        {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
         {!isMobile ? (
           <div style={{ height: "calc(100vh - 280px)" }}>{renderDesktop()}</div>
         ) : renderMobileContent()}

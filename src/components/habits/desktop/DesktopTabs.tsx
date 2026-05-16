@@ -1,14 +1,11 @@
-import { Plus } from "lucide-react";
 import { TABS } from "./tabs";
 
 interface Props {
   active: typeof TABS[number];
   onChange: (t: typeof TABS[number]) => void;
-  /** Open the editorial Add Habit slide-out panel. */
-  onAddHabit?: () => void;
 }
 
-export function DesktopTabs({ active, onChange, onAddHabit }: Props) {
+export function DesktopTabs({ active, onChange }: Props) {
   return (
     <div
       style={{
@@ -45,33 +42,6 @@ export function DesktopTabs({ active, onChange, onAddHabit }: Props) {
           );
         })}
       </div>
-
-      {/* Add habit pill — opens the editorial slide-out panel (no more "Add habit" tab). */}
-      {onAddHabit && (
-        <button
-          onClick={onAddHabit}
-          style={{
-            marginBottom: 10,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 16px",
-            borderRadius: 999,
-            background: "var(--hb-ink)",
-            color: "var(--hb-cream)",
-            border: 0,
-            fontFamily: "var(--hb-body)",
-            fontSize: 13,
-            fontWeight: 600,
-            letterSpacing: "-0.005em",
-            cursor: "pointer",
-            boxShadow: "0 1px 2px rgba(31,27,23,0.10)",
-          }}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add habit
-        </button>
-      )}
     </div>
   );
 }
