@@ -1,6 +1,6 @@
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ const sheetVariants = cva(
           "inset-x-0 bottom-0 border-t border-[hsl(var(--ink-900))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         left: "inset-y-0 left-0 h-full w-3/4 border-r border-[hsl(var(--ink-900))] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
-          "inset-y-0 right-0 h-full w-full border-l border-[hsl(var(--ink-900))] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          "inset-y-0 right-0 h-full w-full md:w-[560px] md:max-w-[560px] border-l border-[hsl(var(--ink-900))] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
       },
     },
     defaultVariants: {
@@ -144,6 +144,161 @@ const SheetBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>
 );
 SheetBody.displayName = "SheetBody";
 
+/* ============================================================
+   Editorial sheet primitives — shared building blocks every
+   right-side panel in the web app should compose from. Imported
+   from the same module so consumers grab everything in one go.
+   ============================================================ */
+
+interface SheetSectionHeadProps {
+  /** Two-digit ordinal printed before the label, e.g. "01" → "§ 01". */
+  n: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Section divider — mono "§ NN" terracotta marker + Fraunces italic label,
+ * with a top hairline. The Launchely-native way to separate panel sections.
+ */
+const SheetSectionHead = ({ n, children, className }: SheetSectionHeadProps) => (
+  <div
+    className={cn(
+      "flex items-baseline gap-3 border-t border-[hsl(var(--border-hairline))] pt-4 mt-5 mb-2.5",
+      className,
+    )}
+  >
+    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(var(--terracotta-500))] whitespace-nowrap">
+      § {n}
+    </span>
+    <span className="font-display italic text-[16px] font-medium tracking-[-0.01em] text-[hsl(var(--ink-900))]">
+      {children}
+    </span>
+  </div>
+);
+SheetSectionHead.displayName = "SheetSectionHead";
+
+interface SheetTokenCellProps {
+  /** Icon name (rendered as lucide-react), e.g. <Flag /> */
+  icon?: React.ReactNode;
+  /** Color dot instead of an icon (e.g. status / category dot color). */
+  dot?: string;
+  /** Small label on the left (e.g. "Status"). */
+  label: string;
+  /** Selected value text on the right (or undefined → placeholder). */
+  value?: string | null;
+  /** Placeholder shown when value is empty. */
+  placeholder?: string;
+  /** Override the value text color (e.g. priority hue). */
+  accent?: string;
+  onClick?: () => void;
+  className?: string;
+  /** Optional render override for the value slot (e.g. when wrapping in a popover trigger). */
+  children?: React.ReactNode;
+}
+
+/**
+ * Selector cell — the canonical "attribute" tile used in editorial panels.
+ * Renders as a button with: dot/icon · label · value · chevron. Hover lifts
+ * the border to ink-400. Wrap multiple in a 2-col grid for the attributes row.
+ */
+const SheetTokenCell = React.forwardRef<HTMLButtonElement, SheetTokenCellProps>(
+  ({ icon, dot, label, value, placeholder, accent, onClick, className, children, ...props }, ref) => (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "group flex w-full items-center gap-2.5 rounded-lg border border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-50))] px-3 py-2.5 text-left transition-colors hover:border-[hsl(var(--ink-400))]",
+        className,
+      )}
+      {...props}
+    >
+      <span className="inline-flex shrink-0 items-center text-[hsl(var(--fg-muted))]">
+        {dot ? (
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: dot }} />
+        ) : (
+          icon
+        )}
+      </span>
+      <span className="shrink-0 font-body text-[12.5px] font-semibold text-[hsl(var(--ink-700))]">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "flex-1 truncate font-body text-[13px] tracking-[-0.005em]",
+          value ? "font-medium" : "font-normal",
+        )}
+        style={{ color: value ? accent || "hsl(var(--ink-900))" : "hsl(var(--fg-muted))" }}
+      >
+        {children ?? value ?? placeholder ?? "Select…"}
+      </span>
+      <span className="shrink-0 text-[hsl(var(--fg-muted))]">
+        <ChevronDown className="h-3.5 w-3.5" />
+      </span>
+    </button>
+  ),
+);
+SheetTokenCell.displayName = "SheetTokenCell";
+
+/**
+ * Large Fraunces italic title input — the panel's "lead" field. Borderless
+ * except a bottom hairline; matches the editorial drawer reference.
+ */
+const SheetTitleInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <input
+    ref={ref}
+    className={cn(
+      "w-full border-0 border-b border-[hsl(var(--border-hairline))] bg-transparent px-0 pb-3 pt-1.5 font-display italic tracking-[-0.015em] text-[hsl(var(--ink-900))] placeholder:text-[hsl(var(--fg-muted))] focus:outline-none focus:border-[hsl(var(--ink-900))]",
+      "text-[24px] font-normal",
+      className,
+    )}
+    {...props}
+  />
+));
+SheetTitleInput.displayName = "SheetTitleInput";
+
+/** Small mono keyboard hint, e.g. ⌘↵. Used in the footer left-rail. */
+const SheetKbd = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <kbd
+    className={cn(
+      "rounded border border-[hsl(var(--border-hairline))] bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[hsl(var(--ink-800))]",
+      className,
+    )}
+  >
+    {children}
+  </kbd>
+);
+SheetKbd.displayName = "SheetKbd";
+
+/**
+ * Soft terracotta-tinted advisory block — for AI suggestions, gentle nudges,
+ * and "one thought" follow-ups inside a panel body.
+ */
+const SheetFootnote = ({
+  className,
+  children,
+  icon,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) => (
+  <div
+    className={cn(
+      "mt-4 flex items-start gap-2.5 rounded-[10px] border border-[hsl(var(--terracotta-500)/0.18)] bg-[hsl(var(--terracotta-500)/0.05)] px-3 py-2.5 font-body text-[12.5px] leading-[1.45] text-[hsl(var(--terracotta-700))]",
+      className,
+    )}
+  >
+    {icon && <span className="mt-0.5 text-[hsl(var(--terracotta-500))]">{icon}</span>}
+    <div className="flex-1">{children}</div>
+  </div>
+);
+SheetFootnote.displayName = "SheetFootnote";
+
 export {
   Sheet,
   SheetClose,
@@ -156,4 +311,9 @@ export {
   SheetTitle,
   SheetTrigger,
   SheetBody,
+  SheetSectionHead,
+  SheetTokenCell,
+  SheetTitleInput,
+  SheetKbd,
+  SheetFootnote,
 };

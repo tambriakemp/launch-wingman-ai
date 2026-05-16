@@ -26,6 +26,12 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
+  SheetBody,
+  SheetSectionHead,
+  SheetTokenCell,
+  SheetTitleInput,
+  SheetKbd,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -508,268 +514,343 @@ export const PlannerTaskDialog = ({
   }
 
   // --- Main Task View ---
+  // Date label for the Dates TokenCell
+  const datesLabel = startDate && endDate
+    ? `${format(startDate, "MMM d")} → ${format(endDate, "MMM d")}`
+    : startDate
+      ? format(startDate, "MMM d, yyyy")
+      : endDate
+        ? `Due ${format(endDate, "MMM d, yyyy")}`
+        : null;
+
+  const selectedCategory = spaceCats.find((c) => c.id === category);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-[720px] overflow-y-auto p-0">
-        <form onSubmit={handleSubmit}>
-          <SheetHeader className="px-6 pt-6 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <CalendarCheck className="w-5 h-5 text-primary" />
-              </div>
-              <SheetTitle className="text-lg">
-                {editTask ? "Edit" : "Create"} Task
-              </SheetTitle>
-            </div>
+      <SheetContent className="overflow-hidden p-0 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+          {/* HEADER — editorial */}
+          <SheetHeader
+            eyebrow={editTask ? "Editing task" : "New task"}
+            className="pr-12 pb-5 pt-7 gap-1.5"
+          >
+            <SheetTitle>
+              {editTask ? (
+                <>
+                  Editing <em className="font-display italic" style={{ color: "hsl(var(--terracotta-500))" }}>this one</em>.
+                </>
+              ) : (
+                <>
+                  One small <em className="font-display italic" style={{ color: "hsl(var(--terracotta-500))" }}>move</em>.
+                </>
+              )}
+            </SheetTitle>
+            <SheetDescription className="max-w-[46ch]">
+              {editTask
+                ? "Tweak the shape — the calendar will update."
+                : "Drop it on the calendar. Future-you will thank present-you."}
+            </SheetDescription>
           </SheetHeader>
 
-          <div className="px-6 space-y-5 pb-2">
-            {/* Title — large input */}
-            <Input
+          {/* BODY */}
+          <SheetBody className="flex flex-col gap-0">
+            {/* TITLE INPUT — Fraunces italic */}
+            <SheetTitleInput
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task name"
+              placeholder="What's the task?"
               maxLength={200}
-              className="h-12 text-lg font-semibold border-none shadow-none px-2 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+              autoFocus
             />
 
-            {/* ClickUp-style property grid */}
-            <div className="rounded-xl border border-border bg-muted/20 divide-y divide-border">
-              {/* Row 1: Status + Priority */}
-              <div className="grid grid-cols-2 divide-x divide-border">
-                <PropertyRow icon={CircleDot} label="Status">
-                  <Select value={columnId} onValueChange={setColumnId}>
-                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </PropertyRow>
+            {/* § 01 · ATTRIBUTES */}
+            <SheetSectionHead n="01">Attributes</SheetSectionHead>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Status */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<CircleDot className="h-3.5 w-3.5" />}
+                    label="Status"
+                    value={STATUSES.find((s) => s.id === columnId)?.label}
+                    placeholder="Pick…"
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  {STATUSES.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setColumnId(s.id)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+                        s.id === columnId && "bg-accent",
+                      )}
+                    >
+                      <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />
+                      {s.label}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
 
-                <PropertyRow icon={Flag} label="Priority">
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                      <SelectValue>
-                        <span className={priorityInfo.color}>{priorityInfo.label}</span>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRIORITIES.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          <span className={p.color}>{p.label}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </PropertyRow>
-              </div>
+              {/* Priority */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<Flag className="h-3.5 w-3.5" />}
+                    label="Priority"
+                    value={priorityInfo.label}
+                  />
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                  {PRIORITIES.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPriority(p.id)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+                        p.id === priority && "bg-accent",
+                      )}
+                    >
+                      <Flag className={cn("h-3.5 w-3.5", p.color)} />
+                      <span className={p.color}>{p.label}</span>
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
 
-              {/* Row 2: Dates + Category */}
-              <div className="grid grid-cols-2 divide-x divide-border">
-                <PropertyRow icon={CalendarIcon} label="Dates">
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                       <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full", !startDate && !endDate && "text-muted-foreground")}>
-                         {startDate && endDate
-                           ? `${format(startDate, "MMM d")} → ${format(endDate, "MMM d")}`
-                           : startDate
-                             ? format(startDate, "MMM d, yyyy")
-                             : endDate
-                               ? `Due ${format(endDate, "MMM d, yyyy")}`
-                               : "Set dates"}
-                       </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start" side="bottom">
-                      <DatePickerPanel
-                        startDate={startDate}
-                        endDate={endDate}
-                        onStartDateChange={setStartDate}
-                        onEndDateChange={setEndDate}
-                        quickDates={quickDates}
-                        showRepeat={showRepeat}
-                        setShowRepeat={setShowRepeat}
-                        recurrenceFreq={recurrenceFreq}
-                        setRecurrenceFreq={setRecurrenceFreq}
-                        recurrenceInterval={recurrenceInterval}
-                        setRecurrenceInterval={setRecurrenceInterval}
-                        recurrenceDays={recurrenceDays}
-                        setRecurrenceDays={setRecurrenceDays}
-                        recurrenceEndType={recurrenceEndType}
-                        setRecurrenceEndType={setRecurrenceEndType}
-                        recurrenceEndDate={recurrenceEndDate}
-                        setRecurrenceEndDate={setRecurrenceEndDate}
-                        recurrenceCount={recurrenceCount}
-                        setRecurrenceCount={setRecurrenceCount}
-                        onClose={() => setDatePickerOpen(false)}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </PropertyRow>
+              {/* Dates */}
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <SheetTokenCell
+                    icon={<CalendarIcon className="h-3.5 w-3.5" />}
+                    label="Dates"
+                    value={datesLabel}
+                    placeholder="Set dates"
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" side="bottom">
+                  <DatePickerPanel
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    quickDates={quickDates}
+                    showRepeat={showRepeat}
+                    setShowRepeat={setShowRepeat}
+                    recurrenceFreq={recurrenceFreq}
+                    setRecurrenceFreq={setRecurrenceFreq}
+                    recurrenceInterval={recurrenceInterval}
+                    setRecurrenceInterval={setRecurrenceInterval}
+                    recurrenceDays={recurrenceDays}
+                    setRecurrenceDays={setRecurrenceDays}
+                    recurrenceEndType={recurrenceEndType}
+                    setRecurrenceEndType={setRecurrenceEndType}
+                    recurrenceEndDate={recurrenceEndDate}
+                    setRecurrenceEndDate={setRecurrenceEndDate}
+                    recurrenceCount={recurrenceCount}
+                    setRecurrenceCount={setRecurrenceCount}
+                    onClose={() => setDatePickerOpen(false)}
+                  />
+                </PopoverContent>
+              </Popover>
 
-                {(() => {
-                  return (
-                    <PropertyRow icon={Tag} label="Category">
-                      <CategoryCombobox
-                        categories={spaceCats}
-                        value={category}
-                        onChange={setCategory}
-                        selectedSpaceId={taskSpaceId || selectedSpaceId}
-                        onCreateCategory={onCreateCategory}
-                      />
-                    </PropertyRow>
-                  );
-                })()}
-              </div>
-
-              {/* Row 3: Space selector — only when in All Spaces view and creating */}
-              {!selectedSpaceId && spaces.length > 0 && (
-                <div className="grid grid-cols-2 divide-x divide-border">
-                  <PropertyRow icon={FolderOpen} label="Space">
-                    <Select value={taskSpaceId} onValueChange={setTaskSpaceId}>
-                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                        <SelectValue placeholder="Select space" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {spaces.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                              {s.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PropertyRow>
-                  <div />
-                </div>
-              )}
-            </div>
-
-            {/* Description — longer */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description, notes, or details..."
-                rows={6}
-                maxLength={2000}
-                className="resize-none"
+              {/* Category — uses TokenCell visual via CategoryCombobox */}
+              <CategoryCombobox
+                categories={spaceCats}
+                value={category}
+                onChange={setCategory}
+                selectedSpaceId={taskSpaceId || selectedSpaceId}
+                onCreateCategory={onCreateCategory}
+                trigger={
+                  <SheetTokenCell
+                    dot={selectedCategory?.color}
+                    icon={!selectedCategory ? <Tag className="h-3.5 w-3.5" /> : undefined}
+                    label="Category"
+                    value={selectedCategory?.name}
+                    placeholder="Pick…"
+                  />
+                }
               />
             </div>
 
-            {/* Subtasks */}
-            <div className="space-y-3 pt-4 border-t border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Subtasks</span>
-                  {subtasks.length > 0 && (
-                    <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
-                  )}
-                </div>
-              </div>
-
-              {subtasks.length > 0 && (
-                <Progress value={progressPct} className="h-1.5" />
-              )}
-
-              <div className="space-y-1">
-                {subtasks.map(st => (
-                  <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-                    <Checkbox
-                      checked={st.completed}
-                      onCheckedChange={() => toggleSubtask(st)}
-                      className="shrink-0"
+            {/* Space selector — only when in All Spaces view */}
+            {!selectedSpaceId && spaces.length > 0 && (
+              <div className="mt-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <SheetTokenCell
+                      icon={<FolderOpen className="h-3.5 w-3.5" />}
+                      label="Space"
+                      value={spaces.find((s) => s.id === taskSpaceId)?.name}
+                      dot={spaces.find((s) => s.id === taskSpaceId)?.color}
+                      placeholder="Select space"
                     />
-                    <button
-                      type="button"
-                      onClick={() => editTask && !st._local ? openSubtaskDetail(st) : undefined}
-                      className={cn(
-                        "flex-1 text-left text-sm truncate",
-                        st.completed && "line-through text-muted-foreground"
-                      )}
-                    >
-                      {st.title}
-                    </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {editTask && !st._local && (
-                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-52 p-1">
+                    {spaces.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setTaskSpaceId(s.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
+                          s.id === taskSpaceId && "bg-accent",
                         )}
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
+                      >
+                        <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />
+                        {s.name}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               </div>
+            )}
 
-              <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+            {/* § 02 · DESCRIPTION */}
+            <SheetSectionHead n="02">A line for future-you</SheetSectionHead>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Why this, why now…"
+              rows={4}
+              maxLength={2000}
+              className="resize-none bg-[hsl(var(--paper-50))] border-[hsl(var(--border-hairline))] rounded-lg text-[13.5px] leading-[1.55]"
+            />
+
+            {/* § 03 · SUBTASKS */}
+            <SheetSectionHead n="03">Subtasks</SheetSectionHead>
+            {subtasks.length > 0 && (
+              <Progress value={progressPct} className="h-1 mb-2" />
+            )}
+            <div className="border-t border-[hsl(var(--border-hairline))]">
+              {subtasks.map((st) => (
+                <div
+                  key={st.id}
+                  className="group flex items-center gap-2.5 py-2 border-b border-dashed border-[hsl(var(--border-hairline))]"
+                >
+                  <Checkbox
+                    checked={st.completed}
+                    onCheckedChange={() => toggleSubtask(st)}
+                    className="shrink-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => (editTask && !st._local ? openSubtaskDetail(st) : undefined)}
+                    className={cn(
+                      "flex-1 truncate text-left text-[13.5px] tracking-[-0.005em]",
+                      st.completed && "text-muted-foreground line-through",
+                    )}
+                  >
+                    {st.title}
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {editTask && !st._local && (
+                        <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+
+              <div className="flex items-center gap-2.5 py-2">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-50 shrink-0" />
                 <Input
                   value={newSubtaskTitle}
-                  onChange={e => setNewSubtaskTitle(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
-                  placeholder="Add a subtask..."
-                  className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); addSubtask(); }
+                  }}
+                  placeholder="Add a subtask…"
+                  className="h-7 text-[13.5px] tracking-[-0.005em] border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 {newSubtaskTitle.trim() && (
-                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                  <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground">↵</span>
                 )}
               </div>
             </div>
-          </div>
+          </SheetBody>
 
-          <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
-            {editTask && isScheduled && (
-              <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mr-auto" onClick={handleUnschedule} disabled={isSubmitting}>
-                <CalendarOff className="w-4 h-4" />
-                Unschedule
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={() => { setScopePromptOpen(false); onOpenChange(false); }}>Cancel</Button>
-            {editTask && editTask.recurrence_rule ? (
-              scopePromptOpen ? (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto">
-                  <span className="text-xs text-amber-700 dark:text-amber-500 font-medium sm:mr-1">
-                    Recurring task — apply changes to:
-                  </span>
-                  <Button
+          {/* FOOTER — editorial */}
+          <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-[hsl(var(--ink-900))] bg-[hsl(var(--paper-200))] px-7 py-3.5">
+            {/* Left rail: ⌘↵ shortcut + Unschedule when applicable */}
+            <div className="flex items-center gap-3">
+              <div className="hidden md:inline-flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.08em] text-[hsl(var(--fg-muted))]">
+                <SheetKbd>⌘</SheetKbd>
+                <SheetKbd>↵</SheetKbd>
+                <span className="ml-1 font-semibold uppercase">to {editTask ? "save" : "add"}</span>
+              </div>
+              {editTask && isScheduled && (
+                <button
+                  type="button"
+                  onClick={handleUnschedule}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[hsl(var(--fg-muted))] hover:text-[hsl(var(--ink-900))] transition-colors"
+                >
+                  <CalendarOff className="w-3.5 h-3.5" />
+                  Unschedule
+                </button>
+              )}
+            </div>
+
+            {/* Right rail: Cancel + Primary submit (with recurrence scope prompt) */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => { setScopePromptOpen(false); onOpenChange(false); }}
+                className="rounded-lg border border-[hsl(var(--border-hairline))] bg-transparent px-4 py-2 font-body text-[13px] font-medium text-[hsl(var(--ink-800))] transition-colors hover:bg-[hsl(var(--ink-900)/0.04)]"
+              >
+                Cancel
+              </button>
+              {editTask && editTask.recurrence_rule ? (
+                scopePromptOpen ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={(e) => handleSubmit(e as any, "single")}
+                      className="rounded-lg border border-[hsl(var(--border-hairline))] bg-transparent px-3 py-2 font-body text-[12.5px] font-medium text-[hsl(var(--ink-800))] transition-colors hover:bg-[hsl(var(--ink-900)/0.04)]"
+                    >
+                      This task only
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={(e) => handleSubmit(e as any, "series")}
+                      className="rounded-lg border border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900))] px-3 py-2 font-body text-[12.5px] font-semibold text-[hsl(var(--paper-100))] transition-opacity hover:opacity-90"
+                    >
+                      Entire series
+                    </button>
+                  </div>
+                ) : (
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
                     disabled={isSubmitting}
-                    onClick={(e) => handleSubmit(e as any, "single")}
+                    onClick={() => setScopePromptOpen(true)}
+                    className="rounded-lg border border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900))] px-4 py-2 font-body text-[13px] font-semibold text-[hsl(var(--paper-100))] transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
-                    This task only
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={isSubmitting}
-                    onClick={(e) => handleSubmit(e as any, "series")}
-                  >
-                    Entire series
-                  </Button>
-                </div>
+                    {isSubmitting ? "Saving…" : "Save"}
+                  </button>
+                )
               ) : (
-                <Button type="button" disabled={isSubmitting} onClick={() => setScopePromptOpen(true)}>
-                  {isSubmitting ? "Saving..." : "Update"}
-                </Button>
-              )
-            ) : (
-              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editTask ? "Update" : "Create"}</Button>
-            )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-lg border border-[hsl(var(--ink-900))] bg-[hsl(var(--ink-900))] px-4 py-2 font-body text-[13px] font-semibold text-[hsl(var(--paper-100))] transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {isSubmitting ? "Saving…" : editTask ? "Save" : "Add task"}
+                </button>
+              )}
+            </div>
           </SheetFooter>
         </form>
       </SheetContent>
@@ -790,13 +871,15 @@ function PropertyRow({ icon: Icon, label, children }: { icon: any; label: string
 
 // --- Category Combobox ---
 function CategoryCombobox({
-  categories, value, onChange, selectedSpaceId, onCreateCategory,
+  categories, value, onChange, selectedSpaceId, onCreateCategory, trigger,
 }: {
   categories: SpaceCategory[];
   value: string;
   onChange: (v: string) => void;
   selectedSpaceId?: string | null;
   onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
+  /** Optional custom trigger element (must accept ref + onClick). Falls back to the legacy ghost button. */
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -811,16 +894,18 @@ function CategoryCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full">
-          {selected ? (
-            <>
-              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.color }} />
-              {selected.name}
-            </>
-          ) : (
-            <span className="text-muted-foreground">Select...</span>
-          )}
-        </button>
+        {trigger ?? (
+          <button type="button" className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full">
+            {selected ? (
+              <>
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.color }} />
+                {selected.name}
+              </>
+            ) : (
+              <span className="text-muted-foreground">Select...</span>
+            )}
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-52 p-2" align="start">
         <Input
