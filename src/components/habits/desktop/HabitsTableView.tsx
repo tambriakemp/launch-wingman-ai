@@ -7,32 +7,13 @@ interface Props {
   completions: HabitCompletion[];
   shields: StreakShield[];
   onOpen: (habit: Habit) => void;
-  onNew: () => void;
 }
 
-export function HabitsTableView({ habits, completions, shields, onOpen, onNew }: Props) {
+export function HabitsTableView({ habits, completions, shields, onOpen }: Props) {
   const habitMap = new Map(habits.map((h) => [h.id, h]));
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "32px 56px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 28, maxWidth: 1180 }}>
-        <div>
-          <div className="hb-display" style={{ fontWeight: 500, fontSize: 48, letterSpacing: "-0.025em", lineHeight: 1.1 }}>
-            Your <em style={{ color: "var(--hb-terracotta)", fontWeight: 400 }}>habits.</em>
-          </div>
-          <div className="hb-italic" style={{ fontSize: 18, color: "var(--hb-mute)", marginTop: 12 }}>
-            Small promises, edited and reordered as life shifts.
-          </div>
-        </div>
-        <button
-          onClick={onNew}
-          style={{
-            fontSize: 13, color: "var(--hb-cream)", background: "var(--hb-ink)",
-            padding: "10px 16px", borderRadius: 999, fontWeight: 500, border: "none", cursor: "pointer",
-            display: "inline-flex", alignItems: "center", gap: 8,
-          }}
-        >+ New habit</button>
-      </div>
-
+    <div style={{ height: "100%", overflowY: "auto", padding: "24px 56px 32px" }}>
+      {/* Title + "New habit" button now live in the page-level header and tab strip. */}
       <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, overflow: "hidden", maxWidth: 1180 }}>
         <div
           style={{

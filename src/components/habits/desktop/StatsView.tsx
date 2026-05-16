@@ -21,16 +21,8 @@ export function StatsView({ habits, completions, shields }: Props) {
   const weekPct = Math.round((weekDoneCount / weekTotal) * 100);
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "32px 56px" }}>
-      <div style={{ marginBottom: 28, maxWidth: 1180 }}>
-        <div className="hb-display" style={{ fontWeight: 500, fontSize: 48, letterSpacing: "-0.025em", lineHeight: 1.1 }}>
-          A quiet kind of <em style={{ color: "var(--hb-terracotta)", fontWeight: 400 }}>consistency.</em>
-        </div>
-        <div className="hb-italic" style={{ fontSize: 18, color: "var(--hb-mute)", marginTop: 12 }}>
-          {habits.length} habit{habits.length === 1 ? "" : "s"} you're building right now.
-        </div>
-      </div>
-
+    <div style={{ height: "100%", overflowY: "auto", padding: "24px 56px 32px" }}>
+      {/* Title now lives in the page-level header. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24, maxWidth: 1180 }}>
         {[
           { l: "This week", v: `${weekPct}%`, c: "var(--hb-ink)", sub: `${weekDoneCount} of ${weekTotal} kept` },

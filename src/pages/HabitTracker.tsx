@@ -118,7 +118,7 @@ const HabitTracker = () => {
       return <TodayView habits={habits} completions={completions} shields={shields} onToggle={toggleCompletion} onOpen={openHabit} />;
     }
     if (activeTab === "Habits") {
-      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} onNew={() => openHabit(null)} />;
+      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} />;
     }
     if (activeTab === "Statistics") {
       return <StatsView habits={habits} completions={completions} shields={shields} />;
