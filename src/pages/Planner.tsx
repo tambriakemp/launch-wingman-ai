@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { toTitleCase, cn } from "@/lib/utils";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
 import { PlannerKanbanView } from "@/components/planner/PlannerKanbanView";
@@ -566,9 +567,9 @@ const Planner = () => {
   return (
     <ProjectLayout>
       <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col bg-[hsl(var(--paper-100))]">
-        <div className="px-6 md:px-10 pt-9 pb-7 border-b border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-100))]">
-          <div className="flex items-end justify-between gap-6 flex-wrap">
-            {/* Editorial title block — matches Goals page rhythm */}
+        <PageContainer paddingTop={36}>
+          <div className="flex items-end justify-between gap-6 flex-wrap pb-7 border-b border-[hsl(var(--border-hairline))]">
+            {/* Editorial title block — matches Goals + Habits page rhythm */}
             <div className="min-w-0">
               <div
                 className="font-semibold uppercase"
@@ -672,7 +673,7 @@ const Planner = () => {
               </Button>
             </div>
           </div>
-        </div>
+        </PageContainer>
 
         <div className="flex-1 overflow-hidden flex">
           {sunsamaView === "month" ? (
