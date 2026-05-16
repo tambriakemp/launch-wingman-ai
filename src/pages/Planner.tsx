@@ -22,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import { CalendarDays, Plus, ListTodo, ChevronLeft, ChevronRight, LayoutGrid, Calendar as CalendarIcon, Check, Hash } from "lucide-react";
+import { Plus, ListTodo, ChevronLeft, ChevronRight, LayoutGrid, Calendar as CalendarIcon, Check, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -457,27 +457,15 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
-  const PageIcon = CalendarDays;
-  const pageTitle = "Calendar";
-  const pageSubtitle = "Plan your week, schedule your day.";
-  const iconBg = "bg-amber-100/50 dark:bg-amber-900/20";
-  const iconColor = "text-amber-600 dark:text-amber-400";
-
   if (accessLoading || spacesLoading) {
+    // No legacy icon+title header here — render only the loader on the
+    // canonical paper canvas so we don't flash a different layout before
+    // the editorial header renders below.
     return (
       <ProjectLayout>
-        <div className="px-4 pt-6 pb-2">
-          <div className="flex items-start gap-4 mb-4">
-            <div className={`p-3 ${iconBg} rounded-xl shrink-0`}>
-              <PageIcon className={`w-6 h-6 ${iconColor}`} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">{pageTitle}</h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">{pageSubtitle}</p>
-            </div>
-          </div>
+        <div className="h-[calc(100vh-3rem-48px)] bg-[hsl(var(--paper-100))]">
+          <PageLoader containerClassName="flex items-center justify-center min-h-[50vh]" />
         </div>
-        <PageLoader containerClassName="flex items-center justify-center min-h-[50vh]" />
       </ProjectLayout>
     );
   }
