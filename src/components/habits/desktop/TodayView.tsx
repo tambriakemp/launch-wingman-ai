@@ -215,6 +215,7 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
           </div>
         </div>
         </div>
+        </div>
       </PageContainer>
     </div>
   );
