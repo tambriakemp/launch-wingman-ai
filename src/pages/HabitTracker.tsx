@@ -8,7 +8,6 @@ import { TABS, type DesktopTab } from "@/components/habits/desktop/tabs";
 import { TodayView } from "@/components/habits/desktop/TodayView";
 import { HabitsTableView } from "@/components/habits/desktop/HabitsTableView";
 import { StatsView } from "@/components/habits/desktop/StatsView";
-import { AddHabitView } from "@/components/habits/desktop/AddHabitView";
 import { HabitDetailSheet } from "@/components/habits/HabitDetailSheet";
 import { MobileAddHabitDrawer } from "@/components/habits/mobile/MobileAddHabitDrawer";
 import { MobileStatsScreen } from "@/components/habits/mobile/MobileStatsScreen";
@@ -119,13 +118,10 @@ const HabitTracker = () => {
       return <TodayView habits={habits} completions={completions} shields={shields} onToggle={toggleCompletion} onOpen={openHabit} />;
     }
     if (activeTab === "Habits") {
-      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} onNew={() => setActiveTab("Add habit")} />;
+      return <HabitsTableView habits={habits} completions={completions} shields={shields} onOpen={openHabit} onNew={() => openHabit(null)} />;
     }
     if (activeTab === "Statistics") {
       return <StatsView habits={habits} completions={completions} shields={shields} />;
-    }
-    if (activeTab === "Add habit") {
-      return <AddHabitView habits={habits} onSubmit={handleSaveHabit} onCancel={() => setActiveTab("Today")} />;
     }
     return null;
   };
@@ -254,7 +250,13 @@ const HabitTracker = () => {
     <ProjectLayout>
       <HabitsThemeShell>
         {!isMobile && <TopMetaStrip />}
-        {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
+        {!isMobile && (
+          <DesktopTabs
+            active={activeTab}
+            onChange={setActiveTab}
+            onAddHabit={() => openHabit(null)}
+          />
+        )}
         {!isMobile ? (
           <div style={{ height: "calc(100vh - 140px)" }}>{renderDesktop()}</div>
         ) : renderMobileContent()}

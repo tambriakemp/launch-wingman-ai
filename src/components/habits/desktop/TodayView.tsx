@@ -149,7 +149,7 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
 
         {scheduled.length === 0 && (
           <div className="hb-italic" style={{ color: "var(--hb-mute)", fontSize: 16 }}>
-            Open the <strong>Add habit</strong> tab to start your first quiet promise.
+            Tap <strong>+ Add habit</strong> to start your first quiet promise.
           </div>
         )}
       </div>

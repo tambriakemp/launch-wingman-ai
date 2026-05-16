@@ -16,9 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Trash2, Flame, Clock, CalendarRange, Sun, Link2, Hash, Palette } from "lucide-react";
+import { Trash2, Clock, CalendarRange, Sun, Link2, Hash, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, eachDayOfInterval, subDays } from "date-fns";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import type { Habit, HabitCompletion } from "@/pages/HabitTracker";
 
@@ -62,14 +61,19 @@ interface HabitDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   habit: Habit | null;
-  completions: HabitCompletion[];
+  /**
+   * Past habit completions. Reserved for future use (e.g. inline
+   * streak preview); the live Statistics page already renders this
+   * data so the panel itself no longer needs it.
+   */
+  completions?: HabitCompletion[];
   onSubmit: (data: Partial<Habit>) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
   habits?: Habit[];
 }
 
 export function HabitDetailSheet({
-  open, onOpenChange, habit, completions, onSubmit, onArchive, habits = [],
+  open, onOpenChange, habit, onSubmit, onArchive, habits = [],
 }: HabitDetailSheetProps) {
   const isEdit = !!habit;
 
@@ -144,28 +148,6 @@ export function HabitDetailSheet({
       setIsSubmitting(false);
     }
   };
-
-  // Stats — edit mode only
-  const habitCompletions = habit ? completions.filter((c) => c.habit_id === habit.id) : [];
-  const habitDates = new Set(habitCompletions.map((c) => c.completed_date));
-  let streak = 0;
-  if (habit) {
-    let checkDate = new Date();
-    while (true) {
-      const d = format(checkDate, "yyyy-MM-dd");
-      if (habitDates.has(d)) {
-        streak++;
-        checkDate = new Date(checkDate.getTime() - 86400000);
-      } else {
-        if (streak === 0 && d === format(new Date(), "yyyy-MM-dd")) {
-          checkDate = new Date(checkDate.getTime() - 86400000);
-          continue;
-        }
-        break;
-      }
-    }
-  }
-  const last7 = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
 
   // Cell labels
   const categoryLabel = CATEGORIES.find((c) => c.id === category)?.label;
@@ -398,47 +380,6 @@ export function HabitDetailSheet({
               </>
             )}
 
-            {/* § 05 · THIS WEEK (edit only) */}
-            {isEdit && (
-              <>
-                <SheetSectionHead
-                  n={habits.filter((h) => !habit || h.id !== habit.id).length > 0 ? "05" : "04"}
-                >
-                  This week
-                </SheetSectionHead>
-                <div className="flex items-center gap-5 rounded-xl border border-[hsl(var(--border-hairline))] bg-[hsl(var(--paper-50))] px-4 py-3.5">
-                  <div className="flex flex-col items-center">
-                    <Flame className="h-5 w-5 text-[hsl(var(--terracotta-500))]" />
-                    <p className="font-display text-2xl font-medium tabular-nums leading-none mt-1">{streak}</p>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-1">
-                      Day{streak === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <div className="flex gap-1.5 flex-1 justify-end">
-                    {last7.map((d) => {
-                      const ds = format(d, "yyyy-MM-dd");
-                      const done = habitDates.has(ds);
-                      return (
-                        <div key={ds} className="flex flex-col items-center gap-1">
-                          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">
-                            {format(d, "EEEEE")}
-                          </span>
-                          <div
-                            className={cn(
-                              "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold",
-                              done ? "text-white" : "bg-[hsl(var(--ink-900)/0.05)] text-muted-foreground",
-                            )}
-                            style={done ? { background: color } : undefined}
-                          >
-                            {format(d, "d")}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
           </SheetBody>
 
           {/* FOOTER */}
