@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { HabitsThemeShell } from "@/components/habits/HabitsThemeShell";
 import { DesktopTabs } from "@/components/habits/desktop/DesktopTabs";
-import { TopMetaStrip } from "@/components/habits/desktop/TopMetaStrip";
+import { EditorialPageHeader } from "@/components/layout/EditorialPageHeader";
 import { TABS, type DesktopTab } from "@/components/habits/desktop/tabs";
 import { TodayView } from "@/components/habits/desktop/TodayView";
 import { HabitsTableView } from "@/components/habits/desktop/HabitsTableView";
@@ -246,10 +246,39 @@ const HabitTracker = () => {
     return renderMobile();
   };
 
+  // Shared page-level greeting copy — used both on desktop (above the
+  // tabs) and on mobile (above the tile stack), so all three tabs and
+  // the mobile screen read with the same title rhythm.
+  const timeOfDay = (() => {
+    const h = new Date().getHours();
+    return h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
+  })();
+  const remaining = scheduled.length - doneToday;
+  const greetingDescription =
+    scheduled.length === 0
+      ? "No habits today — quiet day."
+      : `${remaining} small ${remaining === 1 ? "thing" : "things"} between you and a day worth keeping.`;
+
   return (
     <ProjectLayout>
       <HabitsThemeShell>
-        {!isMobile && <TopMetaStrip />}
+        {!isMobile && (
+          <div style={{ padding: "36px 56px 0" }}>
+            <EditorialPageHeader
+              eyebrow={format(new Date(), "EEEE · MMM d, yyyy")}
+              title={
+                <>
+                  Good {timeOfDay},{" "}
+                  <em style={{ color: "hsl(var(--terracotta-500))", fontStyle: "italic", fontWeight: 400 }}>
+                    there
+                  </em>
+                  .
+                </>
+              }
+              description={greetingDescription}
+            />
+          </div>
+        )}
         {!isMobile && (
           <DesktopTabs
             active={activeTab}
@@ -258,7 +287,7 @@ const HabitTracker = () => {
           />
         )}
         {!isMobile ? (
-          <div style={{ height: "calc(100vh - 140px)" }}>{renderDesktop()}</div>
+          <div style={{ height: "calc(100vh - 280px)" }}>{renderDesktop()}</div>
         ) : renderMobileContent()}
       </HabitsThemeShell>
 

@@ -68,17 +68,7 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ marginBottom: 20 }}>
-          <div className="hb-display" style={{ fontWeight: 500, fontSize: 60, letterSpacing: "-0.03em", lineHeight: 1.05 }}>
-            Good {greeting()}, <em style={{ color: "var(--hb-terracotta)", fontWeight: 400 }}>there.</em>
-          </div>
-          <div className="hb-italic" style={{ fontSize: 18, color: "var(--hb-mute)", marginTop: 14, lineHeight: 1.4, maxWidth: 560 }}>
-            {scheduled.length === 0
-              ? "No habits scheduled for today — a quiet day."
-              : `${scheduled.length - doneCount} small ${scheduled.length - doneCount === 1 ? "thing" : "things"} between you and a day worth keeping.`}
-          </div>
-        </div>
-
+        {/* Greeting now lives in the page-level EditorialPageHeader above the tabs. */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10, marginBottom: 24 }}>
           {WEEK.map((day, i) => {
             const isToday = i === todayDow;
@@ -231,9 +221,3 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
   );
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  return "evening";
-}

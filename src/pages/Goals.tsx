@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { EditorialPageHeader } from "@/components/layout/EditorialPageHeader";
 import {
   EditorialFolderCard,
   NewEditorialFolderCard,
@@ -399,93 +400,59 @@ const Goals = () => {
           className="mx-auto"
           style={{ maxWidth: 1240, padding: "36px 40px 96px" }}
         >
-          {/* Header */}
-          <div
-            className="flex flex-wrap items-end justify-between gap-6 pb-7"
-            style={{ borderBottom: "1px solid hsl(var(--border-hairline))" }}
-          >
-            <div className="min-w-0 flex-1" style={{ flexBasis: 420 }}>
-              <div
-                className="font-semibold uppercase"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: "hsl(var(--terracotta-500))",
-                }}
-              >
-                Goals
-              </div>
-              <h1
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 400,
-                  fontSize: 48,
-                  letterSpacing: "-0.025em",
-                  color: "hsl(var(--ink-900))",
-                  margin: "6px 0 0",
-                  lineHeight: 1.05,
-                }}
-              >
+          <EditorialPageHeader
+            eyebrow="Goals"
+            title={
+              <>
                 What are you{" "}
                 <em style={{ color: "hsl(var(--terracotta-500))", fontWeight: 400 }}>
                   quietly working toward?
                 </em>
-              </h1>
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 15,
-                  lineHeight: 1.6,
-                  color: "hsl(var(--fg-secondary))",
-                  marginTop: 12,
-                  maxWidth: 520,
-                }}
-              >
-                Group your goals into folders — by year, theme, or project. Break them into
-                targets and track honest progress.
-              </p>
-            </div>
-            <div className="flex flex-shrink-0 items-center gap-2.5">
-              <button
-                onClick={() => setShowArchived((v) => !v)}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap"
-                style={{
-                  background: "transparent",
-                  border: "1px solid hsl(var(--border-default))",
-                  borderRadius: 999,
-                  padding: "8px 14px",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13,
-                  color: showArchived ? "hsl(var(--terracotta-500))" : "hsl(var(--ink-900))",
-                  cursor: "pointer",
-                }}
-              >
-                <FolderIcon className="h-3.5 w-3.5" /> {showArchived ? "Active" : "Archived"}
-              </button>
-              <button
-                onClick={() => {
-                  setEditingGoal(null);
-                  setCreateInFolderId(null);
-                  setDialogOpen(true);
-                }}
-                className="inline-flex items-center gap-2 whitespace-nowrap"
-                style={{
-                  background: "hsl(var(--ink-900))",
-                  color: "hsl(var(--paper-50))",
-                  border: 0,
-                  borderRadius: 999,
-                  padding: "10px 18px",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" strokeWidth={2} /> New goal
-              </button>
-            </div>
-          </div>
+              </>
+            }
+            description="Group your goals into folders — by year, theme, or project. Break them into targets and track honest progress."
+            actions={
+              <>
+                <button
+                  onClick={() => setShowArchived((v) => !v)}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid hsl(var(--border-default))",
+                    borderRadius: 999,
+                    padding: "8px 14px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    color: showArchived ? "hsl(var(--terracotta-500))" : "hsl(var(--ink-900))",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FolderIcon className="h-3.5 w-3.5" /> {showArchived ? "Active" : "Archived"}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingGoal(null);
+                    setCreateInFolderId(null);
+                    setDialogOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 whitespace-nowrap"
+                  style={{
+                    background: "hsl(var(--ink-900))",
+                    color: "hsl(var(--paper-50))",
+                    border: 0,
+                    borderRadius: 999,
+                    padding: "10px 18px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} /> New goal
+                </button>
+              </>
+            }
+          />
 
           {/* Stats strip */}
           <div
