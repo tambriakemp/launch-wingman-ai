@@ -6,6 +6,7 @@ import { getStreak, isHabitScheduledOn } from "@/lib/habits/streak";
 import { HabitRowEditorial } from "../shared/HabitRowEditorial";
 import { AINudgeCard } from "../shared/AINudgeCard";
 import { useHabitNudge } from "@/hooks/useHabitNudge";
+import { PageContainer } from "@/components/layout/PageContainer";
 
 interface Props {
   habits: Habit[];
@@ -61,13 +62,10 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
   const habitMap = new Map(habits.map((h) => [h.id, h]));
 
   return (
-    <div
-      style={{
-        height: "100%", overflowY: "auto", padding: "28px 48px 48px",
-        display: "grid", gridTemplateColumns: "1fr 340px", gap: 32,
-      }}
-    >
-      <div style={{ minWidth: 0 }}>
+    <div style={{ height: "100%", overflowY: "auto" }}>
+      <PageContainer paddingTop={28} paddingBottom={48}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 32 }}>
+          <div style={{ minWidth: 0 }}>
         {/* Greeting now lives in the page-level EditorialPageHeader above the tabs. */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10, marginBottom: 24 }}>
           {WEEK.map((day, i) => {
@@ -216,7 +214,8 @@ export function TodayView({ habits, completions, shields, onToggle, onOpen }: Pr
             })}
           </div>
         </div>
-      </div>
+        </div>
+      </PageContainer>
     </div>
   );
 }

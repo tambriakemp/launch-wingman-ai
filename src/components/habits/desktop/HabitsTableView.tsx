@@ -1,6 +1,7 @@
 import { Flame, Edit2 } from "lucide-react";
 import type { Habit, HabitCompletion, StreakShield } from "@/hooks/useHabitsData";
 import { getStreak, weekCompletionVector } from "@/lib/habits/streak";
+import { PageContainer } from "@/components/layout/PageContainer";
 
 interface Props {
   habits: Habit[];
@@ -12,9 +13,10 @@ interface Props {
 export function HabitsTableView({ habits, completions, shields, onOpen }: Props) {
   const habitMap = new Map(habits.map((h) => [h.id, h]));
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "24px 56px 32px" }}>
-      {/* Title + "New habit" button now live in the page-level header and tab strip. */}
-      <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, overflow: "hidden", maxWidth: 1180 }}>
+    <div style={{ height: "100%", overflowY: "auto" }}>
+      <PageContainer paddingTop={24} paddingBottom={32}>
+        {/* Title + "New habit" button now live in the page-level header. */}
+        <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, overflow: "hidden" }}>
         <div
           style={{
             display: "grid",
@@ -70,7 +72,8 @@ export function HabitsTableView({ habits, completions, shields, onOpen }: Props)
             </div>
           );
         })}
-      </div>
+        </div>
+      </PageContainer>
     </div>
   );
 }

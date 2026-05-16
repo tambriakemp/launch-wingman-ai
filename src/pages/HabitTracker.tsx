@@ -4,6 +4,7 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { HabitsThemeShell } from "@/components/habits/HabitsThemeShell";
 import { DesktopTabs } from "@/components/habits/desktop/DesktopTabs";
 import { EditorialPageHeader } from "@/components/layout/EditorialPageHeader";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { TABS, type DesktopTab } from "@/components/habits/desktop/tabs";
 import { TodayView } from "@/components/habits/desktop/TodayView";
 import { HabitsTableView } from "@/components/habits/desktop/HabitsTableView";
@@ -263,7 +264,7 @@ const HabitTracker = () => {
     <ProjectLayout>
       <HabitsThemeShell>
         {!isMobile && (
-          <div style={{ padding: "36px 56px 0" }}>
+          <PageContainer paddingTop={36}>
             <EditorialPageHeader
               eyebrow={format(new Date(), "EEEE · MMM d, yyyy")}
               title={
@@ -296,9 +297,9 @@ const HabitTracker = () => {
                 </button>
               }
             />
-          </div>
+            <DesktopTabs active={activeTab} onChange={setActiveTab} />
+          </PageContainer>
         )}
-        {!isMobile && <DesktopTabs active={activeTab} onChange={setActiveTab} />}
         {!isMobile ? (
           <div style={{ height: "calc(100vh - 280px)" }}>{renderDesktop()}</div>
         ) : renderMobileContent()}

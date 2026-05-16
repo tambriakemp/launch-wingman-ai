@@ -4,6 +4,7 @@ import type { Habit, HabitCompletion, StreakShield } from "@/hooks/useHabitsData
 import { getStreak, weekCompletionVector } from "@/lib/habits/streak";
 import { buildHeatmap } from "@/lib/habits/heatmap";
 import { Heatmap, HeatLegend } from "../shared/Heatmap";
+import { PageContainer } from "@/components/layout/PageContainer";
 
 interface Props {
   habits: Habit[];
@@ -21,9 +22,10 @@ export function StatsView({ habits, completions, shields }: Props) {
   const weekPct = Math.round((weekDoneCount / weekTotal) * 100);
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "24px 56px 32px" }}>
-      {/* Title now lives in the page-level header. */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24, maxWidth: 1180 }}>
+    <div style={{ height: "100%", overflowY: "auto" }}>
+      <PageContainer paddingTop={24} paddingBottom={32}>
+        {/* Title now lives in the page-level header. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
         {[
           { l: "This week", v: `${weekPct}%`, c: "var(--hb-ink)", sub: `${weekDoneCount} of ${weekTotal} kept` },
           { l: "Best streak", v: String(bestStreak), c: "var(--hb-terracotta)", sub: bestStreakHabit?.name || "—" },
@@ -38,7 +40,7 @@ export function StatsView({ habits, completions, shields }: Props) {
         ))}
       </div>
 
-      <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, padding: 28, marginBottom: 24, maxWidth: 1180 }}>
+      <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, padding: 28, marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 18 }}>
           <div>
             <div className="hb-eyebrow">Last 26 weeks</div>
@@ -49,7 +51,7 @@ export function StatsView({ habits, completions, shields }: Props) {
         <Heatmap cols={heat.cols} />
       </div>
 
-      <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, padding: 24, maxWidth: 1180 }}>
+      <div style={{ background: "var(--hb-paper)", border: "1px solid var(--hb-line)", borderRadius: 14, padding: 24 }}>
         <div className="hb-eyebrow" style={{ marginBottom: 18 }}>By habit · last 7 days</div>
         {habits.length === 0 ? (
           <div style={{ color: "var(--hb-mute)", fontSize: 14 }}>No habits yet.</div>
@@ -74,7 +76,8 @@ export function StatsView({ habits, completions, shields }: Props) {
             </div>
           );
         })}
-      </div>
+        </div>
+      </PageContainer>
     </div>
   );
 }

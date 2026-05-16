@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { EditorialPageHeader } from "@/components/layout/EditorialPageHeader";
+import { PageContainer } from "@/components/layout/PageContainer";
 import {
   EditorialFolderCard,
   NewEditorialFolderCard,
@@ -396,10 +397,7 @@ const Goals = () => {
   return (
     <ProjectLayout>
       <div className="flex-1 overflow-y-auto" style={{ background: "hsl(var(--background))" }}>
-        <div
-          className="mx-auto"
-          style={{ maxWidth: 1240, padding: "36px 40px 96px" }}
-        >
+        <PageContainer paddingTop={36} paddingBottom={96}>
           <EditorialPageHeader
             eyebrow="Goals"
             title={
@@ -664,7 +662,7 @@ const Goals = () => {
               </p>
             </div>
           )}
-        </div>
+        </PageContainer>
       </div>
 
       {/* Folder dialog */}

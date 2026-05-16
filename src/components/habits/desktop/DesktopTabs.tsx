@@ -9,7 +9,7 @@ export function DesktopTabs({ active, onChange }: Props) {
   return (
     <div
       style={{
-        padding: "20px 56px 0",
+        paddingTop: 20,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         borderBottom: "1px solid var(--hb-line)",
       }}
