@@ -654,7 +654,7 @@ const Planner = () => {
               >
                 {headerEyebrowText}
               </div>
-              <h1 className="font-serif italic font-normal text-2xl sm:text-3xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0 mt-1.5 truncate">
+              <h1 className="font-serif italic font-normal text-2xl sm:text-3xl md:text-5xl leading-[1.15] tracking-tight text-foreground m-0 mt-1.5 pr-2 pb-1 overflow-visible whitespace-nowrap">
                 {headerTitleText}
               </h1>
             </div>
