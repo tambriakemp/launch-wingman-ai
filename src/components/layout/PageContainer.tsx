@@ -15,7 +15,10 @@ interface PageContainerProps {
  * app constrains its content to this width so headers, hairlines, tabs,
  * grids, and cards all line up consistently across pages.
  *
- * Width: 1320px max, centered (`mx-auto`).
+ * Width: 1600px max, centered (`mx-auto`). High enough that the cap
+ * effectively only applies on ultra-wide displays; on a typical desktop
+ * (1280–1600 viewport with ~240px sidebar) the container uses the full
+ * available width minus its inner gutters.
  * Horizontal gutters: 24px each side. ProjectLayout's `<main>` already
  * adds `md:px-8` (32px) outside this container, so total content inset
  * from the viewport edge is 56px each side — close to a print column
@@ -41,7 +44,7 @@ export function PageContainer({
     <div
       className={cn("mx-auto", className)}
       style={{
-        maxWidth: 1320,
+        maxWidth: 1600,
         paddingTop,
         paddingBottom,
         paddingLeft: 24,
