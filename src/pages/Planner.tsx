@@ -639,9 +639,10 @@ const Planner = () => {
     <ProjectLayout>
       <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col bg-[hsl(var(--paper-100))] mx-auto w-full" style={{ maxWidth: 1600, paddingLeft: 24, paddingRight: 24 }}>
         <div style={{ paddingTop: 36 }}>
-          <div className="flex items-end justify-between gap-6 flex-wrap pb-7 border-b border-[hsl(var(--border-hairline))]">
+          <div className="flex items-end justify-between gap-3 md:gap-6 pb-7 border-b border-[hsl(var(--border-hairline))]">
             {/* Editorial title block — matches Goals + Habits page rhythm */}
-            <div className="min-w-0">
+            <div className="min-w-0 flex-shrink">
+
               <div
                 className="font-semibold uppercase"
                 style={{
