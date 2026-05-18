@@ -725,7 +725,7 @@ const Planner = () => {
               </Button>
             </div>
           </div>
-        </PageContainer>
+        </div>
 
         <div className="flex-1 overflow-hidden flex">
           {sunsamaView === "month" ? (
