@@ -2,11 +2,13 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   addDays,
-  
+  addMonths,
+  subMonths,
   format,
   startOfDay,
   startOfWeek,
   endOfWeek,
+  startOfMonth,
   getISOWeek,
 } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -517,8 +519,17 @@ const Planner = () => {
     setAnchorDate(startOfDay(new Date()));
     setScrollNonce((n) => n + 1);
   };
-  const shiftWeek = (deltaDays: number) => {
-    setAnchorDate((prev) => startOfDay(addDays(prev, deltaDays)));
+  // Navigation step adapts to the active view: week board scrolls by a
+  // week at a time, month + list step by a full month so the header
+  // label and content stay in sync.
+  const shiftView = (direction: -1 | 1) => {
+    setAnchorDate((prev) =>
+      sunsamaView === "board"
+        ? startOfDay(addDays(prev, direction * 7))
+        : startOfDay(
+            direction === 1 ? addMonths(prev, 1) : subMonths(prev, 1),
+          ),
+    );
     setScrollNonce((n) => n + 1);
   };
 
@@ -526,12 +537,22 @@ const Planner = () => {
   const weekEnd = endOfWeek(anchorDate, { weekStartsOn: 1 });
   const weekNumber = getISOWeek(anchorDate);
   const monthLabel = format(anchorDate, "MMMM yyyy");
-  // 61-day window centered on anchorDate (30 back, today, 30 forward)
+  // 61-day window centered on anchorDate (30 back, today, 30 forward) —
+  // used only by the week-board view; month + list use the full month.
   const weekDays = Array.from({ length: 61 }, (_, i) => addDays(startOfDay(anchorDate), i - 30));
-  const rangeLabel =
+  const weekRangeLabel =
     format(weekStart, "MMM") === format(weekEnd, "MMM")
       ? `${format(weekStart, "MMM d")} — ${format(weekEnd, "d")}`
       : `${format(weekStart, "MMM d")} — ${format(weekEnd, "MMM d")}`;
+
+  // Title + eyebrow adapt per view: week shows the date range with an
+  // ISO-week eyebrow; month + list show just "Month YYYY" with the
+  // calendar/year as the eyebrow.
+  const isMonthOrList = sunsamaView === "month" || sunsamaView === "list";
+  const headerTitleText = isMonthOrList ? format(anchorDate, "MMMM yyyy") : weekRangeLabel;
+  const headerEyebrowText = isMonthOrList
+    ? format(anchorDate, "yyyy")
+    : `Week ${weekNumber} · ${monthLabel}`;
 
   if (isMobile) {
     const mobileEditing = dialogOpen ? editingTask : null;
@@ -631,10 +652,10 @@ const Planner = () => {
                   color: "hsl(var(--terracotta-500))",
                 }}
               >
-                Week {weekNumber} · {monthLabel}
+                {headerEyebrowText}
               </div>
               <h1 className="font-serif italic font-normal text-4xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0 mt-1.5">
-                {rangeLabel}
+                {headerTitleText}
               </h1>
             </div>
 
@@ -651,13 +672,13 @@ const Planner = () => {
                 onClearCategories={handleClearCategories}
                 onManageSpaces={() => setManageSpacesOpen(true)}
               />
-              {/* Date nav pill */}
+              {/* Date nav pill — week steps in week view, month steps in month/list */}
               <div className="inline-flex items-center bg-card border border-border rounded-full p-0.5">
                 <button
                   type="button"
-                  onClick={() => shiftWeek(-7)}
+                  onClick={() => shiftView(-1)}
                   className="w-8 h-8 inline-flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
-                  aria-label="Previous week"
+                  aria-label={isMonthOrList ? "Previous month" : "Previous week"}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -670,9 +691,9 @@ const Planner = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => shiftWeek(7)}
+                  onClick={() => shiftView(1)}
                   className="w-8 h-8 inline-flex items-center justify-center rounded-full text-foreground/70 hover:bg-muted transition-colors"
-                  aria-label="Next week"
+                  aria-label={isMonthOrList ? "Next month" : "Next week"}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -741,6 +762,8 @@ const Planner = () => {
               spaces={spaces}
               allTasks={tasks}
               lockedView="month"
+              hideSidebar
+              controlledDate={anchorDate}
               subtaskProgress={subtaskProgress}
             />
           ) : sunsamaView === "list" ? (

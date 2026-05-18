@@ -60,6 +60,12 @@ interface PlannerCalendarViewProps {
   hideSidebar?: boolean;
   /** Map of taskId → { total, done } subtask counts. Drives the per-task progress badge. */
   subtaskProgress?: Record<string, { total: number; done: number }>;
+  /**
+   * Optional — when set, the view tracks this date instead of its internal
+   * state. Used by the planner toolbar so the prev/today/next arrows
+   * actually move the calendar.
+   */
+  controlledDate?: Date;
 }
 
 const HOUR_HEIGHT = 72;
@@ -142,8 +148,14 @@ export const PlannerCalendarView = ({
   lockedView,
   hideSidebar,
   subtaskProgress = {},
+  controlledDate,
 }: PlannerCalendarViewProps) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [internalDate, setInternalDate] = useState(new Date());
+  // When the parent passes `controlledDate`, defer to it; the calendar
+  // becomes a controlled component and its internal next/prev buttons
+  // (hidden in `lockedView` mode anyway) just update local state.
+  const currentDate = controlledDate ?? internalDate;
+  const setCurrentDate = setInternalDate;
   const [internalViewMode, setInternalViewMode] = useState<"month" | "week" | "day">("week");
   const viewMode = lockedView ?? internalViewMode;
   const setViewMode = setInternalViewMode;
@@ -426,13 +438,15 @@ export const PlannerCalendarView = ({
 
       {/* ===== MAIN CALENDAR AREA ===== */}
       <div className="flex-1 flex flex-col min-w-0 bg-background">
-        {/* Header */}
+        {/* Internal header — month/year title + view toggle + nav. Hidden
+            when locked, because the parent (planner toolbar) already
+            renders the title and navigation. */}
+        {!lockedView && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-border shrink-0">
           <h2 className="text-base sm:text-xl font-bold text-foreground">
             {format(currentDate, "MMMM, yyyy")}
           </h2>
 
-          {!lockedView && (
           <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1">
             {(["month", "week", "day"] as const).map((mode) => (
               <button
@@ -449,7 +463,6 @@ export const PlannerCalendarView = ({
               </button>
             ))}
           </div>
-          )}
 
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
@@ -463,6 +476,7 @@ export const PlannerCalendarView = ({
             </Button>
           </div>
         </div>
+        )}
 
         {viewMode === "week" || viewMode === "day" ? (
           <div className="flex-1 flex flex-col overflow-hidden">
