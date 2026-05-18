@@ -33,6 +33,8 @@ interface Props {
   onToggleComplete: (task: PlannerTask) => void;
   onDeleteTask: (id: string) => void;
   onAddTask: () => void;
+  /** Optional — opens the manage-spaces sheet from inside SpacePicker. */
+  onManageSpaces?: () => void;
 }
 
 const statusLabel = (col?: string | null) => {
@@ -438,6 +440,7 @@ export const MobilePlanner = ({
   onToggleComplete,
   onDeleteTask,
   onAddTask,
+  onManageSpaces,
 }: Props) => {
   // Seed from ?filter=… so links from the dashboard (Due Today / Upcoming
   // cards) land on the correct chip. Keep state in sync if the URL changes
@@ -627,6 +630,7 @@ export const MobilePlanner = ({
               onSelectSpace={onSelectSpace}
               onToggleCategory={onToggleCategory}
               onClearCategories={onClearCategories}
+              onManageSpaces={onManageSpaces}
             />
           </div>
           <h1

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X, Settings2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHaptics } from "@/hooks/useHaptics";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,6 +17,12 @@ interface SpacePickerProps {
   onSelectSpace: (id: string | null) => void;
   onToggleCategory: (id: string) => void;
   onClearCategories: () => void;
+  /**
+   * Optional — when provided, a "Manage spaces" link appears in the picker
+   * footer that closes the picker and invokes this callback. The parent
+   * page is expected to open the ManageSpacesSheet in response.
+   */
+  onManageSpaces?: () => void;
 }
 
 /**
@@ -33,6 +39,7 @@ export function SpacePicker({
   onSelectSpace,
   onToggleCategory,
   onClearCategories,
+  onManageSpaces,
 }: SpacePickerProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -115,6 +122,14 @@ export function SpacePicker({
       onToggleCategory={onToggleCategory}
       onClearCategories={onClearCategories}
       onClose={() => setOpen(false)}
+      onManageSpaces={
+        onManageSpaces
+          ? () => {
+              setOpen(false);
+              onManageSpaces();
+            }
+          : undefined
+      }
     />
   );
 
@@ -156,6 +171,7 @@ interface PickerBodyProps {
   onToggleCategory: (id: string) => void;
   onClearCategories: () => void;
   onClose: () => void;
+  onManageSpaces?: () => void;
 }
 
 function PickerBody({
@@ -168,6 +184,7 @@ function PickerBody({
   onToggleCategory,
   onClearCategories,
   onClose,
+  onManageSpaces,
 }: PickerBodyProps) {
   const { trigger: haptic } = useHaptics();
 
@@ -268,6 +285,22 @@ function PickerBody({
             );
           })}
         </section>
+      )}
+
+      {/* Manage spaces link — opens the editorial management sheet */}
+      {onManageSpaces && (
+        <div className="border-t border-[hsl(var(--border-hairline))] pt-3 -mx-3 px-3">
+          <button
+            onClick={() => {
+              haptic("selection");
+              onManageSpaces();
+            }}
+            className="w-full inline-flex items-center gap-2 px-2 py-2 rounded-lg text-left text-[13px] font-medium text-[hsl(var(--ink-700))] hover:bg-[hsl(var(--paper-100))] transition-colors"
+          >
+            <Settings2 className="w-3.5 h-3.5 text-[hsl(var(--fg-muted))]" />
+            Manage spaces
+          </button>
+        </div>
       )}
 
       {/* Footer — close action for mobile */}

@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SpacePicker } from "@/components/planner/SpacePicker";
+import { ManageSpacesSheet } from "@/components/planner/ManageSpacesSheet";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
@@ -478,6 +479,7 @@ const Planner = () => {
   };
 
   const [mobileAddOpen, setMobileAddOpen] = useState(false);
+  const [manageSpacesOpen, setManageSpacesOpen] = useState(false);
 
   const handleAddTask = () => {
     setEditingTask(null);
@@ -548,6 +550,7 @@ const Planner = () => {
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
           onAddTask={() => { setEditingTask(null); setDefaultDueAt(null); setMobileAddOpen(true); }}
+          onManageSpaces={() => setManageSpacesOpen(true)}
         />
         <MobileAddTaskSheet
           open={mobileAddOpen || (!!mobileEditing)}
@@ -587,6 +590,27 @@ const Planner = () => {
           onCreateSpace={createSpace}
           editTask={mobileEditing}
         />
+
+        <ManageSpacesSheet
+          open={manageSpacesOpen}
+          onOpenChange={setManageSpacesOpen}
+          spaces={spaces}
+          taskCountsBySpace={tasks.reduce<Record<string, number>>((acc, t) => {
+            const sid = (t as any).space_id;
+            if (sid) acc[sid] = (acc[sid] ?? 0) + 1;
+            return acc;
+          }, {})}
+          onCreateSpace={createSpace}
+          onUpdateSpace={async (id, updates) => {
+            await updateSpace(id, updates);
+          }}
+          onDeleteSpace={async (id) => {
+            await deleteSpace(id);
+            if (selectedSpaceId === id) {
+              handleSelectSpace(null);
+            }
+          }}
+        />
       </>
     );
   }
@@ -625,6 +649,7 @@ const Planner = () => {
                 onSelectSpace={handleSelectSpace}
                 onToggleCategory={handleToggleCategory}
                 onClearCategories={handleClearCategories}
+                onManageSpaces={() => setManageSpacesOpen(true)}
               />
               {/* Date nav pill */}
               <div className="inline-flex items-center bg-card border border-border rounded-full p-0.5">
@@ -773,6 +798,28 @@ const Planner = () => {
         allCategories={categories}
         selectedSpaceId={selectedSpaceId}
         onCreateCategory={createCategory}
+      />
+
+      <ManageSpacesSheet
+        open={manageSpacesOpen}
+        onOpenChange={setManageSpacesOpen}
+        spaces={spaces}
+        taskCountsBySpace={tasks.reduce<Record<string, number>>((acc, t) => {
+          const sid = (t as any).space_id;
+          if (sid) acc[sid] = (acc[sid] ?? 0) + 1;
+          return acc;
+        }, {})}
+        onCreateSpace={createSpace}
+        onUpdateSpace={async (id, updates) => {
+          await updateSpace(id, updates);
+        }}
+        onDeleteSpace={async (id) => {
+          await deleteSpace(id);
+          // If the deleted space was selected, clear the filter.
+          if (selectedSpaceId === id) {
+            handleSelectSpace(null);
+          }
+        }}
       />
     </ProjectLayout>
   );
