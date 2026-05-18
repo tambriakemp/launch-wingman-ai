@@ -654,13 +654,13 @@ const Planner = () => {
               >
                 {headerEyebrowText}
               </div>
-              <h1 className="font-serif italic font-normal text-4xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0 mt-1.5">
+              <h1 className="font-serif italic font-normal text-2xl sm:text-3xl md:text-5xl leading-[1.02] tracking-tight text-foreground m-0 mt-1.5 truncate">
                 {headerTitleText}
               </h1>
             </div>
 
             {/* Right cluster: space picker, prev/today/next pill, view toggle, action */}
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end shrink-0">
               <SpacePicker
                 spaces={spaces}
                 categories={categories}
