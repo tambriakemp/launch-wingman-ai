@@ -70,7 +70,7 @@ export function SpacePicker({
       type="button"
       onClick={() => setOpen(true)}
       className={cn(
-        "inline-flex items-center gap-2 h-8 rounded-full px-3 text-[12.5px] font-semibold border transition-colors",
+        "inline-flex items-center gap-2 h-9 rounded-full px-3.5 text-[12.5px] font-semibold border transition-colors",
         selectedSpace
           ? "bg-card text-foreground"
           : "bg-muted/60 text-foreground"
