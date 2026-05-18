@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { expandAllRecurring } from "./recurrenceUtils";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+import { SubtaskProgress } from "./SubtaskProgress";
 
 const DEFAULT_SPACE_COLOR = "#94a3b8";
 
@@ -50,6 +51,8 @@ interface Props {
   onCreateTask?: (defaults: { due_at?: string }) => void;
   onToggleComplete?: (task: PlannerTask) => void;
   onTasksChanged?: () => void;
+  /** Map of taskId → { total, done } subtask counts. */
+  subtaskProgress?: Record<string, { total: number; done: number }>;
 }
 
 function getTaskDateKey(task: PlannerTask): string | null {
@@ -89,6 +92,7 @@ export const PlannerWeekBoardView = ({
   onCreateTask,
   onToggleComplete,
   onTasksChanged,
+  subtaskProgress = {},
 }: Props) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -364,7 +368,7 @@ export const PlannerWeekBoardView = ({
                                 {task.title}
                               </div>
 
-                              {/* Space pill */}
+                              {/* Space pill + subtask % */}
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span
                                   className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold tracking-wide whitespace-nowrap"
@@ -373,6 +377,13 @@ export const PlannerWeekBoardView = ({
                                   <span className="w-[5px] h-[5px] rounded-full" style={{ background: spaceColor }} />
                                   {spaceName}
                                 </span>
+                                {subtaskProgress[task.id] && (
+                                  <SubtaskProgress
+                                    total={subtaskProgress[task.id].total}
+                                    done={subtaskProgress[task.id].done}
+                                    compact
+                                  />
+                                )}
                                 {isRecurring && <Repeat className="w-3 h-3 text-muted-foreground" />}
                               </div>
                             </div>

@@ -39,6 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+import { SubtaskProgress } from "./SubtaskProgress";
 
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
@@ -57,6 +58,8 @@ interface PlannerCalendarViewProps {
   lockedView?: "month" | "week" | "day";
   /** Hide the entire left sidebar (Upcoming/Priorities/Habits). */
   hideSidebar?: boolean;
+  /** Map of taskId → { total, done } subtask counts. Drives the per-task progress badge. */
+  subtaskProgress?: Record<string, { total: number; done: number }>;
 }
 
 const HOUR_HEIGHT = 72;
@@ -138,6 +141,7 @@ export const PlannerCalendarView = ({
   sidebarTopSlot,
   lockedView,
   hideSidebar,
+  subtaskProgress = {},
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [internalViewMode, setInternalViewMode] = useState<"month" | "week" | "day">("week");
@@ -331,7 +335,16 @@ export const PlannerCalendarView = ({
                   >
                     <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: space?.color || '#71717a' }} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{task.title}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-medium text-foreground truncate flex-1 min-w-0">{task.title}</p>
+                        {subtaskProgress[task.id] && (
+                          <SubtaskProgress
+                            total={subtaskProgress[task.id].total}
+                            done={subtaskProgress[task.id].done}
+                            compact
+                          />
+                        )}
+                      </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {task.due_at && format(parseISO(task.due_at), "MMM d")}
                       </p>
@@ -500,13 +513,20 @@ export const PlannerCalendarView = ({
                           <button
                             key={task.id}
                             className={cn(
-                              "text-xs font-medium px-2.5 py-1 rounded-md truncate w-full text-left transition-colors border",
+                              "text-xs font-medium px-2.5 py-1 rounded-md w-full text-left transition-colors border inline-flex items-center gap-1.5 min-w-0",
                               isDone && "opacity-50 line-through"
                             )}
                             style={colorStyle}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
-                            {task.title}
+                            <span className="truncate flex-1 min-w-0">{task.title}</span>
+                            {subtaskProgress[task.id] && (
+                              <SubtaskProgress
+                                total={subtaskProgress[task.id].total}
+                                done={subtaskProgress[task.id].done}
+                                compact
+                              />
+                            )}
                           </button>
                         );
                       })}
@@ -588,9 +608,18 @@ export const PlannerCalendarView = ({
                             }}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
-                            <span className={cn("text-sm font-bold truncate block leading-tight", isDone && "line-through")}>
-                              {task.title}
-                            </span>
+                            <div className="flex items-start gap-1.5">
+                              <span className={cn("text-sm font-bold truncate flex-1 min-w-0 leading-tight", isDone && "line-through")}>
+                                {task.title}
+                              </span>
+                              {subtaskProgress[task.id] && (
+                                <SubtaskProgress
+                                  total={subtaskProgress[task.id].total}
+                                  done={subtaskProgress[task.id].done}
+                                  compact
+                                />
+                              )}
+                            </div>
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
                               <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
                             )}
@@ -652,19 +681,28 @@ export const PlannerCalendarView = ({
                           <button
                             key={task.id}
                             className={cn(
-                              "w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium border",
+                              "w-full text-left text-[10px] px-2 py-1 rounded-lg transition-colors font-medium border inline-flex items-center gap-1 min-w-0",
                               isDone && "opacity-50 line-through"
                             )}
                             style={colorStyle}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
-                            {task.start_at && !isAllDayTask(task) && (() => {
-                              const s = parseISO(task.start_at);
-                              return <span className="font-bold">{format(s, "h:mm")} </span>;
-                            })()}
-                            {task.title}
-                            {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
-                              <span className="opacity-50"> ↻</span>
+                            <span className="truncate flex-1 min-w-0">
+                              {task.start_at && !isAllDayTask(task) && (() => {
+                                const s = parseISO(task.start_at);
+                                return <span className="font-bold">{format(s, "h:mm")} </span>;
+                              })()}
+                              {task.title}
+                              {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
+                                <span className="opacity-50"> ↻</span>
+                              )}
+                            </span>
+                            {subtaskProgress[task.id] && (
+                              <SubtaskProgress
+                                total={subtaskProgress[task.id].total}
+                                done={subtaskProgress[task.id].done}
+                                compact
+                              />
                             )}
                           </button>
                         );

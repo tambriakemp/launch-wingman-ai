@@ -55,6 +55,12 @@ const Planner = () => {
   const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
   const [scrollNonce, setScrollNonce] = useState(0);
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
+  /**
+   * Per-task subtask completion counts. Used by every view to render the
+   * % badge next to tasks that have subtasks. Refreshes on every
+   * fetchTasks() so the badge updates after the task dialog closes.
+   */
+  const [subtaskProgress, setSubtaskProgress] = useState<Record<string, { total: number; done: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
@@ -113,20 +119,41 @@ const Planner = () => {
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("task_scope", "planner")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    // Fetch tasks + subtask completion aggregates in parallel — the badge
+    // displayed per task in every view needs the subtask counts, so we
+    // hydrate them in the same trip and keep them in sync.
+    const [tasksRes, subtasksRes] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("task_scope", "planner")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("subtasks")
+        .select("task_id, completed")
+        .eq("user_id", user.id),
+    ]);
 
-    if (error) {
-      console.error("Error fetching planner tasks:", error);
+    if (tasksRes.error) {
+      console.error("Error fetching planner tasks:", tasksRes.error);
       toast.error("Failed to load planner tasks");
     } else {
-      setTasks((data as unknown as PlannerTask[]) || []);
+      setTasks((tasksRes.data as unknown as PlannerTask[]) || []);
     }
+
+    if (!subtasksRes.error && subtasksRes.data) {
+      const map: Record<string, { total: number; done: number }> = {};
+      for (const s of subtasksRes.data as Array<{ task_id: string | null; completed: boolean | null }>) {
+        if (!s.task_id) continue;
+        if (!map[s.task_id]) map[s.task_id] = { total: 0, done: 0 };
+        map[s.task_id].total += 1;
+        if (s.completed) map[s.task_id].done += 1;
+      }
+      setSubtaskProgress(map);
+    }
+
     setIsLoading(false);
   }, [user]);
 
@@ -689,6 +716,7 @@ const Planner = () => {
               spaces={spaces}
               allTasks={tasks}
               lockedView="month"
+              subtaskProgress={subtaskProgress}
             />
           ) : sunsamaView === "list" ? (
             <div className="flex-1 overflow-hidden">
@@ -709,6 +737,7 @@ const Planner = () => {
                 selectedSpaceId={selectedSpaceId}
                 allCategories={categories}
                 onUpdateSpace={updateSpace}
+                subtaskProgress={subtaskProgress}
               />
             </div>
           ) : (
@@ -725,6 +754,7 @@ const Planner = () => {
                 onCreateTask={handleQuickCreate}
                 onToggleComplete={handleToggleComplete}
                 onTasksChanged={fetchTasks}
+                subtaskProgress={subtaskProgress}
               />
             </div>
           )}

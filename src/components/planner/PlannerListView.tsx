@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/popover";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+import { SubtaskProgress } from "./SubtaskProgress";
 
 interface PlannerListViewProps {
   tasks: PlannerTask[];
@@ -45,6 +46,8 @@ interface PlannerListViewProps {
   selectedSpaceId?: string | null;
   allCategories?: SpaceCategory[];
   onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
+  /** Map of taskId → { total, done } subtask counts. Tasks not in the map render no badge. */
+  subtaskProgress?: Record<string, { total: number; done: number }>;
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
@@ -118,7 +121,7 @@ export const PlannerListView = ({
   categories = [], spaces = [],
   onBulkMoveSpace, onBulkDelete, onBulkUpdateCategory, onBulkUpdateStatus,
   onCreateCategory, selectedSpaceId, allCategories = [],
-  onUpdateSpace,
+  onUpdateSpace, subtaskProgress = {},
 }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
@@ -237,6 +240,7 @@ export const PlannerListView = ({
                     onToggleSelect={toggleSelect}
                     hasSelection={selectedIds.size > 0}
                     showSpaceColumn={!selectedSpaceId}
+                    subtaskCounts={subtaskProgress[task.id]}
                   />
                 ))}
                 {onAddTask && (
@@ -408,7 +412,7 @@ function BulkCategoryPicker({
 }
 
 // --- Task Row ---
-function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, categories, spaces, isSelected, onToggleSelect, hasSelection, showSpaceColumn }: {
+function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, categories, spaces, isSelected, onToggleSelect, hasSelection, showSpaceColumn, subtaskCounts }: {
   task: PlannerTask;
   onToggleComplete: (t: PlannerTask) => void;
   onEdit: (t: PlannerTask) => void;
@@ -420,6 +424,7 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
   onToggleSelect: (id: string) => void;
   hasSelection: boolean;
   showSpaceColumn: boolean;
+  subtaskCounts?: { total: number; done: number };
 }) {
   const isDone = task.column_id === "done";
 
@@ -479,6 +484,9 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, cate
         </button>
 
         <span className={cn("text-[13px] font-medium leading-snug truncate text-foreground", isDone && "line-through text-muted-foreground font-normal")}>{task.title}</span>
+        {subtaskCounts && (
+          <SubtaskProgress total={subtaskCounts.total} done={subtaskCounts.done} />
+        )}
       </div>
 
       <span className={cn(
