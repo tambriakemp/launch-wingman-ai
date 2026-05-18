@@ -38,7 +38,6 @@ import { ManageSpacesSheet } from "@/components/planner/ManageSpacesSheet";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { useStatusVisibility } from "@/hooks/useStatusVisibility";
-import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 import { PageLoader } from "@/components/ui/page-loader";
 import { MobilePlanner } from "@/components/planner/mobile/MobilePlanner";
 import { MobileAddTaskSheet } from "@/components/planner/mobile/MobileAddTaskSheet";
@@ -726,15 +725,10 @@ const Planner = () => {
               </div>
 
 
-              {sunsamaView === "list" && (
-                // Status-only — space/category filtering is handled by the
-                // SpacePicker above. The component already makes those props
-                // optional and conditionally hides those sections.
-                <StatusVisibilitySettings
-                  visibility={visibility}
-                  onToggle={toggleVisibility}
-                />
-              )}
+              {/* Status visibility now lives inside PlannerListView's Layout
+                  options popover (the gear icon at the right of the list
+                  header row), so the toolbar no longer needs its own
+                  status filter. */}
 
               {/* Primary action — terracotta-like rounded pill */}
               <Button
@@ -786,6 +780,8 @@ const Planner = () => {
                 allCategories={categories}
                 onUpdateSpace={updateSpace}
                 subtaskProgress={subtaskProgress}
+                statusVisibility={visibility}
+                onToggleStatus={toggleVisibility}
               />
             </div>
           ) : (

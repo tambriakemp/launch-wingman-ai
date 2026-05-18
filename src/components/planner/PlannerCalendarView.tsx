@@ -660,14 +660,23 @@ export const PlannerCalendarView = ({
             </div>
           </div>
         ) : (
-          /* Monthly view */
-          <div className="flex-1 overflow-auto p-3">
-            <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d} className="text-center text-[11px] font-medium text-muted-foreground py-2.5 bg-muted/30">
-                  {d}
-                </div>
-              ))}
+          /* Monthly view — centered column, day-headers pinned, calendar
+             cells fill remaining height in equal-fraction rows so the
+             grid doesn't visually compress when stepping between months
+             with 5 vs 6 week rows. */
+          <div className="flex-1 overflow-auto px-6 py-4">
+            <div className="mx-auto h-full flex flex-col" style={{ maxWidth: 1320 }}>
+              {/* Day-of-week header row */}
+              <div className="grid grid-cols-7 gap-px bg-border rounded-t-xl overflow-hidden">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                  <div key={d} className="text-center text-[11px] font-medium text-muted-foreground py-2.5 bg-muted/30">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar grid — fills the rest of the column height, equal-fraction rows */}
+              <div className="grid grid-cols-7 grid-flow-row auto-rows-fr gap-px bg-border rounded-b-xl overflow-hidden flex-1 min-h-[500px]">
               {monthDays.map((day) => {
                 const dayTasks = getTasksForDay(day);
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -676,7 +685,7 @@ export const PlannerCalendarView = ({
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      "min-h-[100px] p-2 bg-card cursor-pointer hover:bg-accent/10 transition-colors",
+                      "min-h-[100px] p-2 bg-card cursor-pointer hover:bg-accent/10 transition-colors overflow-hidden",
                       !isCurrentMonth && "opacity-35"
                     )}
                     onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
@@ -730,6 +739,7 @@ export const PlannerCalendarView = ({
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         )}

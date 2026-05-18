@@ -28,6 +28,16 @@ import {
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 import { SubtaskProgress } from "./SubtaskProgress";
+import { ALL_STATUSES } from "@/hooks/useStatusVisibility";
+
+const STATUS_DOTS: Record<string, string> = {
+  todo: "bg-muted-foreground",
+  "in-progress": "bg-blue-500",
+  "in-review": "bg-purple-500",
+  done: "bg-emerald-500",
+  blocked: "bg-red-500",
+  abandoned: "bg-zinc-400",
+};
 
 interface PlannerListViewProps {
   tasks: PlannerTask[];
@@ -48,6 +58,10 @@ interface PlannerListViewProps {
   onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
   /** Map of taskId → { total, done } subtask counts. Tasks not in the map render no badge. */
   subtaskProgress?: Record<string, { total: number; done: number }>;
+  /** Status visibility map (statusId → boolean). When provided, the Layout
+   *  options popover surfaces a "Show statuses" toggle list. */
+  statusVisibility?: Record<string, boolean>;
+  onToggleStatus?: (statusId: string) => void;
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
@@ -122,6 +136,7 @@ export const PlannerListView = ({
   onBulkMoveSpace, onBulkDelete, onBulkUpdateCategory, onBulkUpdateStatus,
   onCreateCategory, selectedSpaceId, allCategories = [],
   onUpdateSpace, subtaskProgress = {},
+  statusVisibility, onToggleStatus,
 }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
@@ -177,18 +192,19 @@ export const PlannerListView = ({
         <span>Category</span>
         <span>Status</span>
         <span>
-          {activeSpace && onUpdateSpace && (
-            <SettingsPopover>
-              <SettingsPopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Settings2 className="w-3.5 h-3.5" />
-                </Button>
-              </SettingsPopoverTrigger>
-              <SettingsPopoverContent align="end" className="w-64 p-0">
-                <div className="px-4 py-3 border-b border-border">
-                  <span className="text-sm font-medium text-foreground">Layout options</span>
-                </div>
-                <div className="p-3 space-y-3">
+          <SettingsPopover>
+            <SettingsPopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Settings2 className="w-3.5 h-3.5" />
+              </Button>
+            </SettingsPopoverTrigger>
+            <SettingsPopoverContent align="end" className="w-64 p-0 max-h-[70vh] overflow-y-auto">
+              <div className="px-4 py-3 border-b border-border">
+                <span className="text-sm font-medium text-foreground">Layout options</span>
+              </div>
+
+              {activeSpace && onUpdateSpace && (
+                <div className="p-3 border-b border-border space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-foreground">Pin description</span>
                     <Switch
@@ -197,9 +213,32 @@ export const PlannerListView = ({
                     />
                   </div>
                 </div>
-              </SettingsPopoverContent>
-            </SettingsPopover>
-          )}
+              )}
+
+              {statusVisibility && onToggleStatus && (
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Show statuses
+                  </p>
+                  <div className="space-y-2.5">
+                    {ALL_STATUSES.map((s) => (
+                      <label key={s.id} className="flex items-center justify-between cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("w-2 h-2 rounded-full", STATUS_DOTS[s.id] || "bg-muted-foreground")} />
+                          <span className="text-sm">{s.label}</span>
+                        </div>
+                        <Switch
+                          checked={statusVisibility[s.id] !== false}
+                          onCheckedChange={() => onToggleStatus(s.id)}
+                          className="scale-75"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </SettingsPopoverContent>
+          </SettingsPopover>
         </span>
       </div>
 
