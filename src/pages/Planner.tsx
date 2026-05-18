@@ -745,22 +745,24 @@ const Planner = () => {
 
         <div className="flex-1 overflow-hidden flex">
           {sunsamaView === "month" ? (
-            <PlannerCalendarView
-              tasks={filteredTasks}
-              isLoading={isLoading}
-              onEditTask={handleEditTask}
-              onCreateTask={handleQuickCreate}
-              onToggleComplete={handleToggleComplete}
-              onDeleteTask={handleDeleteTask}
-              onAddTask={handleAddTask}
-              categories={activeCategories}
-              spaces={spaces}
-              allTasks={tasks}
-              lockedView="month"
-              hideSidebar
-              controlledDate={anchorDate}
-              subtaskProgress={subtaskProgress}
-            />
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <PlannerCalendarView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+                allTasks={tasks}
+                lockedView="month"
+                hideSidebar
+                controlledDate={anchorDate}
+                subtaskProgress={subtaskProgress}
+              />
+            </div>
           ) : sunsamaView === "list" ? (
             <div className="flex-1 overflow-hidden">
               <PlannerListView
