@@ -422,6 +422,8 @@ const Auth = () => {
         .pro-upsell .link:hover { background: #000; }
 
         .legal { font-family: var(--font-body); font-size: 12px; color: hsl(var(--fg-muted)); text-align: center; margin-top: 28px; line-height: 1.55; }
+        .legal-link { color: hsl(var(--ink-900)); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; transition: color 160ms; }
+        .legal-link:hover { color: hsl(var(--terracotta-500)); }
       `}</style>
 
       <div className="auth-shell">
@@ -766,7 +768,25 @@ const Auth = () => {
                 )}
 
                 <div className="legal">
-                  By continuing, you agree to our Terms of Service and Privacy Policy.
+                  By continuing, you agree to our{" "}
+                  <a
+                    href="https://launchely.com/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="legal-link"
+                  >
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="https://launchely.com/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="legal-link"
+                  >
+                    Privacy Policy
+                  </a>
+                  .
                 </div>
               </>
             )}
