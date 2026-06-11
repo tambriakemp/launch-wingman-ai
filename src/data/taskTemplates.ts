@@ -1481,7 +1481,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       'The page looks correct on mobile',
       'You have the live URL',
     ],
-    whyItMatters: 'Lovable lets you build a professional sales page without writing a single line of code. You paste your copy, describe how you want it to look, and Lovable builds it. The result is a real hosted page at your domain — not a landing page builder template that looks like everyone else's.',
+    whyItMatters: "Lovable lets you build a professional sales page without writing a single line of code. You paste your copy, describe how you want it to look, and Lovable builds it. The result is a real hosted page at your domain — not a landing page builder template that looks like everyone else's.",
     instructions: [
       'Open Lovable and create a new project or open your existing one',
       'Use the AI prompt below to generate your Lovable build prompt — paste your sales page copy directly in',
