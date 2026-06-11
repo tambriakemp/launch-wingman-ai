@@ -1,5 +1,6 @@
 // Phase definitions - ordered sequence
 export const PHASES = [
+  'foundation',
   'setup',
   'planning',
   'messaging',
@@ -13,6 +14,7 @@ export const PHASES = [
 export type Phase = typeof PHASES[number];
 
 export const PHASE_LABELS: Record<Phase, string> = {
+  foundation: 'Business Foundation',
   setup: 'Setup',
   planning: 'Planning',
   messaging: 'Messaging',

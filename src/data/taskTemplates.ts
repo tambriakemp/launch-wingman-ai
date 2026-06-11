@@ -1863,3 +1863,574 @@ export function getSetupTasks(): TaskTemplate[] {
     .filter(task => task.phase === 'setup')
     .sort((a, b) => a.order - b.order);
 }
+
+// ============================================================
+// BUSINESS FOUNDATION TASKS
+// Account-level, pre-project track. Runs once per user.
+// Covers 3 sections: Business Identity, Online Presence, Essentials.
+// Routes use /foundation/tasks/:taskId (not project-scoped).
+// Completion saves to profiles table, not project_tasks.
+// Free tier has full access — this is the free entry point.
+// ============================================================
+
+export const FOUNDATION_TASK_TEMPLATES: TaskTemplate[] = [
+
+  // ── SECTION 1: BUSINESS IDENTITY ──────────────────────────
+
+  {
+    taskId: 'foundation_business_name',
+    title: 'Set your business name and tagline',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: [],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a business name you are actively using',
+      'You have a one-line description of what you do',
+    ],
+    whyItMatters: 'Your business name and tagline are the first things people see — on your site, your social profiles, your Google listing, and anywhere you show up. Getting these locked in now means every other step builds on a clear foundation instead of a moving target.',
+    instructions: [
+      'Enter the name you use (or want to use) for your business',
+      'Write a one-liner that says who you help and what you help them do',
+      'Keep the tagline plain — no jargon, no buzzwords',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'business_name',
+          label: 'Business name',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Cre8 Visions, Auto Glass by Marcus',
+        },
+        {
+          name: 'tagline',
+          label: 'What do you do? (one sentence)',
+          type: 'textarea',
+          required: true,
+          placeholder: 'e.g. We build the websites and marketing systems that help small businesses grow.',
+          helperText: 'Write it like you\'d say it to someone at a cookout — not a LinkedIn bio.',
+        },
+        {
+          name: 'doing_business_as',
+          label: 'Do you operate under a different DBA name?',
+          type: 'text',
+          required: false,
+          placeholder: 'Leave blank if not applicable',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/foundation/tasks/foundation_business_name',
+    exampleText: 'Auto Glass by Marcus → "I fix windshields and windows fast — same-day service for cars, trucks, and fleets in the Atlanta area."',
+  },
+
+  {
+    taskId: 'foundation_business_type',
+    title: 'Confirm your business structure',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 2,
+    priority: 1,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 10,
+    blocking: true,
+    dependencies: ['foundation_business_name'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know what type of business entity you are operating as',
+      'You have noted what is still pending if anything',
+    ],
+    whyItMatters: 'Banks, payment processors, and clients ask for this. Knowing your structure — and what\'s missing — helps you move faster and look more legitimate from day one.',
+    instructions: [
+      'Select the structure that best describes your business right now',
+      'If you are still setting things up, select what is in progress',
+      'Note any gaps so you can address them before they block you',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'entity_type',
+          label: 'Business structure',
+          type: 'select',
+          required: true,
+          placeholder: 'Select your structure...',
+          options: [
+            { value: 'sole_prop', label: 'Sole Proprietor (operating under my own name)' },
+            { value: 'dba', label: 'DBA / Fictitious name (operating under a business name)' },
+            { value: 'llc', label: 'LLC (Limited Liability Company)' },
+            { value: 'llc_pending', label: 'LLC in progress (filing or renewing)' },
+            { value: 's_corp', label: 'S-Corp' },
+            { value: 'c_corp', label: 'C-Corp' },
+            { value: 'nonprofit', label: 'Nonprofit' },
+            { value: 'not_sure', label: 'Not sure yet' },
+          ],
+        },
+        {
+          name: 'industry',
+          label: 'What industry are you in?',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Auto glass repair, Digital marketing, Hair salon, Construction',
+        },
+        {
+          name: 'years_in_business',
+          label: 'How long have you been in business?',
+          type: 'select',
+          required: false,
+          placeholder: 'Select...',
+          options: [
+            { value: 'idea_stage', label: 'Just getting started' },
+            { value: 'less_than_1', label: 'Less than a year' },
+            { value: '1_to_3', label: '1–3 years' },
+            { value: '3_to_5', label: '3–5 years' },
+            { value: '5_plus', label: '5+ years' },
+          ],
+        },
+        {
+          name: 'structure_notes',
+          label: 'Anything still in progress? (optional)',
+          type: 'textarea',
+          required: false,
+          placeholder: 'e.g. Need to renew LLC, waiting on EIN, need a business bank account...',
+          helperText: 'This just helps us surface the right next steps for you.',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'simplify'],
+    route: '/foundation/tasks/foundation_business_type',
+  },
+
+  {
+    taskId: 'foundation_contact_info',
+    title: 'Set up your professional contact info',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 3,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['foundation_business_name'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a professional email address — not a personal Gmail',
+      'You know the phone number you will use for business',
+    ],
+    whyItMatters: 'A professional email (you@yourbusiness.com) builds trust instantly. Using a personal Gmail for business makes you look like a side hustle, not a company — even if your work is excellent.',
+    instructions: [
+      'Enter the email you use for business communication',
+      'If it\'s a personal Gmail, consider upgrading — Google Workspace starts at $6/month',
+      'Add your business phone number if you have one',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'business_email',
+          label: 'Business email address',
+          type: 'text',
+          required: true,
+          placeholder: 'you@yourbusiness.com',
+        },
+        {
+          name: 'email_type',
+          label: 'Email setup',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'custom_domain', label: 'Custom domain email (you@yourbusiness.com)' },
+            { value: 'google_workspace', label: 'Google Workspace' },
+            { value: 'personal_gmail', label: 'Personal Gmail (need to upgrade)' },
+            { value: 'outlook_personal', label: 'Personal Outlook / Hotmail (need to upgrade)' },
+            { value: 'other_personal', label: 'Other personal email (need to upgrade)' },
+          ],
+        },
+        {
+          name: 'business_phone',
+          label: 'Business phone number (optional)',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. (404) 555-0100 or Google Voice number',
+          helperText: 'A Google Voice number is free and keeps your personal number private.',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose'],
+    toolLinks: [
+      { label: 'Set up Google Workspace', url: 'https://workspace.google.com', icon: 'mail' },
+      { label: 'Get a free Google Voice number', url: 'https://voice.google.com', icon: 'phone' },
+    ],
+    route: '/foundation/tasks/foundation_contact_info',
+  },
+
+  // ── SECTION 2: ONLINE PRESENCE ────────────────────────────
+
+  {
+    taskId: 'foundation_domain',
+    title: 'Claim your domain name',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 4,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 30,
+    blocking: false,
+    dependencies: ['foundation_business_name'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You own a domain name for your business',
+      'You know where it is registered and can access it',
+    ],
+    whyItMatters: 'Your domain is your permanent address online. Without one, every link you share, every email you send, and every site you build is on rented ground. A .com runs about $12/year — it\'s the cheapest credibility you can buy.',
+    instructions: [
+      'Check if you already own a domain for your business',
+      'If not, search for one — keep it short, easy to spell, and close to your business name',
+      'Register it at Namecheap or GoDaddy if you don\'t have one yet',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'domain_status',
+          label: 'Do you have a domain?',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'owned', label: 'Yes — I own one' },
+            { value: 'need_to_buy', label: 'No — I need to get one' },
+            { value: 'using_social_only', label: 'Not right now — using social profiles only' },
+          ],
+        },
+        {
+          name: 'domain_name',
+          label: 'Your domain (if you have one)',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. yourbusiness.com',
+        },
+        {
+          name: 'registrar',
+          label: 'Where is it registered? (if you have one)',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. Namecheap, GoDaddy, Google Domains',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples'],
+    toolLinks: [
+      { label: 'Search domains on Namecheap', url: 'https://www.namecheap.com', icon: 'globe' },
+      { label: 'Search domains on GoDaddy', url: 'https://www.godaddy.com', icon: 'globe' },
+    ],
+    route: '/foundation/tasks/foundation_domain',
+    exampleText: 'Keep it simple: yourbusinessname.com, or your name if you are a personal brand. Avoid hyphens, numbers, and anything hard to spell out loud.',
+  },
+
+  {
+    taskId: 'foundation_website_status',
+    title: 'Know where your website stands',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 5,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 10,
+    blocking: false,
+    dependencies: ['foundation_domain'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know whether you have a working website or not',
+      'You have a clear next step for your online presence',
+    ],
+    whyItMatters: 'Your website is where everything points — your social bio, your Google listing, your email signature. Knowing exactly where you stand right now helps you decide what to do next instead of staying stuck.',
+    instructions: [
+      'Select the option that best describes your website situation today',
+      'Be honest — there\'s no wrong answer, just a different next step',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'website_status',
+          label: 'Where is your website right now?',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'live_happy', label: 'Live and I\'m happy with it' },
+            { value: 'live_needs_work', label: 'Live but it needs a refresh or rebuild' },
+            { value: 'in_progress', label: 'In progress — currently being built' },
+            { value: 'need_to_build', label: 'I need to build one' },
+            { value: 'not_priority', label: 'Not a priority right now' },
+          ],
+        },
+        {
+          name: 'website_url',
+          label: 'Website URL (if you have one)',
+          type: 'text',
+          required: false,
+          placeholder: 'https://yourbusiness.com',
+        },
+        {
+          name: 'website_platform',
+          label: 'What platform is it on? (optional)',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. WordPress, Squarespace, Wix, Lovable, custom',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose'],
+    route: '/foundation/tasks/foundation_website_status',
+    // NOTE for dev: when website_status === 'need_to_build' || 'live_needs_work',
+    // surface an upgrade prompt to the Vibe Coding course after task completion.
+  },
+
+  {
+    taskId: 'foundation_social_profiles',
+    title: 'Audit your social media presence',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 6,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['foundation_business_name'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know which platforms you are active on',
+      'Your handles are consistent across platforms',
+      'Your bio and profile image are up to date on active profiles',
+    ],
+    whyItMatters: 'When someone looks you up after a referral or ad, they\'ll check every platform they can find. Inconsistent handles, outdated bios, or missing profile photos lose trust before you even get a chance to talk to them.',
+    instructions: [
+      'Check each platform you have an account on',
+      'Make sure your profile photo and business name match across all of them',
+      'Update any bio that still has old information',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'instagram_handle',
+          label: 'Instagram handle',
+          type: 'text',
+          required: false,
+          placeholder: '@yourbusiness',
+        },
+        {
+          name: 'facebook_url',
+          label: 'Facebook page URL',
+          type: 'text',
+          required: false,
+          placeholder: 'facebook.com/yourbusiness',
+        },
+        {
+          name: 'tiktok_handle',
+          label: 'TikTok handle',
+          type: 'text',
+          required: false,
+          placeholder: '@yourbusiness',
+        },
+        {
+          name: 'linkedin_url',
+          label: 'LinkedIn profile or company page',
+          type: 'text',
+          required: false,
+          placeholder: 'linkedin.com/in/yourname',
+        },
+        {
+          name: 'other_platforms',
+          label: 'Any other platforms you use?',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. YouTube, Pinterest, X/Twitter',
+        },
+        {
+          name: 'handles_consistent',
+          label: 'Are your handles consistent across platforms?',
+          type: 'select',
+          required: false,
+          placeholder: 'Select...',
+          options: [
+            { value: 'yes', label: 'Yes — same handle everywhere' },
+            { value: 'mostly', label: 'Mostly — a few are different' },
+            { value: 'no', label: 'No — need to fix this' },
+            { value: 'not_sure', label: 'Not sure' },
+          ],
+        },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    route: '/foundation/tasks/foundation_social_profiles',
+  },
+
+  // ── SECTION 3: BUSINESS ESSENTIALS ────────────────────────
+
+  {
+    taskId: 'foundation_google_business',
+    title: 'Set up your Google Business Profile',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 7,
+    priority: 3,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: false,
+    dependencies: ['foundation_contact_info'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a Google Business Profile or know it is not applicable',
+      'Your profile is claimed and basic information is filled in if applicable',
+    ],
+    whyItMatters: 'Google Business Profile is free and puts your business on the map — literally. When someone searches your name or your service in your area, this is what shows up. Clients like the one running Google ads need this verified and current before ads perform well.',
+    instructions: [
+      'Go to Google Business Profile and search for your business name',
+      'Claim it if it exists, or create a new listing',
+      'Fill in your name, address (or service area), phone, hours, and website',
+      'Add at least one photo',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'gbp_status',
+          label: 'Google Business Profile status',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'verified', label: 'Set up and verified' },
+            { value: 'created_not_verified', label: 'Created but not yet verified' },
+            { value: 'needs_setup', label: 'Need to create one' },
+            { value: 'not_applicable', label: 'Not applicable — fully online business' },
+          ],
+        },
+        {
+          name: 'gbp_url',
+          label: 'Google Business Profile link (if you have one)',
+          type: 'text',
+          required: false,
+          placeholder: 'g.co/kgs/... or maps.google.com/...',
+        },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [
+      { label: 'Open Google Business Profile', url: 'https://business.google.com', icon: 'map-pin' },
+    ],
+    route: '/foundation/tasks/foundation_google_business',
+  },
+
+  {
+    taskId: 'foundation_brand_basics',
+    title: 'Lock in your brand basics',
+    phase: 'foundation',
+    funnelTypes: ['all'],
+    order: 8,
+    priority: 3,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 30,
+    blocking: false,
+    dependencies: ['foundation_business_name'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a logo or know what you are using in its place',
+      'You have a primary color for your brand',
+      'You have a consistent visual direction you are using',
+    ],
+    whyItMatters: 'You don\'t need a perfect brand to start. But you need a consistent one. When your logo, colors, and profile photos match across every place you show up, you look like a real business — not someone figuring it out as they go.',
+    instructions: [
+      'Note what you are currently using as your logo',
+      'Pick or confirm one primary brand color',
+      'Describe your visual direction in one word if you can — professional, clean, bold, warm, etc.',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'logo_status',
+          label: 'Logo',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'have_logo', label: 'I have a logo I use consistently' },
+            { value: 'have_but_inconsistent', label: 'I have one but do not use it consistently' },
+            { value: 'text_only', label: 'Using my business name as text for now' },
+            { value: 'need_logo', label: 'I need a logo' },
+          ],
+        },
+        {
+          name: 'primary_color',
+          label: 'Primary brand color (hex code or description)',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. #C65A3E or "warm orange"',
+          helperText: 'If you are not sure, what color feels most like your brand?',
+        },
+        {
+          name: 'visual_direction',
+          label: 'How would you describe your visual style?',
+          type: 'select',
+          required: false,
+          placeholder: 'Select the closest match...',
+          options: [
+            { value: 'clean_minimal', label: 'Clean and minimal' },
+            { value: 'bold_bright', label: 'Bold and bright' },
+            { value: 'warm_earthy', label: 'Warm and earthy' },
+            { value: 'dark_professional', label: 'Dark and professional' },
+            { value: 'soft_feminine', label: 'Soft and feminine' },
+            { value: 'techy_modern', label: 'Tech-forward and modern' },
+            { value: 'not_sure', label: 'Not sure yet' },
+          ],
+        },
+        {
+          name: 'brand_notes',
+          label: 'Anything else about your brand? (optional)',
+          type: 'textarea',
+          required: false,
+          placeholder: 'e.g. Going for a luxury feel, want it to feel approachable, need to match existing materials...',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples'],
+    toolLinks: [
+      { label: 'Create a logo with Canva', url: 'https://www.canva.com/logos/', icon: 'palette' },
+    ],
+    route: '/foundation/tasks/foundation_brand_basics',
+    exampleText: 'You do not need everything perfect. A consistent text-based logo in one color is better than three different logo versions across your profiles.',
+  },
+];
+
+// Helper: get all foundation tasks in order
+export function getFoundationTasks(): TaskTemplate[] {
+  return FOUNDATION_TASK_TEMPLATES.sort((a, b) => a.order - b.order);
+}
