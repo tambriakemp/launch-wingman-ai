@@ -1586,13 +1586,21 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['simplify', 'ai_prompt'],
-    aiPrompt: 'Write me a Lovable prompt to integrate Stripe payments on my sales page. My details: Product name: [name]. Price: [price]. Stripe publishable key: [key]. Stripe price ID: [price ID]. After successful payment redirect to: [thank you page URL]. After failed payment show: [error message].\n\nWrite a complete Lovable prompt that adds a working Stripe checkout button, handles success and error states gracefully, and does not break the existing page design.',
+    aiPrompt: 'Write me a Lovable prompt to integrate Stripe payments on my sales page. My details: Product name: [name]. Price: [price]. Stripe publishable key: [key]. Stripe price ID: [price ID]. After successful payment redirect to: [thank you page URL]. After failed payment show: [error message].
+
+Write a complete Lovable prompt that adds a working Stripe checkout button, handles success and error states gracefully, and does not break the existing page design.',
     toolLinks: [
       { label: 'Create a Stripe account', url: 'https://stripe.com', icon: 'credit-card' },
       { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
     ],
     route: '/projects/:id/tasks/salespage_setup_stripe',
-    exampleText: 'Stripe test card numbers:\nSuccess: 4242 4242 4242 4242\nDeclined: 4000 0000 0000 0002\nExpiry: any future date (e.g. 12/26)\nCVC: any 3 digits\n\nAlways test before going live.',
+    exampleText: 'Stripe test card numbers:
+Success: 4242 4242 4242 4242
+Declined: 4000 0000 0000 0002
+Expiry: any future date (e.g. 12/26)
+CVC: any 3 digits
+
+Always test before going live.',
   },
 
   {
@@ -1882,7 +1890,9 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Write a product announcement email to my existing email list. Product name: [name]. Product promise: [promise]. Price: [price]. Sales page URL: [URL]. Audience: [avatar description].\n\nRequirements: 3 subject line options (one curious, one direct, one personal), short body (3-5 paragraphs), tone: [your brand voice], include who this is for + what it does + what it costs + one link, do not oversell or use hype language. Write the full email ready to copy and paste.',
+    aiPrompt: 'Write a product announcement email to my existing email list. Product name: [name]. Product promise: [promise]. Price: [price]. Sales page URL: [URL]. Audience: [avatar description].
+
+Requirements: 3 subject line options (one curious, one direct, one personal), short body (3-5 paragraphs), tone: [your brand voice], include who this is for + what it does + what it costs + one link, do not oversell or use hype language. Write the full email ready to copy and paste.',
     toolLinks: [
       { label: 'Open Email Sequence Generator', url: '/app/ai-studio/email-sequence', icon: 'mail' },
     ],
@@ -2073,10 +2083,16 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Help me write my brand core message. My business is [business name and tagline]. I serve [customer avatar description]. The problem I solve: [problem]. My approach is different because: [what makes you different]. What I believe that most people in my space do not say: [your answer].\n\nWrite 5 core message options. Each should be 1-3 sentences, bold and opinionated — not a soft mission statement. The best one should make my ideal customer feel seen and make anyone outside my audience feel it is not for them. Recommend the strongest one and explain why it would resonate with my specific audience.',
+    aiPrompt: 'Help me write my brand core message. My business is [business name and tagline]. I serve [customer avatar description]. The problem I solve: [problem]. My approach is different because: [what makes you different]. What I believe that most people in my space do not say: [your answer].
+
+Write 5 core message options. Each should be 1-3 sentences, bold and opinionated — not a soft mission statement. The best one should make my ideal customer feel seen and make anyone outside my audience feel it is not for them. Recommend the strongest one and explain why it would resonate with my specific audience.',
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_core_message',
-    exampleText: 'Weak: "I help small businesses grow with marketing."\n\nStrong: "Local service businesses are the backbone of every community — and most of them are invisible online because nobody ever taught them the basics. That changes here."\n\nThe strong version has a point of view. It takes a side. It makes the right person feel understood.',
+    exampleText: 'Weak: "I help small businesses grow with marketing."
+
+Strong: "Local service businesses are the backbone of every community — and most of them are invisible online because nobody ever taught them the basics. That changes here."
+
+The strong version has a point of view. It takes a side. It makes the right person feel understood.',
   },
 
   {
@@ -2132,10 +2148,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Write my transformation statement. Audience: [customer avatar]. Before state (their painful current situation): [problem + obstacle]. After state (what they get): [dream outcome]. Timeline if applicable: [how long it takes].\n\nWrite 5 transformation statements using the formula: I help [audience] go from [before] to [after] [without/in]. Make the before state feel painful and specific. Make the after state feel achievable and concrete. Recommend the strongest one and explain what makes it work.',
+    aiPrompt: 'Write my transformation statement. Audience: [customer avatar]. Before state (their painful current situation): [problem + obstacle]. After state (what they get): [dream outcome]. Timeline if applicable: [how long it takes].
+
+Write 5 transformation statements using the formula: I help [audience] go from [before] to [after] [without/in]. Make the before state feel painful and specific. Make the after state feel achievable and concrete. Recommend the strongest one and explain what makes it work.',
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_transformation',
-    exampleText: 'Too vague: "I help business owners grow their business online."\n\nSpecific: "I help local service businesses go from invisible online and chasing every client through referrals to having a professional website, verified Google listing, and running ads — in 30 days."',
+    exampleText: 'Too vague: "I help business owners grow their business online."
+
+Specific: "I help local service businesses go from invisible online and chasing every client through referrals to having a professional website, verified Google listing, and running ads — in 30 days."',
   },
 
   {
@@ -2174,7 +2194,11 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Generate 8 talking points for my brand. Core message: [your core message]. Transformation: [your transformation statement]. Audience: [customer avatar]. Industry: [your industry].\n\nEach talking point should be: a specific belief or perspective (not a generic tip), something that makes my audience feel understood and validated, something that builds the case for my approach without being a direct pitch, written as a bold statement I would say in a social post or podcast interview.\n\nThen select the 5 strongest ones and explain why each would resonate with my specific audience.',
+    aiPrompt: 'Generate 8 talking points for my brand. Core message: [your core message]. Transformation: [your transformation statement]. Audience: [customer avatar]. Industry: [your industry].
+
+Each talking point should be: a specific belief or perspective (not a generic tip), something that makes my audience feel understood and validated, something that builds the case for my approach without being a direct pitch, written as a bold statement I would say in a social post or podcast interview.
+
+Then select the 5 strongest ones and explain why each would resonate with my specific audience.',
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_talking_points',
   },
@@ -2220,7 +2244,9 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['examples', 'ai_prompt'],
-    aiPrompt: 'Help me identify and answer the top objections my audience has before buying my product. Product: [product name and promise]. Audience: [customer avatar]. Price: [price]. What they have tried before: [biggest obstacle answer from Phase 1].\n\nList the 7 most likely objections this specific audience has — written in their voice, the exact words they would use. For each, write a confident honest answer that acknowledges the concern and addresses it without being defensive or dismissive. Prioritize the 5 most important ones.',
+    aiPrompt: 'Help me identify and answer the top objections my audience has before buying my product. Product: [product name and promise]. Audience: [customer avatar]. Price: [price]. What they have tried before: [biggest obstacle answer from Phase 1].
+
+List the 7 most likely objections this specific audience has — written in their voice, the exact words they would use. For each, write a confident honest answer that acknowledges the concern and addresses it without being defensive or dismissive. Prioritize the 5 most important ones.',
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_objections',
   },
@@ -2261,7 +2287,15 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Write optimized social media bios for my brand. Audience: [customer avatar]. What I do: [transformation statement]. My main offer: [product name and promise]. My link: [sales page URL]. Brand voice: [describe your tone].\n\nWrite bios for:\n- Instagram (max 150 characters)\n- TikTok (max 80 characters)\n- LinkedIn (max 220 characters, more professional)\n- Facebook page (2-3 sentences)\n\nEach bio should: start with who you help (not your name or title), include a specific result, end with a CTA pointing to the link. Vary the wording for each platform — do not just truncate the same sentence.',
+    aiPrompt: 'Write optimized social media bios for my brand. Audience: [customer avatar]. What I do: [transformation statement]. My main offer: [product name and promise]. My link: [sales page URL]. Brand voice: [describe your tone].
+
+Write bios for:
+- Instagram (max 150 characters)
+- TikTok (max 80 characters)
+- LinkedIn (max 220 characters, more professional)
+- Facebook page (2-3 sentences)
+
+Each bio should: start with who you help (not your name or title), include a specific result, end with a CTA pointing to the link. Vary the wording for each platform — do not just truncate the same sentence.',
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_social_bio',
   },
@@ -2295,7 +2329,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       type: 'form',
       fields: [
         { name: 'voice_tone', label: 'How would you describe your tone in 3-5 words?', type: 'text', required: true, placeholder: 'e.g. Direct, warm, no-nonsense, encouraging, real' },
-        { name: 'voice_words_use', label: 'Words and phrases you naturally use', type: 'textarea', required: false, placeholder: 'e.g. y'all, let me be real with you, here is the thing, straight up, receipts not credentials...' },\n        { name: 'voice_words_avoid', label: 'Words and phrases you would never use', type: 'textarea', required: false, placeholder: 'e.g. leverage, synergy, unlock your potential, game-changer, hustle, as an expert...' },\n        { name: 'voice_personality', label: 'If your brand were a person, how would you describe them?', type: 'textarea', required: false, placeholder: 'e.g. The friend who has done this before and just tells you exactly what to do — no fluff, no gatekeeping, genuinely wants you to win...' },\n        { name: 'voice_inspiration', label: 'Whose writing style do you admire? (brands, creators, writers)', type: 'text', required: false, placeholder: 'e.g. [creator names whose tone resonates with you]', sectionLabel: 'Optional: Inspiration' },\n      ],\n    },\n    aiAssistModes: ['help_me_choose', 'ai_prompt'],\n    aiPrompt: 'Write a brand voice guide for my business. Here is what I know about how I communicate:
+        { name: 'voice_words_use', label: 'Words and phrases you naturally use', type: 'textarea', required: false, placeholder: 'e.g. y'all, let me be real with you, here is the thing, straight up, receipts not credentials...' },
+        { name: 'voice_words_avoid', label: 'Words and phrases you would never use', type: 'textarea', required: false, placeholder: 'e.g. leverage, synergy, unlock your potential, game-changer, hustle, as an expert...' },
+        { name: 'voice_personality', label: 'If your brand were a person, how would you describe them?', type: 'textarea', required: false, placeholder: 'e.g. The friend who has done this before and just tells you exactly what to do — no fluff, no gatekeeping, genuinely wants you to win...' },
+        { name: 'voice_inspiration', label: 'Whose writing style do you admire? (brands, creators, writers)', type: 'text', required: false, placeholder: 'e.g. [creator names whose tone resonates with you]', sectionLabel: 'Optional: Inspiration' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Write a brand voice guide for my business. Here is what I know about how I communicate:
 
 Tone in 3-5 words: [your answer]
 Words I naturally use: [your answer]
@@ -2305,13 +2346,128 @@ Creators I admire: [your answer]
 Core message: [your core message]
 Audience: [customer avatar]
 
-Write a concise brand voice guide with: (1) a 2-3 sentence voice description I can paste at the top of any Claude prompt, (2) a "sounds like / does not sound like" comparison with 3-4 examples each, (3) 5 specific writing rules for my brand (e.g. "never start a sentence with As an expert"), (4) a tone calibration scale from 1-5 showing when to be more formal vs casual. Make it something I can use as a standing instruction in my Claude Project.',\n    exportable: true,\n    toolLinks: [],\n    route: '/projects/:id/tasks/messaging_brand_voice',\n    brainUpdatePrompt: 'Add my brand voice guide to my business brain. Here is my voice guide: [paste your brand voice guide]. From now on, use this voice guide whenever you write anything for my brand — social posts, emails, sales copy, captions, anything. Check every output against the sounds-like/does-not-sound-like examples before finalizing.',\n  },\n\n  {\n    taskId: 'messaging_elevator_pitch',\n    title: 'Write your elevator pitch',\n    phase: 'messaging',\n    funnelTypes: ['all'],\n    order: 7,\n    priority: 2,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 20,\n    blocking: false,\n    dependencies: ['messaging_transformation'],\n    canSkip: true,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You can explain what you do and who you help in 30 seconds without sounding scripted',\n      'The pitch would make the right person ask a follow-up question',\n    ],\n    whyItMatters: 'Someone will ask "what do you do?" at a networking event, a family gathering, or in a DM. If your answer is unclear, rambling, or too modest — the opportunity is gone. A clear 30-second pitch that names the problem, the audience, and the outcome makes people lean in instead of politely nodding.',\n    instructions: [\n      'Write a version you would actually say out loud — not what looks good on paper',\n      'It should include: who you help, what problem you solve, what result they get',\n      'It should NOT include: your business name, your certifications, your entire backstory',\n      'Practice saying it until it sounds natural — the best pitches sound improvised',\n    ],\n    inputType: 'form',\n    inputSchema: {\n      type: 'form',\n      fields: [\n        {\n          name: 'elevator_pitch',\n          label: 'Your 30-second elevator pitch',\n          type: 'textarea',\n          required: true,\n          placeholder: 'e.g. You know how a lot of local service businesses — plumbers, auto repair, landscapers — are doing good work but nobody can find them online? I fix that. I help them get their website live, their Google Business Profile verified, and their ads running correctly so new customers start finding them without having to chase every job through referrals.',\n          helperText: 'Write it like you would say it, not like you would write it. No business jargon.',\n        },\n        {\n          name: 'written_version',\n          label: 'A slightly more polished written version (optional)',\n          type: 'textarea',\n          required: false,\n          placeholder: 'For DMs, email signatures, or anywhere you need a written version...',\n          sectionLabel: 'Optional: Written variant',\n        },\n      ],\n    },\n    aiAssistModes: ['examples', 'ai_prompt'],\n    aiPrompt: 'Write my elevator pitch in 3 versions. Audience: [customer avatar]. Problem: [problem]. Outcome: [transformation]. My name: [your name]. Business: [business name].
+Write a concise brand voice guide with: (1) a 2-3 sentence voice description I can paste at the top of any Claude prompt, (2) a "sounds like / does not sound like" comparison with 3-4 examples each, (3) 5 specific writing rules for my brand (e.g. "never start a sentence with As an expert"), (4) a tone calibration scale from 1-5 showing when to be more formal vs casual. Make it something I can use as a standing instruction in my Claude Project.',
+    exportable: true,
+    toolLinks: [],
+    route: '/projects/:id/tasks/messaging_brand_voice',
+    brainUpdatePrompt: 'Add my brand voice guide to my business brain. Here is my voice guide: [paste your brand voice guide]. From now on, use this voice guide whenever you write anything for my brand — social posts, emails, sales copy, captions, anything. Check every output against the sounds-like/does-not-sound-like examples before finalizing.',
+  },
+
+  {
+    taskId: 'messaging_elevator_pitch',
+    title: 'Write your elevator pitch',
+    phase: 'messaging',
+    funnelTypes: ['all'],
+    order: 7,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['messaging_transformation'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can explain what you do and who you help in 30 seconds without sounding scripted',
+      'The pitch would make the right person ask a follow-up question',
+    ],
+    whyItMatters: 'Someone will ask "what do you do?" at a networking event, a family gathering, or in a DM. If your answer is unclear, rambling, or too modest — the opportunity is gone. A clear 30-second pitch that names the problem, the audience, and the outcome makes people lean in instead of politely nodding.',
+    instructions: [
+      'Write a version you would actually say out loud — not what looks good on paper',
+      'It should include: who you help, what problem you solve, what result they get',
+      'It should NOT include: your business name, your certifications, your entire backstory',
+      'Practice saying it until it sounds natural — the best pitches sound improvised',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'elevator_pitch',
+          label: 'Your 30-second elevator pitch',
+          type: 'textarea',
+          required: true,
+          placeholder: 'e.g. You know how a lot of local service businesses — plumbers, auto repair, landscapers — are doing good work but nobody can find them online? I fix that. I help them get their website live, their Google Business Profile verified, and their ads running correctly so new customers start finding them without having to chase every job through referrals.',
+          helperText: 'Write it like you would say it, not like you would write it. No business jargon.',
+        },
+        {
+          name: 'written_version',
+          label: 'A slightly more polished written version (optional)',
+          type: 'textarea',
+          required: false,
+          placeholder: 'For DMs, email signatures, or anywhere you need a written version...',
+          sectionLabel: 'Optional: Written variant',
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'ai_prompt'],
+    aiPrompt: 'Write my elevator pitch in 3 versions. Audience: [customer avatar]. Problem: [problem]. Outcome: [transformation]. My name: [your name]. Business: [business name].
 
 1. Conversational (30 seconds spoken) — sounds like something you would say at a barbecue, uses simple language, maybe a question to open
 2. Professional (30 seconds spoken) — appropriate for a networking event or conference, slightly more polished but still natural
 3. Written (2-3 sentences) — for DMs, LinkedIn intro messages, email signatures
 
-All three should: name the problem before naming the solution, say who specifically you help, end with the transformation or result. None of them should mention certifications, years of experience, or your business name in the first sentence.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/messaging_elevator_pitch',\n  },\n\n  {\n    taskId: 'messaging_brain_update',\n    title: 'Add your messaging to your business brain',\n    phase: 'messaging',\n    funnelTypes: ['all'],\n    order: 8,\n    priority: 1,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 15,\n    blocking: false,\n    dependencies: ['messaging_core_message', 'messaging_transformation', 'messaging_talking_points'],\n    canSkip: true,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'Your core message, transformation statement, talking points, and brand voice are saved to Google Drive (Messaging folder)',\n      'They are added to your Claude Project so every future content task uses your real messaging',\n    ],\n    whyItMatters: 'This is the task that makes every future content task dramatically better. When your Claude Project has your core message, transformation statement, talking points, objections, and brand voice — every social post, every email, every caption Claude helps you write will sound like you and reinforce your positioning. Without this, you are starting from scratch every time.',\n    instructions: [\n      'Create a Messaging document in Google Docs combining your core message, transformation statement, talking points, objections, and brand voice guide',\n      'Save it to the Messaging folder in your Google Drive Business Brain',\n      'In your Claude Project, paste the brain update prompt below with your messaging filled in',\n      'Test it: ask Claude to write a 3-sentence social post about [your main topic] in your brand voice — it should sound like you',\n    ],\n    inputType: 'form',\n    inputSchema: {\n      type: 'form',\n      fields: [\n        {\n          name: 'brain_updated',\n          label: 'Have you added your messaging to your Claude Project?',\n          type: 'select',\n          required: true,\n          placeholder: 'Select...',\n          options: [\n            { value: 'yes_both', label: 'Yes — saved to Google Drive and added to Claude Project' },\n            { value: 'yes_claude_only', label: 'Yes — added to Claude Project only' },\n            { value: 'not_yet', label: 'Not yet' },\n          ],\n        },\n        {\n          name: 'messaging_doc_link',\n          label: 'Google Doc link (optional)',\n          type: 'text',\n          required: false,\n          placeholder: 'Paste your Messaging Google Doc URL here',\n        },\n      ],\n    },\n    aiAssistModes: [],\n    toolLinks: [\n      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },\n      { label: 'Open Claude Projects', url: 'https://claude.ai', icon: 'brain' },\n    ],\n    route: '/projects/:id/tasks/messaging_brain_update',\n    exportable: true,\n    brainUpdatePrompt: 'Add my complete messaging framework to my business brain.
+All three should: name the problem before naming the solution, say who specifically you help, end with the transformation or result. None of them should mention certifications, years of experience, or your business name in the first sentence.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/messaging_elevator_pitch',
+  },
+
+  {
+    taskId: 'messaging_brain_update',
+    title: 'Add your messaging to your business brain',
+    phase: 'messaging',
+    funnelTypes: ['all'],
+    order: 8,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['messaging_core_message', 'messaging_transformation', 'messaging_talking_points'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your core message, transformation statement, talking points, and brand voice are saved to Google Drive (Messaging folder)',
+      'They are added to your Claude Project so every future content task uses your real messaging',
+    ],
+    whyItMatters: 'This is the task that makes every future content task dramatically better. When your Claude Project has your core message, transformation statement, talking points, objections, and brand voice — every social post, every email, every caption Claude helps you write will sound like you and reinforce your positioning. Without this, you are starting from scratch every time.',
+    instructions: [
+      'Create a Messaging document in Google Docs combining your core message, transformation statement, talking points, objections, and brand voice guide',
+      'Save it to the Messaging folder in your Google Drive Business Brain',
+      'In your Claude Project, paste the brain update prompt below with your messaging filled in',
+      'Test it: ask Claude to write a 3-sentence social post about [your main topic] in your brand voice — it should sound like you',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'brain_updated',
+          label: 'Have you added your messaging to your Claude Project?',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'yes_both', label: 'Yes — saved to Google Drive and added to Claude Project' },
+            { value: 'yes_claude_only', label: 'Yes — added to Claude Project only' },
+            { value: 'not_yet', label: 'Not yet' },
+          ],
+        },
+        {
+          name: 'messaging_doc_link',
+          label: 'Google Doc link (optional)',
+          type: 'text',
+          required: false,
+          placeholder: 'Paste your Messaging Google Doc URL here',
+        },
+      ],
+    },
+    aiAssistModes: [],
+    toolLinks: [
+      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
+      { label: 'Open Claude Projects', url: 'https://claude.ai', icon: 'brain' },
+    ],
+    route: '/projects/:id/tasks/messaging_brain_update',
+    exportable: true,
+    brainUpdatePrompt: 'Add my complete messaging framework to my business brain.
 
 Core message: [your core message]
 
@@ -2329,11 +2485,126 @@ Main objections and answers:
 
 Brand voice: [paste your brand voice guide or description]
 
-From now on, use this messaging framework for every piece of content you write for my brand. Every social post, email, caption, or copy should reinforce my core message and match my brand voice.',\n  },\n\n  // ============================================================\n  // PHASE 6 — CONTENT STRATEGY (content phase, orders 1-10)\n  // "Pick your lane, show up consistently, let the content\n  //  do the selling."\n  // 10 tasks. Goes from platform selection through the first\n  // 5 published posts. SureContact link-in-bio page included.\n  // Designed around a solo operator who batches content.\n  // ============================================================\n\n  {\n    taskId: 'content_choose_platform',\n    title: 'Choose your primary platform',\n    phase: 'content',\n    funnelTypes: ['all'],\n    order: 1,\n    priority: 1,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 20,\n    blocking: true,\n    dependencies: [],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You have chosen one primary platform to focus on first',\n      'Your choice is based on where your customer is — not where you are most comfortable',\n    ],\n    whyItMatters: 'Every platform wants you to be everywhere. Being everywhere as a solo operator means being mediocre everywhere. Choosing one platform and going deep on it — really understanding the format, the audience, and the algorithm — produces better results than spreading thin across five. You can add platforms later. Win one first.',\n    instructions: [\n      'Refer back to your Phase 1 answer about where your customer hangs out — your platform should be where they already are',\n      'Consider what content format you can realistically produce consistently: short video (TikTok, Reels), written posts (LinkedIn, Facebook), carousels (Instagram, LinkedIn)',\n      'Pick the platform where your customer is AND you can show up in a format you can sustain',\n      'Commit. The platform you pick first is the one you focus on for the next 90 days.',\n    ],\n    inputType: 'selection',\n    inputSchema: {\n      type: 'radio',\n      options: [\n        { value: 'instagram', label: 'Instagram', description: 'Best for visual businesses, personal brands, and anyone whose audience skews 25-45. Strong for carousels, Reels, and Stories. High discovery potential.' },\n        { value: 'facebook', label: 'Facebook (Page or Group)', description: 'Best for local businesses, service providers, and audiences 35+. Facebook Groups build community. Pages work well with ads.' },\n        { value: 'tiktok', label: 'TikTok', description: 'Best for educational or entertainment content with strong reach for new audiences. Short video only. Fastest organic growth platform currently.' },\n        { value: 'linkedin', label: 'LinkedIn', description: 'Best for B2B, professional services, and corporate audiences. Written posts perform strongly. Higher intent audience.' },\n        { value: 'youtube', label: 'YouTube', description: 'Best for longer educational content and tutorial-based businesses. Long-term SEO value. Requires video production comfort.' },\n        { value: 'facebook_group', label: 'Facebook Group (community-led)', description: 'Best for building a specific community around your offer before you launch. High engagement but requires active moderation.' },\n      ],\n    },\n    aiAssistModes: ['help_me_choose', 'ai_prompt'],\n    aiPrompt: 'Help me choose the right primary content platform for my business. Audience: [customer avatar including age range, industry, daily platforms they use]. Content formats I am comfortable producing: [e.g. short video, written posts, carousels, talking to camera]. My business type: [service-based, digital product, local business]. My goal for content: [brand awareness, lead generation, community building].
+From now on, use this messaging framework for every piece of content you write for my brand. Every social post, email, caption, or copy should reinforce my core message and match my brand voice.',
+  },
 
-Analyze each major platform (Instagram, Facebook, TikTok, LinkedIn, YouTube) for my specific audience and situation. Give me: (1) a clear recommendation for my primary platform with reasoning, (2) the content format that performs best on that platform for my audience type, (3) what realistic growth looks like on that platform in the first 90 days.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/content_choose_platform',\n  },\n\n  {\n    taskId: 'content_choose_model',\n    title: 'Choose your content model',\n    phase: 'content',\n    funnelTypes: ['all'],\n    order: 2,\n    priority: 1,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 20,\n    blocking: true,\n    dependencies: ['content_choose_platform'],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You have selected one content model that fits where you are right now and where you want to go',\n      'You understand how the model works over time and what it is building toward',\n    ],\n    whyItMatters: 'A content model is not just a posting schedule — it is a strategic arc that your content follows. Without one, every post is a standalone decision and content feels exhausting. With one, you know exactly what to create because every post is part of something larger. The right model for where you are now makes consistent content feel possible instead of overwhelming.',\n    instructions: [\n      'Read each model and pick the one that fits your current situation — not the one that sounds the most impressive',\n      'If you are building an audience from scratch with no product yet: Story Arc or Evergreen',\n      'If you have a product and want to sell it: Pre-Launch + Launch',\n      'If you want a sustainable long-term system: Evergreen or Episode Series',\n      'You can switch models between launches — pick the best one for right now',\n    ],\n    inputType: 'selection',\n    inputSchema: {\n      type: 'radio',\n      options: [\n        { value: 'pre_launch', label: 'Pre-Launch + Launch', description: '4 weeks of warm-up content leading into a time-limited open cart. Each post builds anticipation for the launch. Best when you have a specific launch date and a product ready to sell.' },\n        { value: 'story_arc', label: '30-Day Story Arc', description: 'A narrative-driven content series that takes your audience through a journey — your origin, your method, your results, your offer. Best for building an engaged audience before making any offer.' },\n        { value: 'evergreen', label: 'Evergreen Authority', description: 'Ongoing value-first content organized around your talking points — teaching, behind-the-scenes, tools, case studies, and occasional soft promotion. No launch window required. Best for long-term audience building.' },\n        { value: 'episode_series', label: 'Episode Series', description: 'A recurring numbered format — like a show — that your audience comes back for each week. Builds loyalty and makes content predictable to create. Best if you enjoy consistency and want a recognizable format.' },\n      ],\n    },\n    aiAssistModes: ['help_me_choose', 'ai_prompt'],\n    aiPrompt: 'Help me choose the right content model for my situation. Here is my context: Primary platform: [platform]. Current audience size: [rough number or "starting from zero"]. Do I have a product ready to sell: [yes/no — if yes, what is the product]. Content creation time I can realistically commit per week: [e.g. 2 hours, 4 hours]. My goal for the next 90 days: [brand awareness, list building, product sales, community building].
+  // ============================================================
+  // PHASE 6 — CONTENT STRATEGY (content phase, orders 1-10)
+  // "Pick your lane, show up consistently, let the content
+  //  do the selling."
+  // 10 tasks. Goes from platform selection through the first
+  // 5 published posts. SureContact link-in-bio page included.
+  // Designed around a solo operator who batches content.
+  // ============================================================
 
-For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Series), describe: how it works for my specific platform, what the first 4 weeks of content would look like for my business, what it is building toward, and who it is best for. Then give me a clear recommendation for my situation.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/content_choose_model',\n  },\n\n  {\n    taskId: 'content_define_pillars',\n    title: 'Define your content pillars',\n    phase: 'content',\n    funnelTypes: ['all'],\n    order: 3,\n    priority: 1,\n    estimatedMinutesMin: 15,\n    estimatedMinutesMax: 30,\n    blocking: true,\n    dependencies: ['content_choose_model'],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You have 3-4 content pillars that every post maps back to',\n      'Each pillar connects to your audience, your expertise, or your product',\n    ],\n    whyItMatters: 'Content pillars are the 3-4 recurring themes your content lives inside. They give you structure without a script — you always know which pillar a post belongs to, and your audience begins to recognize and expect your recurring themes. Without pillars, content creation requires a new decision every time. With pillars, you are just choosing which bucket to fill.',\n    instructions: [\n      'Think about 3-4 topics you could create 20 different posts about without running out of ideas',\n      'Each pillar should connect to either your audience's world, your expertise, or the product you sell',
+  {
+    taskId: 'content_choose_platform',
+    title: 'Choose your primary platform',
+    phase: 'content',
+    funnelTypes: ['all'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: [],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have chosen one primary platform to focus on first',
+      'Your choice is based on where your customer is — not where you are most comfortable',
+    ],
+    whyItMatters: 'Every platform wants you to be everywhere. Being everywhere as a solo operator means being mediocre everywhere. Choosing one platform and going deep on it — really understanding the format, the audience, and the algorithm — produces better results than spreading thin across five. You can add platforms later. Win one first.',
+    instructions: [
+      'Refer back to your Phase 1 answer about where your customer hangs out — your platform should be where they already are',
+      'Consider what content format you can realistically produce consistently: short video (TikTok, Reels), written posts (LinkedIn, Facebook), carousels (Instagram, LinkedIn)',
+      'Pick the platform where your customer is AND you can show up in a format you can sustain',
+      'Commit. The platform you pick first is the one you focus on for the next 90 days.',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: 'instagram', label: 'Instagram', description: 'Best for visual businesses, personal brands, and anyone whose audience skews 25-45. Strong for carousels, Reels, and Stories. High discovery potential.' },
+        { value: 'facebook', label: 'Facebook (Page or Group)', description: 'Best for local businesses, service providers, and audiences 35+. Facebook Groups build community. Pages work well with ads.' },
+        { value: 'tiktok', label: 'TikTok', description: 'Best for educational or entertainment content with strong reach for new audiences. Short video only. Fastest organic growth platform currently.' },
+        { value: 'linkedin', label: 'LinkedIn', description: 'Best for B2B, professional services, and corporate audiences. Written posts perform strongly. Higher intent audience.' },
+        { value: 'youtube', label: 'YouTube', description: 'Best for longer educational content and tutorial-based businesses. Long-term SEO value. Requires video production comfort.' },
+        { value: 'facebook_group', label: 'Facebook Group (community-led)', description: 'Best for building a specific community around your offer before you launch. High engagement but requires active moderation.' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Help me choose the right primary content platform for my business. Audience: [customer avatar including age range, industry, daily platforms they use]. Content formats I am comfortable producing: [e.g. short video, written posts, carousels, talking to camera]. My business type: [service-based, digital product, local business]. My goal for content: [brand awareness, lead generation, community building].
+
+Analyze each major platform (Instagram, Facebook, TikTok, LinkedIn, YouTube) for my specific audience and situation. Give me: (1) a clear recommendation for my primary platform with reasoning, (2) the content format that performs best on that platform for my audience type, (3) what realistic growth looks like on that platform in the first 90 days.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/content_choose_platform',
+  },
+
+  {
+    taskId: 'content_choose_model',
+    title: 'Choose your content model',
+    phase: 'content',
+    funnelTypes: ['all'],
+    order: 2,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_choose_platform'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have selected one content model that fits where you are right now and where you want to go',
+      'You understand how the model works over time and what it is building toward',
+    ],
+    whyItMatters: 'A content model is not just a posting schedule — it is a strategic arc that your content follows. Without one, every post is a standalone decision and content feels exhausting. With one, you know exactly what to create because every post is part of something larger. The right model for where you are now makes consistent content feel possible instead of overwhelming.',
+    instructions: [
+      'Read each model and pick the one that fits your current situation — not the one that sounds the most impressive',
+      'If you are building an audience from scratch with no product yet: Story Arc or Evergreen',
+      'If you have a product and want to sell it: Pre-Launch + Launch',
+      'If you want a sustainable long-term system: Evergreen or Episode Series',
+      'You can switch models between launches — pick the best one for right now',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: 'pre_launch', label: 'Pre-Launch + Launch', description: '4 weeks of warm-up content leading into a time-limited open cart. Each post builds anticipation for the launch. Best when you have a specific launch date and a product ready to sell.' },
+        { value: 'story_arc', label: '30-Day Story Arc', description: 'A narrative-driven content series that takes your audience through a journey — your origin, your method, your results, your offer. Best for building an engaged audience before making any offer.' },
+        { value: 'evergreen', label: 'Evergreen Authority', description: 'Ongoing value-first content organized around your talking points — teaching, behind-the-scenes, tools, case studies, and occasional soft promotion. No launch window required. Best for long-term audience building.' },
+        { value: 'episode_series', label: 'Episode Series', description: 'A recurring numbered format — like a show — that your audience comes back for each week. Builds loyalty and makes content predictable to create. Best if you enjoy consistency and want a recognizable format.' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Help me choose the right content model for my situation. Here is my context: Primary platform: [platform]. Current audience size: [rough number or "starting from zero"]. Do I have a product ready to sell: [yes/no — if yes, what is the product]. Content creation time I can realistically commit per week: [e.g. 2 hours, 4 hours]. My goal for the next 90 days: [brand awareness, list building, product sales, community building].
+
+For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Series), describe: how it works for my specific platform, what the first 4 weeks of content would look like for my business, what it is building toward, and who it is best for. Then give me a clear recommendation for my situation.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/content_choose_model',
+  },
+
+  {
+    taskId: 'content_define_pillars',
+    title: 'Define your content pillars',
+    phase: 'content',
+    funnelTypes: ['all'],
+    order: 3,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['content_choose_model'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have 3-4 content pillars that every post maps back to',
+      'Each pillar connects to your audience, your expertise, or your product',
+    ],
+    whyItMatters: 'Content pillars are the 3-4 recurring themes your content lives inside. They give you structure without a script — you always know which pillar a post belongs to, and your audience begins to recognize and expect your recurring themes. Without pillars, content creation requires a new decision every time. With pillars, you are just choosing which bucket to fill.',
+    instructions: [
+      'Think about 3-4 topics you could create 20 different posts about without running out of ideas',
+      'Each pillar should connect to either your audience's world, your expertise, or the product you sell',
       'They should be specific enough to be distinct — "marketing" is too broad, "getting found on Google without paying for ads" is a pillar',
       'One pillar should always be connected to your product or offer — not a hard sell, but content that builds toward it',
     ],
@@ -2352,7 +2623,11 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Define 4-5 content pillar options for my brand. Core message: [your core message]. Audience: [customer avatar]. Talking points: [list your talking points]. Primary platform: [platform]. Product: [product name and promise].\n\nFor each pillar option: give it a specific name (not a broad category like "tips"), describe what posts would live inside it in 1-2 sentences, give 3 example post ideas to show what it looks like in practice, and explain how it connects to my product or audience.\n\nThen recommend the 3-4 pillars that work best together as a system, and explain why this combination would build authority with my specific audience.',
+    aiPrompt: 'Define 4-5 content pillar options for my brand. Core message: [your core message]. Audience: [customer avatar]. Talking points: [list your talking points]. Primary platform: [platform]. Product: [product name and promise].
+
+For each pillar option: give it a specific name (not a broad category like "tips"), describe what posts would live inside it in 1-2 sentences, give 3 example post ideas to show what it looks like in practice, and explain how it connects to my product or audience.
+
+Then recommend the 3-4 pillars that work best together as a system, and explain why this combination would build authority with my specific audience.',
     toolLinks: [],
     route: '/projects/:id/tasks/content_define_pillars',
   },
@@ -2514,7 +2789,13 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
           label: 'Your 30-day content plan',
           type: 'textarea',
           required: true,
-          placeholder: 'Week 1:\nDay 1 (Pillar: [pillar name]) — [Post idea]\nDay 3 (Pillar: [pillar name]) — [Post idea]\nDay 5 (Pillar: [pillar name]) — [Post idea]\n\nWeek 2:\n...',
+          placeholder: 'Week 1:
+Day 1 (Pillar: [pillar name]) — [Post idea]
+Day 3 (Pillar: [pillar name]) — [Post idea]
+Day 5 (Pillar: [pillar name]) — [Post idea]
+
+Week 2:
+...',
           helperText: 'Can be a rough list of post ideas organized by week — does not need to be perfectly formatted.',
         },
         {
@@ -2527,7 +2808,18 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Create a 30-day content plan for my brand. Here are my details:\n\nPrimary platform: [platform]\nContent model: [your content model]\nPosting frequency: [e.g. 3x per week]\nContent pillars: [list your pillars]\nCore message: [your core message]\nTransformation statement: [your transformation]\nProduct: [product name and promise]\nAudience: [customer avatar]\n\nCreate a 30-day calendar with a specific post idea for each posting slot. For each post include: the pillar it belongs to, the post format (e.g. carousel, Reel, text post), a specific post angle or hook (not just a topic — the actual angle), and whether it is pure value, a soft mention of the product, or a direct offer post. Follow a 4:1 ratio — 4 value posts for every 1 product post. Make sure the calendar builds toward the product naturally without feeling like a 30-day advertisement.',
+    aiPrompt: 'Create a 30-day content plan for my brand. Here are my details:
+
+Primary platform: [platform]
+Content model: [your content model]
+Posting frequency: [e.g. 3x per week]
+Content pillars: [list your pillars]
+Core message: [your core message]
+Transformation statement: [your transformation]
+Product: [product name and promise]
+Audience: [customer avatar]
+
+Create a 30-day calendar with a specific post idea for each posting slot. For each post include: the pillar it belongs to, the post format (e.g. carousel, Reel, text post), a specific post angle or hook (not just a topic — the actual angle), and whether it is pure value, a soft mention of the product, or a direct offer post. Follow a 4:1 ratio — 4 value posts for every 1 product post. Make sure the calendar builds toward the product naturally without feeling like a 30-day advertisement.',
     exportable: true,
     toolLinks: [],
     route: '/projects/:id/tasks/content_plan_30_days',
@@ -2586,7 +2878,21 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Write a social media post for me. Platform: [platform]. Post type: [e.g. educational carousel, Reel script, text post]. Pillar: [pillar name]. Post angle from my 30-day plan: [specific angle or hook from your plan].\n\nDetails to include:\n- Audience: [avatar name]\n- Core message: [your core message]\n- Brand voice: [your voice description]\n- Product to mention (if applicable): [product name and promise]\n\nWrite:\n1. A strong hook (first 1-2 lines that make someone stop scrolling)\n2. The full caption with line breaks for readability\n3. 3-5 relevant hashtags if applicable\n4. A brief note on what visual to pair with this post\n\nMake it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No marketing jargon. No exclamation point inflation.',
+    aiPrompt: 'Write a social media post for me. Platform: [platform]. Post type: [e.g. educational carousel, Reel script, text post]. Pillar: [pillar name]. Post angle from my 30-day plan: [specific angle or hook from your plan].
+
+Details to include:
+- Audience: [avatar name]
+- Core message: [your core message]
+- Brand voice: [your voice description]
+- Product to mention (if applicable): [product name and promise]
+
+Write:
+1. A strong hook (first 1-2 lines that make someone stop scrolling)
+2. The full caption with line breaks for readability
+3. 3-5 relevant hashtags if applicable
+4. A brief note on what visual to pair with this post
+
+Make it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No marketing jargon. No exclamation point inflation.',
     toolLinks: [
       { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
     ],
@@ -2632,9 +2938,81 @@ Step 2: Draft captions with Claude using the post prompts (20 min)
 Step 3: Edit captions and add my voice (15 min)
 Step 4: Create visuals in Canva or Claude image gen (20 min)
 Step 5: Schedule in [scheduling tool] (10 min)
-Total: ~75 minutes per week',\n          helperText: 'Even a rough outline is better than no process.',\n        },\n        {\n          name: 'creation_day',\n          label: 'Your weekly content creation day and time',\n          type: 'text',\n          required: false,\n          placeholder: 'e.g. Sunday 2pm — 1 hour batch session',\n        },\n        {\n          name: 'tools_used',\n          label: 'Tools you use to create and publish content',\n          type: 'text',\n          required: false,\n          placeholder: 'e.g. Claude (captions), Canva (visuals), Later (scheduling), Google Docs (drafts)',\n        },\n      ],\n    },\n    aiAssistModes: ['simplify', 'ai_prompt'],\n    aiPrompt: 'Help me design a content creation workflow. Platform: [platform]. Posting frequency: [e.g. 3x per week]. Content types I create: [e.g. carousels, Reels, text posts]. Tools I have: Claude, Canva, Google Docs, [any scheduling tool].
+Total: ~75 minutes per week',
+          helperText: 'Even a rough outline is better than no process.',
+        },
+        {
+          name: 'creation_day',
+          label: 'Your weekly content creation day and time',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. Sunday 2pm — 1 hour batch session',
+        },
+        {
+          name: 'tools_used',
+          label: 'Tools you use to create and publish content',
+          type: 'text',
+          required: false,
+          placeholder: 'e.g. Claude (captions), Canva (visuals), Later (scheduling), Google Docs (drafts)',
+        },
+      ],
+    },
+    aiAssistModes: ['simplify', 'ai_prompt'],
+    aiPrompt: 'Help me design a content creation workflow. Platform: [platform]. Posting frequency: [e.g. 3x per week]. Content types I create: [e.g. carousels, Reels, text posts]. Tools I have: Claude, Canva, Google Docs, [any scheduling tool].
 
-Design a weekly batch workflow that: (1) takes no more than 90 minutes total per week for my posting frequency, (2) batches similar tasks together (all writing in one session, all visual creation in another), (3) results in a week of content ready to schedule at the end of the session. Include specific time estimates for each step and a checklist format I can reuse every week.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/content_workflow',\n  },\n\n  {\n    taskId: 'content_brain_update',\n    title: 'Add your content strategy to your business brain',\n    phase: 'content',\n    funnelTypes: ['all'],\n    order: 10,\n    priority: 2,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 15,\n    blocking: false,\n    dependencies: ['content_define_pillars', 'content_plan_30_days'],\n    canSkip: true,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'Your content strategy is saved to Google Drive (Content Strategy folder)',\n      'Your Claude Project knows your pillars, content model, platform, and posting rhythm',\n    ],\n    whyItMatters: 'Every post you ask Claude to write from now on should know your content pillars, your posting platform, your content model, and your voice. Adding the content strategy to your Claude Project means Claude can generate on-brand, on-pillar content with a single short prompt instead of requiring full context every time.',\n    instructions: [\n      'Save your 30-day content plan and first 5 posts to the Content Strategy folder in Google Drive',\n      'Paste the brain update prompt below into your Claude Project with your content details filled in',\n      'Test it: ask Claude to write a post for Pillar 1 in your brand voice — it should be specific, not generic',\n    ],\n    inputType: 'form',\n    inputSchema: {\n      type: 'form',\n      fields: [\n        {\n          name: 'brain_updated',\n          label: 'Have you added your content strategy to your Claude Project?',\n          type: 'select',\n          required: true,\n          placeholder: 'Select...',\n          options: [\n            { value: 'yes_both', label: 'Yes — saved to Google Drive and added to Claude Project' },\n            { value: 'yes_claude_only', label: 'Yes — added to Claude Project only' },\n            { value: 'not_yet', label: 'Not yet' },\n          ],\n        },\n      ],\n    },\n    aiAssistModes: [],\n    toolLinks: [\n      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },\n      { label: 'Open Claude Projects', url: 'https://claude.ai', icon: 'brain' },\n    ],\n    route: '/projects/:id/tasks/content_brain_update',\n    brainUpdatePrompt: 'Add my content strategy to my business brain.
+Design a weekly batch workflow that: (1) takes no more than 90 minutes total per week for my posting frequency, (2) batches similar tasks together (all writing in one session, all visual creation in another), (3) results in a week of content ready to schedule at the end of the session. Include specific time estimates for each step and a checklist format I can reuse every week.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/content_workflow',
+  },
+
+  {
+    taskId: 'content_brain_update',
+    title: 'Add your content strategy to your business brain',
+    phase: 'content',
+    funnelTypes: ['all'],
+    order: 10,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['content_define_pillars', 'content_plan_30_days'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your content strategy is saved to Google Drive (Content Strategy folder)',
+      'Your Claude Project knows your pillars, content model, platform, and posting rhythm',
+    ],
+    whyItMatters: 'Every post you ask Claude to write from now on should know your content pillars, your posting platform, your content model, and your voice. Adding the content strategy to your Claude Project means Claude can generate on-brand, on-pillar content with a single short prompt instead of requiring full context every time.',
+    instructions: [
+      'Save your 30-day content plan and first 5 posts to the Content Strategy folder in Google Drive',
+      'Paste the brain update prompt below into your Claude Project with your content details filled in',
+      'Test it: ask Claude to write a post for Pillar 1 in your brand voice — it should be specific, not generic',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'brain_updated',
+          label: 'Have you added your content strategy to your Claude Project?',
+          type: 'select',
+          required: true,
+          placeholder: 'Select...',
+          options: [
+            { value: 'yes_both', label: 'Yes — saved to Google Drive and added to Claude Project' },
+            { value: 'yes_claude_only', label: 'Yes — added to Claude Project only' },
+            { value: 'not_yet', label: 'Not yet' },
+          ],
+        },
+      ],
+    },
+    aiAssistModes: [],
+    toolLinks: [
+      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
+      { label: 'Open Claude Projects', url: 'https://claude.ai', icon: 'brain' },
+    ],
+    route: '/projects/:id/tasks/content_brain_update',
+    brainUpdatePrompt: 'Add my content strategy to my business brain.
 
 Primary platform: [platform]
 Content model: [your content model]
@@ -2648,16 +3026,163 @@ Content pillars:
 
 Post ratio: [e.g. 4 value posts for every 1 product post]
 
-When I ask you to write a social media post, email, or content piece: (1) use the relevant content pillar as the frame, (2) write in my brand voice (described in the messaging section above), (3) match the format and length for [platform], (4) include a natural connection to my product where appropriate without making every post a pitch.',\n  },\n\n\n\n  // ============================================================\n  // PHASE 7 — LAUNCH (pre-launch + launch phases)\n  // "You have a product, a site, an email list, and content.\n  //  Now you tell people."\n  // 8 tasks split across pre-launch (orders 1-3) and launch\n  // (orders 1-5). Pre-launch warms the audience and finalizes\n  // everything. Launch is the open cart window.\n  // ============================================================\n\n  {\n    taskId: 'launch_choose_type',\n    title: 'Choose your launch type',\n    phase: 'pre-launch',\n    funnelTypes: ['all'],\n    order: 1,\n    priority: 1,\n    estimatedMinutesMin: 10,\n    estimatedMinutesMax: 20,\n    blocking: true,\n    dependencies: [],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You have selected one launch type and understand what it requires',\n      'You have a clear open and close date for your launch window',\n    ],\n    whyItMatters: 'A launch is not just "I posted about my product." A launch is a defined window with a beginning, a middle, and an end — and that structure is what creates urgency, drives decisions, and generates revenue in a concentrated period. Choosing your launch type before you write a word of launch content ensures everything you create is pointing toward the same moment.',\n    instructions: [\n      'Read each option and pick the one that fits your situation, your audience size, and your timeline',\n      'If this is your first launch or your list is small — a Simple Open Window is the right call',\n      'If you have an existing warm audience and want momentum — a Waitlist Launch adds urgency',\n      'Set your open date and close date before moving to the next task',\n    ],\n    inputType: 'selection',\n    inputSchema: {\n      type: 'radio',\n      options: [\n        {\n          value: 'simple_window',\n          label: 'Simple Open Window',\n          description: 'You announce the product, it is available to buy for 5-7 days, then the cart closes. Clean, low-pressure, works for any audience size. Best for first launches.',\n        },\n        {\n          value: 'waitlist',\n          label: 'Waitlist Launch',\n          description: 'You collect interest before the product is available. Waitlist subscribers get early access and/or a discount. Builds anticipation and creates a warm list of buyers before the cart opens.',\n        },\n        {\n          value: 'challenge_launch',\n          label: 'Challenge Launch',\n          description: 'A 3-5 day free challenge leads into an open cart. High engagement, high visibility, higher workload. Best when you have an engaged community and can facilitate daily content.',\n        },\n        {\n          value: 'evergreen',\n          label: 'Evergreen (Always Open)',\n          description: 'The product is available at any time with no close date. Lower urgency but zero launch pressure. Best for products with consistent ongoing demand and strong SEO or ad traffic.',\n        },\n      ],\n    },\n    aiAssistModes: ['help_me_choose', 'ai_prompt'],\n    aiPrompt: 'Help me choose the right launch type for my situation. Product: [product name and promise]. Price: [price]. Current email list size: [number]. Current social following on primary platform: [number]. Available time to run the launch: [e.g. 2 hours per day for a week, 30 minutes per day]. Have I launched anything before: [yes/no]. Goal for this launch: [e.g. first 10 buyers, $500 in revenue, validate the product].
+When I ask you to write a social media post, email, or content piece: (1) use the relevant content pillar as the frame, (2) write in my brand voice (described in the messaging section above), (3) match the format and length for [platform], (4) include a natural connection to my product where appropriate without making every post a pitch.',
+  },
 
-For each launch type (Simple Open Window, Waitlist Launch, Challenge Launch, Evergreen), tell me: how it works for my specific audience size, what the realistic outcome looks like, what it requires from me in terms of time and content, and whether it is appropriate for a first launch. Then give me a clear recommendation.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/launch_choose_type',\n  },\n\n  {\n    taskId: 'launch_plan_window',\n    title: 'Set your launch dates and warm-up plan',\n    phase: 'pre-launch',\n    funnelTypes: ['all'],\n    order: 2,\n    priority: 1,\n    estimatedMinutesMin: 15,\n    estimatedMinutesMax: 25,\n    blocking: true,\n    dependencies: ['launch_choose_type'],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'You have a specific open date, close date, and warm-up start date',\n      'You have a rough plan for the 7-14 days of content before the cart opens',\n    ],\n    whyItMatters: 'The best launch copy in the world underperforms when the audience is cold. The two weeks before your cart opens are where the real work happens — your content is priming your audience for what is coming, building anticipation, and making the buy decision feel obvious before you ever say "cart is open." Warm-up content is the difference between crickets and momentum.',\n    instructions: [\n      'Work backward from your desired launch open date — plan at least 7 days of warm-up content before it',\n      '14 days of warm-up is better if your audience is small or has not heard from you in a while',\n      'Warm-up content is not teasers — it is value-first content that naturally points toward the problem your product solves',\n      'Mark the open date, close date, and any mid-launch urgency points (e.g. price increase day, last day reminder) in your calendar',\n    ],\n    inputType: 'form',\n    inputSchema: {\n      type: 'form',\n      fields: [\n        {\n          name: 'warmup_start_date',\n          label: 'Warm-up content start date',\n          type: 'text',\n          required: true,\n          placeholder: 'e.g. Monday June 16',\n        },\n        {\n          name: 'cart_open_date',\n          label: 'Cart open date (launch day)',\n          type: 'text',\n          required: true,\n          placeholder: 'e.g. Monday June 23',\n        },\n        {\n          name: 'cart_close_date',\n          label: 'Cart close date',\n          type: 'text',\n          required: true,\n          placeholder: 'e.g. Sunday June 29',\n          helperText: '5-7 days is the standard window. Shorter for urgency, longer for bigger audiences.',\n        },\n        {\n          name: 'warmup_plan',\n          label: 'Your warm-up content plan (rough)',\n          type: 'textarea',\n          required: false,\n          placeholder: 'Week 1 warm-up:
-- Day 1: Post about the problem [product] solves
-- Day 2: Email to list — a tip that connects to the product
-- Day 3: Behind-the-scenes of building the product
-- Day 5: Success story or result relevant to the problem
-...',\n          helperText: 'Does not need to be detailed — a post topic per day is enough for now.',\n        },\n      ],\n    },\n    aiAssistModes: ['help_me_choose', 'ai_prompt'],\n    aiPrompt: 'Create a 14-day launch warm-up plan for my product launch. Product: [product name and promise]. Launch open date: [date]. Primary platform: [platform]. Email list: [yes/no and rough size]. Content pillars: [your pillars].
 
-Create a day-by-day warm-up calendar for the 14 days before my cart opens. For each day include: the content format (social post, email, or both), the specific angle or topic, how it connects to the problem my product solves without being a direct pitch. Follow a natural arc that builds awareness, desire, and anticipation over the two weeks — ending the day before launch with an audience that already wants what I am about to offer.',\n    toolLinks: [],\n    route: '/projects/:id/tasks/launch_plan_window',\n  },\n\n  {\n    taskId: 'launch_final_checklist',\n    title: 'Run your pre-launch checklist',\n    phase: 'pre-launch',\n    funnelTypes: ['all'],\n    order: 3,\n    priority: 1,\n    estimatedMinutesMin: 20,\n    estimatedMinutesMax: 40,\n    blocking: true,\n    dependencies: ['launch_plan_window'],\n    canSkip: false,\n    skipReasonRequired: false,\n    completionCriteria: [\n      'Every item on the pre-launch checklist is confirmed working',\n      'You have nothing to fix after the cart opens',\n    ],\n    whyItMatters: 'Launch day is not the time to discover your payment link is broken, your delivery email is going to spam, or your sales page has a typo in the price. This checklist is the final quality pass before real money is involved. Five minutes on each item here saves hours of firefighting during your launch window.',\n    instructions: [\n      'Go through each checklist item methodically — do not skip items because you think they are probably fine',\n      'Use a different device or browser for testing where possible — what works on your computer may not work on someone else\'s phone',
+
+  // ============================================================
+  // PHASE 7 — LAUNCH (pre-launch + launch phases)
+  // "You have a product, a site, an email list, and content.
+  //  Now you tell people."
+  // 8 tasks split across pre-launch (orders 1-3) and launch
+  // (orders 1-5). Pre-launch warms the audience and finalizes
+  // everything. Launch is the open cart window.
+  // ============================================================
+
+  {
+    taskId: 'launch_choose_type',
+    title: 'Choose your launch type',
+    phase: 'pre-launch',
+    funnelTypes: ['all'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: [],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have selected one launch type and understand what it requires',
+      'You have a clear open and close date for your launch window',
+    ],
+    whyItMatters: 'A launch is not just "I posted about my product." A launch is a defined window with a beginning, a middle, and an end — and that structure is what creates urgency, drives decisions, and generates revenue in a concentrated period. Choosing your launch type before you write a word of launch content ensures everything you create is pointing toward the same moment.',
+    instructions: [
+      'Read each option and pick the one that fits your situation, your audience size, and your timeline',
+      'If this is your first launch or your list is small — a Simple Open Window is the right call',
+      'If you have an existing warm audience and want momentum — a Waitlist Launch adds urgency',
+      'Set your open date and close date before moving to the next task',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        {
+          value: 'simple_window',
+          label: 'Simple Open Window',
+          description: 'You announce the product, it is available to buy for 5-7 days, then the cart closes. Clean, low-pressure, works for any audience size. Best for first launches.',
+        },
+        {
+          value: 'waitlist',
+          label: 'Waitlist Launch',
+          description: 'You collect interest before the product is available. Waitlist subscribers get early access and/or a discount. Builds anticipation and creates a warm list of buyers before the cart opens.',
+        },
+        {
+          value: 'challenge_launch',
+          label: 'Challenge Launch',
+          description: 'A 3-5 day free challenge leads into an open cart. High engagement, high visibility, higher workload. Best when you have an engaged community and can facilitate daily content.',
+        },
+        {
+          value: 'evergreen',
+          label: 'Evergreen (Always Open)',
+          description: 'The product is available at any time with no close date. Lower urgency but zero launch pressure. Best for products with consistent ongoing demand and strong SEO or ad traffic.',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Help me choose the right launch type for my situation. Product: [product name and promise]. Price: [price]. Current email list size: [number]. Current social following on primary platform: [number]. Available time to run the launch: [e.g. 2 hours per day for a week, 30 minutes per day]. Have I launched anything before: [yes/no]. Goal for this launch: [e.g. first 10 buyers, $500 in revenue, validate the product].\n\nFor each launch type (Simple Open Window, Waitlist Launch, Challenge Launch, Evergreen), tell me: how it works for my specific audience size, what the realistic outcome looks like, what it requires from me in terms of time and content, and whether it is appropriate for a first launch. Then give me a clear recommendation.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/launch_choose_type',
+  },
+
+  {
+    taskId: 'launch_plan_window',
+    title: 'Set your launch dates and warm-up plan',
+    phase: 'pre-launch',
+    funnelTypes: ['all'],
+    order: 2,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['launch_choose_type'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a specific open date, close date, and warm-up start date',
+      'You have a rough plan for the 7-14 days of content before the cart opens',
+    ],
+    whyItMatters: 'The best launch copy in the world underperforms when the audience is cold. The two weeks before your cart opens are where the real work happens — your content is priming your audience for what is coming, building anticipation, and making the buy decision feel obvious before you ever say "cart is open." Warm-up content is the difference between crickets and momentum.',
+    instructions: [
+      'Work backward from your desired launch open date — plan at least 7 days of warm-up content before it',
+      '14 days of warm-up is better if your audience is small or has not heard from you in a while',
+      'Warm-up content is not teasers — it is value-first content that naturally points toward the problem your product solves',
+      'Mark the open date, close date, and any mid-launch urgency points (e.g. price increase day, last day reminder) in your calendar',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        {
+          name: 'warmup_start_date',
+          label: 'Warm-up content start date',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Monday June 16',
+        },
+        {
+          name: 'cart_open_date',
+          label: 'Cart open date (launch day)',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Monday June 23',
+        },
+        {
+          name: 'cart_close_date',
+          label: 'Cart close date',
+          type: 'text',
+          required: true,
+          placeholder: 'e.g. Sunday June 29',
+          helperText: '5-7 days is the standard window. Shorter for urgency, longer for bigger audiences.',
+        },
+        {
+          name: 'warmup_plan',
+          label: 'Your warm-up content plan (rough)',
+          type: 'textarea',
+          required: false,
+          placeholder: 'Week 1 warm-up:\n- Day 1: Post about the problem [product] solves\n- Day 2: Email to list — a tip that connects to the product\n- Day 3: Behind-the-scenes of building the product\n- Day 5: Success story or result relevant to the problem\n...',
+          helperText: 'Does not need to be detailed — a post topic per day is enough for now.',
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Create a 14-day launch warm-up plan for my product launch. Product: [product name and promise]. Launch open date: [date]. Primary platform: [platform]. Email list: [yes/no and rough size]. Content pillars: [your pillars].\n\nCreate a day-by-day warm-up calendar for the 14 days before my cart opens. For each day include: the content format (social post, email, or both), the specific angle or topic, how it connects to the problem my product solves without being a direct pitch. Follow a natural arc that builds awareness, desire, and anticipation over the two weeks — ending the day before launch with an audience that already wants what I am about to offer.',
+    toolLinks: [],
+    route: '/projects/:id/tasks/launch_plan_window',
+  },
+
+  {
+    taskId: 'launch_final_checklist',
+    title: 'Run your pre-launch checklist',
+    phase: 'pre-launch',
+    funnelTypes: ['all'],
+    order: 3,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: true,
+    dependencies: ['launch_plan_window'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Every item on the pre-launch checklist is confirmed working',
+      'You have nothing to fix after the cart opens',
+    ],
+    whyItMatters: 'Launch day is not the time to discover your payment link is broken, your delivery email is going to spam, or your sales page has a typo in the price. This checklist is the final quality pass before real money is involved. Five minutes on each item here saves hours of firefighting during your launch window.',
+    instructions: [
+      'Go through each checklist item methodically — do not skip items because you think they are probably fine',
+      'Use a different device or browser for testing where possible — what works on your computer may not work on someone else\'s phone',
       'Fix anything that is not working before you move forward',
       'If you find a significant issue, fix it now — do not launch with known problems',
     ],
