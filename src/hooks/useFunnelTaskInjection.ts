@@ -231,7 +231,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
     
     return allTasks.sort((a, b) => {
       const phaseOrder: Record<Phase, number> = {
-        setup: -1,
+        foundation: -1,
         planning: 0,
         messaging: 1,
         build: 2,

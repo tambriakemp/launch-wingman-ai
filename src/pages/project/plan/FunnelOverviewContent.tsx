@@ -44,7 +44,7 @@ interface Props {
 }
 
 // Visible phases for the editorial timeline (matches mockup)
-const VISIBLE_PHASES: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
+const VISIBLE_PHASES: Phase[] = ['foundation', 'planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
 
 // Icons per phase (replaces week-number labels)
 const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -761,8 +761,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const completedPhases = PHASES.filter((p) => phaseStatuses[p] === "complete");
   const mostRecentlyCompletedPhase =
     completedPhases.length > 0 && completedPhases.length < PHASES.length
-      ? completedPhases.filter((p) => p !== "setup")[
-          completedPhases.filter((p) => p !== "setup").length - 1
+      ? completedPhases.filter((p) => p !== "foundation")[
+          completedPhases.filter((p) => p !== "foundation").length - 1
         ] ?? null
       : null;
   const nextPhaseAfterCompleted = mostRecentlyCompletedPhase

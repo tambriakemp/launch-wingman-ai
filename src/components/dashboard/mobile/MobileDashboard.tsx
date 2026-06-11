@@ -16,7 +16,7 @@ const INK_60 = "rgba(31,27,23,0.62)";
 const INK_40 = "rgba(31,27,23,0.42)";
 const HAIRLINE = "rgba(31,27,23,0.10)";
 
-const VISIBLE_PHASES: Phase[] = ["planning", "messaging", "build", "content", "pre-launch", "launch"];
+const VISIBLE_PHASES: Phase[] = ["foundation", "planning", "messaging", "build", "content", "pre-launch", "launch"];
 const PHASE_ICONS: Record<Phase, React.ComponentType<any>> = {
   setup: Compass,
   planning: Compass,

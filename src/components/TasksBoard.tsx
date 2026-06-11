@@ -27,7 +27,7 @@ import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { getFunnelConfigKey } from "@/lib/funnelUtils";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks, getSetupTasks } from "@/data/taskTemplates";
+import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks, getFoundationTasks } from "@/data/taskTemplates";
 import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag, Sparkles } from "lucide-react";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -532,18 +532,18 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       <div className="grid gap-4 mb-6">
         <PhaseSection
           projectId={projectId}
-          label="Setup"
+          label="Business Foundation"
           icon={Sparkles}
-          tasks={getSetupTasks()}
+          tasks={getFoundationTasks()}
           phaseNumber={1}
         />
 
         <PhaseSection
           projectId={projectId}
-          label="Planning"
+          label="Know Your Customer"
           icon={ClipboardList}
           tasks={getPlanningTasks(currentFunnelType)}
-          prerequisiteTasks={getSetupTasks()}
+          prerequisiteTasks={getFoundationTasks()}
           phaseNumber={2}
         />
 
@@ -553,17 +553,17 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
               <Rocket className="w-5 h-5" />
             </div>
             <p className="font-display text-[15px] font-medium text-ink-900 mb-1">
-              Complete the setup step above to unlock your full task list
+              Complete the planning step above to unlock your full task list
             </p>
             <p className="text-[12.5px] text-fg-secondary max-w-xs mx-auto">
-              Once you choose how you'll sell your offer in the Setup phase, your personalized tasks for Planning, Build, Content, and Launch will appear here — tailored to your path.
+              Once you choose how you'll sell your offer in the planning phase, your personalized tasks for Build, Content, and Launch will appear here — tailored to your path.
             </p>
           </div>
         ) : (
           <>
             <PhaseSection
               projectId={projectId}
-              label="Messaging"
+              label="Messaging & Positioning"
               icon={MessageSquare}
               tasks={getMessagingTasks(currentFunnelType)}
               prerequisiteTasks={getPlanningTasks(currentFunnelType)}
@@ -581,7 +581,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
 
             <PhaseSection
               projectId={projectId}
-              label="Content"
+              label="Content Strategy"
               icon={PenTool}
               tasks={getContentTasksForFunnel(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType)]}
@@ -611,7 +611,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
 
             <PhaseSection
               projectId={projectId}
-              label="Post-Launch"
+              label="Post-Launch & Growth"
               icon={Flag}
               tasks={getPostLaunchTasks(currentFunnelType)}
               prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
