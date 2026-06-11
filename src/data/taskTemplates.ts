@@ -1366,6 +1366,677 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     brainUpdatePrompt: 'Add my digital product to my business brain:\n\nProduct name: [name]\nProduct type: [type]\nProduct promise: [promise]\nPrice: [price]\nTarget audience: [avatar name]\nOutline: [paste your outline]\nFile location: [Google Drive link if applicable]\n\nWhen I ask you to write sales copy, emails, social posts, or any content about my product — use these exact details.',
   },
 
+
+  // ============================================================
+  // PHASE 3 — YOUR SALES PAGE (build phase, orders 9-16)
+  // ============================================================
+
+  {
+    taskId: 'salespage_anatomy',
+    title: 'Learn what goes on a sales page',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 9,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['product_brain_update'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know the 14 sections of a complete sales page and what each one does',
+      'You understand the job of your headline and call-to-action before you write a word',
+    ],
+    whyItMatters: 'A sales page is not a wall of text — it is a sequence of decisions your reader makes as they scroll. Each section does one specific job. Knowing the job before you write makes everything faster and more effective.',
+    instructions: [
+      'Read through the 14 sections below — each has a one-sentence description of its job',
+      'Think about your product and what your version of each section might say',
+      'You do not need to write anything here — the next task does that',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'headline', label: 'Opening headline', description: 'States the outcome or names the problem so clearly that the right person immediately knows this is for them.' },
+        { value: 'problem', label: 'Paint the problem', description: 'Describes the painful current situation in their own words. When done right, they feel seen before you have mentioned your product.' },
+        { value: 'future', label: 'Look into the future', description: 'Paints what life looks like after the problem is gone. Emotional and specific.' },
+        { value: 'introduce_offer', label: 'Introduce your offer', description: 'Names and briefly describes your product for the first time. One sentence, clear, no hype.' },
+        { value: 'differentiator', label: 'Offer differentiator', description: 'Explains why this is different from what they have already tried.' },
+        { value: 'results', label: 'The results', description: 'Testimonials, outcomes, or case examples. Real evidence that this works.' },
+        { value: 'features', label: 'The features', description: 'What is actually included. Specific and tangible — not abstract benefits.' },
+        { value: 'investment', label: 'The investment', description: 'The price, clearly stated. No hiding it.' },
+        { value: 'guarantee', label: 'The guarantee', description: 'Reduces the risk of buying. Does not have to be a refund — can be a promise of quality.' },
+        { value: 'about', label: 'Introduce yourself', description: 'A short, receipts-based bio. Not credentials — results.' },
+        { value: 'is_this_for_you', label: 'Is this for you?', description: 'Explicitly names who this is and is not for. Qualifies the reader so they self-select in or out.' },
+        { value: 'why_now', label: 'Why now', description: 'Addresses the delay objection. Why is acting today better than waiting?' },
+        { value: 'objections', label: 'FAQ or objections', description: 'Answers the 3-5 most common questions or doubts before the final decision.' },
+        { value: 'final_cta', label: 'Final call-to-action', description: 'The last buy button. Clear, direct, one action. No alternatives.' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [],
+    route: '/projects/:id/tasks/salespage_anatomy',
+  },
+
+  {
+    taskId: 'salespage_write_copy',
+    title: 'Write your sales page copy',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 10,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 45,
+    blocking: true,
+    dependencies: ['salespage_anatomy'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have AI-generated copy for all 14 sales page sections',
+      'You have reviewed it and made edits so it sounds like you',
+      'You have saved the final copy to your Google Drive (Sales Page folder)',
+    ],
+    whyItMatters: 'Your sales page copy is the single document that does all your selling while you sleep. The Sales Page Writer pulls from your product details and customer avatar to generate a full first draft across all 14 sections. Your job is to review and make it sound like you.',
+    instructions: [
+      'Open the Sales Page Writer tool using the button below',
+      'Enter your product details — the tool will pull from your project data if you completed Phase 2',
+      'Generate the full page and review each section — edit anything that sounds generic or off-brand',
+      'Copy the final output to a Google Doc and save it to your Sales Page folder in Google Drive',
+      'You will use this document in the next task when building the page in Lovable',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'copy_status', label: 'Where is your sales page copy right now?', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'complete_saved', label: 'Complete — reviewed, edited, and saved to Google Drive' }, { value: 'generated_not_edited', label: 'Generated — not reviewed or edited yet' }, { value: 'in_progress', label: 'In progress — still editing' }, { value: 'not_started', label: 'Not started yet' } ] },
+        { name: 'copy_doc_link', label: 'Google Doc link (once you save it)', type: 'text', required: false, placeholder: 'Paste your Google Doc URL here', helperText: 'You will need this link in the next task when building in Lovable.' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose'],
+    toolLinks: [
+      { label: 'Open Sales Page Writer', url: '/app/ai-studio/sales-page', icon: 'file-text' },
+      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
+    ],
+    route: '/projects/:id/tasks/salespage_write_copy',
+    brainUpdatePrompt: 'Add my sales page copy to my business brain. Product: [product name]. Here is the copy: [paste your complete sales page copy]. When I ask you to write emails, social posts, or any content about this offer — reference the tone, language, and positioning from this sales page copy.',
+  },
+
+  {
+    taskId: 'salespage_build_lovable',
+    title: 'Build your sales page in Lovable',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 11,
+    priority: 1,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 60,
+    blocking: true,
+    dependencies: ['salespage_write_copy'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your sales page is built and published in Lovable',
+      'All 14 sections are present with your actual copy',
+      'The page looks correct on mobile',
+      'You have the live URL',
+    ],
+    whyItMatters: 'Lovable lets you build a professional sales page without writing a single line of code. You paste your copy, describe how you want it to look, and Lovable builds it. The result is a real hosted page at your domain — not a landing page builder template that looks like everyone else's.',
+    instructions: [
+      'Open Lovable and create a new project or open your existing one',
+      'Use the AI prompt below to generate your Lovable build prompt — paste your sales page copy directly in',
+      'Describe your brand style from your Foundation phase (colors, fonts, visual direction)',
+      'Lovable will build the page — review it section by section and ask it to adjust anything off',
+      'Connect your domain in Lovable settings, then publish',
+      'Test on mobile — make sure it looks right and all buttons work',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'page_url', label: 'Your published sales page URL', type: 'text', required: false, placeholder: 'e.g. https://yourbusiness.com/product-name', helperText: 'You will need this for your email setup and social bio.' },
+        { name: 'lovable_status', label: 'Where is the page right now?', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'live', label: 'Live — published with my domain connected' }, { value: 'built_not_published', label: 'Built in Lovable — not published yet' }, { value: 'in_progress', label: 'In progress — still building' }, { value: 'not_started', label: 'Not started yet' } ] },
+        { name: 'mobile_tested', label: 'Have you checked it on mobile?', type: 'select', required: false, placeholder: 'Select...', options: [ { value: 'yes', label: 'Yes — looks good on mobile' }, { value: 'needs_work', label: 'Checked — some things need fixing' }, { value: 'not_yet', label: 'Not yet' } ] },
+      ],
+    },
+    aiAssistModes: ['ai_prompt'],
+    aiPrompt: 'Write me a detailed Lovable prompt to build my sales page. My details: Product name: [name]. Brand colors: [primary and secondary]. Visual style: [your visual direction]. Page sections needed: all 14 standard sales page sections. Sales page copy: [paste your complete sales page copy].
+
+Write a Lovable prompt that: (1) describes the overall page design and feel, (2) specifies layout and visual hierarchy, (3) instructs Lovable to use my exact copy in each section without paraphrasing, (4) includes mobile responsiveness requirements, (5) asks for a sticky header with CTA on scroll. Make it detailed enough that Lovable gets it right on the first try.',
+    toolLinks: [
+      { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
+    ],
+    route: '/projects/:id/tasks/salespage_build_lovable',
+  },
+
+  {
+    taskId: 'salespage_connect_surecontact',
+    title: 'Connect SureContact to your sales page',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 12,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['salespage_build_lovable'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'SureContact is integrated with your Lovable sales page',
+      'When someone enters their email on your page, it flows into SureContact',
+      'You have tested the opt-in and confirmed the contact appears in SureContact',
+    ],
+    whyItMatters: 'Every person who lands on your sales page and gives you their email is a potential buyer. Without SureContact connected, those emails go nowhere. This integration means every opt-in automatically enters your email list and can trigger your welcome sequence. It takes one Lovable prompt and your SureContact API key.',
+    instructions: [
+      'Find your SureContact API key: in SureContact go to Settings, then Integrations or API, and copy your key',
+      'Open your Lovable project',
+      'Paste the Lovable prompt from the example section into Lovable — it tells Lovable exactly how to integrate SureContact',
+      'Lovable will ask for your API key — paste it when prompted',
+      'After Lovable rebuilds, test the integration: enter a test email on your page and check that it appears in SureContact within 60 seconds',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'integration_status', label: 'SureContact integration status', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'connected_tested', label: 'Connected and tested — opt-ins flowing into SureContact' }, { value: 'connected_not_tested', label: 'Connected but not tested yet' }, { value: 'in_progress', label: 'In progress — setting it up now' }, { value: 'not_started', label: 'Not started yet' } ] },
+        { name: 'surecontact_list', label: 'Which SureContact list do opt-ins go to?', type: 'text', required: false, placeholder: 'e.g. Product Waitlist, Main List, [Product Name] Subscribers', helperText: 'Create a dedicated list for this product if you do not have one.' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [
+      { label: 'Open SureContact', url: 'https://app.surecontact.com', icon: 'mail' },
+      { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
+    ],
+    route: '/projects/:id/tasks/salespage_connect_surecontact',
+    exampleText: 'Lovable prompt to integrate SureContact:
+
+"Add a SureContact integration to the email opt-in form on this page. When a user submits their email:
+1. Send their email and first name to SureContact via their API
+2. Add them to the list named [your list name]
+3. Show a success message: [your success message]
+4. If the API call fails, show a graceful error without breaking the page
+
+Here is my SureContact API key: [paste your key]
+
+Use the SureContact REST API endpoint for adding contacts. Handle async correctly so the page does not freeze on submission."',
+  },
+
+  {
+    taskId: 'salespage_setup_stripe',
+    title: 'Set up Stripe payments',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 13,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: true,
+    dependencies: ['salespage_build_lovable'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Stripe is connected to your Lovable sales page',
+      'Your product is listed in Stripe with the correct price',
+      'You have run a test payment and confirmed it goes through',
+    ],
+    whyItMatters: 'Without a payment link, your sales page is a brochure. Stripe handles security, receipts, and payouts automatically. Lovable can integrate with Stripe in one prompt. Once connected, anyone who clicks buy on your page can complete a real purchase.',
+    instructions: [
+      'Create a free Stripe account at stripe.com if you do not have one — it takes 5 minutes',
+      'In Stripe, go to Products and create your product with the price from Phase 2',
+      'Copy your Stripe publishable key and the price ID for your product',
+      'Open Lovable and paste the integration prompt from the example section',
+      'Test with Stripe test card 4242 4242 4242 4242, any future date, any 3-digit CVC',
+      'Check your Stripe dashboard to confirm the test payment landed',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'stripe_status', label: 'Stripe setup status', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'live_tested', label: 'Live — Stripe connected, test payment confirmed' }, { value: 'connected_not_tested', label: 'Connected — not tested yet' }, { value: 'stripe_account_only', label: 'Stripe account created — not yet connected to page' }, { value: 'not_started', label: 'No Stripe account yet' } ] },
+        { name: 'stripe_product_id', label: 'Your Stripe price ID (optional)', type: 'text', required: false, placeholder: 'e.g. price_1234abcd...', helperText: 'Save this here for post-purchase automations.' },
+      ],
+    },
+    aiAssistModes: ['simplify', 'ai_prompt'],
+    aiPrompt: 'Write me a Lovable prompt to integrate Stripe payments on my sales page. My details: Product name: [name]. Price: [price]. Stripe publishable key: [key]. Stripe price ID: [price ID]. After successful payment redirect to: [thank you page URL]. After failed payment show: [error message].
+
+Write a complete Lovable prompt that adds a working Stripe checkout button, handles success and error states gracefully, and does not break the existing page design.',
+    toolLinks: [
+      { label: 'Create a Stripe account', url: 'https://stripe.com', icon: 'credit-card' },
+      { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
+    ],
+    route: '/projects/:id/tasks/salespage_setup_stripe',
+    exampleText: 'Stripe test card numbers:
+Success: 4242 4242 4242 4242
+Declined: 4000 0000 0000 0002
+Expiry: any future date (e.g. 12/26)
+CVC: any 3 digits
+
+Always test before going live.',
+  },
+
+  {
+    taskId: 'salespage_setup_delivery',
+    title: 'Set up your product delivery',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 14,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['salespage_setup_stripe'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a delivery mechanism — the buyer receives their product automatically after purchase',
+      'You have tested delivery yourself and confirmed you received the product',
+    ],
+    whyItMatters: 'The moment after purchase is the highest-trust moment in your customer relationship. If delivery is broken, clunky, or confusing — that is the first impression of your product. Delivery should be automatic, instant, and clean.',
+    instructions: [
+      'Choose your delivery method based on your product type',
+      'For PDF products: upload to Google Drive, create a sharing link, add it to your Stripe success page or SureContact post-purchase email',
+      'For Lovable-hosted access pages: build a simple page that unlocks after Stripe confirms payment',
+      'Test it: complete a test purchase and confirm you receive the product at the end of the flow',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'delivery_method', label: 'How will buyers receive the product?', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'email_link', label: 'Email delivery — SureContact sends the download link after purchase' }, { value: 'stripe_redirect', label: 'Stripe redirect — buyer lands on a thank-you page with the download link' }, { value: 'lovable_gated_page', label: 'Lovable access page — a page that unlocks after payment' }, { value: 'manual_for_now', label: 'Manual for now — I will deliver personally until I set up automation' } ] },
+        { name: 'delivery_link', label: 'Product file or access link', type: 'text', required: false, placeholder: 'e.g. Google Drive share link, Dropbox link, Notion page URL', helperText: 'Save this here — you will need it when writing your post-purchase email.' },
+        { name: 'delivery_tested', label: 'Have you tested the delivery flow?', type: 'select', required: false, placeholder: 'Select...', options: [ { value: 'yes', label: 'Yes — purchased and received the product successfully' }, { value: 'not_yet', label: 'Not yet' } ] },
+      ],
+    },
+    aiAssistModes: ['simplify', 'ai_prompt'],
+    aiPrompt: 'Write me a Lovable prompt to build a simple product delivery thank-you page that appears after a successful Stripe payment. Page should include: a thank you message ([your message]), the product name ([name]), a clear download or access button linking to ([your product link]), next steps for the buyer ([e.g. check your email for your receipt]), my brand style ([colors and visual direction]). Keep it clean and simple. The buyer just paid — make them feel good about it.',
+    toolLinks: [
+      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
+      { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
+    ],
+    route: '/projects/:id/tasks/salespage_setup_delivery',
+  },
+
+  {
+    taskId: 'salespage_test_flow',
+    title: 'Test your full purchase flow',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 15,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['salespage_setup_delivery'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have gone through the complete buyer journey — from landing on the page to receiving the product',
+      'Every step works correctly and nothing is broken',
+      'You have fixed any issues found during testing',
+    ],
+    whyItMatters: 'Most launch failures are not strategy failures — they are broken links, undelivered products, and payment errors that could have been caught in 15 minutes. Testing your own flow before you promote is the simplest thing you can do to protect your first launch.',
+    instructions: [
+      'Go through the complete journey as a first-time buyer who found you on social media',
+      'Click every link, scroll every section, fill out the email form, complete a test purchase, confirm you received the product',
+      'Test on both desktop and mobile',
+      'Fix anything that felt confusing, slow, or broken',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'page_loads', label: 'Sales page loads correctly', description: 'No broken images, no layout issues, all text readable' },
+        { value: 'mobile_ok', label: 'Mobile experience is clean', description: 'Tested on a phone — buttons are tappable, text is not cut off' },
+        { value: 'email_optin_works', label: 'Email opt-in flows to SureContact', description: 'Entered a test email and confirmed it appeared in SureContact within 60 seconds' },
+        { value: 'payment_works', label: 'Test payment goes through', description: 'Used Stripe test card, payment confirmed in Stripe dashboard' },
+        { value: 'delivery_confirmed', label: 'Product delivery works', description: 'Received the product at the end of the flow — download link works or access page loads' },
+        { value: 'receipt_sent', label: 'Purchase receipt is sent', description: 'Stripe or SureContact sent a confirmation email after the test purchase' },
+        { value: 'all_links_work', label: 'All links on the page work', description: 'Clicked every button and link — nothing goes to a 404 or blank page' },
+      ],
+    },
+    aiAssistModes: [],
+    toolLinks: [],
+    route: '/projects/:id/tasks/salespage_test_flow',
+  },
+
+  {
+    taskId: 'salespage_publish',
+    title: 'Publish your sales page',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 16,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['salespage_test_flow'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your sales page is live at a real URL on your domain',
+      'The URL is saved and ready to use in your email marketing, social bio, and launch posts',
+    ],
+    whyItMatters: 'Once your page is live, you have a permanent place to point every piece of marketing you create. Everything converges here.',
+    instructions: [
+      'In Lovable, connect your custom domain if you have not already',
+      'Publish the project — Lovable makes it live immediately',
+      'Copy the live URL and save it below',
+      'Add the URL to your link in bio on your primary social platform',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'live_url', label: 'Your live sales page URL', type: 'text', required: true, placeholder: 'https://yourbusiness.com/your-product' },
+        { name: 'domain_connected', label: 'Is your custom domain connected?', type: 'select', required: false, placeholder: 'Select...', options: [ { value: 'yes', label: 'Yes — live at my custom domain' }, { value: 'lovable_subdomain', label: 'Using Lovable subdomain for now' } ] },
+        { name: 'bio_updated', label: 'Have you added this URL to your social bio?', type: 'select', required: false, placeholder: 'Select...', options: [ { value: 'yes', label: 'Yes — updated in my bio' }, { value: 'not_yet', label: 'Not yet' } ] },
+      ],
+    },
+    aiAssistModes: [],
+    toolLinks: [
+      { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
+    ],
+    route: '/projects/:id/tasks/salespage_publish',
+    brainUpdatePrompt: 'My sales page is now live. URL: [your URL]. Use this URL whenever you help me write emails, social posts, or any marketing content that needs a link.',
+  },
+
+  // ============================================================
+  // PHASE 4 — EMAIL MARKETING SETUP (build phase, orders 17-23)
+  // ============================================================
+
+  {
+    taskId: 'email_surecontact_setup',
+    title: 'Create your SureContact account',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 17,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['salespage_publish'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your SureContact account is created and set up with your business name and email',
+      'You have verified your sending domain so your emails do not land in spam',
+    ],
+    whyItMatters: 'SureContact is your email marketing system — it is where your list lives, where your automations run, and where every email to your audience comes from. Domain verification at the start means your emails actually reach inboxes instead of spam folders.',
+    instructions: [
+      'Create your SureContact account at surecontact.com — use your professional business email',
+      'In account settings, enter your business name and physical address (required by CAN-SPAM law)',
+      'Go to Settings, then Sending Domains, and add your domain — verify it by adding the DNS records to your domain registrar',
+      'Domain verification is critical — without it your emails have a high chance of going to spam',
+      'If you get stuck on DNS records, use the AI prompt below for a step-by-step walkthrough',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'account_status', label: 'SureContact account status', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'setup_verified', label: 'Set up and domain verified — ready to send' }, { value: 'created_not_verified', label: 'Account created — domain not verified yet' }, { value: 'in_progress', label: 'Setting it up now' }, { value: 'not_started', label: 'No account yet' } ] },
+        { name: 'sending_email', label: 'What email address will you send from?', type: 'text', required: false, placeholder: 'e.g. hello@yourbusiness.com', helperText: 'Use your custom domain email, not Gmail — this affects deliverability.' },
+      ],
+    },
+    aiAssistModes: ['simplify', 'ai_prompt'],
+    aiPrompt: 'Walk me through verifying my sending domain in SureContact. My domain is [your domain]. My domain registrar is [registrar, e.g. Namecheap, GoDaddy]. Give me step-by-step instructions for: (1) finding the DNS verification records in SureContact, (2) adding those records in my registrar, (3) verifying they worked. Include what the records should look like so I know if I did it right.',
+    toolLinks: [
+      { label: 'Open SureContact', url: 'https://app.surecontact.com', icon: 'mail' },
+    ],
+    route: '/projects/:id/tasks/email_surecontact_setup',
+  },
+
+  {
+    taskId: 'email_import_contacts',
+    title: 'Import your existing contacts',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 18,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['email_surecontact_setup'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Any existing contacts you have permission to email are imported into SureContact',
+    ],
+    whyItMatters: 'If you have any contacts who have given you permission to email them — past clients, newsletter subscribers, event attendees — those people are your warmest audience for your launch. Importing them means your first emails reach people who already know you.',
+    instructions: [
+      'Export contacts from any existing tools — Gmail contacts, Mailchimp, Flodesk, spreadsheets',
+      'Only import people who have explicitly opted in — do not import scraped lists or business cards',
+      'In SureContact, go to Contacts, then Import, and upload your CSV',
+      'Tag imported contacts as existing — this helps you segment your audience later',
+      'If you have zero existing contacts, skip this task — your list starts now',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'contacts_imported', label: 'Did you have existing contacts to import?', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'imported', label: 'Yes — imported existing contacts into SureContact' }, { value: 'no_existing', label: 'No existing contacts — starting from zero' }, { value: 'not_eligible', label: 'Have contacts but they did not opt in — not importing' } ] },
+        { name: 'starting_list_size', label: 'How many contacts are in your list right now?', type: 'text', required: false, placeholder: 'e.g. 0, 47, 230', helperText: 'Even starting at zero is fine — your list builds through your sales page and content.' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [
+      { label: 'Open SureContact', url: 'https://app.surecontact.com', icon: 'mail' },
+    ],
+    route: '/projects/:id/tasks/email_import_contacts',
+  },
+
+  {
+    taskId: 'email_welcome_sequence',
+    title: 'Write your welcome email sequence',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 19,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 45,
+    blocking: true,
+    dependencies: ['email_surecontact_setup'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a 3-5 email welcome sequence written and saved',
+      'Email 1 delivers the promise (free resource, confirmation, or welcome)',
+      'The sequence naturally leads to your product without being a hard sell',
+    ],
+    whyItMatters: 'Your welcome sequence is the most important email automation you will ever set up. It is the first thing new subscribers receive — before they have forgotten who you are. The welcome sequence builds the relationship that eventually converts subscribers into buyers.',
+    instructions: [
+      'Open the Email Sequence Generator tool using the button below',
+      'Select Welcome / Nurture as the sequence type',
+      'Enter your product and audience details — the tool generates all 3-5 emails',
+      'Review and edit each email to match your voice — remove anything that sounds generic',
+      'Save the final sequence to your Google Drive (Email Marketing folder)',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'sequence_status', label: 'Welcome sequence status', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'written_saved', label: 'Written, reviewed, and saved to Google Drive' }, { value: 'generated_not_edited', label: 'Generated — not yet reviewed or edited' }, { value: 'in_progress', label: 'In progress' }, { value: 'not_started', label: 'Not started yet' } ] },
+        { name: 'sequence_length', label: 'How many emails in your welcome sequence?', type: 'text', required: false, placeholder: 'e.g. 3 emails, 5 emails' },
+        { name: 'sequence_doc_link', label: 'Google Doc link (once saved)', type: 'text', required: false, placeholder: 'Paste your Google Doc URL here' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose'],
+    toolLinks: [
+      { label: 'Open Email Sequence Generator', url: '/app/ai-studio/email-sequence', icon: 'mail' },
+      { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
+    ],
+    route: '/projects/:id/tasks/email_welcome_sequence',
+    brainUpdatePrompt: 'Add my welcome email sequence to my business brain. Here are the emails: [paste your sequence]. When I ask you to write future emails or create new sequences, reference the tone and approach from this welcome sequence.',
+  },
+
+  {
+    taskId: 'email_product_announcement',
+    title: 'Write your product announcement email',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 20,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: false,
+    dependencies: ['email_welcome_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a product announcement email written for your existing list',
+      'The email has a clear subject line, clear product description, and a single link to your sales page',
+    ],
+    whyItMatters: 'The announcement email goes to your existing list when you launch. It introduces the product, makes the value clear, and gives them one link to click. That is it.',
+    instructions: [
+      'Use the Email Sequence Generator set to Launch Sequence with 1 email',
+      'Subject line: make it curious, specific, or direct — avoid all-caps and exclamation points',
+      'Body: 3-5 short paragraphs — who it is for, what it does, what it costs, one link',
+      'Call to action: one link, one action — do not add multiple links or options',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'announcement_subject', label: 'Your announcement email subject line', type: 'text', required: false, placeholder: 'e.g. "Something I built for you", "New: [Product Name] is ready"' },
+        { name: 'announcement_status', label: 'Announcement email status', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'written_ready', label: 'Written and ready to send on launch day' }, { value: 'draft', label: 'Draft — needs more editing' }, { value: 'not_started', label: 'Not started yet' } ] },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'ai_prompt'],
+    aiPrompt: 'Write a product announcement email to my existing email list. Product name: [name]. Product promise: [promise]. Price: [price]. Sales page URL: [URL]. Audience: [avatar description].
+
+Requirements: 3 subject line options (one curious, one direct, one personal), short body (3-5 paragraphs), tone: [your brand voice], include who this is for + what it does + what it costs + one link, do not oversell or use hype language. Write the full email ready to copy and paste.',
+    toolLinks: [
+      { label: 'Open Email Sequence Generator', url: '/app/ai-studio/email-sequence', icon: 'mail' },
+    ],
+    route: '/projects/:id/tasks/email_product_announcement',
+  },
+
+  {
+    taskId: 'email_build_automation',
+    title: 'Set up your opt-in automation in SureContact',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 21,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: true,
+    dependencies: ['email_welcome_sequence'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your welcome sequence is live in SureContact as an automation',
+      'The automation triggers when someone opts in through your sales page form',
+      'You have tested it and confirmed the first email fires',
+    ],
+    whyItMatters: 'Writing your emails is only half the job. Until they are inside SureContact as an active automation, no one receives them. This moves your welcome sequence from a document into a live system that sends automatically every time someone opts in.',
+    instructions: [
+      'In SureContact, go to Automations and create a new automation',
+      'Set the trigger: Contact joins a list (select the list your sales page form connects to)',
+      'Add a delay of 0 minutes, then Send Email and select Email 1 from your welcome sequence',
+      'Add a 1-2 day delay, then Email 2, and continue for each email in your sequence',
+      'Set the automation to Active and test it: opt in with a real email and confirm the first email arrives within 5 minutes',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'emails_created', label: 'Welcome emails created in SureContact', description: 'All emails from your sequence are created as email templates in SureContact' },
+        { value: 'automation_created', label: 'Automation built in SureContact', description: 'Trigger, delays, and send email steps are all configured' },
+        { value: 'automation_active', label: 'Automation set to Active', description: 'The automation is live — not in draft mode' },
+        { value: 'test_opt_in', label: 'Test opt-in completed', description: 'Opted in with a real email and received Email 1 within 5 minutes' },
+        { value: 'sequence_fires', label: 'Full sequence confirmed', description: 'Checked that subsequent emails will fire at the right intervals' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [
+      { label: 'Open SureContact Automations', url: 'https://app.surecontact.com', icon: 'mail' },
+    ],
+    route: '/projects/:id/tasks/email_build_automation',
+  },
+
+  {
+    taskId: 'email_broadcast_rhythm',
+    title: 'Set your broadcast email rhythm',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 22,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['email_build_automation'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have decided how often you will send broadcast emails to your list',
+      'You know what types of emails you will send on a regular basis',
+    ],
+    whyItMatters: 'Automations send when someone is new. Broadcasts are how you stay in touch with your whole list over time. A consistent rhythm keeps your list warm so when you have something to sell, you are not a stranger in their inbox.',
+    instructions: [
+      'Pick a frequency you can actually sustain — once a week is ideal, twice a month is fine, once a month is the minimum',
+      'Decide the types of emails you will send: value content, behind-the-scenes, product updates, promotions, or a mix',
+      'Write this down as a commitment — you do not need to write the emails now, just decide the rhythm',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'broadcast_frequency', label: 'How often will you email your list?', type: 'select', required: true, placeholder: 'Select...', options: [ { value: 'twice_week', label: 'Twice a week' }, { value: 'once_week', label: 'Once a week (recommended)' }, { value: 'twice_month', label: 'Twice a month' }, { value: 'once_month', label: 'Once a month' } ] },
+        { name: 'email_types', label: 'What types of emails will you send?', type: 'textarea', required: false, placeholder: 'e.g. Weekly tips related to my product topic, occasional product promotions, behind-the-scenes updates on what I am building...' },
+        { name: 'send_day', label: 'What day will you typically send?', type: 'text', required: false, placeholder: 'e.g. Tuesday mornings, Thursday afternoons', helperText: 'Consistency matters more than the specific day.' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    toolLinks: [],
+    route: '/projects/:id/tasks/email_broadcast_rhythm',
+  },
+
+  {
+    taskId: 'email_test_full_flow',
+    title: 'Test your complete email flow',
+    phase: 'build',
+    funnelTypes: ['all'],
+    order: 23,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['email_build_automation'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have tested the complete opt-in to welcome sequence journey yourself',
+      'Emails arrive in inbox — not spam — from your verified sending domain',
+      'All links in the emails work correctly',
+    ],
+    whyItMatters: 'Broken email flows are invisible to you until a real subscriber reports them. Five minutes of testing saves weeks of wondering why nobody is engaging.',
+    instructions: [
+      'Use a personal email address different from your SureContact account',
+      'Go to your sales page, enter your test email in the opt-in form',
+      'Confirm you receive the welcome email within 5 minutes — if it lands in spam, check domain verification',
+      'Click every link in every email and confirm they go to the right places',
+      'Check the sending name, subject lines, and preview text look correct',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'optin_works', label: 'Opt-in form submits and confirms', description: 'Form on the sales page submits successfully and shows a confirmation message' },
+        { value: 'email1_received', label: 'Email 1 received in inbox not spam', description: 'First welcome email arrived in inbox within 5 minutes' },
+        { value: 'sender_looks_correct', label: 'Sender name and email look correct', description: 'The from name and address match your business identity' },
+        { value: 'links_work', label: 'All links in emails work', description: 'Clicked every link — all go to the right destination' },
+        { value: 'sequence_timing_correct', label: 'Sequence timing is correct', description: 'Delays between emails are set correctly in the automation' },
+      ],
+    },
+    aiAssistModes: [],
+    toolLinks: [
+      { label: 'Open SureContact', url: 'https://app.surecontact.com', icon: 'mail' },
+    ],
+    route: '/projects/:id/tasks/email_test_full_flow',
+  },
+
+
 ];
 
 // ============================================================
