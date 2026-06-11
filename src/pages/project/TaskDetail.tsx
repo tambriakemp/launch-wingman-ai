@@ -516,6 +516,11 @@ export default function TaskDetail() {
         setChecklistItems(Array.isArray(data.checkedItems) ? data.checkedItems : []);
       }
       
+      // Handle multi-select type
+      if (taskTemplate?.inputType === 'multi-select' && data.selectedItems) {
+        setChecklistItems(Array.isArray(data.selectedItems) ? data.selectedItems : []);
+      }
+      
       // Load completed criteria if saved
       if (data.completedCriteria && Array.isArray(data.completedCriteria)) {
         setCompletedCriteria(data.completedCriteria as string[]);
@@ -606,6 +611,9 @@ export default function TaskDetail() {
         break;
       case 'checklist':
         inputData = { checkedItems: checklistItems };
+        break;
+      case 'multi-select':
+        inputData = { selectedItems: checklistItems };
         break;
       case 'form':
         inputData = { ...formData };
@@ -756,6 +764,10 @@ export default function TaskDetail() {
         const requiredCount = taskTemplate.inputSchema?.options?.length || 0;
         inputComplete = checklistItems.length >= requiredCount;
         break;
+      case 'multi-select':
+        // Multi-select requires at least one option selected
+        inputComplete = checklistItems.length > 0;
+        break;
       case 'form':
         const fields = taskTemplate.inputSchema?.fields || [];
         const requiredFields = fields.filter(f => f.required);
@@ -806,6 +818,9 @@ export default function TaskDetail() {
           break;
         case 'checklist':
           inputData = { checkedItems: checklistItems };
+          break;
+        case 'multi-select':
+          inputData = { selectedItems: checklistItems };
           break;
         case 'form':
           inputData = { ...formData };
@@ -1079,6 +1094,37 @@ export default function TaskDetail() {
                 Learn more
               </Link>
             )}
+            {/* Export button for exportable tasks */}
+            {taskTemplate.exportable && projectTask?.status === 'completed' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const title = taskTemplate.title;
+                  const inputData = projectTask?.inputData as Record<string, unknown> | undefined;
+                  const lines: string[] = [`# ${title}`, ''];
+                  if (inputData) {
+                    Object.entries(inputData).forEach(([key, val]) => {
+                      if (key === 'completedCriteria' || !val) return;
+                      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                      lines.push(`## ${label}`);
+                      lines.push(String(val));
+                      lines.push('');
+                    });
+                  }
+                  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${taskTemplate.taskId.replace(/_/g, '-')}.md`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="inline-flex items-center gap-1.5 text-[12px] text-fg-muted hover:text-ink-800 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            )}
           </div>
           <h1 className="font-display-hero text-[32px] sm:text-[44px] md:text-[48px] font-normal leading-[1.05] tracking-[-0.025em] text-ink-900 m-0">
             {taskTemplate.title}
@@ -1124,96 +1170,24 @@ export default function TaskDetail() {
         {/* Task Input Area */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
+            <h2 className="editorial-eyebrow">
+              Your response
+            </h2>
             <div className="flex items-center gap-3">
-              <h2 className="editorial-eyebrow">
-                Your response
-              </h2>
-              {(taskId === 'planning_phase_review' || taskId === 'messaging_phase_review' || taskId === 'build_phase_review' || taskId === 'content_phase_review') && project && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 bg-white border border-hairline rounded-full px-3.5 py-1.5 font-sans text-[12.5px] text-ink-800 hover:bg-paper-100 transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Export
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {taskId === 'planning_phase_review' && (
-                      <DropdownMenuItem onSelect={() => document.getElementById('export-plan-trigger')?.click()}>
-                        Export Plan
-                      </DropdownMenuItem>
-                    )}
-                    {taskId === 'messaging_phase_review' && projectId && (
-                      <DropdownMenuItem onSelect={() => document.getElementById('export-messaging-trigger')?.click()}>
-                        Export Messaging
-                      </DropdownMenuItem>
-                    )}
-                    {taskId === 'build_phase_review' && (
-                      <DropdownMenuItem onSelect={() => document.getElementById('export-build-trigger')?.click()}>
-                        Export Build Assets
-                      </DropdownMenuItem>
-                    )}
-                    {taskId === 'content_phase_review' && (
-                      <DropdownMenuItem onSelect={() => document.getElementById('export-content-trigger')?.click()}>
-                        Export Content
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* Auto-save status indicator */}
+              {autoSaveStatus === 'saving' && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Saving...
+                </span>
               )}
-              <div className="hidden">
-                {project && (
-                  <div id="export-plan-trigger">
-                    <ExportPlanButton 
-                      projectName={project.name}
-                      projectTasks={projectTasks}
-                      offers={projectOffers}
-                      selectedFunnelType={project.selected_funnel_type}
-                    />
-                  </div>
-                )}
-                {project && projectId && (
-                  <div id="export-messaging-trigger">
-                    <ExportMessagingButton 
-                      projectId={projectId}
-                      projectName={project.name}
-                      projectTasks={projectTasks}
-                    />
-                  </div>
-                )}
-                {project && (
-                  <div id="export-build-trigger">
-                    <ExportBuildButton 
-                      projectName={project.name}
-                      projectTasks={projectTasks}
-                    />
-                  </div>
-                )}
-                {project && (
-                  <div id="export-content-trigger">
-                    <ExportContentButton 
-                      projectName={project.name}
-                      projectTasks={projectTasks}
-                    />
-                  </div>
-                )}
-              </div>
+              {autoSaveStatus === 'saved' && (
+                <span className="text-xs text-moss-700 flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Saved
+                </span>
+              )}
             </div>
-            {/* Auto-save status indicator */}
-            {autoSaveStatus === 'saving' && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Saving...
-              </span>
-            )}
-            {autoSaveStatus === 'saved' && (
-              <span className="text-xs text-moss-700 flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                Saved
-              </span>
-            )}
           </div>
           
           {/* Selection Input */}
@@ -1392,6 +1366,53 @@ export default function TaskDetail() {
               onComplete={handleSaveAndComplete}
               isCompleting={isSaving}
             />
+          )}
+
+          {/* Multi-select Input */}
+          {taskTemplate.inputType === 'multi-select' && taskTemplate.inputSchema?.options && (
+            <div className="space-y-3">
+              {taskTemplate.inputSchema.prompt && (
+                <p className="text-[14px] text-fg-secondary mb-2">{taskTemplate.inputSchema.prompt}</p>
+              )}
+              {taskTemplate.inputSchema.options.map((option) => {
+                const isSelected = checklistItems.includes(option.value);
+                return (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      "flex items-start gap-4 p-5 rounded-2xl border bg-white cursor-pointer transition-all",
+                      isSelected
+                        ? "border-terracotta bg-clay-100"
+                        : "border-hairline hover:border-ink-300"
+                    )}
+                    onClick={() => handleChecklistToggle(option.value)}
+                  >
+                    <Checkbox
+                      id={`ms-${option.value}`}
+                      checked={isSelected}
+                      onCheckedChange={() => handleChecklistToggle(option.value)}
+                      className="mt-0.5 h-4 w-4 rounded border-ink-300 data-[state=checked]:bg-terracotta data-[state=checked]:border-terracotta data-[state=checked]:text-paper-100"
+                    />
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <Label
+                        htmlFor={`ms-${option.value}`}
+                        className="font-display text-[16px] tracking-[-0.01em] text-ink-900 cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                      {option.description && (
+                        <p className="text-[14px] text-fg-secondary leading-relaxed">
+                          {option.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {taskTemplate.inputSchema.helperText && (
+                <p className="text-xs text-fg-muted/80 mt-1">{taskTemplate.inputSchema.helperText}</p>
+              )}
+            </div>
           )}
         </section>
 
