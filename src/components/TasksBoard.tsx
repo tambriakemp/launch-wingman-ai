@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText, ChevronDown, ChevronRight, ArrowRight } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText, ChevronDown, ChevronRight, ArrowRight, Package, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -542,97 +542,86 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           projectId={projectId}
           label="Know Your Customer"
           icon={ClipboardList}
-          tasks={getPlanningTasks(currentFunnelType)}
+          tasks={getPlanningTasks(null)}
           prerequisiteTasks={getFoundationTasks()}
           phaseNumber={2}
         />
 
-        {!currentFunnelType ? (
-          <div className="rounded-2xl border border-dashed border-hairline bg-paper-100 p-6 text-center">
-            <div className="w-10 h-10 rounded-xl bg-clay-200 text-terracotta flex items-center justify-center mx-auto mb-3">
-              <Rocket className="w-5 h-5" />
-            </div>
-            <p className="font-display text-[15px] font-medium text-ink-900 mb-1">
-              Complete the planning step above to unlock your full task list
-            </p>
-            <p className="text-[12.5px] text-fg-secondary max-w-xs mx-auto">
-              Once you choose how you'll sell your offer in the planning phase, your personalized tasks for Build, Content, and Launch will appear here — tailored to your path.
-            </p>
-          </div>
-        ) : (
-          <>
-            <PhaseSection
-              projectId={projectId}
-              label="Messaging & Positioning"
-              icon={MessageSquare}
-              tasks={getMessagingTasks(currentFunnelType)}
-              prerequisiteTasks={getPlanningTasks(currentFunnelType)}
-              phaseNumber={3}
-            />
-            <PhaseSection
-              projectId={projectId}
-              label="Build"
-              icon={Wrench}
-              tasks={getBuildTasksForFunnel(currentFunnelType)}
-              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType)]}
-              isProOnly
-              phaseNumber={4}
-            />
+        <PhaseSection
+          projectId={projectId}
+          label="Messaging & Positioning"
+          icon={MessageSquare}
+          tasks={getMessagingTasks(null)}
+          prerequisiteTasks={getPlanningTasks(null)}
+          phaseNumber={3}
+        />
 
-            <PhaseSection
-              projectId={projectId}
-              label="Content Strategy"
-              icon={PenTool}
-              tasks={getContentTasksForFunnel(currentFunnelType)}
-              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType)]}
-              isProOnly
-              phaseNumber={5}
-            />
+        {/* Build phase — 3 internal sections */}
+        <PhaseSection
+          projectId={projectId}
+          label="Your Digital Product"
+          icon={Package}
+          tasks={getBuildTasksForFunnel(null).filter(t => t.order <= 8)}
+          prerequisiteTasks={[...getPlanningTasks(null), ...getMessagingTasks(null)]}
+          phaseNumber={4}
+        />
 
-            <PhaseSection
-              projectId={projectId}
-              label="Pre-Launch"
-              icon={Sparkles}
-              tasks={getPreLaunchTasks(currentFunnelType)}
-              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
-              isProOnly
-              phaseNumber={6}
-            />
+        <PhaseSection
+          projectId={projectId}
+          label="Your Sales Page"
+          icon={FileText}
+          tasks={getBuildTasksForFunnel(null).filter(t => t.order >= 9 && t.order <= 16)}
+          prerequisiteTasks={getBuildTasksForFunnel(null).filter(t => t.order <= 8)}
+          phaseNumber={5}
+        />
 
-            <PhaseSection
-              projectId={projectId}
-              label="Launch"
-              icon={Rocket}
-              tasks={getLaunchTasksForFunnel(currentFunnelType)}
-              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType)]}
-              isProOnly
-              phaseNumber={7}
-            />
+        <PhaseSection
+          projectId={projectId}
+          label="Email Marketing"
+          icon={Mail}
+          tasks={getBuildTasksForFunnel(null).filter(t => t.order >= 17)}
+          prerequisiteTasks={getBuildTasksForFunnel(null).filter(t => t.order <= 16)}
+          phaseNumber={6}
+        />
 
-            <PhaseSection
-              projectId={projectId}
-              label="Post-Launch & Growth"
-              icon={Flag}
-              tasks={getPostLaunchTasks(currentFunnelType)}
-              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
-              isProOnly
-              phaseNumber={8}
-            />
-          </>
-        )}
+        <PhaseSection
+          projectId={projectId}
+          label="Content Strategy"
+          icon={PenTool}
+          tasks={getContentTasksForFunnel(null)}
+          prerequisiteTasks={getBuildTasksForFunnel(null)}
+          phaseNumber={7}
+        />
+
+        <PhaseSection
+          projectId={projectId}
+          label="Pre-Launch"
+          icon={Sparkles}
+          tasks={getPreLaunchTasks(null)}
+          prerequisiteTasks={[...getMessagingTasks(null), ...getBuildTasksForFunnel(null), ...getContentTasksForFunnel(null)]}
+          phaseNumber={8}
+        />
+
+        <PhaseSection
+          projectId={projectId}
+          label="Launch"
+          icon={Rocket}
+          tasks={getLaunchTasksForFunnel(null)}
+          prerequisiteTasks={getPreLaunchTasks(null)}
+          phaseNumber={9}
+        />
+
+        <PhaseSection
+          projectId={projectId}
+          label="Post-Launch & Growth"
+          icon={Flag}
+          tasks={getPostLaunchTasks(null)}
+          prerequisiteTasks={getLaunchTasksForFunnel(null)}
+          phaseNumber={10}
+        />
 
       </div>
 
-
-      {/* Checklist View */}
-      {currentFunnelType && (
-        <AssetChecklist
-          funnelType={currentFunnelType}
-          offers={offers}
-          completedAssets={completedAssets}
-          onToggleAsset={handleToggleAsset}
-        />
-      )}
 
       {/* Task Dialog */}
       <TaskDialog
