@@ -1547,17 +1547,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
     ],
     route: '/projects/:id/tasks/salespage_connect_surecontact',
-    exampleText: 'Lovable prompt to integrate SureContact:
-
-"Add a SureContact integration to the email opt-in form on this page. When a user submits their email:
-1. Send their email and first name to SureContact via their API
-2. Add them to the list named [your list name]
-3. Show a success message: [your success message]
-4. If the API call fails, show a graceful error without breaking the page
-
-Here is my SureContact API key: [paste your key]
-
-Use the SureContact REST API endpoint for adding contacts. Handle async correctly so the page does not freeze on submission."',
+    exampleText: 'Lovable prompt to integrate SureContact:\n\n"Add a SureContact integration to the email opt-in form on this page. When a user submits their email:\n1. Send their email and first name to SureContact via their API\n2. Add them to the list named [your list name]\n3. Show a success message: [your success message]\n4. If the API call fails, show a graceful error without breaking the page\n\nHere is my SureContact API key: [paste your key]\n\nUse the SureContact REST API endpoint for adding contacts. Handle async correctly so the page does not freeze on submission."',
   },
 
   {
