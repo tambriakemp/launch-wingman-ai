@@ -2933,12 +2933,7 @@ Make it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No 
           label: 'Your content creation workflow',
           type: 'textarea',
           required: false,
-          placeholder: "Step 1: Review 30-day plan and pick this week's posts (10 min)
-Step 2: Draft captions with Claude using the post prompts (20 min)
-Step 3: Edit captions and add my voice (15 min)
-Step 4: Create visuals in Canva or Claude image gen (20 min)
-Step 5: Schedule in [scheduling tool] (10 min)
-Total: ~75 minutes per week",
+          placeholder: "Step 1: Review 30-day plan and pick this week\'s posts (10 min)\nStep 2: Draft captions with Claude using the post prompts (20 min)\nStep 3: Edit captions and add my voice (15 min)\nStep 4: Create visuals in Canva or Claude image gen (20 min)\nStep 5: Schedule in [scheduling tool] (10 min)\nTotal: ~75 minutes per week",
           helperText: 'Even a rough outline is better than no process.',
         },
         {
