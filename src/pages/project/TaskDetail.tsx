@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -20,11 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
-import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
 import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
 import { SimpleLaunchPageTask } from "@/components/build/SimpleLaunchPageTask";
 import { VideoInstructionsSection } from "@/components/build/VideoInstructionsSection";
-import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS, PHASES, TaskTemplate } from "@/types/tasks";
@@ -93,7 +91,6 @@ export default function TaskDetail() {
   const isInitialized = useRef(false);
   
   // Free funnel types - these are available to all users
-  const FREE_FUNNEL_TYPES = ['content_to_offer', 'freebie_email_offer'];
   const isPro = tier === 'pro' || tier === 'admin' || hasAdminAccess;
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -1229,90 +1226,35 @@ export default function TaskDetail() {
                 </p>
               )}
               
-              <RadioGroup value={selectedOption} onValueChange={(value) => {
-                // Check if this funnel type is locked
-                const isLocked = !isPro && !FREE_FUNNEL_TYPES.includes(value);
-                if (isLocked) {
-                  setShowUpgradeDialog(true);
-                  return;
-                }
-                setSelectedOption(value);
-              }} className="space-y-3">
+              <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
                 {taskTemplate.inputSchema.options.map((option) => {
-                  const funnelConfig = LAUNCH_PATH_FUNNEL_STEPS[option.value];
                   const isSelected = selectedOption === option.value;
-                  const isLocked = !isPro && !FREE_FUNNEL_TYPES.includes(option.value);
-                  
                   return (
                     <div key={option.value}>
                       <Label
                         htmlFor={option.value}
                         className={cn(
-                          "flex flex-col p-5 rounded-2xl border bg-white transition-all",
-                          isLocked
-                            ? "cursor-not-allowed opacity-60 border-hairline"
-                            : isSelected
-                            ? "border-terracotta bg-clay-100 cursor-pointer"
-                            : "border-hairline hover:border-ink-300 cursor-pointer"
+                          "flex flex-col p-5 rounded-2xl border bg-white transition-all cursor-pointer",
+                          isSelected
+                            ? "border-terracotta bg-clay-100"
+                            : "border-hairline hover:border-ink-300"
                         )}
-                        onClick={(e) => {
-                          if (isLocked) {
-                            e.preventDefault();
-                            setShowUpgradeDialog(true);
-                          }
-                        }}
                       >
                         <div className="flex items-start gap-4">
                           <RadioGroupItem
                             value={option.value}
                             id={option.value}
                             className="mt-0.5 border-ink-300 text-terracotta data-[state=checked]:border-terracotta"
-                            disabled={isLocked}
                           />
                           <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className={cn(
-                                "font-display text-[17px] tracking-[-0.01em]",
-                                isLocked ? "text-fg-muted" : "text-ink-900"
-                              )}>
-                                {option.label}
-                              </span>
-                              {isLocked && (
-                                <Crown className="w-4 h-4 text-terracotta flex-shrink-0" />
-                              )}
-                            </div>
-                            <p className={cn(
-                              "text-[14px] leading-relaxed",
-                              isLocked ? "text-fg-muted/70" : "text-fg-secondary"
-                            )}>
+                            <span className="font-display text-[17px] tracking-[-0.01em] text-ink-900">
+                              {option.label}
+                            </span>
+                            <p className="text-[14px] leading-relaxed text-fg-secondary">
                               {option.description}
                             </p>
                           </div>
                         </div>
-                        
-                        {/* Expandable Funnel Diagram */}
-                        <AnimatePresence>
-                          {isSelected && funnelConfig && !isLocked && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2, ease: 'easeInOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-4 pt-4 border-t border-border/50">
-                                <FunnelDiagram
-                                  steps={funnelConfig.steps}
-                                  color={funnelConfig.color}
-                                  bgColor={funnelConfig.bgColor}
-                                />
-                                <p className="text-xs text-muted-foreground text-center mt-3">
-                                  Offer Slots: {funnelConfig.offerSlots}
-                                </p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </Label>
                     </div>
                   );
@@ -1455,53 +1397,105 @@ export default function TaskDetail() {
 
         {/* AI Assist Section */}
         {taskTemplate.aiAssistModes.length > 0 && (
-          <section className="mb-10 p-5 rounded-xl bg-muted/30 border border-border/50">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-medium text-foreground">Need help?</h2>
-            </div>
-            
-            <div className="flex flex-wrap gap-2 mb-4">
-              {taskTemplate.aiAssistModes.map((mode) => {
-                const labels: Record<string, string> = {
-                  help_me_choose: "Help me choose",
-                  examples: hasShownExamples ? "Show more examples" : "Show examples",
-                  simplify: "Simplify this",
-                };
-                
-                // Simplify button requires user input
-                const primaryInput = getPrimaryInputValue();
-                const hasInput = primaryInput.trim().length >= 10; // At least one meaningful sentence
-                const isSimplifyDisabled = mode === 'simplify' && !hasInput;
-                
-                return (
-                  <Button
-                    key={mode}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAiAssist(mode)}
-                    disabled={isAiLoading !== null || isSimplifyDisabled}
-                    title={isSimplifyDisabled ? "Write something first so we can simplify it." : undefined}
-                  >
-                    {isAiLoading === mode && (
-                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    )}
-                    {labels[mode] || mode}
-                  </Button>
-                );
-              })}
-            </div>
-            
-            {/* Helper text for simplify when disabled */}
-            {taskTemplate.aiAssistModes.includes('simplify') && getPrimaryInputValue().trim().length < 10 && (
-              <p className="text-xs text-muted-foreground mb-4">
-                Write something first so we can simplify it.
-              </p>
-            )}
+          <section className="mb-10">
+            <div className="p-5 rounded-2xl border border-hairline bg-white">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-terracotta" />
+                <h2 className="editorial-eyebrow">AI assist</h2>
+              </div>
 
-            {aiResponse && (
-              <AIResponseRenderer response={aiResponse} mode={lastAiMode || undefined} />
-            )}
+              {/* ai_prompt: copy-to-clipboard Claude prompt */}
+              {taskTemplate.aiAssistModes.includes('ai_prompt') && taskTemplate.aiPrompt && (
+                <div className="mb-4">
+                  <p className="text-[13px] text-fg-secondary mb-2">
+                    Copy this prompt into Claude or ChatGPT — fill in your details before sending:
+                  </p>
+                  <div className="relative group">
+                    <pre className="bg-paper-100 border border-hairline rounded-xl p-4 text-[12.5px] text-ink-800 leading-relaxed whitespace-pre-wrap font-sans overflow-x-auto">
+                      {taskTemplate.aiPrompt}
+                    </pre>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(taskTemplate.aiPrompt || '');
+                        toast.success('Prompt copied to clipboard');
+                      }}
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-ink-900 text-paper-100 text-[11px] font-medium px-2.5 py-1 rounded-full"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* In-app AI modes: help_me_choose, examples, simplify */}
+              {taskTemplate.aiAssistModes.some(m => ['help_me_choose', 'examples', 'simplify'].includes(m)) && (
+                <div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {taskTemplate.aiAssistModes
+                      .filter(mode => ['help_me_choose', 'examples', 'simplify'].includes(mode))
+                      .map((mode) => {
+                        const labels: Record<string, string> = {
+                          help_me_choose: 'Help me choose',
+                          examples: hasShownExamples ? 'Show more examples' : 'Show examples',
+                          simplify: 'Simplify this',
+                        };
+                        const primaryInput = getPrimaryInputValue();
+                        const hasInput = primaryInput.trim().length >= 10;
+                        const isSimplifyDisabled = mode === 'simplify' && !hasInput;
+                        return (
+                          <Button
+                            key={mode}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAiAssist(mode)}
+                            disabled={isAiLoading !== null || isSimplifyDisabled}
+                            title={isSimplifyDisabled ? 'Write something first so we can simplify it.' : undefined}
+                          >
+                            {isAiLoading === mode && (
+                              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                            )}
+                            {labels[mode] || mode}
+                          </Button>
+                        );
+                      })}
+                  </div>
+                  {taskTemplate.aiAssistModes.includes('simplify') && getPrimaryInputValue().trim().length < 10 && (
+                    <p className="text-xs text-fg-muted mb-4">
+                      Write something first so we can simplify it.
+                    </p>
+                  )}
+                  {aiResponse && (
+                    <AIResponseRenderer response={aiResponse} mode={lastAiMode || undefined} />
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Tool Links */}
+        {taskTemplate.toolLinks && taskTemplate.toolLinks.length > 0 && (
+          <section className="mb-10">
+            <div className="editorial-eyebrow mb-3">Tools for this step</div>
+            <div className="flex flex-wrap gap-2">
+              {taskTemplate.toolLinks.map((tool, i) => (
+                <a
+                  key={i}
+                  href={tool.url}
+                  target={tool.url.startsWith('http') ? '_blank' : undefined}
+                  rel={tool.url.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-hairline bg-white text-[13px] text-ink-800 font-medium hover:border-terracotta hover:text-terracotta transition-colors"
+                >
+                  {tool.label}
+                  {tool.url.startsWith('http') && (
+                    <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  )}
+                </a>
+              ))}
+            </div>
           </section>
         )}
 
@@ -1607,9 +1601,32 @@ export default function TaskDetail() {
                 </div>
               )}
               
-              {/* MVL: Planning Phase Review callout (placement #1) */}
-              {taskId === 'planning_phase_review' && isTaskComplete && (
-                <MVLCallout variant="planning" className="mt-6" />
+              {/* Brain Update Prompt — shown when all criteria are complete */}
+              {taskTemplate.brainUpdatePrompt && isTaskComplete && (
+                <div className="mt-6 p-4 rounded-2xl border border-clay-300 bg-clay-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-terracotta shrink-0" />
+                    <span className="text-[12px] font-semibold text-terracotta uppercase tracking-[0.08em]">Update your business brain</span>
+                  </div>
+                  <p className="text-[13px] text-fg-secondary mb-2 leading-relaxed">
+                    Paste this into your Claude Project to keep your AI context current:
+                  </p>
+                  <div className="relative group">
+                    <pre className="bg-white border border-clay-300 rounded-xl p-3.5 text-[12px] text-ink-800 leading-relaxed whitespace-pre-wrap font-sans">
+                      {taskTemplate.brainUpdatePrompt}
+                    </pre>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(taskTemplate.brainUpdatePrompt || '');
+                        toast.success('Brain update prompt copied');
+                      }}
+                      className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity bg-ink-900 text-paper-100 text-[11px] font-medium px-2.5 py-1 rounded-full"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
               )}
               
               {/* MVL: Transformation Statement inline confirmation (placement #2) */}
