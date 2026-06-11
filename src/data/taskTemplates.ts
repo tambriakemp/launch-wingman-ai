@@ -1500,9 +1500,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['ai_prompt'],
-    aiPrompt: 'Write me a detailed Lovable prompt to build my sales page. My details: Product name: [name]. Brand colors: [primary and secondary]. Visual style: [your visual direction]. Page sections needed: all 14 standard sales page sections. Sales page copy: [paste your complete sales page copy].
-
-Write a Lovable prompt that: (1) describes the overall page design and feel, (2) specifies layout and visual hierarchy, (3) instructs Lovable to use my exact copy in each section without paraphrasing, (4) includes mobile responsiveness requirements, (5) asks for a sticky header with CTA on scroll. Make it detailed enough that Lovable gets it right on the first try.',
+    aiPrompt: 'Write me a detailed Lovable prompt to build my sales page. My details: Product name: [name]. Brand colors: [primary and secondary]. Visual style: [your visual direction]. Page sections needed: all 14 standard sales page sections. Sales page copy: [paste your complete sales page copy].\n\nWrite a Lovable prompt that: (1) describes the overall page design and feel, (2) specifies layout and visual hierarchy, (3) instructs Lovable to use my exact copy in each section without paraphrasing, (4) includes mobile responsiveness requirements, (5) asks for a sticky header with CTA on scroll. Make it detailed enough that Lovable gets it right on the first try.',
     toolLinks: [
       { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
     ],
