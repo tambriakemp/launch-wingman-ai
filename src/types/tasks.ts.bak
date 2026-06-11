@@ -1,7 +1,6 @@
 // Phase definitions - ordered sequence
-// v2 architecture: 'setup' phase removed, 'foundation' is now Phase 0 of every project
 export const PHASES = [
-  'foundation',
+  'setup',
   'planning',
   'messaging',
   'build',
@@ -14,45 +13,26 @@ export const PHASES = [
 export type Phase = typeof PHASES[number];
 
 export const PHASE_LABELS: Record<Phase, string> = {
-  foundation: 'Business Foundation',
-  planning: 'Know Your Customer',
-  messaging: 'Messaging & Positioning',
+  setup: 'Setup',
+  planning: 'Planning',
+  messaging: 'Messaging',
   build: 'Build',
-  content: 'Content Strategy',
+  content: 'Content',
   'pre-launch': 'Pre-Launch',
   launch: 'Launch',
-  'post-launch': 'Post-Launch & Growth',
-};
-
-// Editorial one-liner summaries for each phase — used in side rail and phase headers.
-// Exported here so they live in one place instead of being hardcoded in three components.
-export const PHASE_SUMMARIES: Record<Phase, string> = {
-  foundation: 'Get your business set up before you build on it.',
-  planning: 'You can\'t sell to everyone. The more specific you get, the more money you make.',
-  messaging: 'Before you say anything publicly, know exactly what you\'re saying and why.',
-  build: 'Your digital product, your sales page, your email system — built.',
-  content: 'Pick your lane, show up consistently, let the content do the selling.',
-  'pre-launch': 'Warm the room before you open the doors.',
-  launch: 'You have a product, a site, an email list, and content. Now you tell people.',
-  'post-launch': 'The launch was the start. Now you build the machine.',
+  'post-launch': 'Post-Launch',
 };
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped';
 
 export type PhaseStatus = 'locked' | 'active' | 'complete';
 
-// AI assist modes:
-// - help_me_choose: In-app Claude API call (Option B — Pro tier)
-// - examples: In-app Claude API call showing relevant examples (Option B — Pro tier)
-// - simplify: In-app Claude API call to simplify user's existing input (Option B — Pro tier)
-// - ai_prompt: Renders a static copy-to-clipboard prompt for use in Claude/ChatGPT (Option A — all tiers)
-export type AIAssistMode = 'help_me_choose' | 'examples' | 'simplify' | 'ai_prompt';
+export type AIAssistMode = 'help_me_choose' | 'examples' | 'simplify';
 
 export type SkipReason = 'not_relevant' | 'already_completed' | 'doing_later';
 
-// Funnel types — represent the path from audience to buyer.
-// In v2, funnel type selection moves from 'setup' phase into planning phase (order: 0).
-export type FunnelType =
+// New funnel types (V1) - these represent paths to invitation
+export type FunnelType = 
   | 'content_to_offer'      // Baseline: social content → direct offer (no injection)
   | 'freebie_email_offer'   // Freebie → email nurture → offer
   | 'live_training_offer'   // Live training/webinar → offer
@@ -62,9 +42,10 @@ export type FunnelType =
   | 'launch'                // Time-bound window for introducing and selling an offer
   | 'all';                  // Universal tasks that apply to all funnels
 
-// Legacy funnel type mapping (for backwards compatibility with any stored data)
+// Legacy funnel type mapping (for backwards compatibility)
 export type LegacyFunnelType = 'webinar' | 'challenge' | 'direct-sales' | 'lead-magnet';
 
+// Map legacy types to new types
 export const LEGACY_FUNNEL_TYPE_MAP: Record<LegacyFunnelType, FunnelType> = {
   'direct-sales': 'content_to_offer',
   'lead-magnet': 'freebie_email_offer',
@@ -72,6 +53,7 @@ export const LEGACY_FUNNEL_TYPE_MAP: Record<LegacyFunnelType, FunnelType> = {
   'challenge': 'application_call',
 };
 
+// Funnel type labels for display
 export const FUNNEL_TYPE_LABELS: Record<Exclude<FunnelType, 'all'>, string> = {
   content_to_offer: 'Content → Offer',
   freebie_email_offer: 'Freebie → Email → Offer',
@@ -82,6 +64,7 @@ export const FUNNEL_TYPE_LABELS: Record<Exclude<FunnelType, 'all'>, string> = {
   launch: 'Launch',
 };
 
+// Funnel type descriptions
 export const FUNNEL_TYPE_DESCRIPTIONS: Record<Exclude<FunnelType, 'all'>, string> = {
   content_to_offer: 'Share content that leads directly to your offer — simple and direct',
   freebie_email_offer: 'Offer something free to build your list, then nurture with emails',
@@ -92,7 +75,7 @@ export const FUNNEL_TYPE_DESCRIPTIONS: Record<Exclude<FunnelType, 'all'>, string
   launch: 'A time-bound window where your offer is introduced, explained, and made available for a limited period',
 };
 
-// Task template — defines what a task looks like before it's instantiated for a project.
+// Task template - defines what a task looks like before it's created for a project
 export interface TaskTemplate {
   taskId: string;
   title: string;
@@ -109,29 +92,13 @@ export interface TaskTemplate {
   completionCriteria: string[];
   whyItMatters: string;
   instructions: string[];
-  // inputType values:
-  // 'selection'   — radio button group (choose one option)
-  // 'multi-select' — checkbox group (choose multiple options) — WIRED in TaskDetail v2
-  // 'checklist'   — checklist with dynamic descriptions (used in phase reviews)
-  // 'text'        — single text input
-  // 'form'        — multi-field form
-  // 'custom'      — dedicated custom component (referenced via inputSchema.customComponent)
   inputType: 'selection' | 'text' | 'checklist' | 'multi-select' | 'form' | 'custom';
   inputSchema?: InputSchema;
   aiAssistModes: AIAssistMode[];
-  // aiPrompt: pre-written copy-to-clipboard Claude prompt for this task.
-  // Rendered when aiAssistModes includes 'ai_prompt'. Available on all tiers.
-  aiPrompt?: string;
   toolLinks?: ToolLink[];
   route: string;
-  videoInstructionsUrl?: string;
-  exampleText?: string;
-  // brainUpdatePrompt: shown after task completion on tasks that produce
-  // a document worth adding to the user's Claude Project business brain.
-  brainUpdatePrompt?: string;
-  // exportable: when true, an Export button appears in the task response header.
-  // Used on phase review tasks and any task that produces a meaningful document.
-  exportable?: boolean;
+  videoInstructionsUrl?: string; // Optional video URL for admin-configured task tutorials
+  exampleText?: string; // Optional collapsible example text
 }
 
 export interface InputSchema {
@@ -168,7 +135,7 @@ export interface ToolLink {
   icon?: string;
 }
 
-// Project task — an instance of a task for a specific project
+// Project task - an instance of a task for a specific project
 export interface ProjectTask {
   id: string;
   projectId: string;

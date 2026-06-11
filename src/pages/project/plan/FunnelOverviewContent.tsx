@@ -769,7 +769,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     ? PHASES[PHASES.indexOf(mostRecentlyCompletedPhase) + 1]
     : undefined;
 
-  const showTimeline = phaseStatuses['setup'] === 'complete' && !!selectedFunnelType;
+  const showTimeline = phaseStatuses['planning'] === 'complete' && !!selectedFunnelType;
 
   if (isMobile) {
     const allUpcoming = [...todayContent, ...tomorrowContent, ...upcomingContent];

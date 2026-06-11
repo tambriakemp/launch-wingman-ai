@@ -1,7 +1,7 @@
 import { TaskTemplate } from '@/types/tasks';
-import {
-  FREEBIE_EMAIL_OFFER_DELTA_TASKS,
-  LIVE_TRAINING_OFFER_DELTA_TASKS,
+import { 
+  FREEBIE_EMAIL_OFFER_DELTA_TASKS, 
+  LIVE_TRAINING_OFFER_DELTA_TASKS, 
   APPLICATION_CALL_DELTA_TASKS,
   MEMBERSHIP_DELTA_TASKS,
   CHALLENGE_DELTA_TASKS,
@@ -9,21 +9,8 @@ import {
   CONTENT_TO_OFFER_DELTA_TASKS,
 } from './funnelDeltaTasks';
 
-// ============================================================
-// V2 TASK TEMPLATES — active tasks for the new architecture
-// 9 phases, 80 tasks, Cre8 Visions app companion
-// ============================================================
+// Universal tasks that apply to all funnel types
 export const TASK_TEMPLATES: TaskTemplate[] = [
-  // Tasks will be added here in the next commit
-];
-
-// ============================================================
-// RETIRED TASK TEMPLATES — v1 archive. Do not delete.
-// Original task set before the June 2026 architecture swap.
-// Any task here can be revived and remapped into TASK_TEMPLATES.
-// Reference doc: retired-tasks-reference.html
-// ============================================================
-export const RETIRED_TASK_TEMPLATES: TaskTemplate[] = [
   // ==================== PLANNING PHASE ====================
   {
     taskId: 'planning_define_audience',
@@ -1754,10 +1741,11 @@ export const RETIRED_TASK_TEMPLATES: TaskTemplate[] = [
     aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/postlaunch_next_step',
   },
-]; // end RETIRED_TASK_TEMPLATES
+];
 
-// Push retired delta tasks into the retired array for completeness
-RETIRED_TASK_TEMPLATES.push(
+// Add all funnel delta tasks to the main TASK_TEMPLATES array
+// This ensures they can be found by getTaskTemplate
+TASK_TEMPLATES.push(
   ...FREEBIE_EMAIL_OFFER_DELTA_TASKS,
   ...LIVE_TRAINING_OFFER_DELTA_TASKS,
   ...APPLICATION_CALL_DELTA_TASKS,
@@ -1767,23 +1755,19 @@ RETIRED_TASK_TEMPLATES.push(
   ...CONTENT_TO_OFFER_DELTA_TASKS,
 );
 
-// ============================================================
-// HELPER FUNCTIONS — operate on TASK_TEMPLATES (v2 active tasks)
-// ============================================================
-
-// Get tasks for a specific funnel type
+// Helper function to get tasks for a specific funnel type
 export function getTasksForFunnelType(funnelType: string): TaskTemplate[] {
-  return TASK_TEMPLATES.filter(task =>
+  return TASK_TEMPLATES.filter(task => 
     task.funnelTypes.includes('all') || task.funnelTypes.includes(funnelType as any)
   );
 }
 
-// Get universal tasks (apply to all funnel types)
+// Helper function to get universal tasks (applies to all funnel types)
 export function getUniversalTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.funnelTypes.includes('all'));
 }
 
-// Get planning phase tasks
+// Get planning phase tasks specifically
 export function getPlanningTasks(funnelType?: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'planning' && (
@@ -1793,7 +1777,7 @@ export function getPlanningTasks(funnelType?: string | null): TaskTemplate[] {
     .sort((a, b) => a.order - b.order);
 }
 
-// Get messaging phase tasks
+// Get messaging phase tasks specifically
 export function getMessagingTasks(funnelType?: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'messaging' && (
@@ -1803,52 +1787,52 @@ export function getMessagingTasks(funnelType?: string | null): TaskTemplate[] {
     .sort((a, b) => a.order - b.order);
 }
 
-// Get build phase tasks (universal only)
+// Get build phase tasks specifically (universal only)
 export function getBuildTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === 'build' && task.funnelTypes.includes('all'));
 }
 
-// Get build phase tasks for a specific funnel type
+// Get build phase tasks for a specific funnel type (universal + funnel-specific)
 export function getBuildTasksForFunnel(funnelType: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'build' && (
-      task.funnelTypes.includes('all') ||
+      task.funnelTypes.includes('all') || 
       (funnelType && task.funnelTypes.includes(funnelType as any))
     ))
     .sort((a, b) => a.order - b.order);
 }
 
-// Get content phase tasks (universal only)
+// Get content phase tasks specifically (universal only)
 export function getContentTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === 'content' && task.funnelTypes.includes('all'));
 }
 
-// Get content phase tasks for a specific funnel type
+// Get content phase tasks for a specific funnel type (universal + funnel-specific)
 export function getContentTasksForFunnel(funnelType: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'content' && (
-      task.funnelTypes.includes('all') ||
+      task.funnelTypes.includes('all') || 
       (funnelType && task.funnelTypes.includes(funnelType as any))
     ))
     .sort((a, b) => a.order - b.order);
 }
 
-// Get launch phase tasks (universal only)
+// Get launch phase tasks specifically (universal only)
 export function getLaunchTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === 'launch' && task.funnelTypes.includes('all'));
 }
 
-// Get launch phase tasks for a specific funnel type
+// Get launch phase tasks for a specific funnel type (universal + funnel-specific)
 export function getLaunchTasksForFunnel(funnelType: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'launch' && (
-      task.funnelTypes.includes('all') ||
+      task.funnelTypes.includes('all') || 
       (funnelType && task.funnelTypes.includes(funnelType as any))
     ))
     .sort((a, b) => a.order - b.order);
 }
 
-// Get pre-launch phase tasks
+// Get pre-launch phase tasks specifically
 export function getPreLaunchTasks(funnelType?: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'pre-launch' && (
@@ -1858,7 +1842,7 @@ export function getPreLaunchTasks(funnelType?: string | null): TaskTemplate[] {
     .sort((a, b) => a.order - b.order);
 }
 
-// Get post-launch phase tasks
+// Get post-launch phase tasks specifically
 export function getPostLaunchTasks(funnelType?: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
     .filter(task => task.phase === 'post-launch' && (
@@ -1868,14 +1852,14 @@ export function getPostLaunchTasks(funnelType?: string | null): TaskTemplate[] {
     .sort((a, b) => a.order - b.order);
 }
 
-// Get foundation phase tasks
-export function getFoundationTasks(): TaskTemplate[] {
-  return TASK_TEMPLATES
-    .filter(task => task.phase === 'foundation')
-    .sort((a, b) => a.order - b.order);
-}
-
-// Get tasks by any phase (generic)
+// Get tasks by phase
 export function getTasksByPhase(phase: string): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === phase);
+}
+
+// Get setup phase tasks
+export function getSetupTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'setup')
+    .sort((a, b) => a.order - b.order);
 }

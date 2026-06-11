@@ -5,15 +5,17 @@ import { cn } from "@/lib/utils";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS, PHASES, type Phase } from "@/types/tasks";
 
+// Imported from types/tasks.ts — keyed by PHASE_LABELS display strings.
+import { PHASE_SUMMARIES as PHASE_SUMMARIES_BY_KEY } from '@/types/tasks';
 const PHASE_SUMMARIES: Record<string, string> = {
-  Setup: "Pick the shape of the thing you're launching.",
-  Planning: "Clarify who this is for and why it works.",
-  Messaging: "Turn what you know into language people feel.",
-  Build: "Put the pieces in place — calmly, one by one.",
-  Content: "The pieces that bring the launch into the world.",
-  "Pre-Launch": "Warm the room before you open the doors.",
-  Launch: "Ship it. Then take an afternoon off.",
-  "Post-Launch": "Reflect, refine, and rest before the next one.",
+  'Business Foundation': PHASE_SUMMARIES_BY_KEY['foundation'],
+  'Know Your Customer': PHASE_SUMMARIES_BY_KEY['planning'],
+  'Messaging & Positioning': PHASE_SUMMARIES_BY_KEY['messaging'],
+  Build: PHASE_SUMMARIES_BY_KEY['build'],
+  'Content Strategy': PHASE_SUMMARIES_BY_KEY['content'],
+  'Pre-Launch': PHASE_SUMMARIES_BY_KEY['pre-launch'],
+  Launch: PHASE_SUMMARIES_BY_KEY['launch'],
+  'Post-Launch & Growth': PHASE_SUMMARIES_BY_KEY['post-launch'],
 };
 
 const QUIET_REMINDERS = [
