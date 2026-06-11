@@ -2329,7 +2329,7 @@ Each bio should: start with who you help (not your name or title), include a spe
       type: 'form',
       fields: [
         { name: 'voice_tone', label: 'How would you describe your tone in 3-5 words?', type: 'text', required: true, placeholder: 'e.g. Direct, warm, no-nonsense, encouraging, real' },
-        { name: 'voice_words_use', label: 'Words and phrases you naturally use', type: 'textarea', required: false, placeholder: 'e.g. y'all, let me be real with you, here is the thing, straight up, receipts not credentials...' },
+        { name: 'voice_words_use', label: 'Words and phrases you naturally use', type: 'textarea', required: false, placeholder: "e.g. y'all, let me be real with you, here is the thing, straight up, receipts not credentials..." },
         { name: 'voice_words_avoid', label: 'Words and phrases you would never use', type: 'textarea', required: false, placeholder: 'e.g. leverage, synergy, unlock your potential, game-changer, hustle, as an expert...' },
         { name: 'voice_personality', label: 'If your brand were a person, how would you describe them?', type: 'textarea', required: false, placeholder: 'e.g. The friend who has done this before and just tells you exactly what to do — no fluff, no gatekeeping, genuinely wants you to win...' },
         { name: 'voice_inspiration', label: 'Whose writing style do you admire? (brands, creators, writers)', type: 'text', required: false, placeholder: 'e.g. [creator names whose tone resonates with you]', sectionLabel: 'Optional: Inspiration' },
@@ -2604,7 +2604,7 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
     whyItMatters: 'Content pillars are the 3-4 recurring themes your content lives inside. They give you structure without a script — you always know which pillar a post belongs to, and your audience begins to recognize and expect your recurring themes. Without pillars, content creation requires a new decision every time. With pillars, you are just choosing which bucket to fill.',
     instructions: [
       'Think about 3-4 topics you could create 20 different posts about without running out of ideas',
-      'Each pillar should connect to either your audience's world, your expertise, or the product you sell',
+      "Each pillar should connect to either your audience's world, your expertise, or the product you sell",
       'They should be specific enough to be distinct — "marketing" is too broad, "getting found on Google without paying for ads" is a pillar',
       'One pillar should always be connected to your product or offer — not a hard sell, but content that builds toward it',
     ],
@@ -2933,12 +2933,12 @@ Make it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No 
           label: 'Your content creation workflow',
           type: 'textarea',
           required: false,
-          placeholder: 'Step 1: Review 30-day plan and pick this week's posts (10 min)
+          placeholder: "Step 1: Review 30-day plan and pick this week's posts (10 min)
 Step 2: Draft captions with Claude using the post prompts (20 min)
 Step 3: Edit captions and add my voice (15 min)
 Step 4: Create visuals in Canva or Claude image gen (20 min)
 Step 5: Schedule in [scheduling tool] (10 min)
-Total: ~75 minutes per week',
+Total: ~75 minutes per week",
           helperText: 'Even a rough outline is better than no process.',
         },
         {
