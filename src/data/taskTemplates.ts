@@ -1586,21 +1586,21 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       ],
     },
     aiAssistModes: ['simplify', 'ai_prompt'],
-    aiPrompt: 'Write me a Lovable prompt to integrate Stripe payments on my sales page. My details: Product name: [name]. Price: [price]. Stripe publishable key: [key]. Stripe price ID: [price ID]. After successful payment redirect to: [thank you page URL]. After failed payment show: [error message].
+    aiPrompt: `Write me a Lovable prompt to integrate Stripe payments on my sales page. My details: Product name: [name]. Price: [price]. Stripe publishable key: [key]. Stripe price ID: [price ID]. After successful payment redirect to: [thank you page URL]. After failed payment show: [error message].
 
-Write a complete Lovable prompt that adds a working Stripe checkout button, handles success and error states gracefully, and does not break the existing page design.',
+Write a complete Lovable prompt that adds a working Stripe checkout button, handles success and error states gracefully, and does not break the existing page design.`,
     toolLinks: [
       { label: 'Create a Stripe account', url: 'https://stripe.com', icon: 'credit-card' },
       { label: 'Open Lovable', url: 'https://lovable.dev', icon: 'external-link' },
     ],
     route: '/projects/:id/tasks/salespage_setup_stripe',
-    exampleText: 'Stripe test card numbers:
+    exampleText: `Stripe test card numbers:
 Success: 4242 4242 4242 4242
 Declined: 4000 0000 0000 0002
 Expiry: any future date (e.g. 12/26)
 CVC: any 3 digits
 
-Always test before going live.',
+Always test before going live.`,
   },
 
   {
@@ -1890,9 +1890,9 @@ Always test before going live.',
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Write a product announcement email to my existing email list. Product name: [name]. Product promise: [promise]. Price: [price]. Sales page URL: [URL]. Audience: [avatar description].
+    aiPrompt: `Write a product announcement email to my existing email list. Product name: [name]. Product promise: [promise]. Price: [price]. Sales page URL: [URL]. Audience: [avatar description].
 
-Requirements: 3 subject line options (one curious, one direct, one personal), short body (3-5 paragraphs), tone: [your brand voice], include who this is for + what it does + what it costs + one link, do not oversell or use hype language. Write the full email ready to copy and paste.',
+Requirements: 3 subject line options (one curious, one direct, one personal), short body (3-5 paragraphs), tone: [your brand voice], include who this is for + what it does + what it costs + one link, do not oversell or use hype language. Write the full email ready to copy and paste.`,
     toolLinks: [
       { label: 'Open Email Sequence Generator', url: '/app/ai-studio/email-sequence', icon: 'mail' },
     ],
@@ -2083,16 +2083,16 @@ Requirements: 3 subject line options (one curious, one direct, one personal), sh
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Help me write my brand core message. My business is [business name and tagline]. I serve [customer avatar description]. The problem I solve: [problem]. My approach is different because: [what makes you different]. What I believe that most people in my space do not say: [your answer].
+    aiPrompt: `Help me write my brand core message. My business is [business name and tagline]. I serve [customer avatar description]. The problem I solve: [problem]. My approach is different because: [what makes you different]. What I believe that most people in my space do not say: [your answer].
 
-Write 5 core message options. Each should be 1-3 sentences, bold and opinionated — not a soft mission statement. The best one should make my ideal customer feel seen and make anyone outside my audience feel it is not for them. Recommend the strongest one and explain why it would resonate with my specific audience.',
+Write 5 core message options. Each should be 1-3 sentences, bold and opinionated — not a soft mission statement. The best one should make my ideal customer feel seen and make anyone outside my audience feel it is not for them. Recommend the strongest one and explain why it would resonate with my specific audience.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_core_message',
-    exampleText: 'Weak: "I help small businesses grow with marketing."
+    exampleText: `Weak: "I help small businesses grow with marketing."
 
 Strong: "Local service businesses are the backbone of every community — and most of them are invisible online because nobody ever taught them the basics. That changes here."
 
-The strong version has a point of view. It takes a side. It makes the right person feel understood.',
+The strong version has a point of view. It takes a side. It makes the right person feel understood.`,
   },
 
   {
@@ -2148,14 +2148,14 @@ The strong version has a point of view. It takes a side. It makes the right pers
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Write my transformation statement. Audience: [customer avatar]. Before state (their painful current situation): [problem + obstacle]. After state (what they get): [dream outcome]. Timeline if applicable: [how long it takes].
+    aiPrompt: `Write my transformation statement. Audience: [customer avatar]. Before state (their painful current situation): [problem + obstacle]. After state (what they get): [dream outcome]. Timeline if applicable: [how long it takes].
 
-Write 5 transformation statements using the formula: I help [audience] go from [before] to [after] [without/in]. Make the before state feel painful and specific. Make the after state feel achievable and concrete. Recommend the strongest one and explain what makes it work.',
+Write 5 transformation statements using the formula: I help [audience] go from [before] to [after] [without/in]. Make the before state feel painful and specific. Make the after state feel achievable and concrete. Recommend the strongest one and explain what makes it work.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_transformation',
-    exampleText: 'Too vague: "I help business owners grow their business online."
+    exampleText: `Too vague: "I help business owners grow their business online."
 
-Specific: "I help local service businesses go from invisible online and chasing every client through referrals to having a professional website, verified Google listing, and running ads — in 30 days."',
+Specific: "I help local service businesses go from invisible online and chasing every client through referrals to having a professional website, verified Google listing, and running ads — in 30 days."`,
   },
 
   {
@@ -2194,11 +2194,11 @@ Specific: "I help local service businesses go from invisible online and chasing 
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Generate 8 talking points for my brand. Core message: [your core message]. Transformation: [your transformation statement]. Audience: [customer avatar]. Industry: [your industry].
+    aiPrompt: `Generate 8 talking points for my brand. Core message: [your core message]. Transformation: [your transformation statement]. Audience: [customer avatar]. Industry: [your industry].
 
 Each talking point should be: a specific belief or perspective (not a generic tip), something that makes my audience feel understood and validated, something that builds the case for my approach without being a direct pitch, written as a bold statement I would say in a social post or podcast interview.
 
-Then select the 5 strongest ones and explain why each would resonate with my specific audience.',
+Then select the 5 strongest ones and explain why each would resonate with my specific audience.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_talking_points',
   },
@@ -2244,9 +2244,9 @@ Then select the 5 strongest ones and explain why each would resonate with my spe
       ],
     },
     aiAssistModes: ['examples', 'ai_prompt'],
-    aiPrompt: 'Help me identify and answer the top objections my audience has before buying my product. Product: [product name and promise]. Audience: [customer avatar]. Price: [price]. What they have tried before: [biggest obstacle answer from Phase 1].
+    aiPrompt: `Help me identify and answer the top objections my audience has before buying my product. Product: [product name and promise]. Audience: [customer avatar]. Price: [price]. What they have tried before: [biggest obstacle answer from Phase 1].
 
-List the 7 most likely objections this specific audience has — written in their voice, the exact words they would use. For each, write a confident honest answer that acknowledges the concern and addresses it without being defensive or dismissive. Prioritize the 5 most important ones.',
+List the 7 most likely objections this specific audience has — written in their voice, the exact words they would use. For each, write a confident honest answer that acknowledges the concern and addresses it without being defensive or dismissive. Prioritize the 5 most important ones.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_objections',
   },
@@ -2287,7 +2287,7 @@ List the 7 most likely objections this specific audience has — written in thei
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Write optimized social media bios for my brand. Audience: [customer avatar]. What I do: [transformation statement]. My main offer: [product name and promise]. My link: [sales page URL]. Brand voice: [describe your tone].
+    aiPrompt: `Write optimized social media bios for my brand. Audience: [customer avatar]. What I do: [transformation statement]. My main offer: [product name and promise]. My link: [sales page URL]. Brand voice: [describe your tone].
 
 Write bios for:
 - Instagram (max 150 characters)
@@ -2295,7 +2295,7 @@ Write bios for:
 - LinkedIn (max 220 characters, more professional)
 - Facebook page (2-3 sentences)
 
-Each bio should: start with who you help (not your name or title), include a specific result, end with a CTA pointing to the link. Vary the wording for each platform — do not just truncate the same sentence.',
+Each bio should: start with who you help (not your name or title), include a specific result, end with a CTA pointing to the link. Vary the wording for each platform — do not just truncate the same sentence.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_social_bio',
   },
@@ -2336,7 +2336,7 @@ Each bio should: start with who you help (not your name or title), include a spe
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Write a brand voice guide for my business. Here is what I know about how I communicate:
+    aiPrompt: `Write a brand voice guide for my business. Here is what I know about how I communicate:
 
 Tone in 3-5 words: [your answer]
 Words I naturally use: [your answer]
@@ -2346,7 +2346,7 @@ Creators I admire: [your answer]
 Core message: [your core message]
 Audience: [customer avatar]
 
-Write a concise brand voice guide with: (1) a 2-3 sentence voice description I can paste at the top of any Claude prompt, (2) a "sounds like / does not sound like" comparison with 3-4 examples each, (3) 5 specific writing rules for my brand (e.g. "never start a sentence with As an expert"), (4) a tone calibration scale from 1-5 showing when to be more formal vs casual. Make it something I can use as a standing instruction in my Claude Project.',
+Write a concise brand voice guide with: (1) a 2-3 sentence voice description I can paste at the top of any Claude prompt, (2) a "sounds like / does not sound like" comparison with 3-4 examples each, (3) 5 specific writing rules for my brand (e.g. "never start a sentence with As an expert"), (4) a tone calibration scale from 1-5 showing when to be more formal vs casual. Make it something I can use as a standing instruction in my Claude Project.`,
     exportable: true,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_brand_voice',
@@ -2400,13 +2400,13 @@ Write a concise brand voice guide with: (1) a 2-3 sentence voice description I c
       ],
     },
     aiAssistModes: ['examples', 'ai_prompt'],
-    aiPrompt: 'Write my elevator pitch in 3 versions. Audience: [customer avatar]. Problem: [problem]. Outcome: [transformation]. My name: [your name]. Business: [business name].
+    aiPrompt: `Write my elevator pitch in 3 versions. Audience: [customer avatar]. Problem: [problem]. Outcome: [transformation]. My name: [your name]. Business: [business name].
 
 1. Conversational (30 seconds spoken) — sounds like something you would say at a barbecue, uses simple language, maybe a question to open
 2. Professional (30 seconds spoken) — appropriate for a networking event or conference, slightly more polished but still natural
 3. Written (2-3 sentences) — for DMs, LinkedIn intro messages, email signatures
 
-All three should: name the problem before naming the solution, say who specifically you help, end with the transformation or result. None of them should mention certifications, years of experience, or your business name in the first sentence.',
+All three should: name the problem before naming the solution, say who specifically you help, end with the transformation or result. None of them should mention certifications, years of experience, or your business name in the first sentence.`,
     toolLinks: [],
     route: '/projects/:id/tasks/messaging_elevator_pitch',
   },
@@ -2467,7 +2467,7 @@ All three should: name the problem before naming the solution, say who specifica
     ],
     route: '/projects/:id/tasks/messaging_brain_update',
     exportable: true,
-    brainUpdatePrompt: 'Add my complete messaging framework to my business brain.
+    brainUpdatePrompt: `Add my complete messaging framework to my business brain.
 
 Core message: [your core message]
 
@@ -2485,7 +2485,7 @@ Main objections and answers:
 
 Brand voice: [paste your brand voice guide or description]
 
-From now on, use this messaging framework for every piece of content you write for my brand. Every social post, email, caption, or copy should reinforce my core message and match my brand voice.',
+From now on, use this messaging framework for every piece of content you write for my brand. Every social post, email, caption, or copy should reinforce my core message and match my brand voice.`,
   },
 
   // ============================================================
@@ -2534,9 +2534,9 @@ From now on, use this messaging framework for every piece of content you write f
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Help me choose the right primary content platform for my business. Audience: [customer avatar including age range, industry, daily platforms they use]. Content formats I am comfortable producing: [e.g. short video, written posts, carousels, talking to camera]. My business type: [service-based, digital product, local business]. My goal for content: [brand awareness, lead generation, community building].
+    aiPrompt: `Help me choose the right primary content platform for my business. Audience: [customer avatar including age range, industry, daily platforms they use]. Content formats I am comfortable producing: [e.g. short video, written posts, carousels, talking to camera]. My business type: [service-based, digital product, local business]. My goal for content: [brand awareness, lead generation, community building].
 
-Analyze each major platform (Instagram, Facebook, TikTok, LinkedIn, YouTube) for my specific audience and situation. Give me: (1) a clear recommendation for my primary platform with reasoning, (2) the content format that performs best on that platform for my audience type, (3) what realistic growth looks like on that platform in the first 90 days.',
+Analyze each major platform (Instagram, Facebook, TikTok, LinkedIn, YouTube) for my specific audience and situation. Give me: (1) a clear recommendation for my primary platform with reasoning, (2) the content format that performs best on that platform for my audience type, (3) what realistic growth looks like on that platform in the first 90 days.`,
     toolLinks: [],
     route: '/projects/:id/tasks/content_choose_platform',
   },
@@ -2577,9 +2577,9 @@ Analyze each major platform (Instagram, Facebook, TikTok, LinkedIn, YouTube) for
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Help me choose the right content model for my situation. Here is my context: Primary platform: [platform]. Current audience size: [rough number or "starting from zero"]. Do I have a product ready to sell: [yes/no — if yes, what is the product]. Content creation time I can realistically commit per week: [e.g. 2 hours, 4 hours]. My goal for the next 90 days: [brand awareness, list building, product sales, community building].
+    aiPrompt: `Help me choose the right content model for my situation. Here is my context: Primary platform: [platform]. Current audience size: [rough number or "starting from zero"]. Do I have a product ready to sell: [yes/no — if yes, what is the product]. Content creation time I can realistically commit per week: [e.g. 2 hours, 4 hours]. My goal for the next 90 days: [brand awareness, list building, product sales, community building].
 
-For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Series), describe: how it works for my specific platform, what the first 4 weeks of content would look like for my business, what it is building toward, and who it is best for. Then give me a clear recommendation for my situation.',
+For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Series), describe: how it works for my specific platform, what the first 4 weeks of content would look like for my business, what it is building toward, and who it is best for. Then give me a clear recommendation for my situation.`,
     toolLinks: [],
     route: '/projects/:id/tasks/content_choose_model',
   },
@@ -2623,11 +2623,11 @@ For each content model (Pre-Launch + Launch, Story Arc, Evergreen, Episode Serie
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'ai_prompt'],
-    aiPrompt: 'Define 4-5 content pillar options for my brand. Core message: [your core message]. Audience: [customer avatar]. Talking points: [list your talking points]. Primary platform: [platform]. Product: [product name and promise].
+    aiPrompt: `Define 4-5 content pillar options for my brand. Core message: [your core message]. Audience: [customer avatar]. Talking points: [list your talking points]. Primary platform: [platform]. Product: [product name and promise].
 
 For each pillar option: give it a specific name (not a broad category like "tips"), describe what posts would live inside it in 1-2 sentences, give 3 example post ideas to show what it looks like in practice, and explain how it connects to my product or audience.
 
-Then recommend the 3-4 pillars that work best together as a system, and explain why this combination would build authority with my specific audience.',
+Then recommend the 3-4 pillars that work best together as a system, and explain why this combination would build authority with my specific audience.`,
     toolLinks: [],
     route: '/projects/:id/tasks/content_define_pillars',
   },
@@ -2789,13 +2789,13 @@ Then recommend the 3-4 pillars that work best together as a system, and explain 
           label: 'Your 30-day content plan',
           type: 'textarea',
           required: true,
-          placeholder: 'Week 1:
+          placeholder: `Week 1:
 Day 1 (Pillar: [pillar name]) — [Post idea]
 Day 3 (Pillar: [pillar name]) — [Post idea]
 Day 5 (Pillar: [pillar name]) — [Post idea]
 
 Week 2:
-...',
+...`,
           helperText: 'Can be a rough list of post ideas organized by week — does not need to be perfectly formatted.',
         },
         {
@@ -2808,7 +2808,7 @@ Week 2:
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Create a 30-day content plan for my brand. Here are my details:
+    aiPrompt: `Create a 30-day content plan for my brand. Here are my details:
 
 Primary platform: [platform]
 Content model: [your content model]
@@ -2819,7 +2819,7 @@ Transformation statement: [your transformation]
 Product: [product name and promise]
 Audience: [customer avatar]
 
-Create a 30-day calendar with a specific post idea for each posting slot. For each post include: the pillar it belongs to, the post format (e.g. carousel, Reel, text post), a specific post angle or hook (not just a topic — the actual angle), and whether it is pure value, a soft mention of the product, or a direct offer post. Follow a 4:1 ratio — 4 value posts for every 1 product post. Make sure the calendar builds toward the product naturally without feeling like a 30-day advertisement.',
+Create a 30-day calendar with a specific post idea for each posting slot. For each post include: the pillar it belongs to, the post format (e.g. carousel, Reel, text post), a specific post angle or hook (not just a topic — the actual angle), and whether it is pure value, a soft mention of the product, or a direct offer post. Follow a 4:1 ratio — 4 value posts for every 1 product post. Make sure the calendar builds toward the product naturally without feeling like a 30-day advertisement.`,
     exportable: true,
     toolLinks: [],
     route: '/projects/:id/tasks/content_plan_30_days',
@@ -2878,7 +2878,7 @@ Create a 30-day calendar with a specific post idea for each posting slot. For ea
       ],
     },
     aiAssistModes: ['help_me_choose', 'ai_prompt'],
-    aiPrompt: 'Write a social media post for me. Platform: [platform]. Post type: [e.g. educational carousel, Reel script, text post]. Pillar: [pillar name]. Post angle from my 30-day plan: [specific angle or hook from your plan].
+    aiPrompt: `Write a social media post for me. Platform: [platform]. Post type: [e.g. educational carousel, Reel script, text post]. Pillar: [pillar name]. Post angle from my 30-day plan: [specific angle or hook from your plan].
 
 Details to include:
 - Audience: [avatar name]
@@ -2892,7 +2892,7 @@ Write:
 3. 3-5 relevant hashtags if applicable
 4. A brief note on what visual to pair with this post
 
-Make it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No marketing jargon. No exclamation point inflation.',
+Make it sound like [describe your voice — e.g. direct, warm, no-nonsense]. No marketing jargon. No exclamation point inflation.`,
     toolLinks: [
       { label: 'Open Google Drive', url: 'https://drive.google.com', icon: 'folder' },
     ],
@@ -2958,9 +2958,9 @@ Total: ~75 minutes per week',
       ],
     },
     aiAssistModes: ['simplify', 'ai_prompt'],
-    aiPrompt: 'Help me design a content creation workflow. Platform: [platform]. Posting frequency: [e.g. 3x per week]. Content types I create: [e.g. carousels, Reels, text posts]. Tools I have: Claude, Canva, Google Docs, [any scheduling tool].
+    aiPrompt: `Help me design a content creation workflow. Platform: [platform]. Posting frequency: [e.g. 3x per week]. Content types I create: [e.g. carousels, Reels, text posts]. Tools I have: Claude, Canva, Google Docs, [any scheduling tool].
 
-Design a weekly batch workflow that: (1) takes no more than 90 minutes total per week for my posting frequency, (2) batches similar tasks together (all writing in one session, all visual creation in another), (3) results in a week of content ready to schedule at the end of the session. Include specific time estimates for each step and a checklist format I can reuse every week.',
+Design a weekly batch workflow that: (1) takes no more than 90 minutes total per week for my posting frequency, (2) batches similar tasks together (all writing in one session, all visual creation in another), (3) results in a week of content ready to schedule at the end of the session. Include specific time estimates for each step and a checklist format I can reuse every week.`,
     toolLinks: [],
     route: '/projects/:id/tasks/content_workflow',
   },
@@ -3012,7 +3012,7 @@ Design a weekly batch workflow that: (1) takes no more than 90 minutes total per
       { label: 'Open Claude Projects', url: 'https://claude.ai', icon: 'brain' },
     ],
     route: '/projects/:id/tasks/content_brain_update',
-    brainUpdatePrompt: 'Add my content strategy to my business brain.
+    brainUpdatePrompt: `Add my content strategy to my business brain.
 
 Primary platform: [platform]
 Content model: [your content model]
@@ -3026,7 +3026,7 @@ Content pillars:
 
 Post ratio: [e.g. 4 value posts for every 1 product post]
 
-When I ask you to write a social media post, email, or content piece: (1) use the relevant content pillar as the frame, (2) write in my brand voice (described in the messaging section above), (3) match the format and length for [platform], (4) include a natural connection to my product where appropriate without making every post a pitch.',
+When I ask you to write a social media post, email, or content piece: (1) use the relevant content pillar as the frame, (2) write in my brand voice (described in the messaging section above), (3) match the format and length for [platform], (4) include a natural connection to my product where appropriate without making every post a pitch.`,
   },
 
 
