@@ -4412,7 +4412,7 @@ export const RETIRED_TASK_TEMPLATES: TaskTemplate[] = [
   {
     taskId: 'planning_choose_launch_path',
     title: 'Choose how you\'ll sell your offer',
-    phase: 'setup',
+    phase: 'foundation',
     funnelTypes: ['all'],
     order: 1,
     priority: 1,

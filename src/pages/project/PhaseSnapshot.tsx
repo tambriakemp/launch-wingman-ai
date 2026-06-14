@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Phase accent colors (terracotta / plum / moss / amber rotation) ─────
 const PHASE_ACCENTS: Record<Phase, string> = {
-  setup: "hsl(var(--terracotta-500))",
+  foundation: "hsl(var(--terracotta-500))",
   planning: "hsl(290 38% 36%)", // plum
   messaging: "hsl(var(--moss-500))",
   build: "hsl(38 70% 47%)", // amber

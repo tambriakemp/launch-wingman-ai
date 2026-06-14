@@ -60,7 +60,7 @@ const TASK_ICONS: Record<string, LucideIcon> = {
 
 // Phase accent colors
 const PHASE_COLORS: Record<Phase, string> = {
-  setup: "border-l-primary",
+  foundation: "border-l-stone-500",
   planning: "border-l-blue-500",
   messaging: "border-l-purple-500",
   build: "border-l-emerald-500",
@@ -71,7 +71,7 @@ const PHASE_COLORS: Record<Phase, string> = {
 };
 
 const PHASE_ICON_COLORS: Record<Phase, string> = {
-  setup: "text-primary",
+  foundation: "text-stone-500",
   planning: "text-blue-500",
   messaging: "text-purple-500",
   build: "text-emerald-500",
@@ -82,7 +82,7 @@ const PHASE_ICON_COLORS: Record<Phase, string> = {
 };
 
 const PHASE_DOT_COLORS: Record<Phase, string> = {
-  setup: "bg-primary",
+  foundation: "bg-stone-500",
   planning: "bg-blue-500",
   messaging: "bg-purple-500",
   build: "bg-emerald-500",
@@ -93,7 +93,7 @@ const PHASE_DOT_COLORS: Record<Phase, string> = {
 };
 
 const PHASE_LINK_COLORS: Record<Phase, string> = {
-  setup: "text-primary hover:text-primary/80",
+  foundation: "text-stone-500 hover:text-stone-600",
   planning: "text-blue-500 hover:text-blue-600",
   messaging: "text-purple-500 hover:text-purple-600",
   build: "text-emerald-500 hover:text-emerald-600",
