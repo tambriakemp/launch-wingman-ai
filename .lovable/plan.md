@@ -1,52 +1,53 @@
-## Goal
 
-Make the app feel like a native app on mobile/native shells by preventing pinch-to-zoom, double-tap zoom, and the iOS auto-zoom that happens when focusing input fields.
+## Stripe Account Migration Plan
 
-## Changes
+### Products to recreate in the new Stripe account
 
-### 1. `index.html` — viewport meta tag
-Update the viewport meta to disable user scaling:
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-```
-This blocks pinch zoom and double-tap zoom on iOS/Android.
+Pulled from the current account. All USD.
 
-### 2. `src/index.css` — prevent iOS focus zoom + extra gesture hardening
-iOS Safari auto-zooms into any `<input>`, `<textarea>`, or `<select>` whose computed font-size is below 16px. Add a global rule that bumps form-control font-size to at least 16px on small screens, while keeping the desktop visual unchanged:
+| # | Product | Amount | Type | Current Price ID |
+|---|---|---|---|---|
+| 1 | Content Vault | $7.00 | Subscription (monthly) | `price_1StiayF2gaEq7adwKHe9AbQF` |
+| 2 | Pro | $49.00 | Subscription (monthly) | `price_1TEznFF2gaEq7adwpTfGefLX` |
+| 3 | Legacy Pro ($25) | $25.00 | Subscription (monthly) | `price_1SipMGF2gaEq7adwAGMICdO5` |
+| 4 | AI Twin | $27.00 | One-time | `price_1TAfjcF2gaEq7adw7vG5yzn5` |
+| 5 | Video Credits — 10 | $4.99 | One-time | `price_1T6ccEF2gaEq7adwjWGNlVGy` |
+| 6 | Video Credits — 25 | $9.99 | One-time | `price_1T6cdJF2gaEq7adwYb8ikBfa` |
+| 7 | Video Credits — 50 | $17.99 | One-time | `price_1T6cdzF2gaEq7adwIQ3V6Wr0` |
 
-```css
-@media (max-width: 768px) {
-  input:not([type="checkbox"]):not([type="radio"]),
-  textarea,
-  select,
-  [contenteditable="true"] {
-    font-size: 16px !important;
-  }
-}
+Note: Legacy Pro $25 is preserved only so existing legacy subscribers (staying on the old account) are still recognized. Since they remain on the old account, the new legacy price won't actually be used — but I'll still recreate it so admin tooling doesn't break if you ever re-import.
 
-/* Block double-tap zoom & gesture zoom across the app */
-html, body {
-  touch-action: pan-x pan-y;
-  -webkit-text-size-adjust: 100%;
-}
-```
+### Migration steps
 
-Also add a tiny global JS guard (in `src/main.tsx`) to swallow iOS Safari's `gesturestart` event — the only reliable way to fully kill pinch zoom on iOS Safari, which ignores `user-scalable=no` in some versions:
+1. **You update the Stripe secret key** to the new account via Settings → Project Secrets (`STRIPE_SECRET_KEY`). Also update `STRIPE_WEBHOOK_SECRET` after step 4.
+2. **I recreate the 7 products/prices** in the new account using `stripe--create_stripe_product_and_price` and capture the new IDs.
+3. **I update every hardcoded price ID** across the codebase (see Technical section).
+4. **You create the webhook endpoint** in the new Stripe dashboard pointing to the existing `stripe-webhook` URL, then paste the new signing secret into `STRIPE_WEBHOOK_SECRET`.
+5. **You re-activate the Customer Portal** in the new Stripe dashboard (required by `customer-portal` edge function).
+6. **Smoke test**: a $7 Vault checkout end-to-end to confirm checkout → webhook → subscription state updates.
 
-```ts
-document.addEventListener("gesturestart", (e) => e.preventDefault());
-document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
-```
+### Out of scope (you handle separately)
+- Existing active subscribers stay on the old account billing until they churn.
+- Coupons/promo codes — list them and I can recreate after the swap if needed.
+- SureContact tag mappings — the new price IDs will be wired into `surecontact-webhook` automatically as part of step 3.
 
-### 3. Scope
-- Applies globally (mobile web + native Capacitor + AppMySite WebView). The 16px font rule is gated by `max-width: 768px` so desktop typography is untouched.
-- No changes to existing components, drawers, or task editing flows.
+### Technical: files that need price-ID updates
 
-## Files to edit
-- `index.html` — viewport meta
-- `src/index.css` — font-size floor + touch-action rules
-- `src/main.tsx` — gesturestart/dblclick guards
+Edge functions:
+- `supabase/functions/admin-list-users/index.ts`
+- `supabase/functions/admin-manage-subscription/index.ts`
+- `supabase/functions/check-subscription/index.ts`
+- `supabase/functions/complete-subscription-checkout/index.ts`
+- `supabase/functions/create-payment-intent-only/index.ts`
+- `supabase/functions/create-checkout/index.ts`
+- `supabase/functions/create-ai-twin-checkout/index.ts`
+- `supabase/functions/purchase-video-credits/index.ts`
+- `supabase/functions/surecontact-webhook/index.ts`
 
-## Notes / trade-offs
-- `user-scalable=no` reduces accessibility (users can't pinch-to-zoom for readability). This is the explicit ask to make it feel like an app, and matches the behavior of native apps.
-- The 16px floor on inputs may make form fields slightly larger on mobile than today — this is required to stop iOS focus-zoom; there is no other reliable workaround.
+Frontend:
+- `src/lib/subscriptionTiers.ts`
+- `src/components/settings/AiSettingsCard.tsx`
+
+### Risks
+- Any in-flight checkout sessions started against the old key will fail after the swap — brief downtime window during step 1–3.
+- If anything in the DB stores price IDs as text (e.g. `surecontact_config`, `payment_config`), those rows will need updating too. I'll query for that during build and flag it.
