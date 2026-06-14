@@ -48,7 +48,6 @@ const VISIBLE_PHASES: Phase[] = ['foundation', 'planning', 'messaging', 'build',
 
 // Icons per phase (replaces week-number labels)
 const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
-  setup: Compass,
   planning: Compass,
   messaging: MessageCircle,
   build: Hammer,
@@ -195,10 +194,6 @@ const LaunchTimelineEditorial = ({
 
 // ── Phase narrative card (left column small card) ──
 const PHASE_NARRATIVE: Partial<Record<Phase, { headline: string; copy: string }>> = {
-  setup: {
-    headline: "You've set the stage.",
-    copy: "Workspace ready. Time to start planning the launch.",
-  },
   planning: {
     headline: "You've laid the foundation.",
     copy: "Audience, offer, and funnel are defined. Time to craft your message.",
