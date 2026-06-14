@@ -48,6 +48,7 @@ const VISIBLE_PHASES: Phase[] = ['foundation', 'planning', 'messaging', 'build',
 
 // Icons per phase (replaces week-number labels)
 const PHASE_ICONS: Record<Phase, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  foundation: Compass,
   planning: Compass,
   messaging: MessageCircle,
   build: Hammer,

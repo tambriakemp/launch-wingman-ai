@@ -17,6 +17,7 @@ interface PhaseAccordionProps {
 
 // Phase badge colors
 const PHASE_BADGE_COLORS: Record<Phase, string> = {
+  foundation: "bg-stone-500/10 text-stone-600 dark:text-stone-400",
   planning: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   messaging: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
   build: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
