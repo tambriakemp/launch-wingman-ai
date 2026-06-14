@@ -25,9 +25,9 @@ import {
 } from "lucide-react";
 
 const CREDIT_PACKS = [
-  { credits: 10, price: "$4.99", priceId: "price_1T6ccEF2gaEq7adwjWGNlVGy" },
-  { credits: 25, price: "$9.99", priceId: "price_1T6cdJF2gaEq7adwYb8ikBfa", popular: true },
-  { credits: 50, price: "$17.99", priceId: "price_1T6cdzF2gaEq7adwIQ3V6Wr0" },
+  { credits: 10, price: "$4.99", priceId: "price_1Ti5992Xu1EPwF6ifA7m0vLn" },
+  { credits: 25, price: "$9.99", priceId: "price_1Ti59A2Xu1EPwF6iA3qOewQi", popular: true },
+  { credits: 50, price: "$17.99", priceId: "price_1Ti59A2Xu1EPwF6i1E83sEf5" },
 ];
 
 export function AiSettingsCard() {

@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const AI_TWIN_PRICE_ID = "price_1TAfjcF2gaEq7adw7vG5yzn5";
+const AI_TWIN_PRICE_ID = "price_1Ti5982Xu1EPwF6inxCrq1PM";
 const SKOOL_WEBHOOK_URL = "https://api2.skool.com/groups/launchely/webhooks/9f070ee6bddb4a8395df1bbd83de470a";
 
 const logStep = (step: string, details?: unknown) => {

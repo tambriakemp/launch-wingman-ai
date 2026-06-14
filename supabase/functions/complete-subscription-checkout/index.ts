@@ -14,7 +14,7 @@ const logStep = (step: string, details?: unknown) => {
 
 // Pro plan price ID (3-tier model: $49 — was the Advanced price before
 // Advanced was folded into Pro)
-const PRO_PRICE_ID = "price_1TEznFF2gaEq7adwpTfGefLX";
+const PRO_PRICE_ID = "price_1Ti5962Xu1EPwF6iNR19b3tA";
 
 /**
  * Best-effort auto-refund for an orphaned PaymentIntent.

@@ -9,13 +9,13 @@ const corsHeaders = {
 
 // Subscription tier price IDs (3-tier model: free / content_vault / pro at $49)
 const PRICE_IDS = {
-  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  content_vault: 'price_1Ti5932Xu1EPwF6i3Xs91MUQ',
+  pro: 'price_1Ti5962Xu1EPwF6iNR19b3tA',
 };
 
 // Old $25 Pro price retired in the 3-tier consolidation. Any residual
 // active subscription on it should still resolve to Pro access.
-const LEGACY_PRO_PRICE_ID_25 = 'price_1SipMGF2gaEq7adwAGMICdO5';
+const LEGACY_PRO_PRICE_ID_25 = 'price_1Ti5972Xu1EPwF6isrz0Z4fB';
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
