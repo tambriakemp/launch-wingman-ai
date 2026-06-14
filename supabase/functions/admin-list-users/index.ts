@@ -9,11 +9,11 @@ const corsHeaders = {
 
 // Subscription tier price IDs (3-tier model)
 const PRICE_IDS: Record<string, string> = {
-  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  content_vault: 'price_1Ti5932Xu1EPwF6i3Xs91MUQ',
+  pro: 'price_1Ti5962Xu1EPwF6iNR19b3tA',
 };
 
-const LEGACY_PRO_PRICE_ID_25 = 'price_1SipMGF2gaEq7adwAGMICdO5';
+const LEGACY_PRO_PRICE_ID_25 = 'price_1Ti5972Xu1EPwF6isrz0Z4fB';
 
 const TIER_PRIORITY: Record<string, number> = { free: 0, content_vault: 1, pro: 2 };
 

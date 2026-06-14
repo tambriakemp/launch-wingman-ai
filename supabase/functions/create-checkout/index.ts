@@ -11,8 +11,8 @@ const corsHeaders = {
 // at $49. Both surfaces (web + native) can drive Stripe Hosted Checkout
 // for either paid tier now.
 const TIER_PRICE_MAP: Record<string, string> = {
-  pro: "price_1TEznFF2gaEq7adwpTfGefLX",
-  content_vault: "price_1StiayF2gaEq7adwKHe9AbQF",
+  pro: "price_1Ti5962Xu1EPwF6iNR19b3tA",
+  content_vault: "price_1Ti5932Xu1EPwF6i3Xs91MUQ",
 };
 const DEFAULT_TIER = "pro";
 

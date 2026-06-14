@@ -8,15 +8,15 @@ const corsHeaders = {
 };
 
 const VALID_PRICES = [
-  "price_1T6ccEF2gaEq7adwjWGNlVGy", // 10 credits
-  "price_1T6cdJF2gaEq7adwYb8ikBfa", // 25 credits
-  "price_1T6cdzF2gaEq7adwIQ3V6Wr0", // 50 credits
+  "price_1Ti5992Xu1EPwF6ifA7m0vLn", // 10 credits
+  "price_1Ti59A2Xu1EPwF6iA3qOewQi", // 25 credits
+  "price_1Ti59A2Xu1EPwF6i1E83sEf5", // 50 credits
 ];
 
 const PRICE_TO_CREDITS: Record<string, number> = {
-  "price_1T6ccEF2gaEq7adwjWGNlVGy": 10,
-  "price_1T6cdJF2gaEq7adwYb8ikBfa": 25,
-  "price_1T6cdzF2gaEq7adwIQ3V6Wr0": 50,
+  "price_1Ti5992Xu1EPwF6ifA7m0vLn": 10,
+  "price_1Ti59A2Xu1EPwF6iA3qOewQi": 25,
+  "price_1Ti59A2Xu1EPwF6i1E83sEf5": 50,
 };
 
 serve(async (req) => {

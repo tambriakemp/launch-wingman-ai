@@ -15,8 +15,8 @@ const logStep = (step: string, details?: unknown) => {
 // Price IDs for subscription tiers (3-tier model after Advanced was folded
 // into Pro at $49)
 const PRICE_IDS: Record<string, string> = {
-  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  content_vault: 'price_1Ti5932Xu1EPwF6i3Xs91MUQ',
+  pro: 'price_1Ti5962Xu1EPwF6iNR19b3tA',
 };
 
 serve(async (req) => {

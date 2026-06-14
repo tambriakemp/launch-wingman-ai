@@ -335,9 +335,9 @@ async function addToMasterList(
 // 3-tier consolidation, both the new Pro price and the retired $25 Pro
 // price resolve to 'pro'.
 const PRICE_ID_TO_TIER: Record<string, 'content_vault' | 'pro'> = {
-  'price_1StiayF2gaEq7adwKHe9AbQF': 'content_vault',
-  'price_1TEznFF2gaEq7adwpTfGefLX': 'pro',
-  'price_1SipMGF2gaEq7adwAGMICdO5': 'pro', // legacy $25 Pro price
+  'price_1Ti5932Xu1EPwF6i3Xs91MUQ': 'content_vault',
+  'price_1Ti5962Xu1EPwF6iNR19b3tA': 'pro',
+  'price_1Ti5972Xu1EPwF6isrz0Z4fB': 'pro', // legacy $25 Pro price
 };
 
 type SubscriptionTier = 'free' | 'content_vault' | 'pro';

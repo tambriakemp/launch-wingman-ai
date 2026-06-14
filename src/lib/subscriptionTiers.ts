@@ -2,15 +2,15 @@
 // Pro is now the $49/mo all-features plan (was previously the Advanced tier);
 // the prior $25 Pro tier was retired in the 3-tier consolidation.
 export const SUBSCRIPTION_PRICE_IDS = {
-  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
-  pro: 'price_1TEznFF2gaEq7adwpTfGefLX',
+  content_vault: 'price_1Ti5932Xu1EPwF6i3Xs91MUQ',
+  pro: 'price_1Ti5962Xu1EPwF6iNR19b3tA',
 } as const;
 
 // Retired in the 3-tier consolidation. Kept here so any residual test
 // subscriptions on the old $25 Pro price still resolve to Pro access
 // rather than dropping to free. Safe to delete once Stripe confirms zero
 // active subscriptions on this price.
-const LEGACY_PRO_PRICE_ID_25 = 'price_1SipMGF2gaEq7adwAGMICdO5';
+const LEGACY_PRO_PRICE_ID_25 = 'price_1Ti5972Xu1EPwF6isrz0Z4fB';
 
 // Subscription tier type
 export type SubscriptionTier = 'free' | 'content_vault' | 'pro' | 'admin';
