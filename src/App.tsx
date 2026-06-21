@@ -295,14 +295,16 @@ const App = () => (
               }
             />
             {/* Playbook route */}
-            <Route
-              path="/playbook"
-              element={
-                <ProtectedRoute>
-                  <Playbook />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.playbook && (
+              <Route
+                path="/playbook"
+                element={
+                  <ProtectedRoute>
+                    <Playbook />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/projects/:id/content"
               element={
