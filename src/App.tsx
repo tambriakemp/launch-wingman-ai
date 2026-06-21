@@ -670,14 +670,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/social-planner"
-              element={
-                <ProtectedRoute>
-                  <SocialPlanner />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.socialPlanner && (
+              <Route
+                path="/social-planner"
+                element={
+                  <ProtectedRoute>
+                    <SocialPlanner />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             {FEATURE_HOOK_GENERATOR && (
               <Route
                 path="/app/ai-studio/hooks"
@@ -688,22 +690,26 @@ const App = () => (
                 }
               />
             )}
-            <Route
-              path="/app/ai-studio/sales-page"
-              element={
-                <ProtectedRoute>
-                  <SalesPageWriter />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/app/ai-studio/email-sequence"
-              element={
-                <ProtectedRoute>
-                  <EmailSequenceGenerator />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.salesPageWriter && (
+              <Route
+                path="/app/ai-studio/sales-page"
+                element={
+                  <ProtectedRoute>
+                    <SalesPageWriter />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.emailSequence && (
+              <Route
+                path="/app/ai-studio/email-sequence"
+                element={
+                  <ProtectedRoute>
+                    <EmailSequenceGenerator />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/carousel-builder"
               element={
