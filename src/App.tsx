@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 
 function PushRegistrar() {
   usePushRegistration();
@@ -193,14 +194,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/summary"
-              element={
-                <ProtectedRoute>
-                  <PhaseSnapshot />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.launchBrief && (
+              <Route
+                path="/projects/:id/summary"
+                element={
+                  <ProtectedRoute>
+                    <PhaseSnapshot />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/projects/:id/dashboard"
               element={
@@ -210,14 +213,16 @@ const App = () => (
               }
             />
             {/* Standalone Offers library */}
-            <Route
-              path="/projects/:id/offer"
-              element={
-                <ProtectedRoute>
-                  <OffersLibrary />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.offer && (
+              <Route
+                path="/projects/:id/offer"
+                element={
+                  <ProtectedRoute>
+                    <OffersLibrary />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             {/* Execute routes */}
             <Route
               path="/projects/:id/tasks"
@@ -290,14 +295,16 @@ const App = () => (
               }
             />
             {/* Playbook route */}
-            <Route
-              path="/playbook"
-              element={
-                <ProtectedRoute>
-                  <Playbook />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.playbook && (
+              <Route
+                path="/playbook"
+                element={
+                  <ProtectedRoute>
+                    <Playbook />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/projects/:id/content"
               element={
@@ -372,38 +379,46 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/assessments"
-              element={
-                <ProtectedRoute>
-                  <Assessments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/assessments/launch"
-              element={
-                <ProtectedRoute>
-                  <Assessment />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/assessments/coach"
-              element={
-                <ProtectedRoute>
-                  <CoachAssessment />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/assessments/why-statement"
-              element={
-                <ProtectedRoute>
-                  <WhyStatementAssessment />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments"
+                element={
+                  <ProtectedRoute>
+                    <Assessments />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/launch"
+                element={
+                  <ProtectedRoute>
+                    <Assessment />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/coach"
+                element={
+                  <ProtectedRoute>
+                    <CoachAssessment />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/why-statement"
+                element={
+                  <ProtectedRoute>
+                    <WhyStatementAssessment />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             {/* Legacy routes redirect */}
             <Route
               path="/assessment"
@@ -655,14 +670,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/social-planner"
-              element={
-                <ProtectedRoute>
-                  <SocialPlanner />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.socialPlanner && (
+              <Route
+                path="/social-planner"
+                element={
+                  <ProtectedRoute>
+                    <SocialPlanner />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             {FEATURE_HOOK_GENERATOR && (
               <Route
                 path="/app/ai-studio/hooks"
@@ -673,22 +690,26 @@ const App = () => (
                 }
               />
             )}
-            <Route
-              path="/app/ai-studio/sales-page"
-              element={
-                <ProtectedRoute>
-                  <SalesPageWriter />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/app/ai-studio/email-sequence"
-              element={
-                <ProtectedRoute>
-                  <EmailSequenceGenerator />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.salesPageWriter && (
+              <Route
+                path="/app/ai-studio/sales-page"
+                element={
+                  <ProtectedRoute>
+                    <SalesPageWriter />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.emailSequence && (
+              <Route
+                path="/app/ai-studio/email-sequence"
+                element={
+                  <ProtectedRoute>
+                    <EmailSequenceGenerator />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/carousel-builder"
               element={
