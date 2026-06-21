@@ -59,7 +59,6 @@ const SocialPlanner = lazy(() => import("./pages/SocialPlanner"));
 // Feature flag — set to true to re-enable the Hook Generator tool everywhere.
 // Surfaced in the Marketing hub's "Create" group.
 const FEATURE_HOOK_GENERATOR = true;
-import { FEATURE_FLAGS } from "@/config/featureFlags";
 const HookGenerator = lazy(() => import("./pages/HookGenerator"));
 const SalesPageWriter = lazy(() => import("./pages/SalesPageWriter"));
 const EmailSequenceGenerator = lazy(() => import("./pages/EmailSequenceGenerator"));
