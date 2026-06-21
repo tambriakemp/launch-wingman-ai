@@ -14,6 +14,7 @@ import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { initGA, trackPageView } from "@/lib/analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import { Cre8BrainShellFallback } from "./components/layout/Cre8BrainShellFallback";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
@@ -182,9 +183,9 @@ const App = () => (
             />
 
             {/* New Cre8 Brain dashboard — replaces old per-project dashboard */}
-            <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+            <Route path="/app" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><Dashboard /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><Tasks /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
 
             {/* Project-specific routes - Plan section uses unified ProjectPlan */}
