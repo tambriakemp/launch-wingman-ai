@@ -349,6 +349,7 @@ const Auth = () => {
             <button type="button" style={linkBtn} onClick={() => setShowReset(true)}>Forgot password?</button>
           </div>
 
+          <Dots active={1} />
           <button type="submit" disabled={loading} style={primaryBtn(false, loading)}>
             {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> : <>Sign in <ArrowRight size={16} /></>}
           </button>
