@@ -70,6 +70,8 @@ const CHROMELESS_PREFIXES = [
   "/links",
   "/unsubscribe",
   "/onboarding",
+  "/dashboard",
+  "/app",
   "/r/",
 ];
 
