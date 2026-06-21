@@ -194,14 +194,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/summary"
-              element={
-                <ProtectedRoute>
-                  <PhaseSnapshot />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.launchBrief && (
+              <Route
+                path="/projects/:id/summary"
+                element={
+                  <ProtectedRoute>
+                    <PhaseSnapshot />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             <Route
               path="/projects/:id/dashboard"
               element={
