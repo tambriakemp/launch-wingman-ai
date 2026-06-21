@@ -336,11 +336,15 @@ const Auth = () => {
     window.location.href = "mailto:";
   };
 
-  /* Detect Capacitor / native app shell */
+  /* Detect Capacitor / native app shell. `?native=1` is a design-review
+     override so the bottom-sheet layout can be inspected from the Lovable
+     web preview without a native build. */
+  const forceNative = searchParams.get("native") === "1";
   const isNativeApp =
-    typeof window !== "undefined" &&
-    (((window as any).Capacitor?.isNativePlatform?.() ?? false) ||
-      /(Median|MedianJS|gonative|capacitor)/i.test(window.navigator.userAgent));
+    forceNative ||
+    (typeof window !== "undefined" &&
+      (((window as any).Capacitor?.isNativePlatform?.() ?? false) ||
+        /(Median|MedianJS|gonative|capacitor)/i.test(window.navigator.userAgent)));
 
   /* ── Sub-renderers ─────────────────────────────────────── */
 
