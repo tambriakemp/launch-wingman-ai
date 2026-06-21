@@ -468,6 +468,7 @@ const Auth = () => {
         />
         {signUpErrors.confirmPassword && <div style={errStyle}>{signUpErrors.confirmPassword}</div>}
 
+        <Dots active={2} />
         <button
           type="submit"
           disabled={signUpLoading || !signUpPassword.trim() || !confirmPassword.trim()}
