@@ -87,10 +87,10 @@ const createSections = (projectId?: string): Section[] => [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Launch Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
-      { id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId },
-      { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
-      { id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" },
-      { id: "assessments", label: "Assessments", icon: ClipboardCheck, href: "/assessments" },
+      ...(FEATURE_FLAGS.offer ? [{ id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId }] : []),
+      ...(FEATURE_FLAGS.launchBrief ? [{ id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId }] : []),
+      ...(FEATURE_FLAGS.playbook ? [{ id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" }] : []),
+      ...(FEATURE_FLAGS.assessments ? [{ id: "assessments", label: "Assessments", icon: ClipboardCheck, href: "/assessments" }] : []),
     ],
   },
   {
@@ -100,11 +100,11 @@ const createSections = (projectId?: string): Section[] => [
     items: [
       { id: "campaigns", label: "Campaigns", icon: Target, href: "/marketing-hub/campaigns", isAdvancedOnly: true },
       { id: "ai-studio", label: "AI Avatar Studio", icon: Wand2, href: "/app/ai-studio", isAdvancedOnly: true },
-      { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isAdvancedOnly: true },
+      ...(FEATURE_FLAGS.socialPlanner ? [{ id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isAdvancedOnly: true }] : []),
       { id: "carousel-builder", label: "Carousel Builder", icon: Layers, href: "/carousel-builder", isAdvancedOnly: true },
       // Hook Generator hidden via feature flag (FEATURE_HOOK_GENERATOR)
-      { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
-      { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
+      ...(FEATURE_FLAGS.salesPageWriter ? [{ id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true }] : []),
+      ...(FEATURE_FLAGS.emailSequence ? [{ id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true }] : []),
       { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault" },
     ],
   },
