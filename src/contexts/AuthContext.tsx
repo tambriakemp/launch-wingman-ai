@@ -383,18 +383,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session, checkSubscription]);
 
   const navigateToProject = async () => {
-    // Fetch most recent project and redirect to it
-    const { data: projects } = await supabase
-      .from("projects")
-      .select("id")
-      .order("updated_at", { ascending: false })
-      .limit(1);
-
-    if (projects && projects.length > 0) {
-      navigate(`/projects/${projects[0].id}/dashboard`);
-    } else {
-      navigate("/projects");
-    }
+    navigate("/app");
   };
 
   // Capture UTM params from URL on mount
