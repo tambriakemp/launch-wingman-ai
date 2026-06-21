@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, Image as ImageIcon, Sparkles, Calendar, Copy, Check, Link as LinkIcon,
-  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2,
+  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,6 +91,66 @@ const TOOLS = [
   { id: "object",  label: "Objections",     icon: CheckSquare },
 ];
 
+/* ── Avatar with dropdown ── */
+const AvatarDropdown = ({ user, mobile }: { user: string; mobile?: boolean }) => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth", { replace: true });
+  };
+
+  const size = mobile ? 32 : 32;
+  const bg = mobile ? "rgba(237,229,214,0.07)" : "rgba(237,229,214,0.08)";
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: size, height: size, borderRadius: 999, background: bg,
+          border: "1px solid rgba(200,168,106,0.4)", color: CREAM,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          fontFamily: SERIF, fontSize: 14, cursor: "pointer", padding: 0,
+        }}
+      >
+        {user.charAt(0).toUpperCase()}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0,
+          background: mobile ? ESP : PAPER, border: `1px solid ${mobile ? "rgba(200,168,106,0.35)" : LINE}`,
+          borderRadius: 14, boxShadow: SOFT, minWidth: 160, padding: "8px 0", zIndex: 50,
+        }}>
+          <button
+            onClick={handleSignOut}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, width: "100%",
+              padding: "10px 18px", background: "transparent", border: 0, cursor: "pointer",
+              fontFamily: SANS, fontSize: 14, color: mobile ? CREAM : INK, textAlign: "left",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = mobile ? "rgba(237,229,214,0.08)" : SURF; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <LogOut size={15} /> Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Brand mark ── */
 const BrainMark = ({ size = 22, color = TC }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", flexShrink: 0 }}>
@@ -100,12 +160,6 @@ const BrainMark = ({ size = 22, color = TC }: { size?: number; color?: string })
     <circle cx="6" cy="16.5" r="1.7" stroke={color} strokeWidth="1.5" />
     <path d="M9.2 8.8 14.4 6.9M9 9.6 13 14.6M8.6 14.9 12.7 16M6.2 14.8 6.8 10.3" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
   </svg>
-);
-
-const Eyebrow = ({ children, color, style }: { children: React.ReactNode; color?: string; style?: React.CSSProperties }) => (
-  <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, color: color || FAINT, ...style }}>
-    {children}
-  </div>
 );
 
 /* ── Magazine header (desktop) ── */
@@ -154,16 +208,17 @@ const TopNav = ({ user }: { user: string }) => {
           <span style={{ width: 6, height: 6, borderRadius: 999, background: TC }} />
           {BRAIN.credits} credits
         </div>
-        <div style={{
-          width: 32, height: 32, borderRadius: 999, background: "rgba(237,229,214,0.08)",
-          border: "1px solid rgba(200,168,106,0.4)", color: CREAM,
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          fontFamily: SERIF, fontSize: 14,
-        }}>{user.charAt(0).toUpperCase()}</div>
+        <AvatarDropdown user={user} />
       </div>
     </header>
   );
 };
+
+const Eyebrow = ({ children, color, style }: { children: React.ReactNode; color?: string; style?: React.CSSProperties }) => (
+  <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, color: color || FAINT, ...style }}>
+    {children}
+  </div>
+);
 
 /* ── Pill button (desktop) ── */
 const Pill = ({ children, primary, onClick, icon: Icon }: {
@@ -317,7 +372,7 @@ const MobileHeader = ({ user }: { user: string }) => (
           <span style={{ width: 5, height: 5, borderRadius: 999, background: GOLDD }} />
           <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: CREAM }}>{BRAIN.credits}</span>
         </div>
-        <div style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(237,229,214,0.07)", border: "1px solid rgba(200,168,106,0.4)", color: CREAM, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: SERIF, fontSize: 14 }}>{user.charAt(0).toUpperCase()}</div>
+        <AvatarDropdown user={user} mobile />
       </div>
     </div>
 
