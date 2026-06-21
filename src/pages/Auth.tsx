@@ -406,6 +406,7 @@ const Auth = () => {
           />
           {signUpErrors.email && <div style={errStyle}>{signUpErrors.email}</div>}
 
+          <Dots active={1} />
           <button
             type="submit" disabled={!firstName.trim() || !signUpEmail.trim()}
             style={primaryBtn(false, !firstName.trim() || !signUpEmail.trim())}
