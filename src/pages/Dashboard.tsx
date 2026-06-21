@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, Image as ImageIcon, Sparkles, Calendar, Copy, Check, Link as LinkIcon,
-  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2,
+  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
