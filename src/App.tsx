@@ -211,14 +211,16 @@ const App = () => (
               }
             />
             {/* Standalone Offers library */}
-            <Route
-              path="/projects/:id/offer"
-              element={
-                <ProtectedRoute>
-                  <OffersLibrary />
-                </ProtectedRoute>
-              }
-            />
+            {FEATURE_FLAGS.offer && (
+              <Route
+                path="/projects/:id/offer"
+                element={
+                  <ProtectedRoute>
+                    <OffersLibrary />
+                  </ProtectedRoute>
+                }
+              />
+            )}
             {/* Execute routes */}
             <Route
               path="/projects/:id/tasks"
