@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ════════════════════════════════════════════════════════════
    Cre8 Brain — Auth + Confirmation
@@ -336,12 +337,15 @@ const Auth = () => {
     window.location.href = "mailto:";
   };
 
-  /* Detect Capacitor / native app shell. `?native=1` is a design-review
-     override so the bottom-sheet layout can be inspected from the Lovable
-     web preview without a native build. */
+  /* Mobile web + native render the same shell — the bottom-sheet pattern
+     designed for native iOS also serves any browser narrower than the
+     md breakpoint (≤767px). `?native=1` is a design-review override so
+     the layout can be inspected on a desktop browser without resizing. */
+  const isMobile = useIsMobile();
   const forceNative = searchParams.get("native") === "1";
-  const isNativeApp =
+  const isNativeShell =
     forceNative ||
+    isMobile ||
     (typeof window !== "undefined" &&
       (((window as any).Capacitor?.isNativePlatform?.() ?? false) ||
         /(Median|MedianJS|gonative|capacitor)/i.test(window.navigator.userAgent)));
@@ -1001,7 +1005,7 @@ const Auth = () => {
         }
       `}</style>
 
-      {isNativeApp ? (
+      {isNativeShell ? (
         <div className="cb-native-shell">
           {/* Brand backdrop above the sheet */}
           <div className="cb-native-backdrop">
