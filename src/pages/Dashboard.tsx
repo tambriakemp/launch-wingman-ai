@@ -372,7 +372,7 @@ const MobileHeader = ({ user }: { user: string }) => (
           <span style={{ width: 5, height: 5, borderRadius: 999, background: GOLDD }} />
           <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: CREAM }}>{BRAIN.credits}</span>
         </div>
-        <div style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(237,229,214,0.07)", border: "1px solid rgba(200,168,106,0.4)", color: CREAM, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: SERIF, fontSize: 14 }}>{user.charAt(0).toUpperCase()}</div>
+        <AvatarDropdown user={user} mobile />
       </div>
     </div>
 
