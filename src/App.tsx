@@ -83,6 +83,7 @@ const CheckIns = lazy(() => import("./pages/CheckIns"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const HelpSupportTicket = lazy(() => import("./pages/HelpSupportTicket"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const AIStudioDashboard = lazy(() => import("./pages/AIStudioDashboard"));
 const AIStudioCharacters = lazy(() => import("./pages/AIStudioCharacters"));
