@@ -206,11 +206,7 @@ const App = () => (
             )}
             <Route
               path="/projects/:id/dashboard"
-              element={
-                <ProtectedRoute>
-                  <ProjectPlan />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/app" replace />}
             />
             {/* Standalone Offers library */}
             {FEATURE_FLAGS.offer && (
