@@ -172,9 +172,19 @@ const MarketingHub = () => {
         <HeroCard />
 
         {/* Grouped graphical tiles */}
-        {GROUPS.map((g) => (
-          <ToolGroupSection key={g.eyebrow} group={g} />
-        ))}
+        {GROUPS.map((g) => {
+          const flagMap: Record<string, boolean> = {
+            "Sales Page Writer": FEATURE_FLAGS.salesPageWriter,
+            "Email Sequence": FEATURE_FLAGS.emailSequence,
+            "Social Planner": FEATURE_FLAGS.socialPlanner,
+          };
+          const filtered = {
+            ...g,
+            tools: g.tools.filter((t) => flagMap[t.name] !== false),
+          };
+          if (filtered.tools.length === 0) return null;
+          return <ToolGroupSection key={g.eyebrow} group={filtered} />;
+        })}
 
         {/* Editorial closer */}
         <Closer />
