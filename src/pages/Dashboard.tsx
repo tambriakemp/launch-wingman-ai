@@ -532,13 +532,26 @@ const TabBar = () => {
    PAGE
    ============================================================ */
 
+const useIsMobile = () => {
+  const get = () => (typeof window !== "undefined" ? window.innerWidth < 900 : false);
+  const [m, setM] = useState<boolean>(get);
+  useEffect(() => {
+    const on = () => setM(window.innerWidth < 900);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return m;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [name, setName] = useState("there");
   const [briefIdx, setBriefIdx] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [ready, setReady] = useState(false);
   const brief = BRIEFS[briefIdx];
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (loading) return;
@@ -547,6 +560,7 @@ const Dashboard = () => {
       .then(({ data }) => {
         if (!data?.onboarding_completed_at) { navigate("/onboarding", { replace: true }); return; }
         if (data?.first_name) setName(data.first_name);
+        setReady(true);
       });
   }, [user, loading, navigate]);
 
@@ -557,38 +571,13 @@ const Dashboard = () => {
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
-  return (
-    <>
-      {/* ── Desktop / Web ── */}
-      <div className="cre8-web" style={{ minHeight: "100vh", background: PAPER }}>
-        <TopNav user={name} />
-        <main style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 48px 100px" }}>
-          <div className="cre8-cols" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 64, alignItems: "start" }}>
-            <div style={{ display: "grid", gap: 44, minWidth: 0 }}>
-              <div>
-                <Eyebrow>{today}</Eyebrow>
-                <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 60, color: INK, margin: "16px 0 0", lineHeight: 1.02, letterSpacing: "-0.02em" }}>
-                  Good morning, <em style={{ color: TC }}>{name}</em>.
-                </h1>
-                <p style={{ fontFamily: SANS, fontSize: 15, color: SUB, margin: "18px 0 0" }}>
-                  {BRAIN.streak}-day streak · {BRAIN.docsThisWeek} documents this week · your Brain is {BRAIN.completeness}% complete
-                </p>
-              </div>
+  if (loading || !ready) {
+    return <div style={{ minHeight: "100vh", background: PAPER }} />;
+  }
 
-              <BriefCard brief={brief} copied={copied}
-                onRegen={() => setBriefIdx((i) => (i + 1) % BRIEFS.length)}
-                onCopy={copy} onPublish={() => {}} />
-
-              <NextTaskCard />
-            </div>
-
-            <RightRail />
-          </div>
-        </main>
-      </div>
-
-      {/* ── Native / Mobile ── */}
-      <div className="cre8-native" style={{ minHeight: "100vh", background: PAPER, display: "flex", flexDirection: "column" }}>
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: "100vh", background: PAPER, display: "flex", flexDirection: "column" }}>
         <MobileHeader user={name} />
         <div style={{ flex: 1, padding: "16px 18px 110px", display: "flex", flexDirection: "column", gap: 16 }}>
           <MobileBrief brief={brief} copied={copied} onCopy={copy} onPublish={() => {}} />
@@ -604,23 +593,42 @@ const Dashboard = () => {
         </div>
         <TabBar />
       </div>
+    );
+  }
 
+  return (
+    <div style={{ minHeight: "100vh", background: PAPER }}>
+      <TopNav user={name} />
+      <main style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 48px 100px" }}>
+        <div className="cre8-cols" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 64, alignItems: "start" }}>
+          <div style={{ display: "grid", gap: 44, minWidth: 0 }}>
+            <div>
+              <Eyebrow>{today}</Eyebrow>
+              <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 60, color: INK, margin: "16px 0 0", lineHeight: 1.02, letterSpacing: "-0.02em" }}>
+                Good morning, <em style={{ color: TC }}>{name}</em>.
+              </h1>
+              <p style={{ fontFamily: SANS, fontSize: 15, color: SUB, margin: "18px 0 0" }}>
+                {BRAIN.streak}-day streak · {BRAIN.docsThisWeek} documents this week · your Brain is {BRAIN.completeness}% complete
+              </p>
+            </div>
+
+            <BriefCard brief={brief} copied={copied}
+              onRegen={() => setBriefIdx((i) => (i + 1) % BRIEFS.length)}
+              onCopy={copy} onPublish={() => {}} />
+
+            <NextTaskCard />
+          </div>
+
+          <RightRail />
+        </div>
+      </main>
       <style>{`
-        .cre8-web { display: block; }
-        .cre8-native { display: none; }
-        @media (max-width: 900px) {
-          .cre8-web { display: none; }
-          .cre8-native { display: flex; }
-        }
-        @media (max-width: 1024px) and (min-width: 901px) {
+        @media (max-width: 1024px) {
           .cre8-cols { grid-template-columns: 1fr !important; }
           .cre8-brief-grid { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 640px) {
-          .cre8-brief-grid { grid-template-columns: 1fr !important; }
-        }
       `}</style>
-    </>
+    </div>
   );
 };
 
