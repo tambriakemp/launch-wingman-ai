@@ -58,6 +58,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 
 // ── Types ──
 interface SectionItem {
