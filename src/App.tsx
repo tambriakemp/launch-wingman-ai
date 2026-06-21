@@ -84,6 +84,7 @@ const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const HelpSupportTicket = lazy(() => import("./pages/HelpSupportTicket"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const AIStudioDashboard = lazy(() => import("./pages/AIStudioDashboard"));
 const AIStudioCharacters = lazy(() => import("./pages/AIStudioCharacters"));
@@ -183,6 +184,7 @@ const App = () => (
             {/* New Cre8 Brain dashboard — replaces old per-project dashboard */}
             <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
 
             {/* Project-specific routes - Plan section uses unified ProjectPlan */}
