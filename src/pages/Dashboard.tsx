@@ -214,6 +214,12 @@ const TopNav = ({ user }: { user: string }) => {
   );
 };
 
+const Eyebrow = ({ children, color, style }: { children: React.ReactNode; color?: string; style?: React.CSSProperties }) => (
+  <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, color: color || FAINT, ...style }}>
+    {children}
+  </div>
+);
+
 /* ── Pill button (desktop) ── */
 const Pill = ({ children, primary, onClick, icon: Icon }: {
   children: React.ReactNode; primary?: boolean; onClick?: () => void; icon?: any;
