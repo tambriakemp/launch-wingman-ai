@@ -380,40 +380,44 @@ const App = () => (
               }
             />
             {FEATURE_FLAGS.assessments && (
-              <>
-                <Route
-                  path="/assessments"
-                  element={
-                    <ProtectedRoute>
-                      <Assessments />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/assessments/launch"
-                  element={
-                    <ProtectedRoute>
-                      <Assessment />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/assessments/coach"
-                  element={
-                    <ProtectedRoute>
-                      <CoachAssessment />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/assessments/why-statement"
-                  element={
-                    <ProtectedRoute>
-                      <WhyStatementAssessment />
-                    </ProtectedRoute>
-                  }
-                />
-              </>
+              <Route
+                path="/assessments"
+                element={
+                  <ProtectedRoute>
+                    <Assessments />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/launch"
+                element={
+                  <ProtectedRoute>
+                    <Assessment />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/coach"
+                element={
+                  <ProtectedRoute>
+                    <CoachAssessment />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {FEATURE_FLAGS.assessments && (
+              <Route
+                path="/assessments/why-statement"
+                element={
+                  <ProtectedRoute>
+                    <WhyStatementAssessment />
+                  </ProtectedRoute>
+                }
+              />
             )}
             {/* Legacy routes redirect */}
             <Route
