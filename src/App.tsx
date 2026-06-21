@@ -26,7 +26,7 @@ function PushRegistrar() {
 const Auth = lazy(() => import("./pages/Auth"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
-const AppRedirect = lazy(() => import("./pages/AppRedirect"));
+
 const Settings = lazy(() => import("./pages/Settings"));
 const Assessments = lazy(() => import("./pages/Assessments"));
 const Assessment = lazy(() => import("./pages/Assessment"));
