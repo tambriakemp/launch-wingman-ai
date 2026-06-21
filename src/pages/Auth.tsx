@@ -310,6 +310,7 @@ const Auth = () => {
             onChange={(e) => setResetEmail(e.target.value)}
             placeholder="you@example.com" style={inputBase}
           />
+          <Dots active={1} />
           <button type="submit" disabled={resetLoading || !resetEmail.trim()} style={primaryBtn(false, resetLoading || !resetEmail.trim())}>
             {resetLoading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : <>Send reset link <ArrowRight size={16} /></>}
           </button>
