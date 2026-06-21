@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { AppShellFallback } from "./components/layout/AppShellFallback";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
+import { FEATURE_FLAGS } from "@/config/featureFlags";
 
 function PushRegistrar() {
   usePushRegistration();
