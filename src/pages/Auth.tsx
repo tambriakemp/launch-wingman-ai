@@ -255,13 +255,15 @@ const Auth = () => {
         <p style={{ color: C.mute, fontSize: 15, lineHeight: 1.6, marginBottom: 32, fontFamily: fontMono }}>{hint}</p>
 
         {children}
-
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 28 }}>
-          {[1, 2].map((i) => (
-            <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i === stepNum ? C.gold : C.hairline }} />
-          ))}
-        </div>
       </div>
+    </div>
+  );
+
+  const Dots = ({ active }: { active: 1 | 2 }) => (
+    <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 28 }}>
+      {[1, 2].map((i) => (
+        <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i === active ? C.gold : C.hairline }} />
+      ))}
     </div>
   );
 
@@ -308,6 +310,7 @@ const Auth = () => {
             onChange={(e) => setResetEmail(e.target.value)}
             placeholder="you@example.com" style={inputBase}
           />
+          <Dots active={1} />
           <button type="submit" disabled={resetLoading || !resetEmail.trim()} style={primaryBtn(false, resetLoading || !resetEmail.trim())}>
             {resetLoading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : <>Send reset link <ArrowRight size={16} /></>}
           </button>
@@ -346,6 +349,7 @@ const Auth = () => {
             <button type="button" style={linkBtn} onClick={() => setShowReset(true)}>Forgot password?</button>
           </div>
 
+          <Dots active={1} />
           <button type="submit" disabled={loading} style={primaryBtn(false, loading)}>
             {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> : <>Sign in <ArrowRight size={16} /></>}
           </button>
@@ -402,6 +406,7 @@ const Auth = () => {
           />
           {signUpErrors.email && <div style={errStyle}>{signUpErrors.email}</div>}
 
+          <Dots active={1} />
           <button
             type="submit" disabled={!firstName.trim() || !signUpEmail.trim()}
             style={primaryBtn(false, !firstName.trim() || !signUpEmail.trim())}
@@ -463,6 +468,7 @@ const Auth = () => {
         />
         {signUpErrors.confirmPassword && <div style={errStyle}>{signUpErrors.confirmPassword}</div>}
 
+        <Dots active={2} />
         <button
           type="submit"
           disabled={signUpLoading || !signUpPassword.trim() || !confirmPassword.trim()}
