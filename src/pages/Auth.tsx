@@ -255,13 +255,15 @@ const Auth = () => {
         <p style={{ color: C.mute, fontSize: 15, lineHeight: 1.6, marginBottom: 32, fontFamily: fontMono }}>{hint}</p>
 
         {children}
-
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 28 }}>
-          {[1, 2].map((i) => (
-            <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i === stepNum ? C.gold : C.hairline }} />
-          ))}
-        </div>
       </div>
+    </div>
+  );
+
+  const Dots = ({ active }: { active: 1 | 2 }) => (
+    <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 28 }}>
+      {[1, 2].map((i) => (
+        <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i === active ? C.gold : C.hairline }} />
+      ))}
     </div>
   );
 
