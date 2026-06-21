@@ -164,14 +164,15 @@ const BrainMark = ({ size = 22, color = TC }: { size?: number; color?: string })
 
 /* ── Magazine header (desktop) ── */
 const TopNav = ({ user }: { user: string }) => {
+  const navigate = useNavigate();
   const [active, setActive] = useState("dashboard");
   const links = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "brief",     label: "Daily Brief" },
-    { id: "brain",     label: "My Brain" },
-    { id: "tasks",     label: "Tasks" },
-    { id: "tools",     label: "Marketing Tools" },
-    { id: "settings",  label: "Settings" },
+    { id: "dashboard", label: "Dashboard", path: "/app" },
+    { id: "brief",     label: "Daily Brief", path: "/app" },
+    { id: "brain",     label: "My Brain", path: "/app" },
+    { id: "tasks",     label: "Tasks", path: "/tasks" },
+    { id: "tools",     label: "Marketing Tools", path: "/app" },
+    { id: "settings",  label: "Settings", path: "/settings" },
   ];
   return (
     <header style={{
@@ -190,7 +191,7 @@ const TopNav = ({ user }: { user: string }) => {
         {links.map((l) => {
           const on = active === l.id;
           return (
-            <button key={l.id} onClick={() => setActive(l.id)} style={{
+            <button key={l.id} onClick={() => { setActive(l.id); navigate(l.path); }} style={{
               background: "transparent", border: 0, cursor: "pointer", fontFamily: SANS, fontSize: 14,
               fontWeight: on ? 600 : 400, color: on ? CREAM : "rgba(237,229,214,0.55)",
               padding: "4px 0", borderBottom: "1.5px solid " + (on ? TC : "transparent"),
@@ -553,13 +554,14 @@ const MobileDocs = () => (
 );
 
 const TabBar = () => {
+  const navigate = useNavigate();
   const [active, setActive] = useState("home");
   const tabs = [
-    { id: "home", label: "Home", icon: HomeIcon },
-    { id: "brief", label: "Brief", icon: BookOpen },
-    { id: "brain", label: "Brain", icon: Layers },
-    { id: "tasks", label: "Tasks", icon: CheckSquare },
-    { id: "tools", label: "Tools", icon: Sparkles },
+    { id: "home", label: "Home", icon: HomeIcon, path: "/app" },
+    { id: "brief", label: "Brief", icon: BookOpen, path: "/app" },
+    { id: "brain", label: "Brain", icon: Layers, path: "/app" },
+    { id: "tasks", label: "Tasks", icon: CheckSquare, path: "/tasks" },
+    { id: "tools", label: "Tools", icon: Sparkles, path: "/app" },
   ];
   return (
     <div style={{
@@ -570,7 +572,7 @@ const TabBar = () => {
       {tabs.map((t) => {
         const on = active === t.id;
         return (
-          <button key={t.id} onClick={() => setActive(t.id)} style={{
+          <button key={t.id} onClick={() => { setActive(t.id); navigate(t.path); }} style={{
             flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
             padding: "6px 0", background: "transparent", border: 0, cursor: "pointer",
           }}>
