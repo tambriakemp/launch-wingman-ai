@@ -554,13 +554,14 @@ const MobileDocs = () => (
 );
 
 const TabBar = () => {
+  const navigate = useNavigate();
   const [active, setActive] = useState("home");
   const tabs = [
-    { id: "home", label: "Home", icon: HomeIcon },
-    { id: "brief", label: "Brief", icon: BookOpen },
-    { id: "brain", label: "Brain", icon: Layers },
-    { id: "tasks", label: "Tasks", icon: CheckSquare },
-    { id: "tools", label: "Tools", icon: Sparkles },
+    { id: "home", label: "Home", icon: HomeIcon, path: "/app" },
+    { id: "brief", label: "Brief", icon: BookOpen, path: "/app" },
+    { id: "brain", label: "Brain", icon: Layers, path: "/app" },
+    { id: "tasks", label: "Tasks", icon: CheckSquare, path: "/tasks" },
+    { id: "tools", label: "Tools", icon: Sparkles, path: "/app" },
   ];
   return (
     <div style={{
@@ -571,7 +572,7 @@ const TabBar = () => {
       {tabs.map((t) => {
         const on = active === t.id;
         return (
-          <button key={t.id} onClick={() => setActive(t.id)} style={{
+          <button key={t.id} onClick={() => { setActive(t.id); navigate(t.path); }} style={{
             flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
             padding: "6px 0", background: "transparent", border: 0, cursor: "pointer",
           }}>
