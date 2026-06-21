@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHaptics } from "@/hooks/useHaptics";
-import { toast } from "sonner";
 import {
   Home as HomeIcon,
   BookOpen,
@@ -978,15 +977,9 @@ const Tasks = () => {
     setOpenMap((m) => ({ ...m, [li]: !m[li] }));
   };
 
-  const onOpenTask = (title: string /*, layerIndex: number, taskIndex: number*/) => {
+  const onOpenTask = (_title: string, layerIndex: number, taskIndex: number) => {
     trigger("medium");
-    // BrainTaskDetail.jsx isn't imported yet — the detail page is a separate
-    // import from the design canvas. For now surface a toast so the
-    // interaction reads as intentional, and the eventual route will be
-    // /tasks/<layer>/<index>.
-    toast(`Opening: ${title}`, {
-      description: "Task detail is coming next from the design canvas.",
-    });
+    navigate(`/tasks/${layerIndex}/${taskIndex}`);
   };
 
   const isNativeShell = useIsNativeShell();
