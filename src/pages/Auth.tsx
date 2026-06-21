@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -166,7 +166,6 @@ const Auth = () => {
   const surecontactFiredRef = useRef(false);
 
   const { signIn, signUp, user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
@@ -183,35 +182,39 @@ const Auth = () => {
     }
   }, [checkoutSuccess]);
 
-  /* Redirect signed-in users + fire SureContact one-shot for new Google signups */
+  /* Fire SureContact one-shot for new Google signups. AuthContext owns
+     the post-sign-in `/app` navigation — we don't navigate here. Doing
+     both caused a render-storm that briefly tripped the ErrorBoundary
+     before the dashboard chunk loaded. */
   useEffect(() => {
     if (!user) return;
-    if (!surecontactFiredRef.current) {
-      const created = user.created_at ? new Date(user.created_at).getTime() : 0;
-      const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
-      const isBrandNew = created > 0 && Math.abs(lastSignIn - created) < 30_000;
-      const provider = (user.app_metadata as { provider?: string } | undefined)?.provider;
-      if (isBrandNew && provider === "google") {
-        surecontactFiredRef.current = true;
-        const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
-        const fullName = meta.full_name ?? meta.name ?? "";
-        const [first = "", ...rest] = fullName.split(" ");
-        const last = rest.join(" ");
-        supabase.functions
-          .invoke("surecontact-webhook", {
-            body: {
-              action: "sync_new_signup",
-              email: user.email,
-              first_name: meta.given_name ?? meta.first_name ?? first,
-              last_name: meta.family_name ?? meta.last_name ?? last,
-            },
-          })
-          .catch(() => {});
-      }
+    if (surecontactFiredRef.current) return;
+    const created = user.created_at ? new Date(user.created_at).getTime() : 0;
+    const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
+    const isBrandNew = created > 0 && Math.abs(lastSignIn - created) < 30_000;
+    const provider = (user.app_metadata as { provider?: string } | undefined)?.provider;
+    if (isBrandNew && provider === "google") {
+      surecontactFiredRef.current = true;
+      const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
+      const fullName = meta.full_name ?? meta.name ?? "";
+      const [first = "", ...rest] = fullName.split(" ");
+      const last = rest.join(" ");
+      supabase.functions
+        .invoke("surecontact-webhook", {
+          body: {
+            action: "sync_new_signup",
+            email: user.email,
+            first_name: meta.given_name ?? meta.first_name ?? first,
+            last_name: meta.family_name ?? meta.last_name ?? last,
+          },
+        })
+        .catch(() => {});
     }
-    navigate("/app");
-  }, [user, navigate]);
+  }, [user]);
 
+  /* Once signed in, AuthContext has already navigated — just unmount
+     the form so the brief "user set but route not yet swapped" frame
+     renders nothing instead of the auth screen. */
   if (user) return null;
 
   /* ── Handlers ──────────────────────────────────────────── */
