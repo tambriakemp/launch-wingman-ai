@@ -179,11 +179,10 @@ const App = () => (
               }
             />
 
-            {/* Smart redirect to last used project */}
-            <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
-            {/* Legacy redirects */}
-            <Route path="/dashboard" element={<Navigate to="/app" replace />} />
-            <Route path="/projects" element={<Navigate to="/app" replace />} />
+            {/* New Cre8 Brain dashboard — replaces old per-project dashboard */}
+            <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
 
             {/* Project-specific routes - Plan section uses unified ProjectPlan */}
             <Route
