@@ -85,8 +85,8 @@ const createSections = (projectId?: string): Section[] => [
     label: "Launch",
     icon: Rocket,
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
-      { id: "tasks", label: "Launch Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
+      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/app" },
+      { id: "tasks", label: "Tasks", icon: Kanban, href: "/tasks" },
       ...(FEATURE_FLAGS.offer ? [{ id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId }] : []),
       ...(FEATURE_FLAGS.launchBrief ? [{ id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId }] : []),
       ...(FEATURE_FLAGS.playbook ? [{ id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" }] : []),
