@@ -87,6 +87,11 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Tasks = lazy(() => import("./pages/Tasks"));
 const BrainTaskDetail = lazy(() => import("./pages/BrainTaskDetail"));
+const InnerBrain = lazy(() => import("./pages/inner/InnerBrain"));
+const ShadowJournal = lazy(() => import("./pages/inner/ShadowJournal"));
+const TriggerLog = lazy(() => import("./pages/inner/TriggerLog"));
+const PartsRoster = lazy(() => import("./pages/inner/PartsRoster"));
+const ShadowBusinessBridge = lazy(() => import("./pages/inner/ShadowBusinessBridge"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const AIStudioDashboard = lazy(() => import("./pages/AIStudioDashboard"));
 const AIStudioCharacters = lazy(() => import("./pages/AIStudioCharacters"));
@@ -188,6 +193,11 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><Dashboard /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><Tasks /></ProtectedRoute>} />
             <Route path="/tasks/:layer/:task" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><BrainTaskDetail /></ProtectedRoute>} />
+            <Route path="/inner" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><InnerBrain /></ProtectedRoute>} />
+            <Route path="/inner/journal" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><ShadowJournal /></ProtectedRoute>} />
+            <Route path="/inner/triggers" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><TriggerLog /></ProtectedRoute>} />
+            <Route path="/inner/parts" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><PartsRoster /></ProtectedRoute>} />
+            <Route path="/inner/bridges" element={<ProtectedRoute fallback={<Cre8BrainShellFallback />}><ShadowBusinessBridge /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
 
             {/* Project-specific routes - Plan section uses unified ProjectPlan */}

@@ -7,7 +7,7 @@ import {
   BookOpen,
   Layers as LayersIcon,
   CheckSquare,
-  Sparkles,
+  Moon,
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -241,6 +241,7 @@ const NAV_LINKS: Array<{ label: string; path: string }> = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Daily Brief", path: "/daily" },
   { label: "My Brain", path: "/brain" },
+  { label: "Inner Brain", path: "/inner" },
   { label: "Tasks", path: "/tasks" },
   { label: "Marketing Tools", path: "/marketing" },
   { label: "Settings", path: "/settings" },
@@ -405,7 +406,7 @@ const TABS = [
   { label: "Brief", icon: BookOpen, path: "/daily" },
   { label: "Brain", icon: LayersIcon, path: "/brain" },
   { label: "Tasks", icon: CheckSquare, path: "/tasks" },
-  { label: "Tools", icon: Sparkles, path: "/marketing" },
+  { label: "Inner", icon: Moon, path: "/inner" },
 ];
 
 const NativeTabs = ({ active }: { active: string }) => {

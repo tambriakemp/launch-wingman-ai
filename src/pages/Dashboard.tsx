@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, Image as ImageIcon, Sparkles, Calendar, Copy, Check, Link as LinkIcon,
-  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2, LogOut,
+  Home as HomeIcon, BookOpen, Layers, CheckSquare, Wand2, Moon, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -170,6 +170,7 @@ const TopNav = ({ user }: { user: string }) => {
     { id: "dashboard", label: "Dashboard", path: "/app" },
     { id: "brief",     label: "Daily Brief", path: "/app" },
     { id: "brain",     label: "My Brain", path: "/app" },
+    { id: "inner",     label: "Inner Brain", path: "/inner" },
     { id: "tasks",     label: "Tasks", path: "/tasks" },
     { id: "tools",     label: "Marketing Tools", path: "/app" },
     { id: "settings",  label: "Settings", path: "/settings" },
@@ -561,7 +562,7 @@ const TabBar = () => {
     { id: "brief", label: "Brief", icon: BookOpen, path: "/app" },
     { id: "brain", label: "Brain", icon: Layers, path: "/app" },
     { id: "tasks", label: "Tasks", icon: CheckSquare, path: "/tasks" },
-    { id: "tools", label: "Tools", icon: Sparkles, path: "/app" },
+    { id: "inner", label: "Inner", icon: Moon, path: "/inner" },
   ];
   return (
     <div style={{
