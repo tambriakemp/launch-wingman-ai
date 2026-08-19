@@ -280,11 +280,19 @@ const Auth = () => {
     }
   };
 
+  /* Same-origin relative path to return to after auth (OAuth consent flow). */
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+  const authRedirectUri = safeNext
+    ? `${window.location.origin}/auth?next=${encodeURIComponent(safeNext)}`
+    : `${window.location.origin}/auth`;
+
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth`,
+        redirect_uri: authRedirectUri,
       });
       if (result.error) {
         toast.error(result.error.message || "Google sign-in failed");
@@ -302,7 +310,7 @@ const Auth = () => {
     setAppleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: `${window.location.origin}/auth`,
+        redirect_uri: authRedirectUri,
       });
       if (result.error) {
         toast.error(result.error.message || "Apple sign-in failed");
