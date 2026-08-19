@@ -25,6 +25,7 @@ function PushRegistrar() {
 }
 
 const Auth = lazy(() => import("./pages/Auth"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 
@@ -160,6 +161,7 @@ const App = () => (
             {/* Public auth + utility routes */}
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/links" element={<LinkInBio />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
