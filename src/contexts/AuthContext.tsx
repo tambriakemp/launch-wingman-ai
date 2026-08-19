@@ -383,6 +383,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session, checkSubscription]);
 
   const navigateToProject = async () => {
+    // Honor a same-origin `next` path (used by the OAuth consent flow) so users
+    // return to where they were sent from instead of the dashboard.
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      navigate(next, { replace: true });
+      return;
+    }
     navigate("/app");
   };
 
